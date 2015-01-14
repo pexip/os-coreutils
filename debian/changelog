@@ -1,3 +1,13 @@
+coreutils (8.13-3ubuntu3.3) precise-security; urgency=medium
+
+  * SECURITY UPDATE: infinite loop or crash in TZ environment variable
+    handling.
+    - debian/patches/CVE-2014-9471.dpatch: modify lib/parse-datetime.y and
+      tests/misc/date to avoid crashing with malformed TZ
+    - CVE-2014-9471
+
+ -- Seth Arnold <seth.arnold@canonical.com>  Tue, 13 Jan 2015 19:31:30 -0800
+
 coreutils (8.13-3ubuntu3.2) precise-proposed; urgency=low
 
   * Backport upstream patch to avoid data-corrupting free-memory-read in
