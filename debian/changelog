@@ -1,3 +1,19 @@
+coreutils (8.13-3ubuntu3.3pexip1) pexip; urgency=low
+
+  * New upstream release.
+
+ -- John-Mark Bell <jmb@pexip.com>  Thu, 15 Jan 2015 00:23:39 +0000
+
+coreutils (8.13-3ubuntu3.3) precise-security; urgency=medium
+
+  * SECURITY UPDATE: infinite loop or crash in TZ environment variable
+    handling.
+    - debian/patches/CVE-2014-9471.dpatch: modify lib/parse-datetime.y and
+      tests/misc/date to avoid crashing with malformed TZ
+    - CVE-2014-9471
+
+ -- Seth Arnold <seth.arnold@canonical.com>  Tue, 13 Jan 2015 19:31:30 -0800
+
 coreutils (8.13-3ubuntu3.2pexip1) pexip; urgency=low
 
   * Prepare Pexip packaging
