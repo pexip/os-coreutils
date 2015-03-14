@@ -1,6 +1,5 @@
 /* sum -- checksum and count the blocks in a file
-   Copyright (C) 1986, 1989, 1991, 1995-2002, 2004-2005, 2008-2011 Free
-   Software Foundation, Inc.
+   Copyright (C) 1986-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +30,7 @@
 #include "safe-read.h"
 #include "xfreopen.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "sum"
 
 #define AUTHORS \
@@ -53,8 +52,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\

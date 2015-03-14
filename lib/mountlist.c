@@ -1,6 +1,6 @@
 /* mountlist.c -- return a list of mounted file systems
 
-   Copyright (C) 1991-1992, 1997-2011 Free Software Foundation, Inc.
+   Copyright (C) 1991-1992, 1997-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -128,9 +128,19 @@
 # include <sys/mntent.h>
 #endif
 
+#ifndef HAVE_HASMNTOPT
+# define hasmntopt(mnt, opt) ((char *) 0)
+#endif
+
 #undef MNT_IGNORE
-#if defined MNTOPT_IGNORE && defined HAVE_HASMNTOPT
-# define MNT_IGNORE(M) hasmntopt (M, MNTOPT_IGNORE)
+#ifdef MNTOPT_IGNORE
+# if defined __sun && defined __SVR4
+/* Solaris defines hasmntopt(struct mnttab *, char *)
+   while it is otherwise hasmntopt(struct mnttab *, const char *).  */
+#  define MNT_IGNORE(M) hasmntopt (M, (char *) MNTOPT_IGNORE)
+# else
+#  define MNT_IGNORE(M) hasmntopt (M, MNTOPT_IGNORE)
+# endif
 #else
 # define MNT_IGNORE(M) 0
 #endif
@@ -139,32 +149,47 @@
 # include "unlocked-io.h"
 #endif
 
-/* The results of open() in this file are not used with fchdir,
-   therefore save some unnecessary work in fchdir.c.  */
-#undef open
-#undef close
-
 /* The results of opendir() in this file are not used with dirfd and fchdir,
    therefore save some unnecessary work in fchdir.c.  */
 #undef opendir
 #undef closedir
 
-#ifndef ME_DUMMY
-# define ME_DUMMY(Fs_name, Fs_type)             \
-    (strcmp (Fs_type, "autofs") == 0            \
-     || strcmp (Fs_type, "none") == 0           \
-     || strcmp (Fs_type, "proc") == 0           \
-     || strcmp (Fs_type, "subfs") == 0          \
-     /* for NetBSD 3.0 */                       \
-     || strcmp (Fs_type, "kernfs") == 0         \
-     /* for Irix 6.5 */                         \
-     || strcmp (Fs_type, "ignore") == 0)
+#define ME_DUMMY_0(Fs_name, Fs_type)            \
+  (strcmp (Fs_type, "autofs") == 0              \
+   || strcmp (Fs_type, "proc") == 0             \
+   || strcmp (Fs_type, "subfs") == 0            \
+   /* for Linux 2.6/3.x */                      \
+   || strcmp (Fs_type, "debugfs") == 0          \
+   || strcmp (Fs_type, "devpts") == 0           \
+   || strcmp (Fs_type, "fusectl") == 0          \
+   || strcmp (Fs_type, "mqueue") == 0           \
+   || strcmp (Fs_type, "rpc_pipefs") == 0       \
+   || strcmp (Fs_type, "sysfs") == 0            \
+   /* FreeBSD, Linux 2.4 */                     \
+   || strcmp (Fs_type, "devfs") == 0            \
+   /* for NetBSD 3.0 */                         \
+   || strcmp (Fs_type, "kernfs") == 0           \
+   /* for Irix 6.5 */                           \
+   || strcmp (Fs_type, "ignore") == 0)
+
+/* Historically, we have marked as "dummy" any file system of type "none",
+   but now that programs like du need to know about bind-mounted directories,
+   we grant an exception to any with "bind" in its list of mount options.
+   I.e., those are *not* dummy entries.  */
+#ifdef MOUNTED_GETMNTENT1
+# define ME_DUMMY(Fs_name, Fs_type, Fs_ent)	\
+  (ME_DUMMY_0 (Fs_name, Fs_type)		\
+   || (strcmp (Fs_type, "none") == 0		\
+       && !hasmntopt (Fs_ent, "bind")))
+#else
+# define ME_DUMMY(Fs_name, Fs_type)		\
+  (ME_DUMMY_0 (Fs_name, Fs_type) || strcmp (Fs_type, "none") == 0)
 #endif
 
 #ifdef __CYGWIN__
 # include <windows.h>
 # define ME_REMOTE me_remote
-/* All cygwin mount points include `:' or start with `//'; so it
+/* All cygwin mount points include ':' or start with '//'; so it
    requires a native Windows call to determine remote disks.  */
 static bool
 me_remote (char const *fs_name, char const *fs_type _GL_UNUSED)
@@ -187,8 +212,8 @@ me_remote (char const *fs_name, char const *fs_type _GL_UNUSED)
 #endif
 
 #ifndef ME_REMOTE
-/* A file system is `remote' if its Fs_name contains a `:'
-   or if (it is of type (smbfs or cifs) and its Fs_name starts with `//').  */
+/* A file system is "remote" if its Fs_name contains a ':'
+   or if (it is of type (smbfs or cifs) and its Fs_name starts with '//').  */
 # define ME_REMOTE(Fs_name, Fs_type)            \
     (strchr (Fs_name, ':') != NULL              \
      || ((Fs_name)[0] == '/'                    \
@@ -419,7 +444,7 @@ read_file_system_list (bool need_fs_type)
         me->me_mountdir = xstrdup (mnt->mnt_dir);
         me->me_type = xstrdup (mnt->mnt_type);
         me->me_type_malloced = 1;
-        me->me_dummy = ME_DUMMY (me->me_devname, me->me_type);
+        me->me_dummy = ME_DUMMY (me->me_devname, me->me_type, mnt);
         me->me_remote = ME_REMOTE (me->me_devname, me->me_type);
         me->me_dev = dev_from_mount_options (mnt->mnt_opts);
 
@@ -922,6 +947,7 @@ read_file_system_list (bool need_fs_type)
             mtail = &me->me_next;
           }
       }
+    closedir (dirp);
   }
 #endif /* MOUNTED_INTERIX_STATVFS */
 
@@ -937,15 +963,22 @@ read_file_system_list (bool need_fs_type)
     while (mount_list)
       {
         me = mount_list->me_next;
-        free (mount_list->me_devname);
-        free (mount_list->me_mountdir);
-        if (mount_list->me_type_malloced)
-          free (mount_list->me_type);
-        free (mount_list);
+        free_mount_entry (mount_list);
         mount_list = me;
       }
 
     errno = saved_errno;
     return NULL;
   }
+}
+
+/* Free a mount entry as returned from read_file_system_list ().  */
+
+void free_mount_entry (struct mount_entry *me)
+{
+  free (me->me_devname);
+  free (me->me_mountdir);
+  if (me->me_type_malloced)
+    free (me->me_type);
+  free (me);
 }

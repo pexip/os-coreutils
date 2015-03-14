@@ -1,5 +1,5 @@
 /* expr -- evaluate expressions.
-   Copyright (C) 1986, 1991-1997, 1999-2011 Free Software Foundation, Inc.
+   Copyright (C) 1986-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
    Modified for arbitrary-precision calculation by James Youngman.
 
    This program evaluates expressions.  Each token (operator, operand,
-   parenthesis) of the expression must be a seperate argument.  The
+   parenthesis) of the expression must be a separate argument.  The
    parser used is a reasonably general one, though any incarnation of
    it is language-specific.  It is especially nice for expressions.
 
@@ -44,8 +44,6 @@
    int, the widest unsigned type that GMP supports.  */
 verify (SIZE_MAX <= ULONG_MAX);
 
-static void integer_overflow (char) ATTRIBUTE_NORETURN;
-
 #ifndef HAVE_GMP
 # define HAVE_GMP 0
 #endif
@@ -53,6 +51,7 @@ static void integer_overflow (char) ATTRIBUTE_NORETURN;
 #if HAVE_GMP
 # include <gmp.h>
 #else
+static void integer_overflow (char) ATTRIBUTE_NORETURN;
 /* Approximate gmp.h well enough for expr.c's purposes.  */
 typedef intmax_t mpz_t[1];
 static void mpz_clear (mpz_t z) { (void) z; }
@@ -144,7 +143,7 @@ mpz_out_str (FILE *stream, int base, mpz_t z)
 }
 #endif
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "expr"
 
 #define AUTHORS \
@@ -197,8 +196,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -251,7 +249,7 @@ separates increasing precedence groups.  EXPRESSION may be:\n\
 "), stdout);
       fputs (_("\
   + TOKEN                    interpret TOKEN as a string, even if it is a\n\
-                               keyword like `match' or an operator like `/'\n\
+                               keyword like 'match' or an operator like '/'\n\
 \n\
   ( EXPRESSION )             value of EXPRESSION\n\
 "), stdout);
@@ -279,6 +277,7 @@ syntax_error (void)
   error (EXPR_INVALID, 0, _("syntax error"));
 }
 
+#if ! HAVE_GMP
 /* Report an integer overflow for operation OP and exit.  */
 static void
 integer_overflow (char op)
@@ -286,15 +285,7 @@ integer_overflow (char op)
   error (EXPR_FAILURE, ERANGE, "%c", op);
   abort (); /* notreached */
 }
-
-static void die (int errno_val, char const *msg)
-  ATTRIBUTE_NORETURN;
-static void
-die (int errno_val, char const *msg)
-{
-  error (EXPR_FAILURE, errno_val, "%s", msg);
-  abort (); /* notreached */
-}
+#endif
 
 int
 main (int argc, char **argv)
@@ -314,7 +305,7 @@ main (int argc, char **argv)
                       usage, AUTHORS, (char const *) NULL);
 
   /* The above handles --help and --version.
-     Since there is no other invocation of getopt, handle `--' here.  */
+     Since there is no other invocation of getopt, handle '--' here.  */
   unsigned int u_argc = argc;
   if (1 < u_argc && STREQ (argv[1], "--"))
     {

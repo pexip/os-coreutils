@@ -128,18 +128,3 @@ diff -urNad coreutils-8.0~/src/who.c coreutils-8.0/src/who.c
          case_GETOPT_HELP_CHAR;
  
          case_GETOPT_VERSION_CHAR (PROGRAM_NAME, AUTHORS);
---- coreutils-8.13/man/who.1    2011-09-08 10:29:17.000000000 -0400
-+++ -   2011-09-12 13:35:55.454592819 -0400
-@@ -22,6 +22,11 @@
- \fB\-H\fR, \fB\-\-heading\fR
- print line of column headings
- .TP
-+\fB\-\-ips\fR
-+print ips instead of hostnames. with \fB\-\-lookup\fR,
-+canonicalizes based on stored IP, if available,
-+rather than stored hostname
-+.TP
- \fB\-l\fR, \fB\-\-login\fR
- print system login processes
- .TP
-

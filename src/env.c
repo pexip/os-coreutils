@@ -1,5 +1,5 @@
 /* env - run a program in a modified environment
-   Copyright (C) 1986, 1991-2005, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 1986-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include "error.h"
 #include "quote.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "env"
 
 #define AUTHORS \
@@ -46,8 +46,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -55,9 +54,13 @@ Usage: %s [OPTION]... [-] [NAME=VALUE]... [COMMAND [ARG]...]\n"),
               program_name);
       fputs (_("\
 Set each NAME to VALUE in the environment and run COMMAND.\n\
-\n\
+"), stdout);
+
+      emit_mandatory_arg_note ();
+
+      fputs (_("\
   -i, --ignore-environment  start with an empty environment\n\
-  -0, --null           end each output line with 0 byte rather than newline\n\
+  -0, --null           end each output line with NUL, not newline\n\
   -u, --unset=NAME     remove variable from the environment\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);

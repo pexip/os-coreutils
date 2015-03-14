@@ -1,5 +1,5 @@
 /* system-dependent definitions for coreutils
-   Copyright (C) 1989, 1991-2011 Free Software Foundation, Inc.
+   Copyright (C) 1989-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@ you must include <sys/types.h> before including this file
 
 #include <sys/stat.h>
 
+/* Commonly used file permission combination.  */
+#define MODE_RW_UGO (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+
 #if !defined HAVE_MKFIFO
 # define mkfifo(name, mode) mknod (name, (mode) | S_IFIFO, 0)
 #endif
@@ -41,6 +44,8 @@ you must include <sys/types.h> before including this file
 #include <unistd.h>
 
 #include <limits.h>
+
+#include "pathmax.h"
 #ifndef PATH_MAX
 # define PATH_MAX 8192
 #endif
@@ -50,7 +55,7 @@ you must include <sys/types.h> before including this file
 #include <sys/time.h>
 #include <time.h>
 
-/* Since major is a function on SVR4, we can't use `ifndef major'.  */
+/* Since major is a function on SVR4, we can't use 'ifndef major'.  */
 #if MAJOR_IN_MKDEV
 # include <sys/mkdev.h>
 # define HAVE_MAJOR
@@ -74,15 +79,12 @@ you must include <sys/types.h> before including this file
 # define makedev(maj, min)  mkdev (maj, min)
 #endif
 
-/* Don't use bcopy!  Use memmove if source and destination may overlap,
-   memcpy otherwise.  */
-
 #include <string.h>
-
 #include <errno.h>
 
 /* Some systems don't define this; POSIX mentions it but says it is
-   obsolete, so gnulib does not provide it either.  */
+   obsolete.  gnulib defines it, but only on native Windows systems,
+   and there only because MSVC 10 does.  */
 #ifndef ENODATA
 # define ENODATA (-1)
 #endif
@@ -150,7 +152,7 @@ enum
    - It's typically faster.
    POSIX says that only '0' through '9' are digits.  Prefer ISDIGIT to
    isdigit unless it's important to use the locale's definition
-   of `digit' even when the host does not conform to POSIX.  */
+   of 'digit' even when the host does not conform to POSIX.  */
 #define ISDIGIT(c) ((unsigned int) (c) - '0' <= 9)
 
 /* Convert a possibly-signed character to an unsigned character.  This is
@@ -188,8 +190,8 @@ select_plural (uintmax_t n)
 #define STREQ_LEN(a, b, n) (strncmp (a, b, n) == 0)
 #define STRPREFIX(a, b) (strncmp(a, b, strlen (b)) == 0)
 
-/* Just like strncmp, but the first argument must be a literal string
-   and you don't specify the length.  */
+/* Just like strncmp, but the second argument must be a literal string
+   and you don't specify the length;  that comes from the literal.  */
 #define STRNCMP_LIT(s, literal) \
   strncmp (s, "" literal "", sizeof (literal) - 1)
 
@@ -213,6 +215,24 @@ struct passwd *getpwuid ();
 struct group *getgrgid ();
 #endif
 
+/* Interix has replacements for getgr{gid,nam,ent}, that don't
+   query the domain controller for group members when not required.
+   This speeds up the calls tremendously (<1 ms vs. >3 s). */
+/* To protect any system that could provide _nomembers functions
+   other than interix, check for HAVE_SETGROUPS, as interix is
+   one of the very few (the only?) platform that lacks it */
+#if ! HAVE_SETGROUPS
+# if HAVE_GETGRGID_NOMEMBERS
+#  define getgrgid(gid) getgrgid_nomembers(gid)
+# endif
+# if HAVE_GETGRNAM_NOMEMBERS
+#  define getgrnam(nam) getgrnam_nomembers(nam)
+# endif
+# if HAVE_GETGRENT_NOMEMBERS
+#  define getgrent() getgrent_nomembers()
+# endif
+#endif
+
 #if !HAVE_DECL_GETUID
 uid_t getuid ();
 #endif
@@ -221,7 +241,7 @@ uid_t getuid ();
 #include "verify.h"
 
 /* This is simply a shorthand for the common case in which
-   the third argument to x2nrealloc would be `sizeof *(P)'.
+   the third argument to x2nrealloc would be 'sizeof *(P)'.
    Ensure that sizeof *(P) is *not* 1.  In that case, it'd be
    better to use X2REALLOC, although not strictly necessary.  */
 #define X2NREALLOC(P, PN) ((void) verify_true (sizeof *(P) != 1), \
@@ -252,7 +272,7 @@ dot_or_dotdot (char const *file_name)
     return false;
 }
 
-/* A wrapper for readdir so that callers don't see entries for `.' or `..'.  */
+/* A wrapper for readdir so that callers don't see entries for '.' or '..'.  */
 static inline struct dirent const *
 readdir_ignoring_dot_and_dotdot (DIR *dirp)
 {
@@ -310,7 +330,7 @@ enum
 #define GETOPT_VERSION_OPTION_DECL \
   "version", no_argument, NULL, GETOPT_VERSION_CHAR
 #define GETOPT_SELINUX_CONTEXT_OPTION_DECL \
-  "context", required_argument, NULL, 'Z'
+  "context", optional_argument, NULL, 'Z'
 
 #define case_GETOPT_HELP_CHAR			\
   case GETOPT_HELP_CHAR:			\
@@ -388,7 +408,7 @@ enum
 # define PID_T_MAX TYPE_MAXIMUM (pid_t)
 #endif
 
-/* Use this to suppress gcc's `...may be used before initialized' warnings. */
+/* Use this to suppress gcc's '...may be used before initialized' warnings. */
 #ifdef lint
 # define IF_LINT(Code) Code
 #else
@@ -403,10 +423,6 @@ enum
 
 #ifndef ATTRIBUTE_NORETURN
 # define ATTRIBUTE_NORETURN __attribute__ ((__noreturn__))
-#endif
-
-#ifndef ATTRIBUTE_UNUSED
-# define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
 #endif
 
 /* The warn_unused_result attribute appeared first in gcc-3.4.0 */
@@ -476,6 +492,30 @@ ptr_align (void const *ptr, size_t alignment)
   return (void *) (p1 - (size_t) p1 % alignment);
 }
 
+/* Return whether the buffer consists entirely of NULs.
+   Note the word after the buffer must be non NUL. */
+
+static inline bool _GL_ATTRIBUTE_PURE
+is_nul (void const *buf, size_t bufsize)
+{
+  typedef uintptr_t word;
+  void const *vp;
+  char const *cbuf = buf;
+  word const *wp = buf;
+
+  /* Find first nonzero *word*, or the word with the sentinel.  */
+  while (*wp++ == 0)
+    continue;
+
+  /* Find the first nonzero *byte*, or the sentinel.  */
+  vp = wp - 1;
+  char const *cp = vp;
+  while (*cp++ == 0)
+    continue;
+
+  return cbuf + bufsize < cp;
+}
+
 /* If 10*Accum + Digit_val is larger than the maximum value for Type,
    then don't update Accum and return false to indicate it would
    overflow.  Otherwise, set Accum to that new value and return true.
@@ -498,11 +538,19 @@ ptr_align (void const *ptr, size_t alignment)
   )
 
 static inline void
+emit_mandatory_arg_note (void)
+{
+  fputs (_("\n\
+Mandatory arguments to long options are mandatory for short options too.\n\
+"), stdout);
+}
+
+static inline void
 emit_size_note (void)
 {
   fputs (_("\n\
-SIZE may be (or may be an integer optionally followed by) one of following:\n\
-KB 1000, K 1024, MB 1000*1000, M 1024*1024, and so on for G, T, P, E, Z, Y.\n\
+The SIZE argument is an integer and optional unit (example: 10K is 10*1024).\n\
+Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).\n\
 "), stdout);
 }
 
@@ -519,11 +567,7 @@ Otherwise, units default to 1024 bytes (or 512 if POSIXLY_CORRECT is set).\n\
 static inline void
 emit_ancillary_info (void)
 {
-  printf (_("\nReport %s bugs to %s\n"), last_component (program_name),
-          PACKAGE_BUGREPORT);
-  printf (_("%s home page: <%s>\n"), PACKAGE_NAME, PACKAGE_URL);
-  fputs (_("General help using GNU software: <http://www.gnu.org/gethelp/>\n"),
-         stdout);
+  printf (_("\n%s online help: <%s>\n"), PACKAGE_NAME, PACKAGE_URL);
   /* Don't output this redundant message for English locales.
      Note we still output for 'C' so that it gets included in the man page.  */
   const char *lc_messages = setlocale (LC_MESSAGES, NULL);
@@ -539,6 +583,12 @@ emit_ancillary_info (void)
     }
   printf (_("For complete documentation, run: "
             "info coreutils '%s invocation'\n"), last_component (program_name));
+}
+
+static inline void
+emit_try_help (void)
+{
+  fprintf (stderr, _("Try '%s --help' for more information.\n"), program_name);
 }
 
 #include "inttostr.h"
@@ -557,7 +607,25 @@ bad_cast (char const *s)
   return (char *) s;
 }
 
+/* Return a boolean indicating whether SB->st_size is defined.  */
+static inline bool
+usable_st_size (struct stat const *sb)
+{
+  return (S_ISREG (sb->st_mode) || S_ISLNK (sb->st_mode)
+          || S_TYPEISSHM (sb) || S_TYPEISTMO (sb));
+}
+
 void usage (int status) ATTRIBUTE_NORETURN;
+
+/* Like error(0, 0, ...), but without an implicit newline.
+   Also a noop unless the global DEV_DEBUG is set.  */
+#define devmsg(...)			\
+  do					\
+    {					\
+      if (dev_debug)			\
+        fprintf (stderr, __VA_ARGS__);	\
+    }					\
+  while (0)
 
 #define emit_cycle_warning(file_name)	\
   do					\
@@ -571,6 +639,27 @@ The following directory is part of the cycle:\n  %s\n"), \
     }					\
   while (0)
 
+/* Like stpncpy, but do ensure that the result is NUL-terminated,
+   and do not NUL-pad out to LEN.  I.e., when strnlen (src, len) == len,
+   this function writes a NUL byte into dest[len].  Thus, the length
+   of the destination buffer must be at least LEN + 1.
+   The DEST and SRC buffers must not overlap.  */
+static inline char *
+stzncpy (char *restrict dest, char const *restrict src, size_t len)
+{
+  char const *src_end = src + len;
+  while (src < src_end && *src)
+    *dest++ = *src++;
+  *dest = 0;
+  return dest;
+}
+
 #ifndef ARRAY_CARDINALITY
 # define ARRAY_CARDINALITY(Array) (sizeof (Array) / sizeof *(Array))
 #endif
+
+/* Avoid const warnings by casting to more portable type.
+   This is to cater for the incorrect const function declarations
+   in selinux.h before libselinux-2.3 (May 2014).
+   When version >= 2.3 is ubiquitous remove this function.  */
+static inline char * se_const (char const * sctx) { return (char *) sctx; }

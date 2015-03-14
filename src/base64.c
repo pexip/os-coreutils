@@ -1,5 +1,5 @@
 /* Base64 encode/decode strings or files.
-   Copyright (C) 2004-2011 Free Software Foundation, Inc.
+   Copyright (C) 2004-2014 Free Software Foundation, Inc.
 
    This file is part of Base64.
 
@@ -34,7 +34,7 @@
 
 #include "base64.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "base64"
 
 #define AUTHORS proper_name ("Simon Josefsson")
@@ -54,14 +54,16 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
 Usage: %s [OPTION]... [FILE]\n\
 Base64 encode or decode FILE, or standard input, to standard output.\n\
-\n"), program_name);
+"), program_name);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -d, --decode          decode data\n\
   -i, --ignore-garbage  when decoding, ignore non-alphabet characters\n\
@@ -87,15 +89,16 @@ from any other non-alphabet bytes in the encoded stream.\n"),
   exit (status);
 }
 
+#define ENC_BLOCKSIZE (1024*3*10)
+#define ENC_B64BLOCKSIZE BASE64_LENGTH (ENC_BLOCKSIZE)
 /* Note that increasing this may decrease performance if --ignore-garbage
-   is used, because of the memmove operation below. */
-#define BLOCKSIZE 3072
-#define B64BLOCKSIZE BASE64_LENGTH (BLOCKSIZE)
+   is used, because of the memmove operation below.  */
+#define DEC_BLOCKSIZE (1024*3)
+#define DEC_B64BLOCKSIZE BASE64_LENGTH (DEC_BLOCKSIZE)
 
 /* Ensure that BLOCKSIZE is a multiple of 3 and 4.  */
-#if BLOCKSIZE % 12 != 0
-# error "invalid BLOCKSIZE"
-#endif
+verify (ENC_BLOCKSIZE % 12 == 0);
+verify (DEC_BLOCKSIZE % 12 == 0);
 
 static void
 wrap_write (const char *buffer, size_t len,
@@ -118,7 +121,7 @@ wrap_write (const char *buffer, size_t len,
 
         if (to_write == 0)
           {
-            if (fputs ("\n", out) < 0)
+            if (fputc ('\n', out) == EOF)
               error (EXIT_FAILURE, errno, _("write error"));
             *current_column = 0;
           }
@@ -136,8 +139,8 @@ static void
 do_encode (FILE *in, FILE *out, uintmax_t wrap_column)
 {
   size_t current_column = 0;
-  char inbuf[BLOCKSIZE];
-  char outbuf[B64BLOCKSIZE];
+  char inbuf[ENC_BLOCKSIZE];
+  char outbuf[ENC_B64BLOCKSIZE];
   size_t sum;
 
   do
@@ -147,14 +150,14 @@ do_encode (FILE *in, FILE *out, uintmax_t wrap_column)
       sum = 0;
       do
         {
-          n = fread (inbuf + sum, 1, BLOCKSIZE - sum, in);
+          n = fread (inbuf + sum, 1, ENC_BLOCKSIZE - sum, in);
           sum += n;
         }
-      while (!feof (in) && !ferror (in) && sum < BLOCKSIZE);
+      while (!feof (in) && !ferror (in) && sum < ENC_BLOCKSIZE);
 
       if (sum > 0)
         {
-          /* Process input one block at a time.  Note that BLOCKSIZE %
+          /* Process input one block at a time.  Note that ENC_BLOCKSIZE %
              3 == 0, so that no base64 pads will appear in output. */
           base64_encode (inbuf, sum, outbuf, BASE64_LENGTH (sum));
 
@@ -162,10 +165,10 @@ do_encode (FILE *in, FILE *out, uintmax_t wrap_column)
                       &current_column, out);
         }
     }
-  while (!feof (in) && !ferror (in) && sum == BLOCKSIZE);
+  while (!feof (in) && !ferror (in) && sum == ENC_BLOCKSIZE);
 
   /* When wrapping, terminate last line. */
-  if (wrap_column && current_column > 0 && fputs ("\n", out) < 0)
+  if (wrap_column && current_column > 0 && fputc ('\n', out) == EOF)
     error (EXIT_FAILURE, errno, _("write error"));
 
   if (ferror (in))
@@ -175,8 +178,8 @@ do_encode (FILE *in, FILE *out, uintmax_t wrap_column)
 static void
 do_decode (FILE *in, FILE *out, bool ignore_garbage)
 {
-  char inbuf[B64BLOCKSIZE];
-  char outbuf[BLOCKSIZE];
+  char inbuf[DEC_B64BLOCKSIZE];
+  char outbuf[DEC_BLOCKSIZE];
   size_t sum;
   struct base64_decode_context ctx;
 
@@ -191,7 +194,7 @@ do_decode (FILE *in, FILE *out, bool ignore_garbage)
       sum = 0;
       do
         {
-          n = fread (inbuf + sum, 1, B64BLOCKSIZE - sum, in);
+          n = fread (inbuf + sum, 1, DEC_B64BLOCKSIZE - sum, in);
 
           if (ignore_garbage)
             {
@@ -208,7 +211,7 @@ do_decode (FILE *in, FILE *out, bool ignore_garbage)
           if (ferror (in))
             error (EXIT_FAILURE, errno, _("read error"));
         }
-      while (sum < B64BLOCKSIZE && !feof (in));
+      while (sum < DEC_B64BLOCKSIZE && !feof (in));
 
       /* The following "loop" is usually iterated just once.
          However, when it processes the final input buffer, we want
@@ -218,7 +221,7 @@ do_decode (FILE *in, FILE *out, bool ignore_garbage)
         {
           if (k == 1 && ctx.i == 0)
             break;
-          n = BLOCKSIZE;
+          n = DEC_BLOCKSIZE;
           ok = base64_decode_ctx (&ctx, inbuf, (k == 0 ? sum : 0), outbuf, &n);
 
           if (fwrite (outbuf, 1, n, out) < n)

@@ -1,5 +1,5 @@
 /* printenv -- print all or part of environment
-   Copyright (C) 1989-1997, 1999-2005, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 1989-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 /* Exit status for syntax errors, etc.  */
 enum { PRINTENV_FAILURE = 2 };
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "printenv"
 
 #define AUTHORS \
@@ -56,8 +56,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -68,7 +67,7 @@ If no VARIABLE is specified, print name and value pairs for them all.\n\
 "),
               program_name);
       fputs (_("\
-  -0, --null     end each output line with 0 byte rather than newline\n\
+  -0, --null     end each output line with NUL, not newline\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);

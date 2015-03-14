@@ -1,5 +1,5 @@
 /* runcon -- run command with specified security context
-   Copyright (C) 2005-2011 Free Software Foundation, Inc.
+   Copyright (C) 2005-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,9 +15,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /*
- * runcon [ context |
- *         ( [ -c ] [ -r role ] [-t type] [ -u user ] [ -l levelrange ] )
- *         command [arg1 [arg2 ...] ]
+ * runcon [ context
+ *          | ( [ -c ] [ -r role ] [-t type] [ -u user ] [ -l levelrange ] )
+ *          command [arg1 [arg2 ...] ]
  *
  * attempt to run the specified command with the specified context.
  *
@@ -56,7 +56,7 @@
 #include "quote.h"
 #include "quotearg.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "runcon"
 
 #define AUTHORS proper_name ("Russell Coker")
@@ -77,8 +77,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -86,9 +85,13 @@ Usage: %s CONTEXT COMMAND [args]\n\
   or:  %s [ -c ] [-u USER] [-r ROLE] [-t TYPE] [-l RANGE] COMMAND [args]\n\
 "), program_name, program_name);
       fputs (_("\
-Run a program in a different security context.\n\
+Run a program in a different SELinux security context.\n\
 With neither CONTEXT nor COMMAND, print the current security context.\n\
-\n\
+"), stdout);
+
+      emit_mandatory_arg_note ();
+
+      fputs (_("\
   CONTEXT            Complete security context\n\
   -c, --compute      compute process transition context before modifying\n\
   -t, --type=TYPE    type (for same role as parent)\n\
@@ -112,9 +115,9 @@ main (int argc, char **argv)
   char *user = NULL;
   char *type = NULL;
   char *context = NULL;
-  security_context_t cur_context = NULL;
-  security_context_t file_context = NULL;
-  security_context_t new_context = NULL;
+  char *cur_context = NULL;
+  char *file_context = NULL;
+  char *new_context = NULL;
   bool compute_trans = false;
 
   context_t con;
@@ -194,8 +197,8 @@ main (int argc, char **argv)
     }
 
   if (is_selinux_enabled () != 1)
-    error (EXIT_FAILURE, 0,
-           _("%s may be used only on a SELinux kernel"), program_name);
+    error (EXIT_FAILURE, 0, _("%s may be used only on a SELinux kernel"),
+           program_name);
 
   if (context)
     {
@@ -220,8 +223,7 @@ main (int argc, char **argv)
           /* compute result of process transition */
           if (security_compute_create (cur_context, file_context,
                                        SECCLASS_PROCESS, &new_context) != 0)
-            error (EXIT_FAILURE, errno,
-                   _("failed to compute a new context"));
+            error (EXIT_FAILURE, errno, _("failed to compute a new context"));
           /* free contexts */
           freecon (file_context);
           freecon (cur_context);

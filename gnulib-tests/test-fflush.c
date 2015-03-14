@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of POSIX compatible fflush() function.
-   Copyright (C) 2007, 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +26,10 @@
 #include "signature.h"
 SIGNATURE_CHECK (fflush, int, (FILE *));
 
+#include <errno.h>
 #include <unistd.h>
+
+#include "macros.h"
 
 int
 main (void)
@@ -48,6 +49,7 @@ main (void)
 
   /* Test fflush.  */
   f = fopen ("test-fflush.txt", "r");
+  ASSERT (f != NULL);
   fd = fileno (f);
   if (!f || 0 > fd || fread (buffer, 1, 5, f) != 5)
     {
@@ -143,6 +145,47 @@ main (void)
       return 1;
     }
   fclose (f);
+
+  /* Test that fflush() sets errno if someone else closes the stream
+     fd behind the back of stdio.  */
+  {
+    FILE *fp = fopen ("test-fflush.txt", "w");
+    ASSERT (fp != NULL);
+    fputc ('x', fp);
+    ASSERT (close (fileno (fp)) == 0);
+    errno = 0;
+    ASSERT (fflush (fp) == EOF);
+    ASSERT (errno == EBADF);
+    fclose (fp);
+  }
+
+  /* Test that fflush() sets errno if the stream was constructed with
+     an invalid file descriptor.  */
+  {
+    FILE *fp = fdopen (-1, "w");
+    if (fp != NULL)
+      {
+        fputc ('x', fp);
+        errno = 0;
+        ASSERT (fflush (fp) == EOF);
+        ASSERT (errno == EBADF);
+      }
+  }
+  {
+    FILE *fp;
+    close (99);
+    fp = fdopen (99, "w");
+    if (fp != NULL)
+      {
+        fputc ('x', fp);
+        errno = 0;
+        ASSERT (fflush (fp) == EOF);
+        ASSERT (errno == EBADF);
+      }
+  }
+
+  /* Clean up.  */
   unlink ("test-fflush.txt");
+
   return 0;
 }

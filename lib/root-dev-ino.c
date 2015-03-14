@@ -1,5 +1,5 @@
-/* root-dev-ino.c -- get the device and inode numbers for `/'.
-   Copyright (C) 2003, 2005-2006, 2009-2011 Free Software Foundation, Inc.
+/* root-dev-ino.c -- get the device and inode numbers for '/'.
+   Copyright (C) 2003-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-/* Call lstat to get the device and inode numbers for `/'.
+/* Call lstat to get the device and inode numbers for '/'.
    Upon failure, return NULL.  Otherwise, set the members of
    *ROOT_D_I accordingly and return ROOT_D_I.  */
 struct dev_ino *

@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of lseek() function.
-   Copyright (C) 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 2007-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -83,12 +81,25 @@ main (int argc, char **argv)
          invoking shell are not enough on HP-UX.  */
       close (0);
       close (1);
+
       errno = 0;
       ASSERT (lseek (0, (off_t)0, SEEK_CUR) == -1);
       ASSERT (errno == EBADF);
+
       errno = 0;
       ASSERT (lseek (1, (off_t)0, SEEK_CUR) == -1);
       ASSERT (errno == EBADF);
+
+      /* Test behaviour for invalid file descriptors.  */
+      errno = 0;
+      ASSERT (lseek (-1, (off_t)0, SEEK_CUR) == -1);
+      ASSERT (errno == EBADF);
+
+      close (99);
+      errno = 0;
+      ASSERT (lseek (99, (off_t)0, SEEK_CUR) == -1);
+      ASSERT (errno == EBADF);
+
       break;
 
     default:

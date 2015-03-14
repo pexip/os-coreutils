@@ -1,5 +1,5 @@
 /* nohup -- run a command immune to hangups, with output to a non-tty
-   Copyright (C) 2003-2005, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 2003-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 /* Exit statuses.  */
 enum
   {
-    /* `nohup' itself failed.  */
+    /* 'nohup' itself failed.  */
     POSIX_NOHUP_FAILURE = 127
   };
 
@@ -47,8 +47,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -65,10 +64,10 @@ Run COMMAND, ignoring hangup signals.\n\
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       printf (_("\n\
 If standard input is a terminal, redirect it from /dev/null.\n\
-If standard output is a terminal, append output to `nohup.out' if possible,\n\
-`$HOME/nohup.out' otherwise.\n\
+If standard output is a terminal, append output to 'nohup.out' if possible,\n\
+'$HOME/nohup.out' otherwise.\n\
 If standard error is a terminal, redirect it to standard output.\n\
-To save output to FILE, use `%s COMMAND > FILE'.\n"),
+To save output to FILE, use '%s COMMAND > FILE'.\n"),
               program_name);
       printf (USAGE_BUILTIN_WARNING, PROGRAM_NAME);
       emit_ancillary_info ();

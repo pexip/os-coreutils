@@ -1,5 +1,5 @@
 /* kill -- send a signal to a process
-   Copyright (C) 2002-2005, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2002-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include "sig2str.h"
 #include "operand2sig.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "kill"
 
 #define AUTHORS proper_name ("Paul Eggert")
@@ -70,8 +70,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -82,11 +81,10 @@ Usage: %s [-s SIGNAL | -SIGNAL] PID...\n\
               program_name, program_name, program_name);
       fputs (_("\
 Send signals to processes, or list signals.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -s, --signal=SIGNAL, -SIGNAL\n\
                    specify the name or number of the signal to be sent\n\
@@ -96,7 +94,7 @@ Mandatory arguments to long options are mandatory for short options too.\n\
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       fputs (_("\n\
-SIGNAL may be a signal name like `HUP', or a signal number like `1',\n\
+SIGNAL may be a signal name like 'HUP', or a signal number like '1',\n\
 or the exit status of a process terminated by a signal.\n\
 PID is an integer; if negative it identifies a process group.\n\
 "), stdout);
@@ -106,7 +104,7 @@ PID is an integer; if negative it identifies a process group.\n\
   exit (status);
 }
 
-/* Print a row of `kill -t' output.  NUM_WIDTH is the maximum signal
+/* Print a row of 'kill -t' output.  NUM_WIDTH is the maximum signal
    number width, and SIGNUM is the signal number to print.  The
    maximum name width is NAME_WIDTH, and SIGNAME is the name to print.  */
 
@@ -308,7 +306,7 @@ main (int argc, char **argv)
       usage (EXIT_FAILURE);
     }
 
-  return (list
-          ? list_signals (table, optind < argc ? argv + optind : NULL)
-          : send_signals (signum, argv + optind));
+  exit (list
+        ? list_signals (table, optind < argc ? argv + optind : NULL)
+        : send_signals (signum, argv + optind));
 }

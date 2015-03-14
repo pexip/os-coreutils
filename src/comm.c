@@ -1,6 +1,5 @@
 /* comm -- compare two sorted files line by line.
-   Copyright (C) 1986, 1990-1991, 1995-2005, 2008-2011 Free Software
-   Foundation, Inc.
+   Copyright (C) 1986-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +30,7 @@
 #include "memcmp2.h"
 #include "xmemcoll.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "comm"
 
 #define AUTHORS \
@@ -98,8 +97,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -134,7 +132,7 @@ and column three contains lines common to both files.\n\
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       fputs (_("\
 \n\
-Note, comparisons honor the rules specified by `LC_COLLATE'.\n\
+Note, comparisons honor the rules specified by 'LC_COLLATE'.\n\
 "), stdout);
       printf (_("\
 \n\
@@ -195,7 +193,7 @@ writeline (struct linebuffer const *line, FILE *stream, int class)
 
    A message is printed at most once per input file.
 
-   This funtion was copied (nearly) verbatim from `src/join.c'. */
+   This function was copied (nearly) verbatim from 'src/join.c'. */
 
 static void
 check_order (struct linebuffer const *prev,

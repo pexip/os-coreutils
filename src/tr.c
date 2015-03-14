@@ -1,5 +1,5 @@
 /* tr -- a filter to translate characters
-   Copyright (C) 1991, 1995-2011 Free Software Foundation, Inc.
+   Copyright (C) 1991-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 #include "xfreopen.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "tr"
 
 #define AUTHORS proper_name ("Jim Meyering")
@@ -101,7 +101,7 @@ enum Range_element_type
    For example, consider the POSIX version of the classic tr command:
        tr -cs 'a-zA-Z_' '[\n*]'
    String1 has 3 constructs, two of which are ranges (a-z and A-Z),
-   and a single normal character, `_'.  String2 has one construct.  */
+   and a single normal character, '_'.  String2 has one construct.  */
 struct List_element
   {
     enum Range_element_type type;
@@ -133,9 +133,9 @@ struct List_element
    the corresponding argument string.  The attributes are used mainly
    to verify that the strings are valid in the context of any options
    specified (like -s, -d, or -c).  The main exception is the member
-   `tail', which is first used to construct the list.  After construction,
+   'tail', which is first used to construct the list.  After construction,
    it is used by get_next to save its state when traversing the list.
-   The member `state' serves a similar function.  */
+   The member 'state' serves a similar function.  */
 struct Spec_list
   {
     /* Points to the head of the list of range elements.
@@ -248,13 +248,13 @@ static char const *const char_class_name[] =
   "lower", "print", "punct", "space", "upper", "xdigit"
 };
 
-/* Array of boolean values.  A character `c' is a member of the
+/* Array of boolean values.  A character 'c' is a member of the
    squeeze set if and only if in_squeeze_set[c] is true.  The squeeze
    set is defined by the last (possibly, the only) string argument
    on the command line when the squeeze option is given.  */
 static bool in_squeeze_set[N_CHARS];
 
-/* Array of boolean values.  A character `c' is a member of the
+/* Array of boolean values.  A character 'c' is a member of the
    delete set if and only if in_delete_set[c] is true.  The delete
    set is defined by the first (or only) string argument on the
    command line when the delete option is given.  */
@@ -280,8 +280,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -507,8 +506,8 @@ unquote (char const *s, struct E_string *es)
                              lack of clarity as meaning the resulting behavior
                              is undefined, which means we're allowed to issue
                              a warning.  */
-                          error (0, 0, _("warning: the ambiguous octal escape \
-\\%c%c%c is being\n\tinterpreted as the 2-byte sequence \\0%c%c, %c"),
+                          error (0, 0, _("warning: the ambiguous octal escape\
+ \\%c%c%c is being\n\tinterpreted as the 2-byte sequence \\0%c%c, %c"),
                                  s[i], s[i + 1], s[i + 2],
                                  s[i], s[i + 1], s[i + 2]);
                         }
@@ -671,7 +670,7 @@ append_range (struct Spec_list *list, unsigned char first, unsigned char last)
       char *tmp2 = make_printable_char (last);
 
       error (0, 0,
-       _("range-endpoints of `%s-%s' are in reverse collating sequence order"),
+       _("range-endpoints of '%s-%s' are in reverse collating sequence order"),
              tmp1, tmp2);
       free (tmp1);
       free (tmp2);
@@ -784,9 +783,9 @@ find_closing_delim (const struct E_string *es, size_t start_idx,
    beginning with P[ START_IDX ] comprise a valid [c*n] construct,
    then set *CHAR_TO_REPEAT, *REPEAT_COUNT, and *CLOSING_BRACKET_IDX
    and return zero. If the second character following
-   the opening bracket is not `*' or if no closing bracket can be
+   the opening bracket is not '*' or if no closing bracket can be
    found, return -1.  If a closing bracket is found and the
-   second char is `*', but the string between the `*' and `]' isn't
+   second char is '*', but the string between the '*' and ']' isn't
    empty, an octal number, or a decimal number, print an error message
    and return -2.  */
 
@@ -816,7 +815,7 @@ find_bracketed_repeat (const struct E_string *es, size_t start_idx,
           else
             {
               /* Here, we have found [c*s] where s should be a string
-                 of octal (if it starts with `0') or decimal digits.  */
+                 of octal (if it starts with '0') or decimal digits.  */
               char const *digit_str = &es->s[start_idx + 2];
               char *d_end;
               if ((xstrtoumax (digit_str, &d_end, *digit_str == '0' ? 8 : 10,
@@ -841,7 +840,7 @@ find_bracketed_repeat (const struct E_string *es, size_t start_idx,
 }
 
 /* Return true if the string at ES->s[IDX] matches the regular
-   expression `\*[0-9]*\]', false otherwise.  The string does not
+   expression '\*[0-9]*\]', false otherwise.  The string does not
    match if any of its characters are escaped.  */
 
 static bool _GL_ATTRIBUTE_PURE
@@ -861,12 +860,12 @@ star_digits_closebracket (const struct E_string *es, size_t idx)
 /* Convert string UNESCAPED_STRING (which has been preprocessed to
    convert backslash-escape sequences) of length LEN characters into
    a linked list of the following 5 types of constructs:
-      - [:str:] Character class where `str' is one of the 12 valid strings.
-      - [=c=] Equivalence class where `c' is any single character.
-      - [c*n] Repeat the single character `c' `n' times. n may be omitted.
-          However, if `n' is present, it must be a non-negative octal or
+      - [:str:] Character class where 'str' is one of the 12 valid strings.
+      - [=c=] Equivalence class where 'c' is any single character.
+      - [c*n] Repeat the single character 'c' 'n' times. n may be omitted.
+          However, if 'n' is present, it must be a non-negative octal or
           decimal integer.
-      - r-s Range of characters from `r' to `s'.  The second endpoint must
+      - r-s Range of characters from 'r' to 's'.  The second endpoint must
           not precede the first in the current collating sequence.
       - c Any other character is interpreted as itself.  */
 
@@ -880,7 +879,7 @@ build_spec_list (const struct E_string *es, struct Spec_list *result)
 
   /* The main for-loop below recognizes the 4 multi-character constructs.
      A character that matches (in its context) none of the multi-character
-     constructs is classified as `normal'.  Since all multi-character
+     constructs is classified as 'normal'.  Since all multi-character
      constructs have at least 3 characters, any strings of length 2 or
      less are composed solely of normal characters.  Hence, the index of
      the outer for-loop runs only as far as LEN-2.  */
@@ -908,10 +907,10 @@ build_spec_list (const struct E_string *es, struct Spec_list *result)
                   if (opnd_str_len == 0)
                     {
                       if (p[i + 1] == ':')
-                        error (0, 0, _("missing character class name `[::]'"));
+                        error (0, 0, _("missing character class name '[::]'"));
                       else
                         error (0, 0,
-                               _("missing equivalence class character `[==]'"));
+                               _("missing equivalence class character '[==]'"));
                       return false;
                     }
 
@@ -986,8 +985,8 @@ build_spec_list (const struct E_string *es, struct Spec_list *result)
             continue;
 
           /* We reach this point if P does not match [:str:], [=c=],
-             [c*n], or [c*].  Now, see if P looks like a range `[-c'
-             (from `[' to `c').  */
+             [c*n], or [c*].  Now, see if P looks like a range '[-c'
+             (from '[' to 'c').  */
         }
 
       /* Look ahead one char for ranges like a-z.  */
@@ -1021,7 +1020,7 @@ skip_construct (struct Spec_list *s)
 }
 
 /* Given a Spec_list S (with its saved state implicit in the values
-   of its members `tail' and `state'), return the next single character
+   of its members 'tail' and 'state'), return the next single character
    in the expansion of S's constructs.  If the last character of S was
    returned on the previous call or if S was empty, this function
    returns -1.  For example, successive calls to get_next where S
@@ -1182,7 +1181,7 @@ card_of_complement (struct Spec_list *s)
    is problematic when they don't match in some locales.
    Also ensure the case conversion classes in string2 are
    aligned correctly with those in string1.
-   Note POSIX says the behavior of `tr "[:upper:]" "[:upper:]"'
+   Note POSIX says the behavior of 'tr "[:upper:]" "[:upper:]"'
    is undefined.  Therefore we allow it (unlike Solaris)
    and treat it as a no-op.  */
 
@@ -1418,8 +1417,8 @@ string2_extend (const struct Spec_list *s1, struct Spec_list *s2)
          That's not portable however, contradicts POSIX and is dependent
          on your collating sequence.  */
       error (EXIT_FAILURE, 0,
-             _("when translating with string1 longer than string2,\n\
-the latter string must not end with a character class"));
+             _("when translating with string1 longer than string2,\nthe\
+ latter string must not end with a character class"));
       abort (); /* inform gcc that the above use of error never returns. */
       break;
 
@@ -1496,15 +1495,15 @@ validate (struct Spec_list *s1, struct Spec_list *s2)
           if (s2->has_equiv_class)
             {
               error (EXIT_FAILURE, 0,
-                     _("[=c=] expressions may not appear in string2 \
-when translating"));
+                     _("[=c=] expressions may not appear in string2\
+ when translating"));
             }
 
           if (s2->has_restricted_char_class)
             {
               error (EXIT_FAILURE, 0,
-                     _("when translating, the only character classes that may \
-appear in\nstring2 are `upper' and `lower'"));
+                     _("when translating, the only character classes that may\
+ appear in\nstring2 are 'upper' and 'lower'"));
             }
 
           validate_case_classes (s1, s2);
@@ -1536,8 +1535,8 @@ appear in\nstring2 are `upper' and `lower'"));
         {
           if (s2->n_indefinite_repeats > 0)
             error (EXIT_FAILURE, 0,
-                   _("the [c*] construct may appear in string2 only \
-when translating"));
+                   _("the [c*] construct may appear in string2 only\
+ when translating"));
         }
     }
 }
@@ -1688,7 +1687,7 @@ read_and_delete (char *buf, size_t size)
 
 /* Read at most SIZE bytes from stdin into the array BUF.  Then
    perform the in-place and one-to-one mapping specified by the global
-   array `xlate'.  Return the number of characters read, or 0 upon EOF.  */
+   array 'xlate'.  Return the number of characters read, or 0 upon EOF.  */
 
 static size_t
 read_and_xlate (char *buf, size_t size)
@@ -1704,7 +1703,7 @@ read_and_xlate (char *buf, size_t size)
 
 /* Initialize a boolean membership set, IN_SET, with the character
    values obtained by traversing the linked list of constructs S
-   using the function `get_next'.  IN_SET is expected to have been
+   using the function 'get_next'.  IN_SET is expected to have been
    initialized to all zeros by the caller.  If COMPLEMENT_THIS_SET
    is true the resulting set is complemented.  */
 
@@ -1818,7 +1817,7 @@ main (int argc, char **argv)
 
   validate (s1, s2);
 
-  /* Use binary I/O, since `tr' is sometimes used to transliterate
+  /* Use binary I/O, since 'tr' is sometimes used to transliterate
      non-printable characters, or characters which are stripped away
      by text-mode reads (like CR and ^Z).  */
   if (O_BINARY && ! isatty (STDIN_FILENO))

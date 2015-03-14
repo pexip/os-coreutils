@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Self tests for base64.
-   Copyright (C) 2004, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2008-2014 Free Software Foundation, Inc.
    Written by Simon Josefsson.
 
    This program is free software: you can redistribute it and/or modify
@@ -151,6 +149,7 @@ main (void)
   ASSERT (ok);
   ASSERT (len == 7);
   ASSERT (memcmp (out, "abcdefg", len) == 0);
+  free (p);
 
   {
     struct base64_decode_context ctx;
@@ -162,6 +161,7 @@ main (void)
     ASSERT (ok);
     ASSERT (len == strlen (in));
     ASSERT (memcmp (p, in, len) == 0);
+    free (p);
   }
 
   {
@@ -172,24 +172,30 @@ main (void)
     ASSERT (ok);
     ASSERT (len == 9);
     ASSERT (memcmp (p, "abcdefghi", len) == 0);
+    free (p);
 
     base64_decode_ctx_init (&ctx);
 
     ok = base64_decode_alloc_ctx (&ctx, "YW\n", 3, &p, &len);
     ASSERT (ok);
     ASSERT (len == 0);
+    free (p);
 
     ok = base64_decode_alloc_ctx (&ctx, "JjZGVmZ2", 8, &p, &len);
     ASSERT (ok);
     ASSERT (len == 6);
     ASSERT (memcmp (p, "abcdef", len) == 0);
+    free (p);
 
     ok = base64_decode_alloc_ctx (&ctx, "hp", 2, &p, &len);
     ASSERT (ok);
     ASSERT (len == 3);
     ASSERT (memcmp (p, "ghi", len) == 0);
+    free (p);
+
     ok = base64_decode_alloc_ctx (&ctx, "", 0, &p, &len);
     ASSERT (ok);
+    free (p);
   }
 
   {
@@ -201,6 +207,7 @@ main (void)
     ok = base64_decode_alloc_ctx (&ctx, newlineb64, strlen (newlineb64), &p, &len);
     ASSERT (ok);
     ASSERT (len == 0);
+    free (p);
   }
 
   ok = base64_decode_alloc_ctx (NULL, " ! ", 3, &p, &len);

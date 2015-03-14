@@ -1,6 +1,5 @@
 /* echo.c, derived from code echo.c in Bash.
-   Copyright (C) 1987, 1989, 1991-1997, 1999-2005, 2007-2011 Free Software
-   Foundation, Inc.
+   Copyright (C) 1987-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@
 #include <sys/types.h>
 #include "system.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "echo"
 
 #define AUTHORS \
@@ -36,8 +35,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -103,7 +101,7 @@ hextobin (unsigned char c)
 }
 
 /* Print the words in LIST to standard output.  If the first word is
-   `-n', then don't print a trailing newline.  We also support the
+   '-n', then don't print a trailing newline.  We also support the
    echo syntax from Version 9 unix systems. */
 
 int

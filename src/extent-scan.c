@@ -1,5 +1,5 @@
 /* extent-scan.c -- core functions for scanning extents
-   Copyright (C) 2010-2011 Free Software Foundation, Inc.
+   Copyright (C) 2010-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,9 +28,7 @@
 #include "xstrtol.h"
 
 
-/* Work around Linux kernel issues on BTRFS and EXT4 before 2.6.39.
-   FIXME: remove in 2013, or whenever we're pretty confident
-   that the offending, unpatched kernels are no longer in use.  */
+/* Work around Linux kernel issues on BTRFS and EXT4.  */
 static bool
 extent_need_sync (void)
 {
@@ -89,7 +87,7 @@ extern bool
 extent_scan_read (struct extent_scan *scan)
 {
   unsigned int si = 0;
-  struct extent_info *last_ei IF_LINT ( = scan->ext_info);
+  struct extent_info *last_ei = scan->ext_info;
 
   while (true)
     {
@@ -127,17 +125,23 @@ extent_scan_read (struct extent_scan *scan)
 
       assert (scan->ei_count <= SIZE_MAX - fiemap->fm_mapped_extents);
       scan->ei_count += fiemap->fm_mapped_extents;
-      scan->ext_info = xnrealloc (scan->ext_info, scan->ei_count,
-                                  sizeof (struct extent_info));
+      {
+        /* last_ei points into a buffer that may be freed via xnrealloc.
+           Record its offset and adjust after allocation.  */
+        size_t prev_idx = last_ei - scan->ext_info;
+        scan->ext_info = xnrealloc (scan->ext_info, scan->ei_count,
+                                    sizeof (struct extent_info));
+        last_ei = scan->ext_info + prev_idx;
+      }
 
       unsigned int i = 0;
       for (i = 0; i < fiemap->fm_mapped_extents; i++)
         {
-          assert (fm_extents[i].fe_logical <=
-                  OFF_T_MAX - fm_extents[i].fe_length);
+          assert (fm_extents[i].fe_logical
+                  <= OFF_T_MAX - fm_extents[i].fe_length);
 
-          if (si && last_ei->ext_flags ==
-              (fm_extents[i].fe_flags & ~FIEMAP_EXTENT_LAST)
+          if (si && last_ei->ext_flags
+              == (fm_extents[i].fe_flags & ~FIEMAP_EXTENT_LAST)
               && (last_ei->ext_logical + last_ei->ext_length
                   == fm_extents[i].fe_logical))
             {
@@ -147,8 +151,8 @@ extent_scan_read (struct extent_scan *scan)
               last_ei->ext_flags = fm_extents[i].fe_flags;
             }
           else if ((si == 0 && scan->scan_start > fm_extents[i].fe_logical)
-                   || (si && last_ei->ext_logical + last_ei->ext_length >
-                       fm_extents[i].fe_logical))
+                   || (si && (last_ei->ext_logical + last_ei->ext_length
+                              > fm_extents[i].fe_logical)))
             {
               /* BTRFS before 2.6.38 could return overlapping extents
                  for sparse files.  We adjust the returned extents
@@ -212,7 +216,7 @@ extent_scan_read (struct extent_scan *scan)
 }
 #else
 extern bool
-extent_scan_read (struct extent_scan *scan ATTRIBUTE_UNUSED)
+extent_scan_read (struct extent_scan *scan _GL_UNUSED)
 {
   scan->initial_scan_failed = true;
   errno = ENOTSUP;

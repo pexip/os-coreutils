@@ -1,0 +1,19 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 33_chroot_always.dpatch by Michael Stone <mstone@debian.org>
+##
+## DP: revert change that skipped chroot if calling chroot /
+
+@DPATCH@
+diff -urNad '--exclude=CVS' '--exclude=.svn' '--exclude=.git' '--exclude=.arch' '--exclude=.hg' '--exclude=_darcs' '--exclude=.bzr' coreutils-8.23~/src/chroot.c coreutils-8.23/src/chroot.c
+--- coreutils-8.23~/src/chroot.c	2015-03-14 08:08:20.000000000 -0400
++++ coreutils-8.23/src/chroot.c	2015-03-14 08:09:13.219749384 -0400
+@@ -271,7 +271,8 @@
+ 
+   /* Only do chroot specific actions if actually changing root.
+      The main difference here is that we don't change working dir.  */
+-  if (! is_root (argv[optind]))
++  /* (reverted -- run unconditionally) */
++  if (1)
+     {
+       /* We have to look up users and groups twice.
+         - First, outside the chroot to load potentially necessary passwd/group

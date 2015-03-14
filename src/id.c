@@ -1,5 +1,5 @@
 /* id -- print real and effective UIDs and GIDs
-   Copyright (C) 1989-2011 Free Software Foundation, Inc.
+   Copyright (C) 1989-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,16 +30,18 @@
 #include "mgetgroups.h"
 #include "quote.h"
 #include "group-list.h"
+#include "smack.h"
+#include "userspec.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "id"
 
 #define AUTHORS \
   proper_name ("Arnold Robbins"), \
   proper_name ("David MacKenzie")
 
-/* If nonzero, output only the SELinux context. -Z */
-static int just_context = 0;
+/* If nonzero, output only the SELinux context.  */
+static bool just_context = 0;
 
 static void print_user (uid_t uid);
 static void print_full_info (const char *username);
@@ -55,8 +57,8 @@ static gid_t rgid, egid;
 static bool ok = true;
 
 /* The SELinux context.  Start with a known invalid value so print_full_info
-   knows when `context' has not been set to a meaningful value.  */
-static security_context_t context = NULL;
+   knows when 'context' has not been set to a meaningful value.  */
+static char *context = NULL;
 
 static struct option const longopts[] =
 {
@@ -66,6 +68,7 @@ static struct option const longopts[] =
   {"name", no_argument, NULL, 'n'},
   {"real", no_argument, NULL, 'r'},
   {"user", no_argument, NULL, 'u'},
+  {"zero", no_argument, NULL, 'z'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
@@ -75,22 +78,25 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
-      printf (_("Usage: %s [OPTION]... [USERNAME]\n"), program_name);
+      printf (_("Usage: %s [OPTION]... [USER]\n"), program_name);
       fputs (_("\
-Print user and group information for the specified USERNAME,\n\
-or (when USERNAME omitted) for the current user.\n\
-\n\
-  -a              ignore, for compatibility with other versions\n\
-  -Z, --context   print only the security context of the current user\n\
-  -g, --group     print only the effective group ID\n\
-  -G, --groups    print all group IDs\n\
-  -n, --name      print a name instead of a number, for -ugG\n\
-  -r, --real      print the real ID instead of the effective ID, with -ugG\n\
-  -u, --user      print only the effective user ID\n\
+Print user and group information for the specified USER,\n\
+or (when USER omitted) for the current user.\n\
+\n"),
+             stdout);
+      fputs (_("\
+  -a             ignore, for compatibility with other versions\n\
+  -Z, --context  print only the security context of the process\n\
+  -g, --group    print only the effective group ID\n\
+  -G, --groups   print all group IDs\n\
+  -n, --name     print a name instead of a number, for -ugG\n\
+  -r, --real     print the real ID instead of the effective ID, with -ugG\n\
+  -u, --user     print only the effective user ID\n\
+  -z, --zero     delimit entries with NUL characters, not whitespace;\n\
+                   not permitted in default format\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -108,6 +114,9 @@ main (int argc, char **argv)
 {
   int optc;
   int selinux_enabled = (is_selinux_enabled () > 0);
+  bool smack_enabled = is_smack_enabled ();
+  bool opt_zero = false;
+  char *pw_name = NULL;
 
   /* If true, output the list of all group IDs. -G */
   bool just_group_list = false;
@@ -126,7 +135,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((optc = getopt_long (argc, argv, "agnruGZ", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "agnruzGZ", longopts, NULL)) != -1)
     {
       switch (optc)
         {
@@ -135,11 +144,18 @@ main (int argc, char **argv)
           break;
 
         case 'Z':
-          /* politely decline if we're not on a selinux-enabled kernel. */
+          /* politely decline if we're not on a SELinux/SMACK-enabled kernel. */
+#ifdef HAVE_SMACK
+          if (!selinux_enabled && !smack_enabled)
+            error (EXIT_FAILURE, 0,
+                   _("--context (-Z) works only on "
+                     "an SELinux/SMACK-enabled kernel"));
+#else
           if (!selinux_enabled)
             error (EXIT_FAILURE, 0,
                    _("--context (-Z) works only on an SELinux-enabled kernel"));
-          just_context = 1;
+#endif
+          just_context = true;
           break;
 
         case 'g':
@@ -154,6 +170,9 @@ main (int argc, char **argv)
         case 'u':
           just_user = true;
           break;
+        case 'z':
+          opt_zero = true;
+          break;
         case 'G':
           just_group_list = true;
           break;
@@ -164,47 +183,109 @@ main (int argc, char **argv)
         }
     }
 
-  if (1 < argc - optind)
+  size_t n_ids = argc - optind;
+  if (1 < n_ids)
     {
       error (0, 0, _("extra operand %s"), quote (argv[optind + 1]));
       usage (EXIT_FAILURE);
     }
 
-  if (argc - optind == 1 && just_context)
+  if (n_ids && just_context)
     error (EXIT_FAILURE, 0,
            _("cannot print security context when user specified"));
-
-  /* If we are on a selinux-enabled kernel and no user is specified,
-     get our context. Otherwise, leave the context variable alone -
-     it has been initialized known invalid value and will be not
-     displayed in print_full_info() */
-  if (selinux_enabled && argc == optind)
-    {
-      if (getcon (&context) && just_context)
-        error (EXIT_FAILURE, 0, _("can't get process context"));
-    }
 
   if (just_user + just_group + just_group_list + just_context > 1)
     error (EXIT_FAILURE, 0, _("cannot print \"only\" of more than one choice"));
 
-  if (just_user + just_group + just_group_list == 0 && (use_real || use_name))
+  bool default_format = (just_user + just_group + just_group_list
+                         + just_context == 0);
+
+  if (default_format && (use_real || use_name))
     error (EXIT_FAILURE, 0,
            _("cannot print only names or real IDs in default format"));
 
-  if (argc - optind == 1)
+  if (default_format && opt_zero)
+    error (EXIT_FAILURE, 0,
+           _("option --zero not permitted in default format"));
+
+  /* If we are on a SELinux/SMACK-enabled kernel, no user is specified, and
+     either --context is specified or none of (-u,-g,-G) is specified,
+     and we're not in POSIXLY_CORRECT mode, get our context.  Otherwise,
+     leave the context variable alone - it has been initialized to an
+     invalid value that will be not displayed in print_full_info().  */
+  if (n_ids == 0
+      && (just_context
+          || (default_format && ! getenv ("POSIXLY_CORRECT"))))
     {
-      struct passwd *pwd = getpwnam (argv[optind]);
+      /* Report failure only if --context (-Z) was explicitly requested.  */
+      if ((selinux_enabled && getcon (&context) && just_context)
+          || (smack_enabled
+              && smack_new_label_from_self (&context) < 0
+              && just_context))
+        error (EXIT_FAILURE, 0, _("can't get process context"));
+    }
+
+  if (n_ids == 1)
+    {
+      struct passwd *pwd = NULL;
+      const char *spec = argv[optind];
+      /* Disallow an empty spec here as parse_user_spec() doesn't
+         give an error for that as it seems it's a valid way to
+         specify a noop or "reset special bits" depending on the system.  */
+      if (*spec)
+        {
+          if (parse_user_spec (spec, &euid, NULL, NULL, NULL) == NULL)
+            {
+              /* parse_user_spec will only extract a numeric spec,
+                 so we lookup that here to verify and also retrieve
+                 the PW_NAME used subsequently in group lookup.  */
+              pwd = getpwuid (euid);
+            }
+        }
       if (pwd == NULL)
-        error (EXIT_FAILURE, 0, _("%s: No such user"), argv[optind]);
+        error (EXIT_FAILURE, 0, _("%s: no such user"), spec);
+      pw_name = xstrdup (pwd->pw_name);
       ruid = euid = pwd->pw_uid;
       rgid = egid = pwd->pw_gid;
     }
   else
     {
-      euid = geteuid ();
-      ruid = getuid ();
-      egid = getegid ();
-      rgid = getgid ();
+      /* POSIX says identification functions (getuid, getgid, and
+         others) cannot fail, but they can fail under GNU/Hurd and a
+         few other systems.  Test for failure by checking errno.  */
+      uid_t NO_UID = -1;
+      gid_t NO_GID = -1;
+
+      if (just_user ? !use_real
+          : !just_group && !just_group_list && !just_context)
+        {
+          errno = 0;
+          euid = geteuid ();
+          if (euid == NO_UID && errno)
+            error (EXIT_FAILURE, errno, _("cannot get effective UID"));
+        }
+
+      if (just_user ? use_real
+          : !just_group && (just_group_list || !just_context))
+        {
+          errno = 0;
+          ruid = getuid ();
+          if (ruid == NO_UID && errno)
+            error (EXIT_FAILURE, errno, _("cannot get real UID"));
+        }
+
+      if (!just_user && (just_group || just_group_list || !just_context))
+        {
+          errno = 0;
+          egid = getegid ();
+          if (egid == NO_GID && errno)
+            error (EXIT_FAILURE, errno, _("cannot get effective GID"));
+
+          errno = 0;
+          rgid = getgid ();
+          if (rgid == NO_GID && errno)
+            error (EXIT_FAILURE, errno, _("cannot get real GID"));
+        }
     }
 
   if (just_user)
@@ -218,7 +299,8 @@ main (int argc, char **argv)
     }
   else if (just_group_list)
     {
-      if (!print_group_list (argv[optind], ruid, rgid, egid, use_name))
+      if (!print_group_list (pw_name, ruid, rgid, egid, use_name,
+                             opt_zero ? '\0' : ' '))
         ok = false;
     }
   else if (just_context)
@@ -227,12 +309,35 @@ main (int argc, char **argv)
     }
   else
     {
-      print_full_info (argv[optind]);
+      print_full_info (pw_name);
     }
-  putchar ('\n');
+  putchar (opt_zero ? '\0' : '\n');
 
+  IF_LINT (free (pw_name));
   exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
+
+/* Convert a gid_t to string.  Do not use this function directly.
+   Instead, use it via the gidtostr macro.
+   Beware that it returns a pointer to static storage.  */
+static char *
+gidtostr_ptr (gid_t const *gid)
+{
+  static char buf[INT_BUFSIZE_BOUND (uintmax_t)];
+  return umaxtostr (*gid, buf);
+}
+#define gidtostr(g) gidtostr_ptr (&(g))
+
+/* Convert a uid_t to string.  Do not use this function directly.
+   Instead, use it via the uidtostr macro.
+   Beware that it returns a pointer to static storage.  */
+static char *
+uidtostr_ptr (uid_t const *uid)
+{
+  static char buf[INT_BUFSIZE_BOUND (uintmax_t)];
+  return umaxtostr (*uid, buf);
+}
+#define uidtostr(u) uidtostr_ptr (&(u))
 
 /* Print the name or value of user ID UID. */
 
@@ -246,16 +351,14 @@ print_user (uid_t uid)
       pwd = getpwuid (uid);
       if (pwd == NULL)
         {
-          error (0, 0, _("cannot find name for user ID %lu"),
-                 (unsigned long int) uid);
+          error (0, 0, _("cannot find name for user ID %s"),
+                 uidtostr (uid));
           ok = false;
         }
     }
 
-  if (pwd == NULL)
-    printf ("%lu", (unsigned long int) uid);
-  else
-    printf ("%s", pwd->pw_name);
+  char *s = pwd ? pwd->pw_name : uidtostr (uid);
+  fputs (s, stdout);
 }
 
 /* Print all of the info about the user's user and group IDs. */
@@ -266,19 +369,19 @@ print_full_info (const char *username)
   struct passwd *pwd;
   struct group *grp;
 
-  printf (_("uid=%lu"), (unsigned long int) ruid);
+  printf (_("uid=%s"), uidtostr (ruid));
   pwd = getpwuid (ruid);
   if (pwd)
     printf ("(%s)", pwd->pw_name);
 
-  printf (_(" gid=%lu"), (unsigned long int) rgid);
+  printf (_(" gid=%s"), gidtostr (rgid));
   grp = getgrgid (rgid);
   if (grp)
     printf ("(%s)", grp->gr_name);
 
   if (euid != ruid)
     {
-      printf (_(" euid=%lu"), (unsigned long int) euid);
+      printf (_(" euid=%s"), uidtostr (euid));
       pwd = getpwuid (euid);
       if (pwd)
         printf ("(%s)", pwd->pw_name);
@@ -286,7 +389,7 @@ print_full_info (const char *username)
 
   if (egid != rgid)
     {
-      printf (_(" egid=%lu"), (unsigned long int) egid);
+      printf (_(" egid=%s"), gidtostr (egid));
       grp = getgrgid (egid);
       if (grp)
         printf ("(%s)", grp->gr_name);
@@ -296,19 +399,20 @@ print_full_info (const char *username)
     gid_t *groups;
     int i;
 
-    int n_groups = xgetgroups (username, (pwd ? pwd->pw_gid : (gid_t) -1),
-                               &groups);
+    gid_t primary_group;
+    if (username)
+      primary_group = pwd ? pwd->pw_gid : -1;
+    else
+      primary_group = egid;
+
+    int n_groups = xgetgroups (username, primary_group, &groups);
     if (n_groups < 0)
       {
         if (username)
-          {
-            error (0, errno, _("failed to get groups for user %s"),
-                   quote (username));
-          }
+          error (0, errno, _("failed to get groups for user %s"),
+                 quote (username));
         else
-          {
-            error (0, errno, _("failed to get groups for the current process"));
-          }
+          error (0, errno, _("failed to get groups for the current process"));
         ok = false;
         return;
       }
@@ -319,7 +423,7 @@ print_full_info (const char *username)
       {
         if (i > 0)
           putchar (',');
-        printf ("%lu", (unsigned long int) groups[i]);
+        fputs (gidtostr (groups[i]), stdout);
         grp = getgrgid (groups[i]);
         if (grp)
           printf ("(%s)", grp->gr_name);
@@ -329,6 +433,6 @@ print_full_info (const char *username)
 
   /* POSIX mandates the precise output format, and that it not include
      any context=... part, so skip that if POSIXLY_CORRECT is set.  */
-  if (context != NULL && ! getenv ("POSIXLY_CORRECT"))
+  if (context)
     printf (_(" context=%s"), context);
 }
