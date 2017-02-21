@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of signbit() substitute.
-   Copyright (C) 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 2007-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,6 +29,7 @@
 #include <limits.h>
 
 #include "minus-zero.h"
+#include "infinity.h"
 #include "macros.h"
 
 float zerof = 0.0f;
@@ -54,8 +53,8 @@ test_signbitf ()
   else
     ASSERT (!signbit (minus_zerof));
   /* Infinite values.  */
-  ASSERT (!signbit (1.0f / 0.0f));
-  ASSERT (signbit (-1.0f / 0.0f));
+  ASSERT (!signbit (Infinityf ()));
+  ASSERT (signbit (- Infinityf ()));
   /* Quiet NaN.  */
   (void) signbit (zerof / zerof);
 #if defined FLT_EXPBIT0_WORD && defined FLT_EXPBIT0_BIT
@@ -99,8 +98,8 @@ test_signbitd ()
   else
     ASSERT (!signbit (minus_zerod));
   /* Infinite values.  */
-  ASSERT (!signbit (1.0 / 0.0));
-  ASSERT (signbit (-1.0 / 0.0));
+  ASSERT (!signbit (Infinityd ()));
+  ASSERT (signbit (- Infinityd ()));
   /* Quiet NaN.  */
   (void) signbit (zerod / zerod);
 #if defined DBL_EXPBIT0_WORD && defined DBL_EXPBIT0_BIT
@@ -142,8 +141,8 @@ test_signbitl ()
   else
     ASSERT (!signbit (minus_zerol));
   /* Infinite values.  */
-  ASSERT (!signbit (1.0L / 0.0L));
-  ASSERT (signbit (-1.0L / 0.0L));
+  ASSERT (!signbit (Infinityl ()));
+  ASSERT (signbit (- Infinityl ()));
   /* Quiet NaN.  */
   (void) signbit (zerol / zerol);
 #if defined LDBL_EXPBIT0_WORD && defined LDBL_EXPBIT0_BIT
@@ -152,6 +151,16 @@ test_signbitl ()
     #define NWORDS \
       ((sizeof (long double) + sizeof (unsigned int) - 1) / sizeof (unsigned int))
     typedef union { long double value; unsigned int word[NWORDS]; } memory_long_double;
+
+#if defined __powerpc__ && LDBL_MANT_DIG == 106
+    /* This is PowerPC "double double", a pair of two doubles.  Inf and Nan are
+       represented as the corresponding 64-bit IEEE values in the first double;
+       the second is ignored.  Manipulate only the first double.  */
+    #undef NWORDS
+    #define NWORDS \
+      ((sizeof (double) + sizeof (unsigned int) - 1) / sizeof (unsigned int))
+#endif
+
     memory_long_double m;
     m.value = zerol / zerol;
 # if LDBL_EXPBIT0_BIT > 0

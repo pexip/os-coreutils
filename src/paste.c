@@ -1,5 +1,5 @@
 /* paste - merge lines of files
-   Copyright (C) 1997-2005, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 1997-2014 Free Software Foundation, Inc.
    Copyright (C) 1984 David M. Ihnat
 
    This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@
                                 DELIM-LIST instead of tab to separate
                                 merged lines.  When DELIM-LIST is exhausted,
                                 start again at its beginning.
-   A FILE of `-' means standard input.
+   A FILE of '-' means standard input.
    If no FILEs are given, standard input is used. */
 
 #include <config.h>
@@ -45,7 +45,7 @@
 #include "fadvise.h"
 #include "quotearg.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "paste"
 
 #define AUTHORS \
@@ -62,10 +62,10 @@ static bool have_read_stdin;
    corresponding lines from each file in parallel. */
 static bool serial_merge;
 
-/* The delimeters between lines of input files (used cyclically). */
+/* The delimiters between lines of input files (used cyclically). */
 static char *delims;
 
-/* A pointer to the character after the end of `delims'. */
+/* A pointer to the character after the end of 'delims'. */
 static char const *delim_end;
 
 static struct option const longopts[] =
@@ -228,7 +228,7 @@ paste_parallel (size_t nfiles, char **fnamptr)
       /* Set up for the next line. */
       bool somedone = false;
       char const *delimptr = delims;
-      size_t delims_saved = 0;	/* Number of delims saved in `delbuf'. */
+      size_t delims_saved = 0;	/* Number of delims saved in 'delbuf'. */
       size_t i;
 
       for (i = 0; i < nfiles && files_open; i++)
@@ -302,7 +302,7 @@ paste_parallel (size_t nfiles, char **fnamptr)
                 }
               else
                 {
-                  /* Closed file; add delimiter to `delbuf'. */
+                  /* Closed file; add delimiter to 'delbuf'. */
                   if (*delimptr != EMPTY_DELIM)
                     delbuf[delims_saved++] = *delimptr;
                   if (++delimptr == delim_end)
@@ -378,10 +378,10 @@ paste_serial (size_t nfiles, char **fnamptr)
       saved_errno = errno;
       if (charold != EOF)
         {
-          /* `charold' is set up.  Hit it!
-             Keep reading characters, stashing them in `charnew';
-             output `charold', converting to the appropriate delimiter
-             character if needed.  After the EOF, output `charold'
+          /* 'charold' is set up.  Hit it!
+             Keep reading characters, stashing them in 'charnew';
+             output 'charold', converting to the appropriate delimiter
+             character if needed.  After the EOF, output 'charold'
              if it's a newline; otherwise, output it and then a newline. */
 
           while ((charnew = getc (fileptr)) != EOF)
@@ -429,8 +429,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -441,11 +440,10 @@ Usage: %s [OPTION]... [FILE]...\n\
 Write lines consisting of the sequentially corresponding lines from\n\
 each FILE, separated by TABs, to standard output.\n\
 With no FILE, or when FILE is -, read standard input.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -d, --delimiters=LIST   reuse characters from LIST instead of TABs\n\
   -s, --serial            paste one file at a time instead of in parallel\n\

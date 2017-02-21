@@ -1,5 +1,5 @@
 /* yes - output a string repeatedly until killed
-   Copyright (C) 1991-1997, 1999-2004, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 1991-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include "error.h"
 #include "long-options.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "yes"
 
 #define AUTHORS proper_name ("David MacKenzie")
@@ -35,8 +35,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -46,7 +45,7 @@ Usage: %s [STRING]...\n\
               program_name, program_name);
 
       fputs (_("\
-Repeatedly output a line with all specified STRING(s), or `y'.\n\
+Repeatedly output a line with all specified STRING(s), or 'y'.\n\
 \n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);

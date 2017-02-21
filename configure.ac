@@ -1,7 +1,7 @@
 # -*- autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (C) 1991, 1993-2011 Free Software Foundation, Inc.
+# Copyright (C) 1991-2014 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,8 +32,23 @@ AC_CONFIG_SRCDIR([src/ls.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([lib/config.h:lib/config.hin])
 
-AM_INIT_AUTOMAKE([1.11.1 dist-xz color-tests parallel-tests])
+AM_INIT_AUTOMAKE([1.11.2 no-dist-gzip dist-xz color-tests parallel-tests
+                  subdir-objects])
 AM_SILENT_RULES([yes]) # make --enable-silent-rules the default.
+
+dnl POSIXCHECK is worthwhile for maintainers, but adds several seconds
+dnl (more than 10% execution time) to ./configure, with no benefit for
+dnl most users.  Using it to look for bugs requires:
+dnl   GNULIB_POSIXCHECK=1 autoreconf -f
+dnl   ./configure
+dnl   make
+dnl   make -C src clean
+dnl   make CFLAGS=-DGNULIB_POSIXCHECK=1
+dnl FIXME: Once we figure out how to avoid false positives, we should
+dnl have 'make my-distcheck' in dist-check.mk exercise this.
+m4_syscmd([test "${GNULIB_POSIXCHECK+set}" = set])
+m4_if(m4_sysval, [0], [], [dnl
+gl_ASSERT_NO_GNULIB_POSIXCHECK])
 
 AC_PROG_CC_STDC
 AM_PROG_CC_C_O
@@ -45,15 +60,49 @@ gl_EARLY
 gl_INIT
 coreutils_MACROS
 
+# The test suite needs to know if we have a working perl.
+# FIXME: this is suboptimal.  Ideally, we would be able to call gl_PERL
+# with an ACTION-IF-NOT-FOUND argument ...
+cu_have_perl=yes
+case $PERL in *"/missing "*) cu_have_perl=no;; esac
+AM_CONDITIONAL([HAVE_PERL], [test $cu_have_perl = yes])
+
+# gl_GCC_VERSION_IFELSE([major], [minor], [run-if-found], [run-if-not-found])
+# ------------------------------------------------
+# If $CPP is gcc-MAJOR.MINOR or newer, then run RUN-IF-FOUND.
+# Otherwise, run RUN-IF-NOT-FOUND.
+AC_DEFUN([gl_GCC_VERSION_IFELSE],
+  [AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[
+#if ($1) < __GNUC__ || (($1) == __GNUC__ && ($2) <= __GNUC_MINOR__)
+/* ok */
+#else
+# error "your version of gcc is older than $1.$2"
+#endif
+      ]]),
+    ], [$3], [$4])
+  ]
+)
+
 AC_ARG_ENABLE([gcc-warnings],
   [AS_HELP_STRING([--enable-gcc-warnings],
-                  [turn on lots of GCC warnings (for developers)])],
+     [turn on many GCC warnings (for developers; best with GNU make)])],
   [case $enableval in
      yes|no) ;;
      *)      AC_MSG_ERROR([bad value $enableval for gcc-warnings option]) ;;
    esac
    gl_gcc_warnings=$enableval],
-  [gl_gcc_warnings=no]
+  [
+   # GCC provides fine-grained control over diagnostics which
+   # is used in gnulib for example to suppress warnings from
+   # certain sections of code.  So if this is available and
+   # we're running from a git repo, then auto enable the warnings.
+   gl_gcc_warnings=no
+   gl_GCC_VERSION_IFELSE([4], [6],
+                         [test -d "$srcdir"/.git \
+                          && ! test -f "$srcdir"/.tarball-version \
+                          && gl_gcc_warnings=yes])]
 )
 
 if test "$gl_gcc_warnings" = yes; then
@@ -76,7 +125,7 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wunreachable-code"       # Too many warnings for now
   nw="$nw -Wpadded"                 # Our structs are not padded
   nw="$nw -Wredundant-decls"        # openat.h declares e.g., mkdirat
-  nw="$nw -Wlogical-op"             # any use of fwrite provokes this
+  nw="$nw -Wlogical-op"             # Too many warnings until GCC 4.8.0
   nw="$nw -Wformat-nonliteral"      # who.c and pinky.c strftime uses
   nw="$nw -Wvla"                    # warnings in gettext.h
   nw="$nw -Wnested-externs"         # use of XARGMATCH/verify_function__
@@ -88,6 +137,7 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wmissing-format-attribute" # copy.c
   nw="$nw -Wunsafe-loop-optimizations" # a few src/*.c
   nw="$nw -Winline"                 # system.h's readdir_ignoring_dot_and_dotdot
+  nw="$nw -Wsuggest-attribute=format" # warns about copy.c and factor.c
 
   # Using -Wstrict-overflow is a pain, but the alternative is worse.
   # For an example, see the code that provoked this report:
@@ -101,13 +151,27 @@ if test "$gl_gcc_warnings" = yes; then
   done
   gl_WARN_ADD([-Wno-sign-compare])     # Too many warnings for now
   gl_WARN_ADD([-Wno-unused-parameter]) # Too many warnings for now
-  gl_WARN_ADD([-Wsuggest-attribute=const])
-  gl_WARN_ADD([-Wsuggest-attribute=pure])
-  gl_WARN_ADD([-Wsuggest-attribute=noreturn])
+  gl_WARN_ADD([-Wno-format-nonliteral])
 
-  # In spite of excluding -Wlogical-op above, it is enabled, as of
-  # gcc 4.5.0 20090517, and it provokes warnings in cat.c, dd.c, truncate.c
-  gl_WARN_ADD([-Wno-logical-op])
+  # Enable this warning only with gcc-4.8 and newer.  Before that
+  # bounds checking as done in truncate.c was incorrectly flagged.
+  # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43772
+  gl_GCC_VERSION_IFELSE([4], [8], [gl_WARN_ADD([-Wlogical-op])])
+
+  # clang is unduly picky about some things.
+  AC_CACHE_CHECK([whether the compiler is clang], [utils_cv_clang],
+    [AC_COMPILE_IFELSE(
+       [AC_LANG_PROGRAM([[
+            #ifndef __clang__
+              #error "not clang"
+            #endif
+          ]])],
+       [utils_cv_clang=yes],
+       [utils_cv_clang=no])])
+  if test $utils_cv_clang = yes; then
+    gl_WARN_ADD([-Wno-format-extra-args])
+    gl_WARN_ADD([-Wno-tautological-constant-out-of-range-compare])
+  fi
 
   gl_WARN_ADD([-fdiagnostics-show-option])
   gl_WARN_ADD([-funit-at-a-time])
@@ -115,8 +179,13 @@ if test "$gl_gcc_warnings" = yes; then
   AC_SUBST([WARN_CFLAGS])
 
   AC_DEFINE([lint], [1], [Define to 1 if the compiler is checking for lint.])
-  AC_DEFINE([_FORTIFY_SOURCE], [2],
-    [enable compile-time and run-time bounds-checking, and some warnings])
+  AH_VERBATIM([FORTIFY_SOURCE],
+  [/* Enable compile-time and run-time bounds-checking, and some warnings,
+      without upsetting glibc 2.15+. */
+   #if !defined _FORTIFY_SOURCE && defined __OPTIMIZE__ && __OPTIMIZE__
+   # define _FORTIFY_SOURCE 2
+   #endif
+  ])
   AC_DEFINE([GNULIB_PORTCHECK], [1], [enable some gnulib portability checks])
 
   # We use a slightly smaller set of warning options for lib/.
@@ -127,19 +196,52 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wunused-macros"
   nw="$nw -Wmissing-prototypes"
   nw="$nw -Wold-style-definition"
-  # FIXME: remove/reenable the following two, once gnulib is adjusted.
-  nw="$nw -Wsuggest-attribute=const"
-  nw="$nw -Wsuggest-attribute=pure"
+  # FIXME: it may be easy to remove this, since it affects only one file:
+  # the snprintf call at ftoastr.c:132.
+  nw="$nw -Wdouble-promotion"
   gl_MANYWARN_COMPLEMENT([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
   AC_SUBST([GNULIB_WARN_CFLAGS])
 
   # For gnulib-tests, the set is slightly smaller still.
   nw=
   nw="$nw -Wstrict-prototypes"
+  # It's not worth being this picky about test programs.
+  nw="$nw -Wsuggest-attribute=const"
+  nw="$nw -Wsuggest-attribute=pure"
   gl_MANYWARN_COMPLEMENT([GNULIB_TEST_WARN_CFLAGS],
                          [$GNULIB_WARN_CFLAGS], [$nw])
   AC_SUBST([GNULIB_TEST_WARN_CFLAGS])
 fi
+
+AC_ARG_ENABLE([single-binary],
+  [AS_HELP_STRING([--enable-single-binary=[shebangs|symlinks]],
+     [Compile all the tools in a single binary, reducing the overall size.
+      When compiled this way, shebangs (default when enabled) or symlinks are
+      installed for each tool that points to the single binary.])],
+  [gl_single_binary=no ;
+   case $enableval in
+     yes) gl_single_binary=shebangs ;;
+     no|shebangs|symlinks) gl_single_binary=$enableval ;;
+     *)      AC_MSG_ERROR([bad value $enableval for single-binary option.
+                           Options are: symlinks, shebangs, no.]) ;;
+   esac],
+  [gl_single_binary=no]
+)
+AC_ARG_ENABLE([single-binary-exceptions],
+  [AS_HELP_STRING([--enable-single-binary-exceptions=PROG_LIST],
+     [When used with --enable-single-binary, exclude the PROG_LIST from
+      it, so these programs are compiled as separated files
+      (comma-separated, default none))])],
+  [gl_single_binary_exceptions=$enableval],
+  [gl_single_binary_exceptions=]
+)
+if test "$gl_single_binary" = 'symlinks'; then
+  if ! test "`echo ls | sed \"$program_transform_name\"`" = 'ls'; then
+    AC_MSG_ERROR([program name transformations are not currently supported
+                  with --enable-single-binary=symlinks.])
+  fi
+fi
+AM_CONDITIONAL([SINGLE_BINARY], [test "$gl_single_binary" != no])
 
 AC_FUNC_FORK
 
@@ -196,6 +298,13 @@ fi])dnl
 AC_MSG_RESULT([$utils_cv_localtime_cache])
 if test $utils_cv_localtime_cache = yes; then
   AC_DEFINE([LOCALTIME_CACHE], [1], [FIXME])
+fi
+
+# Assume that if getattrat exists, it's compatible with Solaris 11.
+AC_CHECK_FUNCS([getattrat])
+if test $ac_cv_func_getattrat = yes; then
+  LIB_NVPAIR=-lnvpair
+  AC_SUBST([LIB_NVPAIR])
 fi
 
 # SCO-ODT-3.0 is reported to need -los to link programs using initgroups
@@ -338,7 +447,6 @@ AC_CHECK_DECLS([strsignal, sys_siglist, _sys_siglist, __sys_siglist], , ,
   [AC_INCLUDES_DEFAULT
 #include <signal.h>])
 
-cu_LIB_CHECK
 cu_GMP
 
 # Build df only if there's a point to it.
@@ -346,107 +454,129 @@ if test $gl_cv_list_mounted_fs = yes && test $gl_cv_fs_space = yes; then
   gl_ADD_PROG([optional_bin_progs], [df])
 fi
 
-# Limit stdbuf to ELF systems with GCC
-AC_MSG_CHECKING([whether this is an ELF system])
-AC_EGREP_CPP([yes], [#if __ELF__
-yes
-#endif], [elf_sys=yes], [elf_sys=no])
-AC_MSG_RESULT([$elf_sys])
-if test "$elf_sys" = "yes" && \
-   test "$GCC" = "yes"; then
+AC_MSG_CHECKING([whether this is system supports stdbuf])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([[
+    static int stdbuf = 0;
+
+    /* Restrict to ELF systems with compilers
+       that support the constructor attribute.  */
+    void __attribute__ ((constructor))
+    stdbuf_init (void)
+    {
+      #if __ELF__
+        stdbuf = 1;
+      #endif
+    }]],[[
+    return !(stdbuf == 1);]])
+  ],
+  [stdbuf_supported=yes],
+  [stdbuf_supported=no])
+AC_MSG_RESULT([$stdbuf_supported])
+if test "$stdbuf_supported" = "yes"; then
   gl_ADD_PROG([optional_bin_progs], [stdbuf])
 fi
 
 ############################################################################
-mk="$srcdir/src/Makefile.am"
-# Extract all literal names from the definition of $(EXTRA_PROGRAMS)
-# in $mk but don't expand the variable references.
-# Append each literal name to $optional_bin_progs.
-v=EXTRA_PROGRAMS
-for gl_i in `sed -n '/^'$v' =/,/[[^\]]$/p' $mk \
-    | sed 's/^  *//;/^\$.*/d;/^'$v' =/d' \
-    | tr -s '\\015\\012\\\\' '   '`; do
-  gl_ADD_PROG([optional_bin_progs], $gl_i)
-done
 
-# As above, extract literal names from the definition of $(no_install__progs)
-# in $mk but don't expand the variable references.
-v=no_install__progs
-t=`sed -n '/^'$v' =/,/[[^\]]$/p' $mk \
-    | sed 's/^  *//;/^\$.*/d;/^'$v' =/d' \
-    | tr -s '\\015\\012\\\\' '   '`
-# Remove any trailing space.
-no_install_progs_default=`echo "$t"|sed 's/ $//'`
+dnl Autogenerated by the 'gen-lists-of-programs.sh' auxiliary script.
+dnl Issue proper calls to the macros gl_INCLUDE_EXCLUDE_PROG and
+dnl gl_ADD_PROG (updating $optional_bin_progs), and generate the list
+dnl of coreutils programs to be built only upon explicit user request,
+dnl saving that list in the $no_install_progs_default shell variable.
+m4_include([m4/cu-progs.m4])
 
-# Unfortunately, due to the way autoconf's AS_HELP_STRING works, the list
-# of default-not-installed programs, "arch hostname su", must appear in two
-# places: in this file below, and in $mk.  Using "$no_install_progs_default"
-# below cannot work.  And we can't substitute the names into $mk because
-# automake needs the literals, too.
-# The compromise is to ensure that the space-separated list extracted
-# above matches the literal 2nd argument below.
-c="$srcdir/configure.ac"
-re='^g''l_INCLUDE_EXCLUDE_PROG(.* [\[\(.*\)\]])'
-t=`sed -n '/'"$re"'/{s/'"$re"'/\1/;s/,/ /gp
-}' $c`
-case $t in
-  $no_install_progs_default) ;;
-  *) AC_MSG_ERROR([[internal error: g'l_INCLUDE_EXCLUDE_PROG's 2nd arg, $t,
-                   does not match the list of default-not-installed programs
-                   ($no_install_progs_default) also recorded in $mk]],
-                   1) ;;
-esac
-
-# Given the name of a variable containing a space-separated list of
-# install-by-default programs and the actual list do-not-install-by-default
-# programs, modify the former variable to reflect any "do-install" and
-# "don't-install" requests.
-# I.e., add any program name specified via --enable-install-program=..., and
-# remove any program name specified via --enable-no-install-program=...
-# Note how the second argument below is a literal, with "," separators.
-# That is required due to the way the macro works, and since the
-# corresponding ./configure option argument is comma-separated on input.
-gl_INCLUDE_EXCLUDE_PROG([optional_bin_progs], [arch,hostname,su])
-
-# Now that we know which programs will actually be built up, figure out
+# Now that we know which programs will actually be built, determine
 # which optional helper progs should be compiled.
-optional_pkglib_progs=
 case " $optional_bin_progs " in
-  *' stdbuf '*) gl_ADD_PROG([optional_pkglib_progs], [libstdbuf.so]) ;;
+  *' stdbuf '*) pkglibexec_PROGRAMS='src/libstdbuf.so';;
+  *) pkglibexec_PROGRAMS='';;
 esac
 
-# Set INSTALL_SU if su installation has been requested via
-# --enable-install-program=su.
-AC_SUBST([INSTALL_SU])
-case " $optional_bin_progs " in
-  *' su '*) INSTALL_SU=yes ;;
-  *)        INSTALL_SU=no ;;
-esac
+man1_MANS=`
+  for p in $optional_bin_progs; do
+    # Change "ginstall.1" to "install.1".
+    test $p = ginstall && p=install
+    # Ignore the "[" program, since writing a portable make rule to
+    # generate its manpage is not practical.
+    dnl Use the autoconf-provided quadrigraph to represent "[",
+    dnl otherwise we will incur in dreadful quoting issues.
+    test x$p = x'@<:@' && continue
+    echo "man/$p.1"
+  done`
 
-MAN=`echo "$optional_bin_progs "|sed 's/ /.1 /g;s/ $//'|tr -d '\\015\\012'`
+# Not installed by "make install", but must be built when creating
+# a distribution tarball.
+EXTRA_MANS=`for p in $no_install_progs_default; do echo man/$p.1; done`
 
-# Change "ginstall.1" to "install.1" in $MAN.
-MAN=`for m in $MAN; do test $m = ginstall.1 && m=install.1; echo $m; done \
-  | tr '\015\012' '  '; echo`
+# Replace all the programs by the single binary and symlinks if specified.
+single_binary_progs=
+single_binary_libs=
+single_binary_deps=
+single_binary_install_type=
+if test "$gl_single_binary" != no; then
+  man1_MANS="$man1_MANS man/coreutils.1"
+  # Convert the list to a space separated list
+  gl_single_binary_exceptions=`echo $gl_single_binary_exceptions | tr ',' ' '`
 
-# Remove [.1, since writing a portable rule for it in man/Makefile.am
-# is not practical.  The sed LHS below uses the autoconf quadrigraph
-# representing '['.
-MAN=`echo "$MAN"|sed 's/\@<:@\.1//'`
+  single_binary_progs=`echo $optional_bin_progs`
+  optional_bin_progs="coreutils"
+  for prog in $gl_single_binary_exceptions; do
+    # Fail if requested to exclude a program than was not part of coreutils.
+    case " $single_binary_progs " in
+      *" $prog "*)
+        gl_REMOVE_PROG([single_binary_progs], [$prog]) ;
+        gl_ADD_PROG([optional_bin_progs], [$prog]) ;;
+      *) AC_MSG_ERROR(['$prog' is not being compiled.]) ;;
+    esac
+  done
 
-OPTIONAL_BIN_PROGS=`echo "$optional_bin_progs "|sed 's/ /\$(EXEEXT) /g;s/ $//'`
-AC_SUBST([OPTIONAL_BIN_PROGS])
-OPTIONAL_PKGLIB_PROGS=`echo "$optional_pkglib_progs " | sed 's/ $//'`
-AC_SUBST([OPTIONAL_PKGLIB_PROGS])
-NO_INSTALL_PROGS_DEFAULT=$no_install_progs_default
-AC_SUBST([NO_INSTALL_PROGS_DEFAULT])
+  # single_binary_libs holds the list of libs required by the selected
+  # programs, such as for example -lrt.
+  single_binary_libs=`
+    for p in $single_binary_progs; do
+      # Convert '[' to '_'
+      test x"$p" = x'@<:@' && p='_'
+      printf '$(src_libsinglebin_%s_a_ldadd) ' "$p"
+    done`
+  # single_binary_deps holds the list of libsinglebin_*.a files that have the
+  # compiled code of each selected program in a "library" format.
+  single_binary_deps=`
+    for p in $single_binary_progs; do
+      # Convert '[' to '_'
+      test x"$p" = x'@<:@' && p='_'
+      printf 'src/libsinglebin_%s.a ' "$p"
+    done`
+  single_binary_install_type="$gl_single_binary"
+fi
+AC_SUBST([single_binary_progs], [$single_binary_progs])
+AC_SUBST([single_binary_libs], [$single_binary_libs])
+AC_SUBST([single_binary_deps], [$single_binary_deps])
+AC_SUBST([single_binary_install_type], [$single_binary_install_type])
+
+
+# The programs built and installed by "make && make install".
+# Since this is AC_SUBST'd, Automake won't be able to perform rewrite
+# with $(EXEEXT) appending on it, so we have to do it ourselves -- in
+# this case, only for $(bin_PROGRAMS).
+bin_PROGRAMS=`
+  for p in $optional_bin_progs; do echo src/"$p"'$(EXEEXT)'; done`
+
+# Normalize whitespace.
+man1_MANS=`echo $man1_MANS`
+EXTRA_MANS=`echo $EXTRA_MANS`
+bin_PROGRAMS=`echo $bin_PROGRAMS`
+pkglibexec_PROGS=`echo $pkglibexec_PROGRAMS`
+
+AC_SUBST([bin_PROGRAMS])        AM_SUBST_NOTMAKE([bin_PROGRAMS])
+AC_SUBST([pkglibexec_PROGRAMS]) AM_SUBST_NOTMAKE([pkglibexec_PROGRAMS])
+AC_SUBST([man1_MANS])           AM_SUBST_NOTMAKE([man1_MANS])
+AC_SUBST([EXTRA_MANS])          AM_SUBST_NOTMAKE([EXTRA_MANS])
+
+AC_SUBST([built_programs], [$optional_bin_progs])
 
 AM_CONDITIONAL([CROSS_COMPILING], [test "$cross_compiling" = yes])
 
-# Arrange to rerun configure whenever the file, src/Makefile.am,
-# containing the list of program names changes.
-CONFIG_STATUS_DEPENDENCIES='$(top_srcdir)/src/Makefile.am'
-AC_SUBST([CONFIG_STATUS_DEPENDENCIES])
 ############################################################################
 
 # As long as "grep 'PRI[diouxX]' po/*.pot" reports matches in
@@ -457,14 +587,18 @@ AM_GNU_GETTEXT_VERSION([0.18.1])
 # For a test of uniq: it uses the $LOCALE_FR envvar.
 gt_LOCALE_FR
 
+# If doing dynamic dependency checking, create man/dynamic-deps.mk so
+# that 'make' doesn't complain about its being absent.  Use an old
+# time stamp, so that 'make' thinks it is older than 'Makefile'.
+# Use time stamp 1, since some 'make' implementations treat 0 specially.
+# Use 'touch -t', since older 'touch' implementations don't grok -d.
+AC_CONFIG_COMMANDS([man/dynamic-deps.mk],
+  [test -n "$AMDEP_TRUE" ||
+   TZ=UTC0 touch -t 197001010000.01 man/dynamic-deps.mk])
+
 AC_CONFIG_FILES(
   Makefile
-  doc/Makefile
-  lib/Makefile
-  man/Makefile
   po/Makefile.in
-  src/Makefile
-  tests/Makefile
   gnulib-tests/Makefile
   )
 AC_OUTPUT

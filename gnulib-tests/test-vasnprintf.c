@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of vasnprintf() and asnprintf() functions.
-   Copyright (C) 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 2007-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -57,7 +55,7 @@ test_function (char * (*my_asnprintf) (char *, size_t *, const char *, ...))
       ASSERT (length == 5);
       if (size < 6)
         ASSERT (result != buf);
-      ASSERT (memcmp (buf + size, "DEADBEEF" + size, 8 - size) == 0);
+      ASSERT (memcmp (buf + size, &"DEADBEEF"[size], 8 - size) == 0);
       if (result != buf)
         free (result);
     }

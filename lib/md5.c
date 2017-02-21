@@ -1,8 +1,6 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Functions to compute MD5 message digest of files or memory blocks.
    according to the definition of MD5 in RFC 1321 from April 1992.
-   Copyright (C) 1995-1997, 1999-2001, 2005-2006, 2008-2011 Free Software
+   Copyright (C) 1995-1997, 1999-2001, 2005-2006, 2008-2014 Free Software
    Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -17,16 +15,19 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software Foundation,
-   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
+   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
 
 /* Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.  */
 
 #include <config.h>
 
+#if HAVE_OPENSSL_MD5
+# define GL_OPENSSL_INLINE _GL_EXTERN_INLINE
+#endif
 #include "md5.h"
 
-#include <stddef.h>
+#include <stdalign.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -63,6 +64,7 @@
 # error "invalid BLOCKSIZE"
 #endif
 
+#if ! HAVE_OPENSSL_MD5
 /* This array contains the bytes used to pad the buffer to the next
    64-byte boundary.  (RFC 1321, 3.1: Step 1)  */
 static const unsigned char fillbuf[64] = { 0x80, 0 /* , 0, 0, ...  */ };
@@ -85,7 +87,7 @@ md5_init_ctx (struct md5_ctx *ctx)
 /* Copy the 4 byte value from v into the memory location pointed to by *cp,
    If your architecture allows unaligned access this is equivalent to
    * (uint32_t *) cp = v  */
-static inline void
+static void
 set_uint32 (char *cp, uint32_t v)
 {
   memcpy (cp, &v, sizeof v);
@@ -130,6 +132,7 @@ md5_finish_ctx (struct md5_ctx *ctx, void *resbuf)
 
   return md5_read_ctx (ctx, resbuf);
 }
+#endif
 
 /* Compute MD5 message digest for bytes read from STREAM.  The
    resulting message digest number will be written into the 16 bytes
@@ -204,6 +207,7 @@ process_partial_block:
   return 0;
 }
 
+#if ! HAVE_OPENSSL_MD5
 /* Compute MD5 message digest for LEN bytes beginning at BUFFER.  The
    result is always in little endian byte order, so that a byte-wise
    output yields to the wanted ASCII representation of the message
@@ -256,8 +260,7 @@ md5_process_bytes (const void *buffer, size_t len, struct md5_ctx *ctx)
   if (len >= 64)
     {
 #if !_STRING_ARCH_unaligned
-# define alignof(type) offsetof (struct { char c; type x; }, x)
-# define UNALIGNED_P(p) (((size_t) p) % alignof (uint32_t) != 0)
+# define UNALIGNED_P(p) ((uintptr_t) (p) % alignof (uint32_t) != 0)
       if (UNALIGNED_P (buffer))
         while (len > 64)
           {
@@ -315,13 +318,13 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
   uint32_t B = ctx->B;
   uint32_t C = ctx->C;
   uint32_t D = ctx->D;
+  uint32_t lolen = len;
 
   /* First increment the byte count.  RFC 1321 specifies the possible
      length of the file up to 2^64 bits.  Here we only compute the
      number of bytes.  Do a double word increment.  */
-  ctx->total[0] += len;
-  if (ctx->total[0] < len)
-    ++ctx->total[1];
+  ctx->total[0] += lolen;
+  ctx->total[1] += (len >> 31 >> 1) + (ctx->total[0] < lolen);
 
   /* Process all bytes in the buffer with 64 bytes in each round of
      the loop.  */
@@ -462,3 +465,4 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
   ctx->C = C;
   ctx->D = D;
 }
+#endif

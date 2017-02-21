@@ -1,5 +1,5 @@
 /* GNU fmt -- simple text formatter.
-   Copyright (C) 1994-2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 1994-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <getopt.h>
+#include <assert.h>
 
 /* Redefine.  Otherwise, systems (Unicos for one) with headers that define
    it to be a type get syntax errors for the variable declaration below.  */
@@ -31,7 +32,7 @@
 #include "quote.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "fmt"
 
 #define AUTHORS proper_name ("Ross Paterson")
@@ -68,7 +69,7 @@ typedef long int COST;
 #define SQR(n)		((n) * (n))
 #define EQUIV(n)	SQR ((COST) (n))
 
-/* Cost of a filled line n chars longer or shorter than best_width.  */
+/* Cost of a filled line n chars longer or shorter than goal_width.  */
 #define SHORT_COST(n)	EQUIV ((n) * 10)
 
 /* Cost of the difference between adjacent filled lines.  */
@@ -116,7 +117,7 @@ typedef long int COST;
 
 /* Extra ctype(3)-style macros.  */
 
-#define isopen(c)	(strchr ("([`'\"", c) != NULL)
+#define isopen(c)	(strchr ("(['`\"", c) != NULL)
 #define isclose(c)	(strchr (")]'\"", c) != NULL)
 #define isperiod(c)	(strchr (".?!", c) != NULL)
 
@@ -201,7 +202,7 @@ static int prefix_lead_space;
 static int prefix_length;
 
 /* The preferred width of text lines, set to LEEWAY % less than max_width.  */
-static int best_width;
+static int goal_width;
 
 /* Dynamic variables.  */
 
@@ -263,19 +264,17 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [-WIDTH] [OPTION]... [FILE]...\n"), program_name);
       fputs (_("\
 Reformat each paragraph in the FILE(s), writing to standard output.\n\
 The option -WIDTH is an abbreviated form of --width=DIGITS.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -c, --crown-margin        preserve indentation of first two lines\n\
   -p, --prefix=STRING       reformat only lines beginning with STRING,\n\
@@ -283,10 +282,13 @@ Mandatory arguments to long options are mandatory for short options too.\n\
   -s, --split-only          split long lines, but do not refill\n\
 "),
              stdout);
+      /* Tell xgettext that the "% o" below is not a printf-style
+         format string:  xgettext:no-c-format */
       fputs (_("\
   -t, --tagged-paragraph    indentation of first line different from second\n\
   -u, --uniform-spacing     one space between words, two after sentences\n\
   -w, --width=WIDTH         maximum line width (default of 75 columns)\n\
+  -g, --goal=WIDTH          goal width (default of 93% of width)\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -309,6 +311,7 @@ static struct option const long_options[] =
   {"tagged-paragraph", no_argument, NULL, 't'},
   {"uniform-spacing", no_argument, NULL, 'u'},
   {"width", required_argument, NULL, 'w'},
+  {"goal", required_argument, NULL, 'g'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0},
@@ -320,6 +323,7 @@ main (int argc, char **argv)
   int optchar;
   bool ok = true;
   char const *max_width_option = NULL;
+  char const *goal_width_option = NULL;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -345,7 +349,7 @@ main (int argc, char **argv)
       argc--;
     }
 
-  while ((optchar = getopt_long (argc, argv, "0123456789cstuw:p:",
+  while ((optchar = getopt_long (argc, argv, "0123456789cstuw:p:g:",
                                  long_options, NULL))
          != -1)
     switch (optchar)
@@ -377,6 +381,10 @@ main (int argc, char **argv)
         max_width_option = optarg;
         break;
 
+      case 'g':
+        goal_width_option = optarg;
+        break;
+
       case 'p':
         set_prefix (optarg);
         break;
@@ -399,7 +407,22 @@ main (int argc, char **argv)
       max_width = tmp;
     }
 
-  best_width = max_width * (2 * (100 - LEEWAY) + 1) / 200;
+  if (goal_width_option)
+    {
+      /* Limit goal_width to max_width.  */
+      unsigned long int tmp;
+      if (! (xstrtoul (goal_width_option, NULL, 10, &tmp, "") == LONGINT_OK
+             && tmp <= max_width))
+        error (EXIT_FAILURE, 0, _("invalid width: %s"),
+               quote (goal_width_option));
+      goal_width = tmp;
+      if (max_width_option == NULL)
+        max_width = goal_width + 10;
+    }
+  else
+    {
+      goal_width = max_width * (2 * (100 - LEEWAY) + 1) / 200;
+    }
 
   if (optind == argc)
     fmt (stdin);
@@ -475,7 +498,7 @@ fmt (FILE *f)
     }
 }
 
-/* Set the global variable `other_indent' according to SAME_PARAGRAPH
+/* Set the global variable 'other_indent' according to SAME_PARAGRAPH
    and other global variables.  */
 
 static void
@@ -589,6 +612,11 @@ get_paragraph (FILE *f)
       while (same_para (c) && in_column == other_indent)
         c = get_line (f, c);
     }
+
+  /* Tell static analysis tools that using word_limit[-1] is ok.
+     word_limit is guaranteed to have been incremented by get_line.  */
+  assert (word < word_limit);
+
   (word_limit - 1)->period = (word_limit - 1)->final = true;
   next_char = c;
   return true;
@@ -865,7 +893,7 @@ fmt_paragraph (void)
               start->line_length = len;
             }
 
-          /* This is a kludge to keep us from computing `len' as the
+          /* This is a kludge to keep us from computing 'len' as the
              sum of the sentinel length and some non-zero number.
              Since the sentinel w->length may be INT_MAX, adding
              to that would give a negative result.  */
@@ -925,7 +953,7 @@ line_cost (WORD *next, int len)
 
   if (next == word_limit)
     return 0;
-  n = best_width - len;
+  n = goal_width - len;
   cost = SHORT_COST (n);
   if (next->next_break != word_limit)
     {

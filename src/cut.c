@@ -1,5 +1,5 @@
 /* cut - remove parts of lines of files
-   Copyright (C) 1997-2011 Free Software Foundation, Inc.
+   Copyright (C) 1997-2014 Free Software Foundation, Inc.
    Copyright (C) 1984 David M. Ihnat
 
    This program is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@
 #include "quote.h"
 #include "xstrndup.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "cut"
 
 #define AUTHORS \
@@ -53,30 +53,42 @@
     }									\
   while (0)
 
-/* Append LOW, HIGH to the list RP of range pairs, allocating additional
-   space if necessary.  Update local variable N_RP.  When allocating,
-   update global variable N_RP_ALLOCATED.  */
-
-#define ADD_RANGE_PAIR(rp, low, high)			\
-  do							\
-    {							\
-      if (low == 0 || high == 0)			\
-        FATAL_ERROR (_("fields and positions are numbered from 1")); \
-      if (n_rp >= n_rp_allocated)			\
-        {						\
-          (rp) = X2NREALLOC (rp, &n_rp_allocated);	\
-        }						\
-      rp[n_rp].lo = (low);				\
-      rp[n_rp].hi = (high);				\
-      ++n_rp;						\
-    }							\
-  while (0)
 
 struct range_pair
   {
     size_t lo;
     size_t hi;
   };
+
+/* Array of `struct range_pair' holding all the finite ranges. */
+static struct range_pair *rp;
+
+/* Pointer inside RP.  When checking if a byte or field is selected
+   by a finite range, we check if it is between CURRENT_RP.LO
+   and CURRENT_RP.HI.  If the byte or field index is greater than
+   CURRENT_RP.HI then we make CURRENT_RP to point to the next range pair. */
+static struct range_pair *current_rp;
+
+/* Number of finite ranges specified by the user. */
+static size_t n_rp;
+
+/* Number of `struct range_pair's allocated. */
+static size_t n_rp_allocated;
+
+
+/* Append LOW, HIGH to the list RP of range pairs, allocating additional
+   space if necessary.  Update global variable N_RP.  When allocating,
+   update global variable N_RP_ALLOCATED.  */
+
+static void
+add_range_pair (size_t lo, size_t hi)
+{
+  if (n_rp == n_rp_allocated)
+    rp = X2NREALLOC (rp, &n_rp_allocated);
+  rp[n_rp].lo = lo;
+  rp[n_rp].hi = hi;
+  ++n_rp;
+}
 
 /* This buffer is used to support the semantics of the -s option
    (or lack of same) when the specified field list includes (does
@@ -90,26 +102,6 @@ static char *field_1_buffer;
 /* The number of bytes allocated for FIELD_1_BUFFER.  */
 static size_t field_1_bufsize;
 
-/* The largest field or byte index used as an endpoint of a closed
-   or degenerate range specification;  this doesn't include the starting
-   index of right-open-ended ranges.  For example, with either range spec
-   `2-5,9-', `2-3,5,9-' this variable would be set to 5.  */
-static size_t max_range_endpoint;
-
-/* If nonzero, this is the index of the first field in a range that goes
-   to end of line. */
-static size_t eol_range_start;
-
-/* This is a bit vector.
-   In byte mode, which bytes to output.
-   In field mode, which DELIM-separated fields to output.
-   Both bytes and fields are numbered starting with 1,
-   so the zeroth bit of this array is unused.
-   A field or byte K has been selected if
-   (K <= MAX_RANGE_ENDPOINT and is_printable_field(K))
-    || (EOL_RANGE_START > 0 && K >= EOL_RANGE_START).  */
-static unsigned char *printable_field;
-
 enum operating_mode
   {
     undefined_mode,
@@ -117,22 +109,22 @@ enum operating_mode
     /* Output characters that are in the given bytes. */
     byte_mode,
 
-    /* Output the given delimeter-separated fields. */
+    /* Output the given delimiter-separated fields. */
     field_mode
   };
 
 static enum operating_mode operating_mode;
 
-/* If true do not output lines containing no delimeter characters.
+/* If true do not output lines containing no delimiter characters.
    Otherwise, all such lines are printed.  This option is valid only
    with field mode.  */
 static bool suppress_non_delimited;
 
-/* If nonzero, print all bytes, characters, or fields _except_
+/* If true, print all bytes, characters, or fields _except_
    those that were specified.  */
 static bool complement;
 
-/* The delimeter character for field mode. */
+/* The delimiter character for field mode. */
 static unsigned char delim;
 
 /* True if the --output-delimiter=STRING option was specified.  */
@@ -147,15 +139,6 @@ static char *output_delimiter_string;
 
 /* True if we have ever read standard input. */
 static bool have_read_stdin;
-
-#define HT_RANGE_START_INDEX_INITIAL_CAPACITY 31
-
-/* The set of range-start indices.  For example, given a range-spec list like
-   `-b1,3-5,4-9,15-', the following indices will be recorded here: 1, 3, 15.
-   Note that although `4' looks like a range-start index, it is in the middle
-   of the `3-5' range, so it doesn't count.
-   This table is created/used IFF output_delimiter_specified is set.  */
-static Hash_table *range_start_ht;
 
 /* For long options that have no equivalent short option, use a
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
@@ -183,8 +166,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -193,11 +175,10 @@ Usage: %s OPTION... [FILE]...\n\
               program_name);
       fputs (_("\
 Print selected parts of lines from each FILE to standard output.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -b, --bytes=LIST        select only these bytes\n\
   -c, --characters=LIST   select only these characters\n\
@@ -241,75 +222,6 @@ With no FILE, or when FILE is -, read standard input.\n\
   exit (status);
 }
 
-static inline void
-mark_range_start (size_t i)
-{
-  /* Record the fact that `i' is a range-start index.  */
-  void *ent_from_table = hash_insert (range_start_ht, (void*) i);
-  if (ent_from_table == NULL)
-    {
-      /* Insertion failed due to lack of memory.  */
-      xalloc_die ();
-    }
-  assert ((size_t) ent_from_table == i);
-}
-
-static inline void
-mark_printable_field (size_t i)
-{
-  size_t n = i / CHAR_BIT;
-  printable_field[n] |= (1 << (i % CHAR_BIT));
-}
-
-static inline bool
-is_printable_field (size_t i)
-{
-  size_t n = i / CHAR_BIT;
-  return (printable_field[n] >> (i % CHAR_BIT)) & 1;
-}
-
-static size_t
-hash_int (const void *x, size_t tablesize)
-{
-#ifdef UINTPTR_MAX
-  uintptr_t y = (uintptr_t) x;
-#else
-  size_t y = (size_t) x;
-#endif
-  return y % tablesize;
-}
-
-static bool
-hash_compare_ints (void const *x, void const *y)
-{
-  return (x == y) ? true : false;
-}
-
-static bool
-is_range_start_index (size_t i)
-{
-  return hash_lookup (range_start_ht, (void *) i) ? true : false;
-}
-
-/* Return nonzero if the K'th field or byte is printable.
-   When returning nonzero, if RANGE_START is non-NULL,
-   set *RANGE_START to true if K is the beginning of a range, and to
-   false otherwise.  */
-
-static bool
-print_kth (size_t k, bool *range_start)
-{
-  bool k_selected
-    = ((0 < eol_range_start && eol_range_start <= k)
-       || (k <= max_range_endpoint && is_printable_field (k)));
-
-  bool is_selected = k_selected ^ complement;
-  if (range_start && is_selected)
-    *range_start = is_range_start_index (k);
-
-  return is_selected;
-}
-
 /* Comparison function for qsort to order the list of
    struct range_pairs.  */
 static int
@@ -320,24 +232,47 @@ compare_ranges (const void *a, const void *b)
   return a_start < b_start ? -1 : a_start > b_start;
 }
 
-/* Given the list of field or byte range specifications FIELDSTR, set
-   MAX_RANGE_ENDPOINT and allocate and initialize the PRINTABLE_FIELD
-   array.  If there is a right-open-ended range, set EOL_RANGE_START
-   to its starting index.  FIELDSTR should be composed of one or more
-   numbers or ranges of numbers, separated by blanks or commas.
-   Incomplete ranges may be given: `-m' means `1-m'; `n-' means `n'
-   through end of line.  Return true if FIELDSTR contains at least
-   one field specification, false otherwise.  */
+/* Reallocate Range Pair entries, with corresponding
+   entries outside the range of each specified entry.  */
 
-/* FIXME-someday:  What if the user wants to cut out the 1,000,000-th
-   field of some huge input file?  This function shouldn't have to
-   allocate a table of a million bits just so we can test every
-   field < 10^6 with an array dereference.  Instead, consider using
-   an adaptive approach: if the range of selected fields is too large,
-   but only a few fields/byte-offsets are actually selected, use a
-   hash table.  If the range of selected fields is too large, and
-   too many are selected, then resort to using the range-pairs (the
-   `rp' array) directly.  */
+static void
+complement_rp (void)
+{
+  if (complement)
+    {
+      struct range_pair *c = rp;
+      size_t n = n_rp;
+      size_t i;
+
+      rp = NULL;
+      n_rp = 0;
+      n_rp_allocated = 0;
+
+      if (c[0].lo > 1)
+        add_range_pair (1, c[0].lo - 1);
+
+      for (i = 1; i < n; ++i)
+        {
+          if (c[i-1].hi + 1 == c[i].lo)
+            continue;
+
+          add_range_pair (c[i-1].hi + 1, c[i].lo - 1);
+        }
+
+      if (c[n-1].hi < SIZE_MAX)
+        add_range_pair (c[n-1].hi + 1, SIZE_MAX);
+
+      free (c);
+    }
+}
+
+/* Given the list of field or byte range specifications FIELDSTR,
+   allocate and initialize the RP array. FIELDSTR should
+   be composed of one or more numbers or ranges of numbers, separated
+   by blanks or commas.  Incomplete ranges may be given: '-m' means '1-m';
+   'n-' means 'n' through end of line.
+   Return true if FIELDSTR contains at least one field specification,
+   false otherwise.  */
 
 static bool
 set_fields (const char *fieldstr)
@@ -350,14 +285,10 @@ set_fields (const char *fieldstr)
   bool field_found = false;	/* True if at least one field spec
                                    has been processed.  */
 
-  struct range_pair *rp = NULL;
-  size_t n_rp = 0;
-  size_t n_rp_allocated = 0;
   size_t i;
   bool in_digits = false;
 
-  /* Collect and store in RP the range end points.
-     It also sets EOL_RANGE_START if appropriate.  */
+  /* Collect and store in RP the range end points. */
 
   while (true)
     {
@@ -366,15 +297,18 @@ set_fields (const char *fieldstr)
           in_digits = false;
           /* Starting a range. */
           if (dash_found)
-            FATAL_ERROR (_("invalid byte or field list"));
+            FATAL_ERROR (_("invalid byte, character or field list"));
           dash_found = true;
           fieldstr++;
+
+          if (lhs_specified && !value)
+            FATAL_ERROR (_("fields and positions are numbered from 1"));
 
           initial = (lhs_specified ? value : 1);
           value = 0;
         }
-      else if (*fieldstr == ',' ||
-               isblank (to_uchar (*fieldstr)) || *fieldstr == '\0')
+      else if (*fieldstr == ','
+               || isblank (to_uchar (*fieldstr)) || *fieldstr == '\0')
         {
           in_digits = false;
           /* Ending the string, or this field/byte sublist. */
@@ -386,67 +320,36 @@ set_fields (const char *fieldstr)
                 FATAL_ERROR (_("invalid range with no endpoint: -"));
 
               /* A range.  Possibilities: -n, m-n, n-.
-                 In any case, `initial' contains the start of the range. */
+                 In any case, 'initial' contains the start of the range. */
               if (!rhs_specified)
                 {
-                  /* `n-'.  From `initial' to end of line. */
-                  eol_range_start = initial;
+                  /* 'n-'.  From 'initial' to end of line. */
+                  add_range_pair (initial, SIZE_MAX);
                   field_found = true;
                 }
               else
                 {
-                  /* `m-n' or `-n' (1-n). */
+                  /* 'm-n' or '-n' (1-n). */
                   if (value < initial)
                     FATAL_ERROR (_("invalid decreasing range"));
 
-                  /* Is there already a range going to end of line? */
-                  if (eol_range_start != 0)
-                    {
-                      /* Yes.  Is the new sequence already contained
-                         in the old one?  If so, no processing is
-                         necessary. */
-                      if (initial < eol_range_start)
-                        {
-                          /* No, the new sequence starts before the
-                             old.  Does the old range going to end of line
-                             extend into the new range?  */
-                          if (eol_range_start <= value)
-                            {
-                              /* Yes.  Simply move the end of line marker. */
-                              eol_range_start = initial;
-                            }
-                          else
-                            {
-                              /* No.  A simple range, before and disjoint from
-                                 the range going to end of line.  Fill it. */
-                              ADD_RANGE_PAIR (rp, initial, value);
-                            }
-
-                          /* In any case, some fields were selected. */
-                          field_found = true;
-                        }
-                    }
-                  else
-                    {
-                      /* There is no range going to end of line. */
-                      ADD_RANGE_PAIR (rp, initial, value);
-                      field_found = true;
-                    }
-                  value = 0;
+                  add_range_pair (initial, value);
+                  field_found = true;
                 }
+              value = 0;
             }
           else
             {
               /* A simple field number, not a range. */
-              ADD_RANGE_PAIR (rp, value, value);
+              if (value == 0)
+                FATAL_ERROR (_("fields and positions are numbered from 1"));
+              add_range_pair (value, value);
               value = 0;
               field_found = true;
             }
 
           if (*fieldstr == '\0')
-            {
-              break;
-            }
+            break;
 
           fieldstr++;
           lhs_specified = false;
@@ -467,7 +370,8 @@ set_fields (const char *fieldstr)
             lhs_specified = 1;
 
           /* Detect overflow.  */
-          if (!DECIMAL_DIGIT_ACCUMULATE (value, *fieldstr - '0', size_t))
+          if (!DECIMAL_DIGIT_ACCUMULATE (value, *fieldstr - '0', size_t)
+              || value == SIZE_MAX)
             {
               /* In case the user specified -c$(echo 2^64|bc),22,
                  complain only about the first number.  */
@@ -487,51 +391,65 @@ set_fields (const char *fieldstr)
           fieldstr++;
         }
       else
-        FATAL_ERROR (_("invalid byte or field list"));
+        FATAL_ERROR (_("invalid byte, character or field list"));
     }
-
-  max_range_endpoint = 0;
-  for (i = 0; i < n_rp; i++)
-    {
-      if (rp[i].hi > max_range_endpoint)
-        max_range_endpoint = rp[i].hi;
-    }
-  if (max_range_endpoint < eol_range_start)
-    max_range_endpoint = eol_range_start;
-
-  /* Allocate an array large enough so that it may be indexed by
-     the field numbers corresponding to all finite ranges
-     (i.e. `2-6' or `-4', but not `5-') in FIELDSTR.  */
-
-  printable_field = xzalloc (max_range_endpoint / CHAR_BIT + 1);
 
   qsort (rp, n_rp, sizeof (rp[0]), compare_ranges);
 
-  /* Set the array entries corresponding to integers in the ranges of RP.  */
-  for (i = 0; i < n_rp; i++)
+  /* Merge range pairs (e.g. `2-5,3-4' becomes `2-5'). */
+  for (i = 0; i < n_rp; ++i)
     {
-      size_t j;
-      size_t rsi_candidate;
-
-      /* Record the range-start indices, i.e., record each start
-         index that is not part of any other (lo..hi] range.  */
-      rsi_candidate = complement ? rp[i].hi + 1 : rp[i].lo;
-      if (output_delimiter_specified
-          && !is_printable_field (rsi_candidate))
-        mark_range_start (rsi_candidate);
-
-      for (j = rp[i].lo; j <= rp[i].hi; j++)
-        mark_printable_field (j);
+      for (size_t j = i + 1; j < n_rp; ++j)
+        {
+          if (rp[j].lo <= rp[i].hi)
+            {
+              rp[i].hi = MAX (rp[j].hi, rp[i].hi);
+              memmove (rp + j, rp + j + 1, (n_rp - j - 1) * sizeof *rp);
+              n_rp--;
+              j--;
+            }
+          else
+            break;
+        }
     }
 
-  if (output_delimiter_specified
-      && !complement
-      && eol_range_start && !is_printable_field (eol_range_start))
-    mark_range_start (eol_range_start);
+  complement_rp ();
 
-  free (rp);
+  /* After merging, reallocate RP so we release memory to the system.
+     Also add a sentinel at the end of RP, to avoid out of bounds access
+     and for performance reasons.  */
+  ++n_rp;
+  rp = xrealloc (rp, n_rp * sizeof (struct range_pair));
+  rp[n_rp - 1].lo = rp[n_rp - 1].hi = SIZE_MAX;
 
   return field_found;
+}
+
+/* Increment *ITEM_IDX (i.e. a field or byte index),
+   and if required CURRENT_RP.  */
+
+static inline void
+next_item (size_t *item_idx)
+{
+  (*item_idx)++;
+  if ((*item_idx) > current_rp->hi)
+    current_rp++;
+}
+
+/* Return nonzero if the K'th field or byte is printable. */
+
+static inline bool
+print_kth (size_t k)
+{
+  return current_rp->lo <= k;
+}
+
+/* Return nonzero if K'th byte is the beginning of a range. */
+
+static inline bool
+is_range_start_index (size_t k)
+{
+  return k == current_rp->lo;
 }
 
 /* Read from stream STREAM, printing to standard output any selected bytes.  */
@@ -546,7 +464,8 @@ cut_bytes (FILE *stream)
 
   byte_idx = 0;
   print_delimiter = false;
-  while (1)
+  current_rp = rp;
+  while (true)
     {
       int c;		/* Each character from the file. */
 
@@ -557,6 +476,7 @@ cut_bytes (FILE *stream)
           putchar ('\n');
           byte_idx = 0;
           print_delimiter = false;
+          current_rp = rp;
         }
       else if (c == EOF)
         {
@@ -566,16 +486,19 @@ cut_bytes (FILE *stream)
         }
       else
         {
-          bool range_start;
-          bool *rs = output_delimiter_specified ? &range_start : NULL;
-          if (print_kth (++byte_idx, rs))
+          next_item (&byte_idx);
+          if (print_kth (byte_idx))
             {
-              if (rs && *rs && print_delimiter)
+              if (output_delimiter_specified)
                 {
-                  fwrite (output_delimiter_string, sizeof (char),
-                          output_delimiter_length, stdout);
+                  if (print_delimiter && is_range_start_index (byte_idx))
+                    {
+                      fwrite (output_delimiter_string, sizeof (char),
+                              output_delimiter_length, stdout);
+                    }
+                  print_delimiter = true;
                 }
-              print_delimiter = true;
+
               putchar (c);
             }
         }
@@ -592,19 +515,22 @@ cut_fields (FILE *stream)
   bool found_any_selected_field = false;
   bool buffer_first_field;
 
+  current_rp = rp;
+
   c = getc (stream);
   if (c == EOF)
     return;
 
   ungetc (c, stream);
+  c = 0;
 
   /* To support the semantics of the -s flag, we may have to buffer
-     all of the first field to determine whether it is `delimited.'
+     all of the first field to determine whether it is 'delimited.'
      But that is unnecessary if all non-delimited lines must be printed
      and the first field has been selected, or if non-delimited lines
      must be suppressed and the first field has *not* been selected.
      That is because a non-delimited line has exactly one field.  */
-  buffer_first_field = (suppress_non_delimited ^ !print_kth (1, NULL));
+  buffer_first_field = (suppress_non_delimited ^ !print_kth (1));
 
   while (1)
     {
@@ -627,6 +553,8 @@ cut_fields (FILE *stream)
           n_bytes = len;
           assert (n_bytes != 0);
 
+          c = 0;
+
           /* If the first field extends to the end of line (it is not
              delimited) and we are printing all non-delimited lines,
              print this one.  */
@@ -642,63 +570,80 @@ cut_fields (FILE *stream)
                   /* Make sure the output line is newline terminated.  */
                   if (field_1_buffer[n_bytes - 1] != '\n')
                     putchar ('\n');
+                  c = '\n';
                 }
               continue;
             }
-          if (print_kth (1, NULL))
+          if (print_kth (1))
             {
               /* Print the field, but not the trailing delimiter.  */
               fwrite (field_1_buffer, sizeof (char), n_bytes - 1, stdout);
-              found_any_selected_field = true;
+
+              /* With -d$'\n' don't treat the last '\n' as a delimiter.  */
+              if (delim == '\n')
+                {
+                  int last_c = getc (stream);
+                  if (last_c != EOF)
+                    {
+                      ungetc (last_c, stream);
+                      found_any_selected_field = true;
+                    }
+                }
+              else
+                found_any_selected_field = true;
             }
-          ++field_idx;
+          next_item (&field_idx);
         }
 
-      if (c != EOF)
-        {
-          if (print_kth (field_idx, NULL))
-            {
-              if (found_any_selected_field)
-                {
-                  fwrite (output_delimiter_string, sizeof (char),
-                          output_delimiter_length, stdout);
-                }
-              found_any_selected_field = true;
+      int prev_c = c;
 
-              while ((c = getc (stream)) != delim && c != '\n' && c != EOF)
-                {
-                  putchar (c);
-                }
+      if (print_kth (field_idx))
+        {
+          if (found_any_selected_field)
+            {
+              fwrite (output_delimiter_string, sizeof (char),
+                      output_delimiter_length, stdout);
             }
+          found_any_selected_field = true;
+
+          while ((c = getc (stream)) != delim && c != '\n' && c != EOF)
+            {
+              putchar (c);
+              prev_c = c;
+            }
+        }
+      else
+        {
+          while ((c = getc (stream)) != delim && c != '\n' && c != EOF)
+            {
+              prev_c = c;
+            }
+        }
+
+      /* With -d$'\n' don't treat the last '\n' as a delimiter.  */
+      if (delim == '\n' && c == delim)
+        {
+          int last_c = getc (stream);
+          if (last_c != EOF)
+            ungetc (last_c, stream);
           else
-            {
-              while ((c = getc (stream)) != delim && c != '\n' && c != EOF)
-                {
-                  /* Empty.  */
-                }
-            }
-        }
-
-      if (c == '\n')
-        {
-          c = getc (stream);
-          if (c != EOF)
-            {
-              ungetc (c, stream);
-              c = '\n';
-            }
+            c = last_c;
         }
 
       if (c == delim)
-        ++field_idx;
+        next_item (&field_idx);
       else if (c == '\n' || c == EOF)
         {
           if (found_any_selected_field
               || !(suppress_non_delimited && field_idx == 1))
-            putchar ('\n');
+            {
+              if (c == '\n' || prev_c != '\n' || delim == '\n')
+                putchar ('\n');
+            }
           if (c == EOF)
             break;
           field_idx = 1;
+          current_rp = rp;
           found_any_selected_field = false;
         }
     }
@@ -802,7 +747,7 @@ main (int argc, char **argv)
 
         case 'd':
           /* New delimiter. */
-          /* Interpret -d '' to mean `use the NUL byte as the delimiter.'  */
+          /* Interpret -d '' to mean 'use the NUL byte as the delimiter.'  */
           if (optarg[0] != '\0' && optarg[1] != '\0')
             FATAL_ERROR (_("the delimiter must be a single character"));
           delim = optarg[0];
@@ -812,7 +757,7 @@ main (int argc, char **argv)
         case OUTPUT_DELIMITER_OPTION:
           output_delimiter_specified = true;
           /* Interpret --output-delimiter='' to mean
-             `use the NUL byte as the delimiter.'  */
+             'use the NUL byte as the delimiter.'  */
           output_delimiter_length = (optarg[0] == '\0'
                                      ? 1 : strlen (optarg));
           output_delimiter_string = xstrdup (optarg);
@@ -841,23 +786,13 @@ main (int argc, char **argv)
   if (operating_mode == undefined_mode)
     FATAL_ERROR (_("you must specify a list of bytes, characters, or fields"));
 
-  if (delim != '\0' && operating_mode != field_mode)
+  if (delim_specified && operating_mode != field_mode)
     FATAL_ERROR (_("an input delimiter may be specified only\
  when operating on fields"));
 
   if (suppress_non_delimited && operating_mode != field_mode)
     FATAL_ERROR (_("suppressing non-delimited lines makes sense\n\
 \tonly when operating on fields"));
-
-  if (output_delimiter_specified)
-    {
-      range_start_ht = hash_initialize (HT_RANGE_START_INDEX_INITIAL_CAPACITY,
-                                        NULL, hash_int,
-                                        hash_compare_ints, NULL);
-      if (range_start_ht == NULL)
-        xalloc_die ();
-
-    }
 
   if (! set_fields (spec_list_string))
     {
@@ -885,8 +820,6 @@ main (int argc, char **argv)
     for (ok = true; optind < argc; optind++)
       ok &= cut_file (argv[optind]);
 
-  if (range_start_ht)
-    hash_free (range_start_ht);
 
   if (have_read_stdin && fclose (stdin) == EOF)
     {

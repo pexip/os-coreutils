@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Creating and controlling threads.
-   Copyright (C) 2005-2011 Free Software Foundation, Inc.
+   Copyright (C) 2005-2014 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,8 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software Foundation,
-   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
+   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
 
 /* Written by Bruno Haible <bruno@clisp.org>, 2005.
    Based on GCC's gthr-posix.h, gthr-posix95.h, gthr-solaris.h,
@@ -77,6 +74,14 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#ifndef _GL_INLINE_HEADER_BEGIN
+ #error "Please include config.h first."
+#endif
+_GL_INLINE_HEADER_BEGIN
+#ifndef _GLTHREAD_THREAD_INLINE
+# define _GLTHREAD_THREAD_INLINE _GL_INLINE
+#endif
+
 /* ========================================================================= */
 
 #if USE_POSIX_THREADS
@@ -118,7 +123,13 @@ extern int glthread_in_use (void);
    address of a function in libpthread that we don't use.  */
 
 #  pragma weak pthread_create
+
+#  ifdef __clang__
+  /* Without this, clang complains that pthread_sigmask is never declared.  */
+#   include <signal.h>
+#  endif
 #  pragma weak pthread_sigmask
+
 #  pragma weak pthread_join
 #  ifndef pthread_self
 #   pragma weak pthread_self
@@ -292,8 +303,9 @@ typedef thread_t gl_thread_t;
 
 /* ========================================================================= */
 
-#if USE_WIN32_THREADS
+#if USE_WINDOWS_THREADS
 
+# define WIN32_LEAN_AND_MEAN  /* avoid including junk */
 # include <windows.h>
 
 # ifdef __cplusplus
@@ -338,7 +350,7 @@ extern int gl_thread_exit_func (void *retval);
 
 /* ========================================================================= */
 
-#if !(USE_POSIX_THREADS || USE_PTH_THREADS || USE_SOLARIS_THREADS || USE_WIN32_THREADS)
+#if !(USE_POSIX_THREADS || USE_PTH_THREADS || USE_SOLARIS_THREADS || USE_WINDOWS_THREADS)
 
 /* Provide dummy implementation if threads are not supported.  */
 
@@ -362,7 +374,7 @@ typedef int gl_thread_t;
 extern "C" {
 #endif
 
-static inline gl_thread_t
+_GLTHREAD_THREAD_INLINE gl_thread_t
 gl_thread_create (void *(*func) (void *arg), void *arg)
 {
   gl_thread_t thread;
@@ -398,5 +410,7 @@ gl_thread_create (void *(*func) (void *arg), void *arg)
 #ifdef __cplusplus
 }
 #endif
+
+_GL_INLINE_HEADER_END
 
 #endif /* _GLTHREAD_THREAD_H */

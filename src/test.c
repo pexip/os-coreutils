@@ -2,7 +2,7 @@
 
 /* Modified to run with the GNU shell by bfox. */
 
-/* Copyright (C) 1987-2005, 2007-2011 Free Software Foundation, Inc.
+/* Copyright (C) 1987-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,12 @@
 /* Define TEST_STANDALONE to get the /bin/test version.  Otherwise, you get
    the shell builtin version. */
 
+/* Without this pragma, gcc 4.6.2 20111027 mistakenly suggests that
+   the advance function might be candidate for attribute 'pure'.  */
+#if (__GNUC__ == 4 && 6 <= __GNUC_MINOR__) || 4 < __GNUC__
+# pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
+#endif
+
 #include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -30,7 +36,7 @@
 # define LBRACKET 0
 #endif
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #if LBRACKET
 # define PROGRAM_NAME "["
 #else
@@ -88,7 +94,7 @@ test_syntax_error (char const *format, char const *arg)
 }
 
 /* Increment our position in the argument list.  Check that we're not
-   past the end of the argument list.  This check is supressed if the
+   past the end of the argument list.  This check is suppressed if the
    argument is false.  */
 
 static void
@@ -204,7 +210,7 @@ term (void)
   bool value;
   bool negated = false;
 
-  /* Deal with leading `not's.  */
+  /* Deal with leading 'not's.  */
   while (pos < argc && argv[pos][0] == '!' && argv[pos][1] == '\0')
     {
       advance (true);
@@ -361,8 +367,8 @@ binary_operator (bool l_is_l)
       test_syntax_error (_("unknown binary operator"), argv[op]);
     }
 
-  if (argv[op][0] == '=' && (!argv[op][1] ||
-       ((argv[op][1] == '=') && !argv[op][2])))
+  if (argv[op][0] == '='
+      && (!argv[op][1] || ((argv[op][1] == '=') && !argv[op][2])))
     {
       bool value = STREQ (argv[pos], argv[pos + 2]);
       pos += 3;
@@ -413,14 +419,26 @@ unary_operator (void)
       return euidaccess (argv[pos - 1], X_OK) == 0;
 
     case 'O':			/* File is owned by you? */
-      unary_advance ();
-      return (stat (argv[pos - 1], &stat_buf) == 0
-              && (geteuid () == stat_buf.st_uid));
+      {
+        unary_advance ();
+        if (stat (argv[pos - 1], &stat_buf) != 0)
+          return false;
+        errno = 0;
+        uid_t euid = geteuid ();
+        uid_t NO_UID = -1;
+        return ! (euid == NO_UID && errno) && euid == stat_buf.st_uid;
+      }
 
     case 'G':			/* File is owned by your group? */
-      unary_advance ();
-      return (stat (argv[pos - 1], &stat_buf) == 0
-              && (getegid () == stat_buf.st_gid));
+      {
+        unary_advance ();
+        if (stat (argv[pos - 1], &stat_buf) != 0)
+          return false;
+        errno = 0;
+        gid_t egid = getegid ();
+        gid_t NO_GID = -1;
+        return ! (egid == NO_GID && errno) && egid == stat_buf.st_gid;
+      }
 
     case 'f':			/* File is a file? */
       unary_advance ();
@@ -680,8 +698,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       fputs (_("\
@@ -838,7 +855,7 @@ main (int margc, char **margv)
             }
         }
       if (margc < 2 || !STREQ (margv[margc - 1], "]"))
-        test_syntax_error (_("missing `]'"), NULL);
+        test_syntax_error (_("missing ']'"), NULL);
 
       --margc;
     }

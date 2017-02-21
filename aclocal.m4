@@ -1,8 +1,7 @@
-# generated automatically by aclocal 1.11a -*- Autoconf -*-
+# generated automatically by aclocal 1.14.1 -*- Autoconf -*-
 
-# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-# 2005, 2006, 2007, 2008, 2009, 2010, 2011 Free Software Foundation,
-# Inc.
+# Copyright (C) 1996-2013 Free Software Foundation, Inc.
+
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -12,22 +11,20 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
+m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun([AC_CONFIG_MACRO_DIRS], [_AM_CONFIG_MACRO_DIRS($@)])])
 m4_ifndef([AC_AUTOCONF_VERSION],
   [m4_copy([m4_PACKAGE_VERSION], [AC_AUTOCONF_VERSION])])dnl
-m4_if(m4_defn([AC_AUTOCONF_VERSION]), [2.68.79-5e017],,
-[m4_warning([this file was generated for autoconf 2.68.79-5e017.
+m4_if(m4_defn([AC_AUTOCONF_VERSION]), [2.69],,
+[m4_warning([this file was generated for autoconf 2.69.
 You have another version of autoconf.  It may work, but is not guaranteed to.
 If you have problems, you may need to regenerate the build system entirely.
-To do so, use the procedure documented by the package, typically `autoreconf'.])])
+To do so, use the procedure documented by the package, typically 'autoreconf'.])])
 
-# Copyright (C) 2002, 2003, 2005, 2006, 2007, 2008, 2011 Free Software
-# Foundation, Inc.
+# Copyright (C) 2002-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 8
 
 # AM_AUTOMAKE_VERSION(VERSION)
 # ----------------------------
@@ -35,10 +32,10 @@ To do so, use the procedure documented by the package, typically `autoreconf'.])
 # generated from the m4 files accompanying Automake X.Y.
 # (This private macro should not be called outside this file.)
 AC_DEFUN([AM_AUTOMAKE_VERSION],
-[am__api_version='1.11a'
+[am__api_version='1.14'
 dnl Some users find AM_AUTOMAKE_VERSION and mistake it for a way to
 dnl require some minimum version.  Point them to the right macro.
-m4_if([$1], [1.11a], [],
+m4_if([$1], [1.14.1], [],
       [AC_FATAL([Do not call $0, use AM_INIT_AUTOMAKE([$1]).])])dnl
 ])
 
@@ -54,24 +51,22 @@ m4_define([_AM_AUTOCONF_VERSION], [])
 # Call AM_AUTOMAKE_VERSION and AM_AUTOMAKE_VERSION so they can be traced.
 # This function is AC_REQUIREd by AM_INIT_AUTOMAKE.
 AC_DEFUN([AM_SET_CURRENT_AUTOMAKE_VERSION],
-[AM_AUTOMAKE_VERSION([1.11a])dnl
+[AM_AUTOMAKE_VERSION([1.14.1])dnl
 m4_ifndef([AC_AUTOCONF_VERSION],
   [m4_copy([m4_PACKAGE_VERSION], [AC_AUTOCONF_VERSION])])dnl
 _AM_AUTOCONF_VERSION(m4_defn([AC_AUTOCONF_VERSION]))])
 
 # AM_AUX_DIR_EXPAND                                         -*- Autoconf -*-
 
-# Copyright (C) 2001, 2003, 2005, 2011 Free Software Foundation, Inc.
+# Copyright (C) 2001-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 1
-
 # For projects using AC_CONFIG_AUX_DIR([foo]), Autoconf sets
-# $ac_aux_dir to `$srcdir/foo'.  In other projects, it is set to
-# `$srcdir', `$srcdir/..', or `$srcdir/../..'.
+# $ac_aux_dir to '$srcdir/foo'.  In other projects, it is set to
+# '$srcdir', '$srcdir/..', or '$srcdir/../..'.
 #
 # Of course, Automake must honor this variable whenever it calls a
 # tool from the auxiliary directory.  The problem is that $srcdir (and
@@ -90,7 +85,7 @@ _AM_AUTOCONF_VERSION(m4_defn([AC_AUTOCONF_VERSION]))])
 #
 # The reason of the latter failure is that $top_srcdir and $ac_aux_dir
 # are both prefixed by $srcdir.  In an in-source build this is usually
-# harmless because $srcdir is `.', but things will broke when you
+# harmless because $srcdir is '.', but things will broke when you
 # start a VPATH build or use an absolute $srcdir.
 #
 # So we could use something similar to $top_srcdir/$ac_aux_dir/missing,
@@ -116,14 +111,11 @@ am_aux_dir=`cd $ac_aux_dir && pwd`
 
 # AM_CONDITIONAL                                            -*- Autoconf -*-
 
-# Copyright (C) 1997, 2000, 2001, 2003, 2004, 2005, 2006, 2008, 2011
-# Free Software Foundation, Inc.
+# Copyright (C) 1997-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 10
 
 # AM_CONDITIONAL(NAME, SHELL-CONDITION)
 # -------------------------------------
@@ -150,16 +142,14 @@ AC_CONFIG_COMMANDS_PRE(
 Usually this means the macro was only invoked conditionally.]])
 fi])])
 
-# Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2009,
-# 2010, 2011 Free Software Foundation, Inc.
+# Copyright (C) 1999-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 14
 
-# There are a few dirty hacks below to avoid letting `AC_PROG_CC' be
+# There are a few dirty hacks below to avoid letting 'AC_PROG_CC' be
 # written in clear, in which case automake, when reading aclocal.m4,
 # will think it sees a *use*, and therefore will trigger all it's
 # C support machinery.  Also note that it means that autoscan, seeing
@@ -169,7 +159,7 @@ fi])])
 # _AM_DEPENDENCIES(NAME)
 # ----------------------
 # See how the compiler implements dependency checking.
-# NAME is "CC", "CXX", "GCJ", or "OBJC".
+# NAME is "CC", "CXX", "OBJC", "OBJCXX", "UPC", or "GJC".
 # We try a few techniques and use that to set a single cache variable.
 #
 # We don't AC_REQUIRE the corresponding AC_PROG_CC since the latter was
@@ -185,6 +175,7 @@ AC_REQUIRE([AM_DEP_TRACK])dnl
 m4_if([$1], [CC],   [depcc="$CC"   am_compiler_list=],
       [$1], [CXX],  [depcc="$CXX"  am_compiler_list=],
       [$1], [OBJC], [depcc="$OBJC" am_compiler_list='gcc3 gcc'],
+      [$1], [OBJCXX], [depcc="$OBJCXX" am_compiler_list='gcc3 gcc'],
       [$1], [UPC],  [depcc="$UPC"  am_compiler_list=],
       [$1], [GCJ],  [depcc="$GCJ"  am_compiler_list='gcc3 gcc'],
                     [depcc="$$1"   am_compiler_list=])
@@ -195,8 +186,8 @@ AC_CACHE_CHECK([dependency style of $depcc],
   # We make a subdir and do the tests there.  Otherwise we can end up
   # making bogus files that we don't know about and never remove.  For
   # instance it was reported that on HP-UX the gcc test will end up
-  # making a dummy file named `D' -- because `-MD' means `put the output
-  # in D'.
+  # making a dummy file named 'D' -- because '-MD' means "put the output
+  # in D".
   rm -rf conftest.dir
   mkdir conftest.dir
   # Copy depcomp to subdir because otherwise we won't find it if we're
@@ -236,16 +227,16 @@ AC_CACHE_CHECK([dependency style of $depcc],
     : > sub/conftest.c
     for i in 1 2 3 4 5 6; do
       echo '#include "conftst'$i'.h"' >> sub/conftest.c
-      # Using `: > sub/conftst$i.h' creates only sub/conftst1.h with
-      # Solaris 8's {/usr,}/bin/sh.
-      touch sub/conftst$i.h
+      # Using ": > sub/conftst$i.h" creates only sub/conftst1.h with
+      # Solaris 10 /bin/sh.
+      echo '/* dummy */' > sub/conftst$i.h
     done
     echo "${am__include} ${am__quote}sub/conftest.Po${am__quote}" > confmf
 
-    # We check with `-c' and `-o' for the sake of the "dashmstdout"
+    # We check with '-c' and '-o' for the sake of the "dashmstdout"
     # mode.  It turns out that the SunPro C++ compiler does not properly
-    # handle `-M -o', and we need to detect this.  Also, some Intel
-    # versions had trouble with output in subdirs
+    # handle '-M -o', and we need to detect this.  Also, some Intel
+    # versions had trouble with output in subdirs.
     am__obj=sub/conftest.${OBJEXT-o}
     am__minus_obj="-o $am__obj"
     case $depmode in
@@ -254,8 +245,8 @@ AC_CACHE_CHECK([dependency style of $depcc],
       test "$am__universal" = false || continue
       ;;
     nosideeffect)
-      # after this tag, mechanisms are not by side-effect, so they'll
-      # only be used when explicitly requested
+      # After this tag, mechanisms are not by side-effect, so they'll
+      # only be used when explicitly requested.
       if test "x$enable_dependency_tracking" = xyes; then
 	continue
       else
@@ -263,7 +254,7 @@ AC_CACHE_CHECK([dependency style of $depcc],
       fi
       ;;
     msvc7 | msvc7msys | msvisualcpp | msvcmsys)
-      # This compiler won't grok `-c -o', but also, the minuso test has
+      # This compiler won't grok '-c -o', but also, the minuso test has
       # not run yet.  These depmodes are late enough in the game, and
       # so weak that their functioning should not be impacted.
       am__obj=conftest.${OBJEXT-o}
@@ -311,7 +302,7 @@ AM_CONDITIONAL([am__fastdep$1], [
 # AM_SET_DEPDIR
 # -------------
 # Choose a directory name for dependency files.
-# This macro is AC_REQUIREd in _AM_DEPENDENCIES
+# This macro is AC_REQUIREd in _AM_DEPENDENCIES.
 AC_DEFUN([AM_SET_DEPDIR],
 [AC_REQUIRE([AM_SET_LEADING_DOT])dnl
 AC_SUBST([DEPDIR], ["${am__leading_dot}deps"])dnl
@@ -342,20 +333,18 @@ _AM_SUBST_NOTMAKE([am__nodep])dnl
 
 # Generate code to set up dependency tracking.              -*- Autoconf -*-
 
-# Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2008
-# Free Software Foundation, Inc.
+# Copyright (C) 1999-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-#serial 5
 
 # _AM_OUTPUT_DEPENDENCY_COMMANDS
 # ------------------------------
 AC_DEFUN([_AM_OUTPUT_DEPENDENCY_COMMANDS],
 [{
-  # Autoconf 2.62 quotes --file arguments for eval, but not when files
+  # Older Autoconf quotes --file arguments for eval, but not when files
   # are listed without --file.  Let's play safe and only enable the eval
   # if we detect the quoting.
   case $CONFIG_FILES in
@@ -368,7 +357,7 @@ AC_DEFUN([_AM_OUTPUT_DEPENDENCY_COMMANDS],
     # Strip MF so we end up with the name of the file.
     mf=`echo "$mf" | sed -e 's/:.*$//'`
     # Check whether this is an Automake generated Makefile or not.
-    # We used to match only the files named `Makefile.in', but
+    # We used to match only the files named 'Makefile.in', but
     # some people rename them; so instead we look at the file content.
     # Grep'ing the first line is not enough: some people post-process
     # each Makefile.in and add a new line on top of each file to say so.
@@ -380,21 +369,19 @@ AC_DEFUN([_AM_OUTPUT_DEPENDENCY_COMMANDS],
       continue
     fi
     # Extract the definition of DEPDIR, am__include, and am__quote
-    # from the Makefile without running `make'.
+    # from the Makefile without running 'make'.
     DEPDIR=`sed -n 's/^DEPDIR = //p' < "$mf"`
     test -z "$DEPDIR" && continue
     am__include=`sed -n 's/^am__include = //p' < "$mf"`
-    test -z "am__include" && continue
+    test -z "$am__include" && continue
     am__quote=`sed -n 's/^am__quote = //p' < "$mf"`
-    # When using ansi2knr, U may be empty or an underscore; expand it
-    U=`sed -n 's/^U = //p' < "$mf"`
     # Find all dependency output files, they are included files with
     # $(DEPDIR) in their names.  We invoke sed twice because it is the
     # simplest approach to changing $(DEPDIR) to its actual value in the
     # expansion.
     for file in `sed -n "
       s/^$am__include $am__quote\(.*(DEPDIR).*\)$am__quote"'$/\1/p' <"$mf" | \
-	 sed -e 's/\$(DEPDIR)/'"$DEPDIR"'/g' -e 's/\$U/'"$U"'/g'`; do
+	 sed -e 's/\$(DEPDIR)/'"$DEPDIR"'/g'`; do
       # Make sure the directory exists.
       test -f "$dirpart/$file" && continue
       fdir=`AS_DIRNAME(["$file"])`
@@ -412,7 +399,7 @@ AC_DEFUN([_AM_OUTPUT_DEPENDENCY_COMMANDS],
 # This macro should only be invoked once -- use via AC_REQUIRE.
 #
 # This code is only required when automatic dependency tracking
-# is enabled.  FIXME.  This creates each `.P' file that we will
+# is enabled.  FIXME.  This creates each '.P' file that we will
 # need in order to bootstrap the dependency handling code.
 AC_DEFUN([AM_OUTPUT_DEPENDENCY_COMMANDS],
 [AC_CONFIG_COMMANDS([depfiles],
@@ -422,17 +409,20 @@ AC_DEFUN([AM_OUTPUT_DEPENDENCY_COMMANDS],
 
 # Do all the work for Automake.                             -*- Autoconf -*-
 
-# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-# 2005, 2006, 2008, 2009, 2011 Free Software Foundation, Inc.
+# Copyright (C) 1996-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 17
-
 # This macro actually does too much.  Some checks are only needed if
 # your package does certain things.  But this isn't really a big deal.
+
+dnl Redefine AC_PROG_CC to automatically invoke _AM_PROG_CC_C_O.
+m4_define([AC_PROG_CC],
+m4_defn([AC_PROG_CC])
+[_AM_PROG_CC_C_O
+])
 
 # AM_INIT_AUTOMAKE(PACKAGE, VERSION, [NO-DEFINE])
 # AM_INIT_AUTOMAKE([OPTIONS])
@@ -446,7 +436,7 @@ AC_DEFUN([AM_OUTPUT_DEPENDENCY_COMMANDS],
 # arguments mandatory, and then we can depend on a new Autoconf
 # release and drop the old call support.
 AC_DEFUN([AM_INIT_AUTOMAKE],
-[AC_PREREQ([2.62])dnl
+[AC_PREREQ([2.65])dnl
 dnl Autoconf wants to disallow AM_ names.  We explicitly allow
 dnl the ones we care about.
 m4_pattern_allow([^AM_[A-Z]+FLAGS$])dnl
@@ -475,7 +465,9 @@ AC_SUBST([CYGPATH_W])
 # Define the identity of the package.
 dnl Distinguish between old-style and new-style calls.
 m4_ifval([$2],
-[m4_ifval([$3], [_AM_SET_OPTION([no-define])])dnl
+[AC_DIAGNOSE([obsolete],
+             [$0: two- and three-arguments forms are deprecated.])
+m4_ifval([$3], [_AM_SET_OPTION([no-define])])dnl
  AC_SUBST([PACKAGE], [$1])dnl
  AC_SUBST([VERSION], [$2])],
 [_AM_SET_OPTIONS([$1])dnl
@@ -501,7 +493,12 @@ AM_MISSING_PROG([AUTOHEADER], [autoheader])
 AM_MISSING_PROG([MAKEINFO], [makeinfo])
 AC_REQUIRE([AM_PROG_INSTALL_SH])dnl
 AC_REQUIRE([AM_PROG_INSTALL_STRIP])dnl
-AC_REQUIRE([AM_PROG_MKDIR_P])dnl
+AC_REQUIRE([AC_PROG_MKDIR_P])dnl
+# For better backward compatibility.  To be removed once Automake 1.9.x
+# dies out for good.  For more background, see:
+# <http://lists.gnu.org/archive/html/automake/2012-07/msg00001.html>
+# <http://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
+AC_SUBST([mkdir_p], ['$(MKDIR_P)'])
 # We need awk for the "check" target.  The system "awk" is bad on
 # some platforms.
 AC_REQUIRE([AC_PROG_AWK])dnl
@@ -513,32 +510,76 @@ _AM_IF_OPTION([tar-ustar], [_AM_PROG_TAR([ustar])],
 _AM_IF_OPTION([no-dependencies],,
 [AC_PROVIDE_IFELSE([AC_PROG_CC],
 		  [_AM_DEPENDENCIES([CC])],
-		  [define([AC_PROG_CC],
-			  defn([AC_PROG_CC])[_AM_DEPENDENCIES([CC])])])dnl
+		  [m4_define([AC_PROG_CC],
+			     m4_defn([AC_PROG_CC])[_AM_DEPENDENCIES([CC])])])dnl
 AC_PROVIDE_IFELSE([AC_PROG_CXX],
 		  [_AM_DEPENDENCIES([CXX])],
-		  [define([AC_PROG_CXX],
-			  defn([AC_PROG_CXX])[_AM_DEPENDENCIES([CXX])])])dnl
+		  [m4_define([AC_PROG_CXX],
+			     m4_defn([AC_PROG_CXX])[_AM_DEPENDENCIES([CXX])])])dnl
 AC_PROVIDE_IFELSE([AC_PROG_OBJC],
 		  [_AM_DEPENDENCIES([OBJC])],
-		  [define([AC_PROG_OBJC],
-			  defn([AC_PROG_OBJC])[_AM_DEPENDENCIES([OBJC])])])dnl
+		  [m4_define([AC_PROG_OBJC],
+			     m4_defn([AC_PROG_OBJC])[_AM_DEPENDENCIES([OBJC])])])dnl
+AC_PROVIDE_IFELSE([AC_PROG_OBJCXX],
+		  [_AM_DEPENDENCIES([OBJCXX])],
+		  [m4_define([AC_PROG_OBJCXX],
+			     m4_defn([AC_PROG_OBJCXX])[_AM_DEPENDENCIES([OBJCXX])])])dnl
 ])
-_AM_IF_OPTION([silent-rules], [AC_REQUIRE([AM_SILENT_RULES])])dnl
-dnl The `parallel-tests' driver may need to know about EXEEXT, so add the
-dnl `am__EXEEXT' conditional if _AM_COMPILER_EXEEXT was seen.  This macro
-dnl is hooked onto _AC_COMPILER_EXEEXT early, see below.
+AC_REQUIRE([AM_SILENT_RULES])dnl
+dnl The testsuite driver may need to know about EXEEXT, so add the
+dnl 'am__EXEEXT' conditional if _AM_COMPILER_EXEEXT was seen.  This
+dnl macro is hooked onto _AC_COMPILER_EXEEXT early, see below.
 AC_CONFIG_COMMANDS_PRE(dnl
 [m4_provide_if([_AM_COMPILER_EXEEXT],
   [AM_CONDITIONAL([am__EXEEXT], [test -n "$EXEEXT"])])])dnl
-])
 
-dnl Hook into `_AC_COMPILER_EXEEXT' early to learn its expansion.  Do not
+# POSIX will say in a future version that running "rm -f" with no argument
+# is OK; and we want to be able to make that assumption in our Makefile
+# recipes.  So use an aggressive probe to check that the usage we want is
+# actually supported "in the wild" to an acceptable degree.
+# See automake bug#10828.
+# To make any issue more visible, cause the running configure to be aborted
+# by default if the 'rm' program in use doesn't match our expectations; the
+# user can still override this though.
+if rm -f && rm -fr && rm -rf; then : OK; else
+  cat >&2 <<'END'
+Oops!
+
+Your 'rm' program seems unable to run without file operands specified
+on the command line, even when the '-f' option is present.  This is contrary
+to the behaviour of most rm programs out there, and not conforming with
+the upcoming POSIX standard: <http://austingroupbugs.net/view.php?id=542>
+
+Please tell bug-automake@gnu.org about your system, including the value
+of your $PATH and any error possibly output before this message.  This
+can help us improve future automake versions.
+
+END
+  if test x"$ACCEPT_INFERIOR_RM_PROGRAM" = x"yes"; then
+    echo 'Configuration will proceed anyway, since you have set the' >&2
+    echo 'ACCEPT_INFERIOR_RM_PROGRAM variable to "yes"' >&2
+    echo >&2
+  else
+    cat >&2 <<'END'
+Aborting the configuration process, to ensure you take notice of the issue.
+
+You can download and install GNU coreutils to get an 'rm' implementation
+that behaves properly: <http://www.gnu.org/software/coreutils/>.
+
+If you want to complete the configuration process using your problematic
+'rm' anyway, export the environment variable ACCEPT_INFERIOR_RM_PROGRAM
+to "yes", and re-run configure.
+
+END
+    AC_MSG_ERROR([Your 'rm' program is bad, sorry.])
+  fi
+fi])
+
+dnl Hook into '_AC_COMPILER_EXEEXT' early to learn its expansion.  Do not
 dnl add the conditional right here, as _AC_COMPILER_EXEEXT may be further
 dnl mangled by Autoconf and run in a shell conditional statement.
 m4_define([_AC_COMPILER_EXEEXT],
 m4_defn([_AC_COMPILER_EXEEXT])[m4_provide([_AM_COMPILER_EXEEXT])])
-
 
 # When config.status generates a header, we must update the stamp-h file.
 # This file resides in the same directory as the config header
@@ -561,14 +602,11 @@ for _am_header in $config_headers :; do
 done
 echo "timestamp for $_am_arg" >`AS_DIRNAME(["$_am_arg"])`/stamp-h[]$_am_stamp_count])
 
-# Copyright (C) 2001, 2003, 2005, 2008, 2011 Free Software Foundation,
-# Inc.
+# Copyright (C) 2001-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 8
 
 # AM_PROG_INSTALL_SH
 # ------------------
@@ -585,13 +623,11 @@ if test x"${install_sh}" != xset; then
 fi
 AC_SUBST([install_sh])])
 
-# Copyright (C) 2003, 2005  Free Software Foundation, Inc.
+# Copyright (C) 2003-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 2
 
 # Check whether the underlying file-system supports filenames
 # with a leading dot.  For instance MS-DOS doesn't.
@@ -608,13 +644,11 @@ AC_SUBST([am__leading_dot])])
 
 # Check to see how 'make' treats includes.	            -*- Autoconf -*-
 
-# Copyright (C) 2001, 2002, 2003, 2005, 2009  Free Software Foundation, Inc.
+# Copyright (C) 2001-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 4
 
 # AM_MAKE_INCLUDE()
 # -----------------
@@ -633,7 +667,7 @@ am__quote=
 _am_result=none
 # First try GNU make style include.
 echo "include confinc" > confmf
-# Ignore all kinds of additional output from `make'.
+# Ignore all kinds of additional output from 'make'.
 case `$am_make -s -f confmf 2> /dev/null` in #(
 *the\ am__doit\ target*)
   am__include=include
@@ -658,51 +692,13 @@ AC_MSG_RESULT([$_am_result])
 rm -f confinc confmf
 ])
 
-# Copyright (C) 1999, 2000, 2001, 2003, 2004, 2005, 2008
-# Free Software Foundation, Inc.
-#
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
-
-# serial 6
-
-# AM_PROG_CC_C_O
-# --------------
-# Like AC_PROG_CC_C_O, but changed for automake.
-AC_DEFUN([AM_PROG_CC_C_O],
-[AC_REQUIRE([AC_PROG_CC_C_O])dnl
-AC_REQUIRE([AM_AUX_DIR_EXPAND])dnl
-AC_REQUIRE_AUX_FILE([compile])dnl
-# FIXME: we rely on the cache variable name because
-# there is no other way.
-set dummy $CC
-am_cc=`echo $[2] | sed ['s/[^a-zA-Z0-9_]/_/g;s/^[0-9]/_/']`
-eval am_t=\$ac_cv_prog_cc_${am_cc}_c_o
-if test "$am_t" != yes; then
-   # Losing compiler, so override with the script.
-   # FIXME: It is wrong to rewrite CC.
-   # But if we don't then we get into trouble of one sort or another.
-   # A longer-term fix would be to have automake use am__CC in this case,
-   # and then we could set am__CC="\$(top_srcdir)/compile \$(CC)"
-   CC="$am_aux_dir/compile $CC"
-fi
-dnl Make sure AC_PROG_CC is never called again, or it will override our
-dnl setting of CC.
-m4_define([AC_PROG_CC],
-          [m4_fatal([AC_PROG_CC cannot be called after AM_PROG_CC_C_O])])
-])
-
 # Fake the existence of programs that GNU maintainers use.  -*- Autoconf -*-
 
-# Copyright (C) 1997, 1999, 2000, 2001, 2003, 2004, 2005, 2008
-# Free Software Foundation, Inc.
+# Copyright (C) 1997-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 6
 
 # AM_MISSING_PROG(NAME, PROGRAM)
 # ------------------------------
@@ -711,11 +707,10 @@ AC_DEFUN([AM_MISSING_PROG],
 $1=${$1-"${am_missing_run}$2"}
 AC_SUBST($1)])
 
-
 # AM_MISSING_HAS_RUN
 # ------------------
-# Define MISSING if not defined so far and test if it supports --run.
-# If it does, set am_missing_run to use it, otherwise, to nothing.
+# Define MISSING if not defined so far and test if it is modern enough.
+# If it is, set am_missing_run to use it, otherwise, to nothing.
 AC_DEFUN([AM_MISSING_HAS_RUN],
 [AC_REQUIRE([AM_AUX_DIR_EXPAND])dnl
 AC_REQUIRE_AUX_FILE([missing])dnl
@@ -728,53 +723,21 @@ if test x"${MISSING+set}" != xset; then
   esac
 fi
 # Use eval to expand $SHELL
-if eval "$MISSING --run true"; then
-  am_missing_run="$MISSING --run "
+if eval "$MISSING --is-lightweight"; then
+  am_missing_run="$MISSING "
 else
   am_missing_run=
-  AC_MSG_WARN([`missing' script is too old or missing])
+  AC_MSG_WARN(['missing' script is too old or missing])
 fi
-])
-
-# Copyright (C) 2003, 2004, 2005, 2006, 2011 Free Software Foundation,
-# Inc.
-#
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
-
-# serial 1
-
-# AM_PROG_MKDIR_P
-# ---------------
-# Check for `mkdir -p'.
-AC_DEFUN([AM_PROG_MKDIR_P],
-[AC_PREREQ([2.60])dnl
-AC_REQUIRE([AC_PROG_MKDIR_P])dnl
-dnl Automake 1.8 to 1.9.6 used to define mkdir_p.  We now use MKDIR_P,
-dnl while keeping a definition of mkdir_p for backward compatibility.
-dnl @MKDIR_P@ is magic: AC_OUTPUT adjusts its value for each Makefile.
-dnl However we cannot define mkdir_p as $(MKDIR_P) for the sake of
-dnl Makefile.ins that do not define MKDIR_P, so we do our own
-dnl adjustment using top_builddir (which is defined more often than
-dnl MKDIR_P).
-AC_SUBST([mkdir_p], ["$MKDIR_P"])dnl
-case $mkdir_p in
-  [[\\/$]]* | ?:[[\\/]]*) ;;
-  */*) mkdir_p="\$(top_builddir)/$mkdir_p" ;;
-esac
 ])
 
 # Helper functions for option handling.                     -*- Autoconf -*-
 
-# Copyright (C) 2001, 2002, 2003, 2005, 2008, 2010, 2011 Free Software
-# Foundation, Inc.
+# Copyright (C) 2001-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 6
 
 # _AM_MANGLE_OPTION(NAME)
 # -----------------------
@@ -799,44 +762,77 @@ AC_DEFUN([_AM_SET_OPTIONS],
 AC_DEFUN([_AM_IF_OPTION],
 [m4_ifset(_AM_MANGLE_OPTION([$1]), [$2], [$3])])
 
-# Copyright (C) 1996, 1997, 1998, 2000, 2001, 2002, 2003, 2005, 2006
-# Free Software Foundation, Inc.
+# Copyright (C) 1999-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 5
-
-AC_DEFUN([AM_C_PROTOTYPES],
-[AC_REQUIRE([AC_C_PROTOTYPES])
-AC_DIAGNOSE([obsolete],
-            [$0: automatic de-ANSI-fication support is deprecated])
-if test "$ac_cv_prog_cc_stdc" != no; then
-  U= ANSI2KNR=
-else
-  U=_ ANSI2KNR=./ansi2knr
+# _AM_PROG_CC_C_O
+# ---------------
+# Like AC_PROG_CC_C_O, but changed for automake.  We rewrite AC_PROG_CC
+# to automatically call this.
+AC_DEFUN([_AM_PROG_CC_C_O],
+[AC_REQUIRE([AM_AUX_DIR_EXPAND])dnl
+AC_REQUIRE_AUX_FILE([compile])dnl
+AC_LANG_PUSH([C])dnl
+AC_CACHE_CHECK(
+  [whether $CC understands -c and -o together],
+  [am_cv_prog_cc_c_o],
+  [AC_LANG_CONFTEST([AC_LANG_PROGRAM([])])
+  # Make sure it works both with $CC and with simple cc.
+  # Following AC_PROG_CC_C_O, we do the test twice because some
+  # compilers refuse to overwrite an existing .o file with -o,
+  # though they will create one.
+  am_cv_prog_cc_c_o=yes
+  for am_i in 1 2; do
+    if AM_RUN_LOG([$CC -c conftest.$ac_ext -o conftest2.$ac_objext]) \
+         && test -f conftest2.$ac_objext; then
+      : OK
+    else
+      am_cv_prog_cc_c_o=no
+      break
+    fi
+  done
+  rm -f core conftest*
+  unset am_i])
+if test "$am_cv_prog_cc_c_o" != yes; then
+   # Losing compiler, so override with the script.
+   # FIXME: It is wrong to rewrite CC.
+   # But if we don't then we get into trouble of one sort or another.
+   # A longer-term fix would be to have automake use am__CC in this case,
+   # and then we could set am__CC="\$(top_srcdir)/compile \$(CC)"
+   CC="$am_aux_dir/compile $CC"
 fi
-# Ensure some checks needed by ansi2knr itself.
-AC_REQUIRE([AC_HEADER_STDC])
-AC_CHECK_HEADERS([string.h])
-AC_SUBST([U])dnl
-AC_SUBST([ANSI2KNR])dnl
-_AM_SUBST_NOTMAKE([ANSI2KNR])dnl
-])
+AC_LANG_POP([C])])
 
-AU_DEFUN([fp_C_PROTOTYPES], [AM_C_PROTOTYPES])
+# For backward compatibility.
+AC_DEFUN_ONCE([AM_PROG_CC_C_O], [AC_REQUIRE([AC_PROG_CC])])
+
+# Copyright (C) 2001-2013 Free Software Foundation, Inc.
+#
+# This file is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# AM_RUN_LOG(COMMAND)
+# -------------------
+# Run COMMAND, save the exit status in ac_status, and log it.
+# (This has been adapted from Autoconf's _AC_RUN_LOG macro.)
+AC_DEFUN([AM_RUN_LOG],
+[{ echo "$as_me:$LINENO: $1" >&AS_MESSAGE_LOG_FD
+   ($1) >&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&AS_MESSAGE_LOG_FD
+   (exit $ac_status); }])
 
 # Check to make sure that the build environment is sane.    -*- Autoconf -*-
 
-# Copyright (C) 1996, 1997, 2000, 2001, 2003, 2005, 2008, 2009, 2010,
-# 2011 Free Software Foundation, Inc.
+# Copyright (C) 1996-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 9
 
 # AM_SANITY_CHECK
 # ---------------
@@ -852,10 +848,10 @@ case `pwd` in
 esac
 case $srcdir in
   *[[\\\"\#\$\&\'\`$am_lf\ \	]]*)
-    AC_MSG_ERROR([unsafe srcdir value: `$srcdir']);;
+    AC_MSG_ERROR([unsafe srcdir value: '$srcdir']);;
 esac
 
-# Do `set' in a subshell so we don't clobber the current shell's
+# Do 'set' in a subshell so we don't clobber the current shell's
 # arguments.  Must try -L first in case configure is actually a
 # symlink; some systems play weird games with the mod time of symlinks
 # (eg FreeBSD returns the mod time of the symlink's containing
@@ -913,75 +909,99 @@ AC_CONFIG_COMMANDS_PRE(
 rm -f conftest.file
 ])
 
-# Copyright (C) 2009, 2010 Free Software Foundation, Inc.
+# Copyright (C) 2009-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 2
-
 # AM_SILENT_RULES([DEFAULT])
 # --------------------------
 # Enable less verbose build rules; with the default set to DEFAULT
-# (`yes' being less verbose, `no' or empty being verbose).
+# ("yes" being less verbose, "no" or empty being verbose).
 AC_DEFUN([AM_SILENT_RULES],
 [AC_ARG_ENABLE([silent-rules], [dnl
 AS_HELP_STRING(
   [--enable-silent-rules],
-  [less verbose build output (undo: `make V=1')])
+  [less verbose build output (undo: "make V=1")])
 AS_HELP_STRING(
   [--disable-silent-rules],
-  [verbose build output (undo: `make V=0')])dnl
+  [verbose build output (undo: "make V=0")])dnl
 ])
 case $enable_silent_rules in @%:@ (((
   yes) AM_DEFAULT_VERBOSITY=0;;
    no) AM_DEFAULT_VERBOSITY=1;;
     *) AM_DEFAULT_VERBOSITY=m4_if([$1], [yes], [0], [1]);;
 esac
+dnl
+dnl A few 'make' implementations (e.g., NonStop OS and NextStep)
+dnl do not support nested variable expansions.
+dnl See automake bug#9928 and bug#10237.
+am_make=${MAKE-make}
+AC_CACHE_CHECK([whether $am_make supports nested variables],
+   [am_cv_make_support_nested_variables],
+   [if AS_ECHO([['TRUE=$(BAR$(V))
+BAR0=false
+BAR1=true
+V=1
+am__doit:
+	@$(TRUE)
+.PHONY: am__doit']]) | $am_make -f - >/dev/null 2>&1; then
+  am_cv_make_support_nested_variables=yes
+else
+  am_cv_make_support_nested_variables=no
+fi])
+if test $am_cv_make_support_nested_variables = yes; then
+  dnl Using '$V' instead of '$(V)' breaks IRIX make.
+  AM_V='$(V)'
+  AM_DEFAULT_V='$(AM_DEFAULT_VERBOSITY)'
+else
+  AM_V=$AM_DEFAULT_VERBOSITY
+  AM_DEFAULT_V=$AM_DEFAULT_VERBOSITY
+fi
+AC_SUBST([AM_V])dnl
+AM_SUBST_NOTMAKE([AM_V])dnl
+AC_SUBST([AM_DEFAULT_V])dnl
+AM_SUBST_NOTMAKE([AM_DEFAULT_V])dnl
 AC_SUBST([AM_DEFAULT_VERBOSITY])dnl
 AM_BACKSLASH='\'
 AC_SUBST([AM_BACKSLASH])dnl
 _AM_SUBST_NOTMAKE([AM_BACKSLASH])dnl
 ])
 
-# Copyright (C) 2001, 2003, 2005, 2011 Free Software Foundation, Inc.
+# Copyright (C) 2001-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 1
-
 # AM_PROG_INSTALL_STRIP
 # ---------------------
-# One issue with vendor `install' (even GNU) is that you can't
+# One issue with vendor 'install' (even GNU) is that you can't
 # specify the program used to strip binaries.  This is especially
 # annoying in cross-compiling environments, where the build's strip
 # is unlikely to handle the host's binaries.
 # Fortunately install-sh will honor a STRIPPROG variable, so we
-# always use install-sh in `make install-strip', and initialize
+# always use install-sh in "make install-strip", and initialize
 # STRIPPROG with the value of the STRIP variable (set by the user).
 AC_DEFUN([AM_PROG_INSTALL_STRIP],
 [AC_REQUIRE([AM_PROG_INSTALL_SH])dnl
-# Installed binaries are usually stripped using `strip' when the user
-# run `make install-strip'.  However `strip' might not be the right
+# Installed binaries are usually stripped using 'strip' when the user
+# run "make install-strip".  However 'strip' might not be the right
 # tool to use in cross-compilation environments, therefore Automake
-# will honor the `STRIP' environment variable to overrule this program.
-dnl Don't test for $cross_compiling = yes, because it might be `maybe'.
+# will honor the 'STRIP' environment variable to overrule this program.
+dnl Don't test for $cross_compiling = yes, because it might be 'maybe'.
 if test "$cross_compiling" != no; then
   AC_CHECK_TOOL([STRIP], [strip], :)
 fi
 INSTALL_STRIP_PROGRAM="\$(install_sh) -c -s"
 AC_SUBST([INSTALL_STRIP_PROGRAM])])
 
-# Copyright (C) 2006, 2008, 2010 Free Software Foundation, Inc.
+# Copyright (C) 2006-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
-
-# serial 3
 
 # _AM_SUBST_NOTMAKE(VARIABLE)
 # ---------------------------
@@ -996,18 +1016,16 @@ AC_DEFUN([AM_SUBST_NOTMAKE], [_AM_SUBST_NOTMAKE($@)])
 
 # Check how to create a tarball.                            -*- Autoconf -*-
 
-# Copyright (C) 2004, 2005  Free Software Foundation, Inc.
+# Copyright (C) 2004-2013 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
 
-# serial 2
-
 # _AM_PROG_TAR(FORMAT)
 # --------------------
 # Check how to create a tarball in format FORMAT.
-# FORMAT should be one of `v7', `ustar', or `pax'.
+# FORMAT should be one of 'v7', 'ustar', or 'pax'.
 #
 # Substitute a variable $(am__tar) that is a command
 # writing to stdout a FORMAT-tarball containing the directory
@@ -1017,80 +1035,120 @@ AC_DEFUN([AM_SUBST_NOTMAKE], [_AM_SUBST_NOTMAKE($@)])
 # Substitute a variable $(am__untar) that extract such
 # a tarball read from stdin.
 #     $(am__untar) < result.tar
+#
 AC_DEFUN([_AM_PROG_TAR],
-[# Always define AMTAR for backward compatibility.
-AM_MISSING_PROG([AMTAR], [tar])
-m4_if([$1], [v7],
-     [am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'],
-     [m4_case([$1], [ustar],, [pax],,
-              [m4_fatal([Unknown tar format])])
-AC_MSG_CHECKING([how to create a $1 tar archive])
-# Loop over all known methods to create a tar archive until one works.
+[# Always define AMTAR for backward compatibility.  Yes, it's still used
+# in the wild :-(  We should find a proper way to deprecate it ...
+AC_SUBST([AMTAR], ['$${TAR-tar}'])
+
+# We'll loop over all known methods to create a tar archive until one works.
 _am_tools='gnutar m4_if([$1], [ustar], [plaintar]) pax cpio none'
-_am_tools=${am_cv_prog_tar_$1-$_am_tools}
-# Do not fold the above two line into one, because Tru64 sh and
-# Solaris sh will not grok spaces in the rhs of `-'.
-for _am_tool in $_am_tools
-do
-  case $_am_tool in
-  gnutar)
-    for _am_tar in tar gnutar gtar;
-    do
-      AM_RUN_LOG([$_am_tar --version]) && break
-    done
-    am__tar="$_am_tar --format=m4_if([$1], [pax], [posix], [$1]) -chf - "'"$$tardir"'
-    am__tar_="$_am_tar --format=m4_if([$1], [pax], [posix], [$1]) -chf - "'"$tardir"'
-    am__untar="$_am_tar -xf -"
-    ;;
-  plaintar)
-    # Must skip GNU tar: if it does not support --format= it doesn't create
-    # ustar tarball either.
-    (tar --version) >/dev/null 2>&1 && continue
-    am__tar='tar chf - "$$tardir"'
-    am__tar_='tar chf - "$tardir"'
-    am__untar='tar xf -'
-    ;;
-  pax)
-    am__tar='pax -L -x $1 -w "$$tardir"'
-    am__tar_='pax -L -x $1 -w "$tardir"'
-    am__untar='pax -r'
-    ;;
-  cpio)
-    am__tar='find "$$tardir" -print | cpio -o -H $1 -L'
-    am__tar_='find "$tardir" -print | cpio -o -H $1 -L'
-    am__untar='cpio -i -H $1 -d'
-    ;;
-  none)
-    am__tar=false
-    am__tar_=false
-    am__untar=false
-    ;;
-  esac
 
-  # If the value was cached, stop now.  We just wanted to have am__tar
-  # and am__untar set.
-  test -n "${am_cv_prog_tar_$1}" && break
+m4_if([$1], [v7],
+  [am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'],
 
-  # tar/untar a dummy directory, and stop if the command works
+  [m4_case([$1],
+    [ustar],
+     [# The POSIX 1988 'ustar' format is defined with fixed-size fields.
+      # There is notably a 21 bits limit for the UID and the GID.  In fact,
+      # the 'pax' utility can hang on bigger UID/GID (see automake bug#8343
+      # and bug#13588).
+      am_max_uid=2097151 # 2^21 - 1
+      am_max_gid=$am_max_uid
+      # The $UID and $GID variables are not portable, so we need to resort
+      # to the POSIX-mandated id(1) utility.  Errors in the 'id' calls
+      # below are definitely unexpected, so allow the users to see them
+      # (that is, avoid stderr redirection).
+      am_uid=`id -u || echo unknown`
+      am_gid=`id -g || echo unknown`
+      AC_MSG_CHECKING([whether UID '$am_uid' is supported by ustar format])
+      if test $am_uid -le $am_max_uid; then
+         AC_MSG_RESULT([yes])
+      else
+         AC_MSG_RESULT([no])
+         _am_tools=none
+      fi
+      AC_MSG_CHECKING([whether GID '$am_gid' is supported by ustar format])
+      if test $am_gid -le $am_max_gid; then
+         AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no])
+        _am_tools=none
+      fi],
+
+  [pax],
+    [],
+
+  [m4_fatal([Unknown tar format])])
+
+  AC_MSG_CHECKING([how to create a $1 tar archive])
+
+  # Go ahead even if we have the value already cached.  We do so because we
+  # need to set the values for the 'am__tar' and 'am__untar' variables.
+  _am_tools=${am_cv_prog_tar_$1-$_am_tools}
+
+  for _am_tool in $_am_tools; do
+    case $_am_tool in
+    gnutar)
+      for _am_tar in tar gnutar gtar; do
+        AM_RUN_LOG([$_am_tar --version]) && break
+      done
+      am__tar="$_am_tar --format=m4_if([$1], [pax], [posix], [$1]) -chf - "'"$$tardir"'
+      am__tar_="$_am_tar --format=m4_if([$1], [pax], [posix], [$1]) -chf - "'"$tardir"'
+      am__untar="$_am_tar -xf -"
+      ;;
+    plaintar)
+      # Must skip GNU tar: if it does not support --format= it doesn't create
+      # ustar tarball either.
+      (tar --version) >/dev/null 2>&1 && continue
+      am__tar='tar chf - "$$tardir"'
+      am__tar_='tar chf - "$tardir"'
+      am__untar='tar xf -'
+      ;;
+    pax)
+      am__tar='pax -L -x $1 -w "$$tardir"'
+      am__tar_='pax -L -x $1 -w "$tardir"'
+      am__untar='pax -r'
+      ;;
+    cpio)
+      am__tar='find "$$tardir" -print | cpio -o -H $1 -L'
+      am__tar_='find "$tardir" -print | cpio -o -H $1 -L'
+      am__untar='cpio -i -H $1 -d'
+      ;;
+    none)
+      am__tar=false
+      am__tar_=false
+      am__untar=false
+      ;;
+    esac
+
+    # If the value was cached, stop now.  We just wanted to have am__tar
+    # and am__untar set.
+    test -n "${am_cv_prog_tar_$1}" && break
+
+    # tar/untar a dummy directory, and stop if the command works.
+    rm -rf conftest.dir
+    mkdir conftest.dir
+    echo GrepMe > conftest.dir/file
+    AM_RUN_LOG([tardir=conftest.dir && eval $am__tar_ >conftest.tar])
+    rm -rf conftest.dir
+    if test -s conftest.tar; then
+      AM_RUN_LOG([$am__untar <conftest.tar])
+      AM_RUN_LOG([cat conftest.dir/file])
+      grep GrepMe conftest.dir/file >/dev/null 2>&1 && break
+    fi
+  done
   rm -rf conftest.dir
-  mkdir conftest.dir
-  echo GrepMe > conftest.dir/file
-  AM_RUN_LOG([tardir=conftest.dir && eval $am__tar_ >conftest.tar])
-  rm -rf conftest.dir
-  if test -s conftest.tar; then
-    AM_RUN_LOG([$am__untar <conftest.tar])
-    grep GrepMe conftest.dir/file >/dev/null 2>&1 && break
-  fi
-done
-rm -rf conftest.dir
 
-AC_CACHE_VAL([am_cv_prog_tar_$1], [am_cv_prog_tar_$1=$_am_tool])
-AC_MSG_RESULT([$am_cv_prog_tar_$1])])
+  AC_CACHE_VAL([am_cv_prog_tar_$1], [am_cv_prog_tar_$1=$_am_tool])
+  AC_MSG_RESULT([$am_cv_prog_tar_$1])])
+
 AC_SUBST([am__tar])
 AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
 m4_include([m4/00gnulib.m4])
+m4_include([m4/absolute-header.m4])
 m4_include([m4/acl.m4])
 m4_include([m4/alloca.m4])
 m4_include([m4/arpa_inet_h.m4])
@@ -1111,6 +1169,7 @@ m4_include([m4/chown.m4])
 m4_include([m4/clock_time.m4])
 m4_include([m4/close-stream.m4])
 m4_include([m4/close.m4])
+m4_include([m4/closedir.m4])
 m4_include([m4/closein.m4])
 m4_include([m4/closeout.m4])
 m4_include([m4/codeset.m4])
@@ -1125,25 +1184,29 @@ m4_include([m4/dirent_h.m4])
 m4_include([m4/dirfd.m4])
 m4_include([m4/dirname.m4])
 m4_include([m4/double-slash-root.m4])
+m4_include([m4/dup.m4])
 m4_include([m4/dup2.m4])
 m4_include([m4/eealloc.m4])
 m4_include([m4/environ.m4])
 m4_include([m4/errno_h.m4])
 m4_include([m4/error.m4])
-m4_include([m4/euidaccess-stat.m4])
 m4_include([m4/euidaccess.m4])
 m4_include([m4/exponentd.m4])
 m4_include([m4/exponentf.m4])
 m4_include([m4/exponentl.m4])
 m4_include([m4/extensions.m4])
+m4_include([m4/extern-inline.m4])
 m4_include([m4/faccessat.m4])
 m4_include([m4/fchdir.m4])
+m4_include([m4/fchmodat.m4])
+m4_include([m4/fchownat.m4])
 m4_include([m4/fclose.m4])
 m4_include([m4/fcntl-o.m4])
 m4_include([m4/fcntl-safer.m4])
 m4_include([m4/fcntl.m4])
 m4_include([m4/fcntl_h.m4])
-m4_include([m4/fd-reopen.m4])
+m4_include([m4/fdatasync.m4])
+m4_include([m4/fdopen.m4])
 m4_include([m4/fdopendir.m4])
 m4_include([m4/fflush.m4])
 m4_include([m4/fileblocks.m4])
@@ -1156,17 +1219,24 @@ m4_include([m4/fopen.m4])
 m4_include([m4/fpending.m4])
 m4_include([m4/fpieee.m4])
 m4_include([m4/fpurge.m4])
+m4_include([m4/freadahead.m4])
 m4_include([m4/freading.m4])
+m4_include([m4/freadptr.m4])
+m4_include([m4/freadseek.m4])
 m4_include([m4/freopen.m4])
 m4_include([m4/frexp.m4])
 m4_include([m4/frexpl.m4])
 m4_include([m4/fseek.m4])
 m4_include([m4/fseeko.m4])
+m4_include([m4/fseterr.m4])
+m4_include([m4/fstat.m4])
+m4_include([m4/fstatat.m4])
 m4_include([m4/fstypename.m4])
 m4_include([m4/fsusage.m4])
 m4_include([m4/fsync.m4])
 m4_include([m4/ftell.m4])
 m4_include([m4/ftello.m4])
+m4_include([m4/ftruncate.m4])
 m4_include([m4/fts.m4])
 m4_include([m4/futimens.m4])
 m4_include([m4/getaddrinfo.m4])
@@ -1180,6 +1250,7 @@ m4_include([m4/gethostname.m4])
 m4_include([m4/gethrxtime.m4])
 m4_include([m4/getline.m4])
 m4_include([m4/getloadavg.m4])
+m4_include([m4/getlogin.m4])
 m4_include([m4/getndelim2.m4])
 m4_include([m4/getopt.m4])
 m4_include([m4/getpagesize.m4])
@@ -1189,6 +1260,7 @@ m4_include([m4/gettime.m4])
 m4_include([m4/gettimeofday.m4])
 m4_include([m4/getugroups.m4])
 m4_include([m4/getusershell.m4])
+m4_include([m4/gl-openssl.m4])
 m4_include([m4/glibc21.m4])
 m4_include([m4/gmp.m4])
 m4_include([m4/gnu-make.m4])
@@ -1217,6 +1289,7 @@ m4_include([m4/inttypes.m4])
 m4_include([m4/inttypes_h.m4])
 m4_include([m4/ioctl.m4])
 m4_include([m4/isapipe.m4])
+m4_include([m4/isatty.m4])
 m4_include([m4/isblank.m4])
 m4_include([m4/isnand.m4])
 m4_include([m4/isnanf.m4])
@@ -1232,7 +1305,6 @@ m4_include([m4/lchown.m4])
 m4_include([m4/lcmessage.m4])
 m4_include([m4/ldexp.m4])
 m4_include([m4/ldexpl.m4])
-m4_include([m4/lib-check.m4])
 m4_include([m4/lib-ignore.m4])
 m4_include([m4/lib-ld.m4])
 m4_include([m4/lib-link.m4])
@@ -1247,6 +1319,7 @@ m4_include([m4/locale-ja.m4])
 m4_include([m4/locale-tr.m4])
 m4_include([m4/locale-zh.m4])
 m4_include([m4/locale_h.m4])
+m4_include([m4/localeconv.m4])
 m4_include([m4/localename.m4])
 m4_include([m4/lock.m4])
 m4_include([m4/longlong.m4])
@@ -1277,6 +1350,8 @@ m4_include([m4/mgetgroups.m4])
 m4_include([m4/mkancesdirs.m4])
 m4_include([m4/mkdir-p.m4])
 m4_include([m4/mkdir.m4])
+m4_include([m4/mkfifo.m4])
+m4_include([m4/mknod.m4])
 m4_include([m4/mkstemp.m4])
 m4_include([m4/mktime.m4])
 m4_include([m4/mmap-anon.m4])
@@ -1284,6 +1359,8 @@ m4_include([m4/mode_t.m4])
 m4_include([m4/modechange.m4])
 m4_include([m4/mountlist.m4])
 m4_include([m4/mpsort.m4])
+m4_include([m4/msvc-inval.m4])
+m4_include([m4/msvc-nothrow.m4])
 m4_include([m4/multiarch.m4])
 m4_include([m4/nanosleep.m4])
 m4_include([m4/netdb_h.m4])
@@ -1291,9 +1368,12 @@ m4_include([m4/netinet_in_h.m4])
 m4_include([m4/nl_langinfo.m4])
 m4_include([m4/nls.m4])
 m4_include([m4/nocrash.m4])
+m4_include([m4/non-recursive-gnulib-prefix-hack.m4])
 m4_include([m4/nproc.m4])
+m4_include([m4/off_t.m4])
 m4_include([m4/open.m4])
 m4_include([m4/openat.m4])
+m4_include([m4/opendir.m4])
 m4_include([m4/parse-datetime.m4])
 m4_include([m4/pathmax.m4])
 m4_include([m4/perl.m4])
@@ -1314,8 +1394,10 @@ m4_include([m4/pthread.m4])
 m4_include([m4/putenv.m4])
 m4_include([m4/quote.m4])
 m4_include([m4/quotearg.m4])
+m4_include([m4/raise.m4])
 m4_include([m4/read-file.m4])
 m4_include([m4/read.m4])
+m4_include([m4/readdir.m4])
 m4_include([m4/readlink.m4])
 m4_include([m4/readlinkat.m4])
 m4_include([m4/readtokens.m4])
@@ -1324,8 +1406,8 @@ m4_include([m4/realloc.m4])
 m4_include([m4/regex.m4])
 m4_include([m4/remove.m4])
 m4_include([m4/rename.m4])
+m4_include([m4/rewinddir.m4])
 m4_include([m4/rmdir.m4])
-m4_include([m4/root-dev-ino.m4])
 m4_include([m4/rpmatch.m4])
 m4_include([m4/safe-read.m4])
 m4_include([m4/safe-write.m4])
@@ -1334,6 +1416,7 @@ m4_include([m4/save-cwd.m4])
 m4_include([m4/savedir.m4])
 m4_include([m4/savewd.m4])
 m4_include([m4/sched_h.m4])
+m4_include([m4/secure_getenv.m4])
 m4_include([m4/select.m4])
 m4_include([m4/selinux-context-h.m4])
 m4_include([m4/selinux-selinux-h.m4])
@@ -1362,6 +1445,7 @@ m4_include([m4/stat-prog.m4])
 m4_include([m4/stat-size.m4])
 m4_include([m4/stat-time.m4])
 m4_include([m4/stat.m4])
+m4_include([m4/stdalign.m4])
 m4_include([m4/stdarg.m4])
 m4_include([m4/stdbool.m4])
 m4_include([m4/stddef_h.m4])
@@ -1376,9 +1460,10 @@ m4_include([m4/strerror.m4])
 m4_include([m4/strerror_r.m4])
 m4_include([m4/strftime.m4])
 m4_include([m4/string_h.m4])
+m4_include([m4/strncat.m4])
 m4_include([m4/strndup.m4])
 m4_include([m4/strnlen.m4])
-m4_include([m4/strnumcmp.m4])
+m4_include([m4/strpbrk.m4])
 m4_include([m4/strsignal.m4])
 m4_include([m4/strstr.m4])
 m4_include([m4/strtod.m4])
@@ -1389,10 +1474,12 @@ m4_include([m4/strtoumax.m4])
 m4_include([m4/symlink.m4])
 m4_include([m4/symlinkat.m4])
 m4_include([m4/sys_ioctl_h.m4])
+m4_include([m4/sys_resource_h.m4])
 m4_include([m4/sys_select_h.m4])
 m4_include([m4/sys_socket_h.m4])
 m4_include([m4/sys_stat_h.m4])
 m4_include([m4/sys_time_h.m4])
+m4_include([m4/sys_types_h.m4])
 m4_include([m4/sys_uio_h.m4])
 m4_include([m4/sys_utsname_h.m4])
 m4_include([m4/sys_wait_h.m4])
@@ -1414,11 +1501,11 @@ m4_include([m4/unistd-safer.m4])
 m4_include([m4/unistd_h.m4])
 m4_include([m4/unlink-busy.m4])
 m4_include([m4/unlink.m4])
+m4_include([m4/unlinkat.m4])
 m4_include([m4/unlinkdir.m4])
 m4_include([m4/unlocked-io.m4])
 m4_include([m4/uptime.m4])
 m4_include([m4/userspec.m4])
-m4_include([m4/usleep.m4])
 m4_include([m4/utimbuf.m4])
 m4_include([m4/utimecmp.m4])
 m4_include([m4/utimens.m4])
@@ -1430,7 +1517,6 @@ m4_include([m4/vasprintf.m4])
 m4_include([m4/version-etc.m4])
 m4_include([m4/vfprintf-posix.m4])
 m4_include([m4/vprintf-posix.m4])
-m4_include([m4/warn-on-use.m4])
 m4_include([m4/warnings.m4])
 m4_include([m4/wchar_h.m4])
 m4_include([m4/wchar_t.m4])
@@ -1445,7 +1531,6 @@ m4_include([m4/write-any-file.m4])
 m4_include([m4/write.m4])
 m4_include([m4/xalloc.m4])
 m4_include([m4/xattr.m4])
-m4_include([m4/xfts.m4])
 m4_include([m4/xgetcwd.m4])
 m4_include([m4/xnanosleep.m4])
 m4_include([m4/xsize.m4])

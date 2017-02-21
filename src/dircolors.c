@@ -1,5 +1,5 @@
 /* dircolors - output commands to set the LS_COLOR environment variable
-   Copyright (C) 1996-2011 Free Software Foundation, Inc.
+   Copyright (C) 1996-2014 Free Software Foundation, Inc.
    Copyright (C) 1994, 1995, 1997, 1998, 1999, 2000 H. Peter Anvin
 
    This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 #include "stdio--.h"
 #include "xstrndup.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "dircolors"
 
 #define AUTHORS proper_name ("H. Peter Anvin")
@@ -91,8 +91,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION]... [FILE]\n"), program_name);
@@ -110,7 +109,7 @@ Determine format of output:\n\
 \n\
 If FILE is specified, read it to determine which colors to use for which\n\
 file types and extensions.  Otherwise, a precompiled database is used.\n\
-For details on the format of these files, run `dircolors --print-database'.\n\
+For details on the format of these files, run 'dircolors --print-database'.\n\
 "), stdout);
       emit_ancillary_info ();
     }
@@ -118,7 +117,7 @@ For details on the format of these files, run `dircolors --print-database'.\n\
   exit (status);
 }
 
-/* If the SHELL environment variable is set to `csh' or `tcsh,'
+/* If the SHELL environment variable is set to 'csh' or 'tcsh,'
    assume C shell.  Else Bourne shell.  */
 
 static enum Shell_syntax
@@ -228,7 +227,7 @@ append_quoted (const char *str)
 }
 
 /* Read the file open on FP (with name FILENAME).  First, look for a
-   `TERM name' directive where name matches the current terminal type.
+   'TERM name' directive where name matches the current terminal type.
    Once found, translate and accumulate the associated directives onto
    the global obstack LSC_OBSTACK.  Give a diagnostic
    upon failure (unrecognized keyword is the only way to fail here).
@@ -438,8 +437,8 @@ main (int argc, char **argv)
   if (print_database && syntax != SHELL_SYNTAX_UNKNOWN)
     {
       error (0, 0,
-             _("the options to output dircolors' internal database and\n\
-to select a shell syntax are mutually exclusive"));
+             _("the options to output dircolors' internal database and\n"
+               "to select a shell syntax are mutually exclusive"));
       usage (EXIT_FAILURE);
     }
 

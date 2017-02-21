@@ -1,7 +1,7 @@
 package CuTmpdir;
 # create, then chdir into a temporary sub-directory
 
-# Copyright (C) 2007-2011 Free Software Foundation, Inc.
+# Copyright (C) 2007-2014 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ my $dir;
 
 sub skip_test($)
 {
-  warn "$ME: skipping test: unsafe working directory name: `$_[0]'\n";
+  warn "$ME: skipping test: unsafe working directory name: '$_[0]'\n";
   exit 77;
 }
 

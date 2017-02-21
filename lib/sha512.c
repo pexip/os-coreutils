@@ -1,7 +1,7 @@
 /* sha512.c - Functions to compute SHA512 and SHA384 message digest of files or
    memory blocks according to the NIST specification FIPS-180-2.
 
-   Copyright (C) 2005-2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2005-2006, 2008-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,9 +22,13 @@
 
 #include <config.h>
 
+#if HAVE_OPENSSL_SHA512
+# define GL_OPENSSL_INLINE _GL_EXTERN_INLINE
+#endif
 #include "sha512.h"
 
-#include <stddef.h>
+#include <stdalign.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,6 +55,7 @@
 # error "invalid BLOCKSIZE"
 #endif
 
+#if ! HAVE_OPENSSL_SHA512
 /* This array contains the bytes used to pad the buffer to the next
    128-byte boundary.  */
 static const unsigned char fillbuf[128] = { 0x80, 0 /* , 0, 0, ...  */ };
@@ -58,7 +63,7 @@ static const unsigned char fillbuf[128] = { 0x80, 0 /* , 0, 0, ...  */ };
 
 /*
   Takes a pointer to a 512 bit block of data (eight 64 bit ints) and
-  intializes it to the start constants of the SHA512 algorithm.  This
+  initializes it to the start constants of the SHA512 algorithm.  This
   must be called before using hash in the call to sha512_hash
 */
 void
@@ -96,7 +101,7 @@ sha384_init_ctx (struct sha512_ctx *ctx)
 /* Copy the value from V into the memory location pointed to by *CP,
    If your architecture allows unaligned access, this is equivalent to
    * (__typeof__ (v) *) cp = v  */
-static inline void
+static void
 set_uint64 (char *cp, u64 v)
 {
   memcpy (cp, &v, sizeof v);
@@ -170,6 +175,7 @@ sha384_finish_ctx (struct sha512_ctx *ctx, void *resbuf)
   sha512_conclude_ctx (ctx);
   return sha384_read_ctx (ctx, resbuf);
 }
+#endif
 
 /* Compute SHA512 message digest for bytes read from STREAM.  The
    resulting message digest number will be written into the 64 bytes
@@ -315,6 +321,7 @@ sha384_stream (FILE *stream, void *resblock)
   return 0;
 }
 
+#if ! HAVE_OPENSSL_SHA512
 /* Compute SHA512 message digest for LEN bytes beginning at BUFFER.  The
    result is always in little endian byte order, so that a byte-wise
    output yields to the wanted ASCII representation of the message
@@ -381,8 +388,7 @@ sha512_process_bytes (const void *buffer, size_t len, struct sha512_ctx *ctx)
   if (len >= 128)
     {
 #if !_STRING_ARCH_unaligned
-# define alignof(type) offsetof (struct { char c; type x; }, x)
-# define UNALIGNED_P(p) (((size_t) p) % alignof (u64) != 0)
+# define UNALIGNED_P(p) ((uintptr_t) (p) % alignof (u64) != 0)
       if (UNALIGNED_P (buffer))
         while (len > 128)
           {
@@ -485,13 +491,15 @@ sha512_process_block (const void *buffer, size_t len, struct sha512_ctx *ctx)
   u64 f = ctx->state[5];
   u64 g = ctx->state[6];
   u64 h = ctx->state[7];
+  u64 lolen = u64size (len);
 
   /* First increment the byte count.  FIPS PUB 180-2 specifies the possible
      length of the file up to 2^128 bits.  Here we only compute the
      number of bytes.  Do a double word increment.  */
-  ctx->total[0] = u64plus (ctx->total[0], u64lo (len));
-  if (u64lt (ctx->total[0], u64lo (len)))
-    ctx->total[1] = u64plus (ctx->total[1], u64lo (1));
+  ctx->total[0] = u64plus (ctx->total[0], lolen);
+  ctx->total[1] = u64plus (ctx->total[1],
+                           u64plus (u64size (len >> 31 >> 31 >> 2),
+                                    u64lo (u64lt (ctx->total[0], lolen))));
 
 #define S0(x) u64xor (u64rol(x, 63), u64xor (u64rol (x, 56), u64shr (x, 7)))
 #define S1(x) u64xor (u64rol (x, 45), u64xor (u64rol (x, 3), u64shr (x, 6)))
@@ -617,3 +625,4 @@ sha512_process_block (const void *buffer, size_t len, struct sha512_ctx *ctx)
       h = ctx->state[7] = u64plus (ctx->state[7], h);
     }
 }
+#endif

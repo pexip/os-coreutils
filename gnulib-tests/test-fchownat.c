@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Tests of fchownat.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,6 +68,19 @@ main (int argc _GL_UNUSED, char *argv[])
 
   /* Clean up any trash from prior testsuite runs.  */
   ignore_value (system ("rm -rf " BASE "*"));
+
+  /* Test behaviour for invalid file descriptors.  */
+  {
+    errno = 0;
+    ASSERT (fchownat (-1, "foo", getuid (), getgid (), 0) == -1);
+    ASSERT (errno == EBADF);
+  }
+  {
+    close (99);
+    errno = 0;
+    ASSERT (fchownat (99, "foo", getuid (), getgid (), 0) == -1);
+    ASSERT (errno == EBADF);
+  }
 
   /* Basic tests.  */
   result1 = test_chown (do_chown, true);

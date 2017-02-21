@@ -1,6 +1,6 @@
-# serial 17
+# serial 21
 
-# Copyright (C) 2000-2001, 2004-2011 Free Software Foundation, Inc.
+# Copyright (C) 2000-2001, 2004-2014 Free Software Foundation, Inc.
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -16,14 +16,23 @@ dnl we have to grub around in the FILE struct.
 AC_DEFUN([gl_FUNC_FPENDING],
 [
   AC_CHECK_HEADERS_ONCE([stdio_ext.h])
-  AC_CHECK_FUNCS_ONCE([__fpending])
   fp_headers='
-#     include <stdio.h>
-#     if HAVE_STDIO_EXT_H
-#      include <stdio_ext.h>
-#     endif
-'
-  AC_CHECK_DECLS([__fpending], , , $fp_headers)
+    #include <stdio.h>
+    #if HAVE_STDIO_EXT_H
+    # include <stdio_ext.h>
+    #endif
+  '
+  AC_CACHE_CHECK([for __fpending], [gl_cv_func___fpending],
+    [
+      AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([$fp_headers],
+           [[return ! __fpending (stdin);]])],
+        [gl_cv_func___fpending=yes],
+        [gl_cv_func___fpending=no])
+    ])
+  if test $gl_cv_func___fpending = yes; then
+    AC_CHECK_DECLS([__fpending], [], [], [$fp_headers])
+  fi
 ])
 
 AC_DEFUN([gl_PREREQ_FPENDING],
@@ -61,6 +70,9 @@ AC_DEFUN([gl_PREREQ_FPENDING],
           '# Minix'                                                     \
           'fp->_ptr - fp->_buf'                                         \
                                                                         \
+          '# Plan9'                                                     \
+          'fp->wp - fp->buf'                                            \
+                                                                        \
           '# VMS'                                                       \
           '(*fp)->_ptr - (*fp)->_base'                                  \
                                                                         \
@@ -83,5 +95,5 @@ AC_DEFUN([gl_PREREQ_FPENDING],
   )
   AC_DEFINE_UNQUOTED([PENDING_OUTPUT_N_BYTES],
     $ac_cv_sys_pending_output_n_bytes,
-    [the number of pending output bytes on stream `fp'])
+    [the number of pending output bytes on stream 'fp'])
 ])

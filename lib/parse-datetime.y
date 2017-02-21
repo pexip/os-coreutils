@@ -1,7 +1,7 @@
 %{
 /* Parse a string into an internal time stamp.
 
-   Copyright (C) 1999-2000, 2002-2011 Free Software Foundation, Inc.
+   Copyright (C) 1999-2000, 2002-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@
    - It's typically faster.
    POSIX says that only '0' through '9' are digits.  Prefer ISDIGIT to
    isdigit unless it's important to use the locale's definition
-   of `digit' even when the host does not conform to POSIX.  */
+   of "digit" even when the host does not conform to POSIX.  */
 #define ISDIGIT(c) ((unsigned int) (c) - '0' <= 9)
 
 /* Shift A right by B bits portably, by dividing A by 2**B and
@@ -112,6 +112,11 @@ typedef long int long_time_t;
 #else
 typedef time_t long_time_t;
 #endif
+
+/* Convert a possibly-signed character to an unsigned character.  This is
+   a bit safer than casting to unsigned char, since it catches some type
+   errors that the cast doesn't.  */
+static unsigned char to_uchar (char ch) { return ch; }
 
 /* Lots of this code assumes time_t and time_t-like values fit into
    long_time_t.  */
@@ -204,7 +209,7 @@ typedef struct
   size_t times_seen;
   size_t zones_seen;
 
-  /* Table of local time zone abbrevations, terminated by a null entry.  */
+  /* Table of local time zone abbreviations, terminated by a null entry.  */
   table local_time_zone_table[3];
 } parser_control;
 
@@ -296,7 +301,8 @@ set_hhmmss (parser_control *pc, long int hour, long int minutes,
   relative_time rel;
 }
 
-%token tAGO tDST
+%token <intval> tAGO
+%token tDST
 
 %token tYEAR_UNIT tMONTH_UNIT tHOUR_UNIT tMINUTE_UNIT tSEC_UNIT
 %token <intval> tDAY_UNIT tDAY_SHIFT
@@ -544,7 +550,7 @@ iso_8601_date:
 
 rel:
     relunit tAGO
-      { apply_relative_time (pc, $1, -1); }
+      { apply_relative_time (pc, $1, $2); }
   | relunit
       { apply_relative_time (pc, $1, 1); }
   | dayshift
@@ -733,7 +739,8 @@ static table const relative_time_table[] =
   { "TENTH",    tORDINAL,       10 },
   { "ELEVENTH", tORDINAL,       11 },
   { "TWELFTH",  tORDINAL,       12 },
-  { "AGO",      tAGO,            1 },
+  { "AGO",      tAGO,           -1 },
+  { "HENCE",    tAGO,            1 },
   { NULL, 0, 0 }
 };
 
@@ -752,7 +759,7 @@ static table const universal_time_zone_table[] =
    zone abbreviations are ambiguous; e.g. Australians interpret "EST"
    as Eastern time in Australia, not as US Eastern Standard Time.
    You cannot rely on parse_datetime to handle arbitrary time zone
-   abbreviations; use numeric abbreviations like `-0500' instead.  */
+   abbreviations; use numeric abbreviations like "-0500" instead.  */
 static table const time_zone_table[] =
 {
   { "WET",      tZONE,     HOUR ( 0) }, /* Western European */
@@ -903,7 +910,7 @@ to_year (textint textyear)
   return year;
 }
 
-static table const *
+static table const * _GL_ATTRIBUTE_PURE
 lookup_zone (parser_control const *pc, char const *name)
 {
   table const *tp;
@@ -1169,7 +1176,8 @@ yylex (YYSTYPE *lvalp, parser_control *pc)
         }
 
       if (c != '(')
-        return *pc->input++;
+        return to_uchar (*pc->input++);
+
       count = 0;
       do
         {
@@ -1295,8 +1303,6 @@ parse_datetime (struct timespec *result, char const *p,
             char tz1buf[TZBUFSIZE];
             bool large_tz = TZBUFSIZE < tzsize;
             bool setenv_ok;
-            /* Free tz0, in case this is the 2nd or subsequent time through. */
-            free (tz0);
             tz0 = get_tz (tz0buf);
             z = tz1 = large_tz ? xmalloc (tzsize) : tz1buf;
             for (s = tzbase; *s != '"'; s++)
@@ -1308,7 +1314,12 @@ parse_datetime (struct timespec *result, char const *p,
             if (!setenv_ok)
               goto fail;
             tz_was_altered = true;
+
             p = s + 1;
+            while (c = *p, c_isspace (c))
+              p++;
+
+            break;
           }
     }
 
@@ -1392,7 +1403,7 @@ parse_datetime (struct timespec *result, char const *p,
       && ! strcmp (pc.local_time_zone_table[0].name,
                    pc.local_time_zone_table[1].name))
     {
-      /* This locale uses the same abbrevation for standard and
+      /* This locale uses the same abbreviation for standard and
          daylight times.  So if we see that abbreviation, we don't
          know whether it's daylight time.  */
       pc.local_time_zone_table[0].value = -1;
@@ -1464,7 +1475,7 @@ parse_datetime (struct timespec *result, char const *p,
                           + sizeof pc.time_zone * CHAR_BIT / 3];
               if (!tz_was_altered)
                 tz0 = get_tz (tz0buf);
-              sprintf (tz1buf, "XXX%s%ld:%02d", "-" + (time_zone < 0),
+              sprintf (tz1buf, "XXX%s%ld:%02d", &"-"[time_zone < 0],
                        abs_time_zone_hour, abs_time_zone_min);
               if (setenv ("TZ", tz1buf, 1) != 0)
                 goto fail;

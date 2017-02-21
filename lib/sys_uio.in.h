@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Substitute for <sys/uio.h>.
-   Copyright (C) 2011 Free Software Foundation, Inc.
+   Copyright (C) 2011-2014 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,8 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software Foundation,
-   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
+   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
 
 # if __GNUC__ >= 3
 @PRAGMA_SYSTEM_HEADER@
@@ -39,7 +36,7 @@
 
 #if !@HAVE_SYS_UIO_H@
 /* A platform that lacks <sys/uio.h>.  */
-/* Get 'ssize_t'.  */
+/* Get 'size_t' and 'ssize_t'.  */
 # include <sys/types.h>
 
 # ifdef __cplusplus

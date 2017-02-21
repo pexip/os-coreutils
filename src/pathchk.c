@@ -1,5 +1,5 @@
 /* pathchk -- check whether file names are valid or portable
-   Copyright (C) 1991-2011 Free Software Foundation, Inc.
+   Copyright (C) 1991-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include "quote.h"
 #include "quotearg.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "pathchk"
 
 #define AUTHORS \
@@ -83,8 +83,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION]... NAME...\n"), program_name);
@@ -168,7 +167,7 @@ no_leading_hyphen (char const *file)
   for (p = file;  (p = strchr (p, '-'));  p++)
     if (p == file || p[-1] == '/')
       {
-        error (0, 0, _("leading `-' in a component of file name %s"),
+        error (0, 0, _("leading '-' in a component of file name %s"),
                quote (file));
         return false;
       }

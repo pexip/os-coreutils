@@ -1,5 +1,5 @@
 /* tee - read from standard input and write to standard output and files.
-   Copyright (C) 1985, 1990-2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 1985-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include "stdio--.h"
 #include "xfreopen.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "tee"
 
 #define AUTHORS \
@@ -56,8 +56,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION]... [FILE]...\n"), program_name);
@@ -148,7 +147,7 @@ tee_files (int nfiles, const char **files)
 
   descriptors = xnmalloc (nfiles + 1, sizeof *descriptors);
 
-  /* Move all the names `up' one in the argv array to make room for
+  /* Move all the names 'up' one in the argv array to make room for
      the entry for standard output.  This writes into argv[argc].  */
   for (i = nfiles; i >= 1; i--)
     files[i] = files[i - 1];

@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Tests of symlinkat.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,6 +57,23 @@ main (void)
 
   /* Remove any leftovers from a previous partial run.  */
   ignore_value (system ("rm -rf " BASE "*"));
+
+  /* Test behaviour for invalid file descriptors.  */
+  {
+    errno = 0;
+    ASSERT (symlinkat ("foo", -1, "bar") == -1);
+    ASSERT (errno == EBADF
+            || errno == ENOSYS /* seen on mingw */
+           );
+  }
+  {
+    close (99);
+    errno = 0;
+    ASSERT (symlinkat ("foo", 99, "bar") == -1);
+    ASSERT (errno == EBADF
+            || errno == ENOSYS /* seen on mingw */
+           );
+  }
 
   /* Perform same checks as counterpart functions.  */
   result = test_symlink (do_symlink, false);

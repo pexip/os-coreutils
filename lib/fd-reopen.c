@@ -1,6 +1,6 @@
 /* Invoke open, but return either a desired file descriptor or -1.
 
-   Copyright (C) 2005-2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2005-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 /* Open a file to a particular file descriptor.  This is like standard
-   `open', except it always returns DESIRED_FD if successful.  */
+   'open', except it always returns DESIRED_FD if successful.  */
 
 int
 fd_reopen (int desired_fd, char const *file, int flags, mode_t mode)

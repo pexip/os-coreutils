@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test opening a directory stream from a file descriptor.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,9 +48,17 @@ main (int argc _GL_UNUSED, char *argv[])
   ASSERT (unlink ("test-fdopendir.tmp") == 0);
 
   /* A bad fd cannot be turned into a stream.  */
-  errno = 0;
-  ASSERT (fdopendir (-1) == NULL);
-  ASSERT (errno == EBADF);
+  {
+    errno = 0;
+    ASSERT (fdopendir (-1) == NULL);
+    ASSERT (errno == EBADF);
+  }
+  {
+    close (99);
+    errno = 0;
+    ASSERT (fdopendir (99) == NULL);
+    ASSERT (errno == EBADF);
+  }
 
   /* This should work.  */
   fd = open (".", O_RDONLY);

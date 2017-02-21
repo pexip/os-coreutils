@@ -1,5 +1,5 @@
 /* nproc - print the number of processors.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,9 +24,10 @@
 #include "system.h"
 #include "error.h"
 #include "nproc.h"
+#include "quote.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "nproc"
 
 #define AUTHORS proper_name ("Giuseppe Scrivano")
@@ -50,8 +51,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION]...\n"), program_name);
@@ -112,6 +112,12 @@ main (int argc, char **argv)
         default:
           usage (EXIT_FAILURE);
         }
+    }
+
+  if (argc != optind)
+    {
+      error (0, 0, _("extra operand %s"), quote (argv[optind]));
+      usage (EXIT_FAILURE);
     }
 
   nproc = num_processors (mode);

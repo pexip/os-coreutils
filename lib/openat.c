@@ -1,5 +1,5 @@
 /* provide a replacement openat function
-   Copyright (C) 2004-2011 Free Software Foundation, Inc.
+   Copyright (C) 2004-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #undef __need_system_fcntl_h
 
 #if HAVE_OPENAT
-static inline int
+static int
 orig_openat (int fd, char const *filename, int flags, mode_t mode)
 {
   return openat (fd, filename, flags, mode);
@@ -42,13 +42,11 @@ orig_openat (int fd, char const *filename, int flags, mode_t mode)
 #include "openat.h"
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 #include <sys/stat.h>
-
-#include "dosname.h" /* solely for definition of IS_ABSOLUTE_FILE_NAME */
-#include "openat-priv.h"
-#include "save-cwd.h"
+#include <errno.h>
 
 #if HAVE_OPENAT
 
@@ -143,6 +141,10 @@ rpl_openat (int dfd, char const *filename, int flags, ...)
 
 #else /* !HAVE_OPENAT */
 
+# include "dosname.h" /* solely for definition of IS_ABSOLUTE_FILE_NAME */
+# include "openat-priv.h"
+# include "save-cwd.h"
+
 /* Replacement for Solaris' openat function.
    <http://www.google.com/search?q=openat+site:docs.sun.com>
    First, try to simulate it via open ("/proc/self/fd/FD/FILE").
@@ -178,7 +180,7 @@ openat (int fd, char const *file, int flags, ...)
    directory argument.
 
    If a previous attempt to restore the current working directory
-   failed, then we must not even try to access a `.'-relative name.
+   failed, then we must not even try to access a '.'-relative name.
    It is the caller's responsibility not to call this function
    in that case.  */
 

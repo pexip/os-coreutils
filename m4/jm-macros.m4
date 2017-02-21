@@ -2,7 +2,7 @@
 
 dnl Misc type-related macros for coreutils.
 
-# Copyright (C) 1998, 2000-2011 Free Software Foundation, Inc.
+# Copyright (C) 1998-2014 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,50 +44,64 @@ AC_DEFUN([coreutils_MACROS],
   # used by shred
   AC_CHECK_FUNCS_ONCE([directio])
 
-  # Used by install.c.
   coreutils_saved_libs=$LIBS
     LIBS="$LIBS $LIB_SELINUX"
+    # Used by selinux.c.
+    AC_CHECK_FUNCS([mode_to_security_class], [], [])
+    # Used by install.c.
     AC_CHECK_FUNCS([matchpathcon_init_prefix], [],
     [
-      case "$ac_cv_search_setfilecon:$ac_cv_header_selinux_selinux_h" in
-        no:*) # SELinux disabled
-          ;;
-        *:no) # SELinux disabled
-          ;;
-        *)
-        AC_MSG_WARN([SELinux enabled, but matchpathcon_init_prefix not found])
-        AC_MSG_WARN([The install utility may run slowly])
-      esac
+      if test "$with_selinux" != no; then
+        case "$ac_cv_search_setfilecon:$ac_cv_header_selinux_selinux_h" in
+          no:*) # SELinux disabled
+            ;;
+          *:no) # SELinux disabled
+            ;;
+          *)
+          AC_MSG_WARN([SELinux enabled, but matchpathcon_init_prefix not found])
+          AC_MSG_WARN([The install utility may run slowly])
+        esac
+      fi
     ])
   LIBS=$coreutils_saved_libs
 
   # Used by sort.c.
   AC_CHECK_FUNCS_ONCE([nl_langinfo])
   # Used by timeout.c
-  AC_CHECK_FUNCS_ONCE([setrlimit])
+  AC_CHECK_FUNCS_ONCE([setrlimit prctl])
 
   # Used by tail.c.
   AC_CHECK_FUNCS([inotify_init],
     [AC_DEFINE([HAVE_INOTIFY], [1],
      [Define to 1 if you have usable inotify support.])])
 
-  AC_CHECK_FUNCS_ONCE( \
-    endgrent \
-    endpwent \
-    fchown \
-    fchmod \
-    ftruncate \
-    iswspace \
-    mkfifo \
-    mbrlen \
-    setgroups \
-    sethostname \
-    siginterrupt \
-    sync \
-    sysctl \
-    sysinfo \
-    tcgetpgrp \
-  )
+  AC_CHECK_FUNCS_ONCE([
+    endgrent
+    endpwent
+    fchown
+    fchmod
+    ftruncate
+    iswspace
+    mkfifo
+    mbrlen
+    setgroups
+    sethostname
+    siginterrupt
+    sync
+    sysctl
+    sysinfo
+    tcgetpgrp
+  ])
+
+  # These checks are for Interix, to avoid its getgr* functions, in favor
+  # of these replacements.  The replacement functions are much more efficient
+  # because they do not query the domain controller for user information
+  # when it is not needed.
+  AC_CHECK_FUNCS_ONCE([
+    getgrgid_nomembers
+    getgrnam_nomembers
+    getgrent_nomembers
+  ])
 
   dnl This can't use AC_REQUIRE; I'm not quite sure why.
   cu_PREREQ_STAT_PROG
@@ -131,7 +145,7 @@ AC_DEFUN([coreutils_MACROS],
   fi
   AC_SUBST([LIB_CAP])
 
-  # See if linking `seq' requires -lm.
+  # See if linking 'seq' requires -lm.
   # It does on nearly every system.  The single exception (so far) is
   # BeOS which has all the math functions in the normal runtime library
   # and doesn't have a separate math library.
@@ -173,16 +187,15 @@ AC_DEFUN([coreutils_MACROS],
 
 AC_DEFUN([gl_CHECK_ALL_HEADERS],
 [
-  AC_CHECK_HEADERS_ONCE( \
-    hurd.h \
-    paths.h \
-    priv.h \
-    stropts.h \
-    sys/param.h \
-    sys/resource.h \
-    sys/systeminfo.h \
-    syslog.h \
-  )
+  AC_CHECK_HEADERS_ONCE([
+    hurd.h
+    paths.h
+    priv.h
+    stropts.h
+    sys/param.h
+    sys/systeminfo.h
+    syslog.h
+  ])
   AC_CHECK_HEADERS([sys/sysctl.h], [], [],
     [AC_INCLUDES_DEFAULT
      [#if HAVE_SYS_PARAM_H
@@ -193,11 +206,6 @@ AC_DEFUN([gl_CHECK_ALL_HEADERS],
 # This macro must be invoked before any tests that run the compiler.
 AC_DEFUN([gl_CHECK_ALL_TYPES],
 [
-  dnl This test must precede tests of compiler characteristics like
-  dnl that for the inline keyword, since it may change the degree to
-  dnl which the compiler supports such features.
-  AC_REQUIRE([AM_C_PROTOTYPES])
-
   dnl Checks for typedefs, structures, and compiler characteristics.
   AC_REQUIRE([gl_BIGENDIAN])
   AC_REQUIRE([AC_C_VOLATILE])

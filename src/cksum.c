@@ -1,5 +1,5 @@
 /* cksum -- calculate and print POSIX checksums and sizes of files
-   Copyright (C) 1992, 1995-2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 1992-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,13 +28,13 @@
       crctab > crctab.h
 
   This software is compatible with neither the System V nor the BSD
-  `sum' program.  It is supposed to conform to POSIX, except perhaps
+  'sum' program.  It is supposed to conform to POSIX, except perhaps
   for foreign language support.  Any inconsistency with the standard
   (other than foreign language support) is a bug.  */
 
 #include <config.h>
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "cksum"
 
 #define AUTHORS proper_name ("Q. Frank Xia")
@@ -257,8 +257,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -290,6 +289,10 @@ main (int argc, char **argv)
   textdomain (PACKAGE);
 
   atexit (close_stdout);
+
+  /* Line buffer stdout to ensure lines are written atomically and immediately
+     so that processes running in parallel do not intersperse their output.  */
+  setvbuf (stdout, NULL, _IOLBF, 0);
 
   parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE, Version,
                       usage, AUTHORS, (char const *) NULL);
