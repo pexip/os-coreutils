@@ -1,5 +1,5 @@
 /* split.c -- split a file into pieces.
-   Copyright (C) 1988, 1991, 1995-2011 Free Software Foundation, Inc.
+   Copyright (C) 1988-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 #include "error.h"
 #include "fd-reopen.h"
 #include "fcntl--.h"
-#include "full-read.h"
 #include "full-write.h"
 #include "ioblksize.h"
 #include "quote.h"
@@ -42,7 +41,7 @@
 #include "xfreopen.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "split"
 
 #define AUTHORS \
@@ -74,14 +73,26 @@ static char *outfile;
    Suffixes are inserted here.  */
 static char *outfile_mid;
 
+/* Generate new suffix when suffixes are exhausted.  */
+static bool suffix_auto = true;
+
 /* Length of OUTFILE's suffix.  */
 static size_t suffix_length;
 
 /* Alphabet of characters to use in suffix.  */
 static char const *suffix_alphabet = "abcdefghijklmnopqrstuvwxyz";
 
+/* Numerical suffix start value.  */
+static const char *numeric_suffix_start;
+
+/* Additional suffix to append to output file names.  */
+static char const *additional_suffix;
+
 /* Name of input file.  May be "-".  */
 static char *infile;
+
+/* stat buf for input file.  */
+static struct stat in_stat_buf;
 
 /* Descriptor on which output file is open.  */
 static int output_desc = -1;
@@ -110,7 +121,8 @@ enum
 {
   VERBOSE_OPTION = CHAR_MAX + 1,
   FILTER_OPTION,
-  IO_BLKSIZE_OPTION
+  IO_BLKSIZE_OPTION,
+  ADDITIONAL_SUFFIX_OPTION
 };
 
 static struct option const longopts[] =
@@ -122,7 +134,9 @@ static struct option const longopts[] =
   {"elide-empty-files", no_argument, NULL, 'e'},
   {"unbuffered", no_argument, NULL, 'u'},
   {"suffix-length", required_argument, NULL, 'a'},
-  {"numeric-suffixes", no_argument, NULL, 'd'},
+  {"additional-suffix", required_argument, NULL,
+   ADDITIONAL_SUFFIX_OPTION},
+  {"numeric-suffixes", optional_argument, NULL, 'd'},
   {"filter", required_argument, NULL, FILTER_OPTION},
   {"verbose", no_argument, NULL, VERBOSE_OPTION},
   {"-io-blksize", required_argument, NULL,
@@ -146,6 +160,12 @@ set_suffix_length (uintmax_t n_units, enum Split_type split_type)
 
   size_t suffix_needed = 0;
 
+  /* The suffix auto length feature is incompatible with
+     a user specified start value as the generated suffixes
+     are not all consecutive.  */
+  if (numeric_suffix_start)
+    suffix_auto = false;
+
   /* Auto-calculate the suffix length if the number of files is given.  */
   if (split_type == type_chunk_bytes || split_type == type_chunk_lines
       || split_type == type_rr)
@@ -155,6 +175,7 @@ set_suffix_length (uintmax_t n_units, enum Split_type split_type)
       while (n_units /= alphabet_len)
         suffix_needed++;
       suffix_needed += alphabet_slop;
+      suffix_auto = false;
     }
 
   if (suffix_length)            /* set by user */
@@ -165,6 +186,7 @@ set_suffix_length (uintmax_t n_units, enum Split_type split_type)
                  _("the suffix length needs to be at least %zu"),
                  suffix_needed);
         }
+      suffix_auto = false;
       return;
     }
   else
@@ -175,8 +197,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -185,23 +206,24 @@ Usage: %s [OPTION]... [INPUT [PREFIX]]\n\
               program_name);
       fputs (_("\
 Output fixed-size pieces of INPUT to PREFIXaa, PREFIXab, ...; default\n\
-size is 1000 lines, and default PREFIX is `x'.  With no INPUT, or when INPUT\n\
+size is 1000 lines, and default PREFIX is 'x'.  With no INPUT, or when INPUT\n\
 is -, read standard input.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fprintf (stdout, _("\
-  -a, --suffix-length=N   use suffixes of length N (default %d)\n\
+  -a, --suffix-length=N   generate suffixes of length N (default %d)\n\
+      --additional-suffix=SUFFIX  append an additional SUFFIX to file names\n\
   -b, --bytes=SIZE        put SIZE bytes per output file\n\
   -C, --line-bytes=SIZE   put at most SIZE bytes of lines per output file\n\
-  -d, --numeric-suffixes  use numeric suffixes instead of alphabetic\n\
-  -e, --elide-empty-files  do not generate empty output files with `-n'\n\
+  -d, --numeric-suffixes[=FROM]  use numeric suffixes instead of alphabetic;\n\
+                                   FROM changes the start value (default 0)\n\
+  -e, --elide-empty-files  do not generate empty output files with '-n'\n\
       --filter=COMMAND    write to shell COMMAND; file name is $FILE\n\
   -l, --lines=NUMBER      put NUMBER lines per output file\n\
-  -n, --number=CHUNKS     generate CHUNKS output files.  See below\n\
-  -u, --unbuffered        immediately copy input to output with `-n r/...'\n\
+  -n, --number=CHUNKS     generate CHUNKS output files; see explanation below\n\
+  -u, --unbuffered        immediately copy input to output with '-n r/...'\n\
 "), DEFAULT_SUFFIX_LENGTH);
       fputs (_("\
       --verbose           print a diagnostic just before each\n\
@@ -216,7 +238,7 @@ N       split into N files based on size of input\n\
 K/N     output Kth of N to stdout\n\
 l/N     split into N files without splitting lines\n\
 l/K/N   output Kth of N to stdout without splitting lines\n\
-r/N     like `l' but use round robin distribution\n\
+r/N     like 'l' but use round robin distribution\n\
 r/K/N   likewise but only output Kth of N to stdout\n\
 "), stdout);
       emit_ancillary_info ();
@@ -225,32 +247,82 @@ r/K/N   likewise but only output Kth of N to stdout\n\
 }
 
 /* Compute the next sequential output file name and store it into the
-   string `outfile'.  */
+   string 'outfile'.  */
 
 static void
 next_file_name (void)
 {
   /* Index in suffix_alphabet of each character in the suffix.  */
   static size_t *sufindex;
+  static size_t outbase_length;
+  static size_t outfile_length;
+  static size_t addsuf_length;
 
   if (! outfile)
     {
-      /* Allocate and initialize the first file name.  */
+      bool widen;
 
-      size_t outbase_length = strlen (outbase);
-      size_t outfile_length = outbase_length + suffix_length;
+new_name:
+      widen = !! outfile_length;
+
+      if (! widen)
+        {
+          /* Allocate and initialize the first file name.  */
+
+          outbase_length = strlen (outbase);
+          addsuf_length = additional_suffix ? strlen (additional_suffix) : 0;
+          outfile_length = outbase_length + suffix_length + addsuf_length;
+        }
+      else
+        {
+          /* Reallocate and initialize a new wider file name.
+             We do this by subsuming the unchanging part of
+             the generated suffix into the prefix (base), and
+             reinitializing the now one longer suffix.  */
+
+          outfile_length += 2;
+          suffix_length++;
+        }
+
       if (outfile_length + 1 < outbase_length)
         xalloc_die ();
-      outfile = xmalloc (outfile_length + 1);
+      outfile = xrealloc (outfile, outfile_length + 1);
+
+      if (! widen)
+        memcpy (outfile, outbase, outbase_length);
+      else
+        {
+          /* Append the last alphabet character to the file name prefix.  */
+          outfile[outbase_length] = suffix_alphabet[sufindex[0]];
+          outbase_length++;
+        }
+
       outfile_mid = outfile + outbase_length;
-      memcpy (outfile, outbase, outbase_length);
       memset (outfile_mid, suffix_alphabet[0], suffix_length);
+      if (additional_suffix)
+        memcpy (outfile_mid + suffix_length, additional_suffix, addsuf_length);
       outfile[outfile_length] = 0;
+
+      free (sufindex);
       sufindex = xcalloc (suffix_length, sizeof *sufindex);
+
+      if (numeric_suffix_start)
+        {
+          assert (! widen);
+
+          /* Update the output file name.  */
+          size_t i = strlen (numeric_suffix_start);
+          memcpy (outfile_mid + suffix_length - i, numeric_suffix_start, i);
+
+          /* Update the suffix index.  */
+          size_t *sufindex_end = sufindex + suffix_length;
+          while (i-- != 0)
+            *--sufindex_end = numeric_suffix_start[i] - '0';
+        }
 
 #if ! _POSIX_NO_TRUNC && HAVE_PATHCONF && defined _PC_NAME_MAX
       /* POSIX requires that if the output file name is too long for
-         its directory, `split' must fail without creating any files.
+         its directory, 'split' must fail without creating any files.
          This must be checked for explicitly on operating systems that
          silently truncate file names.  */
       {
@@ -270,6 +342,8 @@ next_file_name (void)
       while (i-- != 0)
         {
           sufindex[i]++;
+          if (suffix_auto && i == 0 && ! suffix_alphabet[sufindex[0] + 1])
+            goto new_name;
           outfile_mid[i] = suffix_alphabet[sufindex[i]];
           if (outfile_mid[i])
             return;
@@ -289,8 +363,20 @@ create (const char *name)
     {
       if (verbose)
         fprintf (stdout, _("creating file %s\n"), quote (name));
-      return open (name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-                   (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH));
+
+      int fd = open (name, O_WRONLY | O_CREAT | O_BINARY, MODE_RW_UGO);
+      if (fd < 0)
+        return fd;
+      struct stat out_stat_buf;
+      if (fstat (fd, &out_stat_buf) != 0)
+        error (EXIT_FAILURE, errno, _("failed to stat %s"), quote (name));
+      if (SAME_INODE (in_stat_buf, out_stat_buf))
+        error (EXIT_FAILURE, 0, _("%s would overwrite input; aborting"),
+               quote (name));
+      if (ftruncate (fd, 0) != 0)
+        error (EXIT_FAILURE, errno, _("%s: error truncating"), quote (name));
+
+      return fd;
     }
   else
     {
@@ -439,8 +525,8 @@ bytes_split (uintmax_t n_bytes, char *buf, size_t bufsize, uintmax_t max_files)
 
   do
     {
-      n_read = full_read (STDIN_FILENO, buf, bufsize);
-      if (n_read < bufsize && errno)
+      n_read = safe_read (STDIN_FILENO, buf, bufsize);
+      if (n_read == SAFE_READ_ERROR)
         error (EXIT_FAILURE, errno, "%s", infile);
       bp_out = buf;
       to_read = n_read;
@@ -475,7 +561,7 @@ bytes_split (uintmax_t n_bytes, char *buf, size_t bufsize, uintmax_t max_files)
             }
         }
     }
-  while (n_read == bufsize);
+  while (n_read);
 
   /* Ensure NUMBER files are created, which truncates
      any existing files or notifies any consumers on fifos.
@@ -497,8 +583,8 @@ lines_split (uintmax_t n_lines, char *buf, size_t bufsize)
 
   do
     {
-      n_read = full_read (STDIN_FILENO, buf, bufsize);
-      if (n_read < bufsize && errno)
+      n_read = safe_read (STDIN_FILENO, buf, bufsize);
+      if (n_read == SAFE_READ_ERROR)
         error (EXIT_FAILURE, errno, "%s", infile);
       bp = bp_out = buf;
       eob = bp + n_read;
@@ -527,64 +613,117 @@ lines_split (uintmax_t n_lines, char *buf, size_t bufsize)
             }
         }
     }
-  while (n_read == bufsize);
+  while (n_read);
 }
-
+
 /* Split into pieces that are as large as possible while still not more
    than N_BYTES bytes, and are split on line boundaries except
-   where lines longer than N_BYTES bytes occur.
-   FIXME: Allow N_BYTES to be any uintmax_t value, and don't require a
-   buffer of size N_BYTES, in case N_BYTES is very large.  */
+   where lines longer than N_BYTES bytes occur. */
 
 static void
-line_bytes_split (size_t n_bytes)
+line_bytes_split (uintmax_t n_bytes, char *buf, size_t bufsize)
 {
-  char *bp;
-  bool eof = false;
-  size_t n_buffered = 0;
-  char *buf = xmalloc (n_bytes);
+  size_t n_read;
+  uintmax_t n_out = 0;      /* for each split.  */
+  size_t n_hold = 0;
+  char *hold = NULL;        /* for lines > bufsize.  */
+  size_t hold_size = 0;
+  bool split_line = false;  /* Whether a \n was output in a split.  */
 
   do
     {
-      /* Fill up the full buffer size from the input file.  */
-
-      size_t to_read = n_bytes - n_buffered;
-      size_t n_read = full_read (STDIN_FILENO, buf + n_buffered, to_read);
-      if (n_read < to_read && errno)
+      n_read = safe_read (STDIN_FILENO, buf, bufsize);
+      if (n_read == SAFE_READ_ERROR)
         error (EXIT_FAILURE, errno, "%s", infile);
-
-      n_buffered += n_read;
-      if (n_buffered != n_bytes)
+      size_t n_left = n_read;
+      char *sob = buf;
+      while (n_left)
         {
-          if (n_buffered == 0)
-            break;
-          eof = true;
+          size_t split_rest = 0;
+          char *eoc = NULL;
+          char *eol;
+
+          /* Determine End Of Chunk and/or End of Line,
+             which are used below to select what to write or buffer.  */
+          if (n_bytes - n_out - n_hold <= n_left)
+            {
+              /* Have enough for split.  */
+              split_rest = n_bytes - n_out - n_hold;
+              eoc = sob + split_rest - 1;
+              eol = memrchr (sob, '\n', split_rest);
+            }
+          else
+            eol = memrchr (sob, '\n', n_left);
+
+          /* Output hold space if possible.  */
+          if (n_hold && !(!eol && n_out))
+            {
+              cwrite (n_out == 0, hold, n_hold);
+              n_out += n_hold;
+              if (n_hold > bufsize)
+                hold = xrealloc (hold, bufsize);
+              n_hold = 0;
+              hold_size = bufsize;
+            }
+
+          /* Output to eol if present.  */
+          if (eol)
+            {
+              split_line = true;
+              size_t n_write = eol - sob + 1;
+              cwrite (n_out == 0, sob, n_write);
+              n_out += n_write;
+              n_left -= n_write;
+              sob += n_write;
+              if (eoc)
+                split_rest -= n_write;
+            }
+
+          /* Output to eoc or eob if possible.  */
+          if (n_left && !split_line)
+            {
+              size_t n_write = eoc ? split_rest : n_left;
+              cwrite (n_out == 0, sob, n_write);
+              n_out += n_write;
+              n_left -= n_write;
+              sob += n_write;
+              if (eoc)
+                split_rest -= n_write;
+            }
+
+          /* Update hold if needed.  */
+          if ((eoc && split_rest) || (!eoc && n_left))
+            {
+              size_t n_buf = eoc ? split_rest : n_left;
+              if (hold_size - n_hold < n_buf)
+                {
+                  if (hold_size <= SIZE_MAX - bufsize)
+                    hold_size += bufsize;
+                  else
+                    xalloc_die ();
+                  hold = xrealloc (hold, hold_size);
+                }
+              memcpy (hold + n_hold, sob, n_buf);
+              n_hold += n_buf;
+              n_left -= n_buf;
+              sob += n_buf;
+            }
+
+          /* Reset for new split.  */
+          if (eoc)
+            {
+              n_out = 0;
+              split_line = false;
+            }
         }
-
-      /* Find where to end this chunk.  */
-      bp = buf + n_buffered;
-      if (n_buffered == n_bytes)
-        {
-          while (bp > buf && bp[-1] != '\n')
-            bp--;
-        }
-
-      /* If chunk has no newlines, use all the chunk.  */
-      if (bp == buf)
-        bp = buf + n_buffered;
-
-      /* Output the chars as one output file.  */
-      cwrite (true, buf, bp - buf);
-
-      /* Discard the chars we just output; move rest of chunk
-         down to be the start of the next chunk.  Source and
-         destination probably overlap.  */
-      n_buffered -= bp - buf;
-      if (n_buffered > 0)
-        memmove (buf, bp, n_buffered);
     }
-  while (!eof);
-  free (buf);
+  while (n_read);
+
+  /* Handle no eol at end of file.  */
+  if (n_hold)
+    cwrite (n_out == 0, hold, n_hold);
+
+  free (hold);
 }
 
 /* -n l/[K/]N: Write lines to files of approximately file size / N.
@@ -622,12 +761,12 @@ lines_chunk_split (uintmax_t k, uintmax_t n, char *buf, size_t bufsize,
   while (n_written < file_size)
     {
       char *bp = buf, *eob;
-      size_t n_read = full_read (STDIN_FILENO, buf, bufsize);
-      n_read = MIN (n_read, file_size - n_written);
-      if (n_read < bufsize && errno)
+      size_t n_read = safe_read (STDIN_FILENO, buf, bufsize);
+      if (n_read == SAFE_READ_ERROR)
         error (EXIT_FAILURE, errno, "%s", infile);
       else if (n_read == 0)
         break; /* eof.  */
+      n_read = MIN (n_read, file_size - n_written);
       chunk_truncated = false;
       eob = buf + n_read;
 
@@ -717,12 +856,12 @@ bytes_chunk_extract (uintmax_t k, uintmax_t n, char *buf, size_t bufsize,
 
   while (start < end)
     {
-      size_t n_read = full_read (STDIN_FILENO, buf, bufsize);
-      n_read = MIN (n_read, end - start);
-      if (n_read < bufsize && errno)
+      size_t n_read = safe_read (STDIN_FILENO, buf, bufsize);
+      if (n_read == SAFE_READ_ERROR)
         error (EXIT_FAILURE, errno, "%s", infile);
       else if (n_read == 0)
         break; /* eof.  */
+      n_read = MIN (n_read, end - start);
       if (full_write (STDOUT_FILENO, buf, n_read) != n_read
           && ! ignorable (errno))
         error (EXIT_FAILURE, errno, "%s", quote ("-"));
@@ -775,7 +914,7 @@ ofile_open (of_t *files, size_t i_check, size_t nfiles)
                  get an error, rather than waiting indefinitely.
                  In specialised cases the consumer can keep reading
                  from the fifo, terminating on conditions in the data
-                 itself, or perhaps never in the case of `tail -f`.
+                 itself, or perhaps never in the case of 'tail -f'.
                  I.E. for fifos it is valid to attempt this reopen.
 
                  We don't handle the filter_command case here, as create()
@@ -839,7 +978,7 @@ lines_rr (uintmax_t k, uintmax_t n, char *buf, size_t bufsize)
   else
     {
       if (SIZE_MAX < n)
-        error (exit_failure, 0, "%s", _("memory exhausted"));
+        xalloc_die ();
       files = xnmalloc (n, sizeof *files);
 
       /* Generate output file names. */
@@ -858,8 +997,6 @@ lines_rr (uintmax_t k, uintmax_t n, char *buf, size_t bufsize)
   while (true)
     {
       char *bp = buf, *eob;
-      /* Use safe_read() rather than full_read() here
-         so that we process available data immediately.  */
       size_t n_read = safe_read (STDIN_FILENO, buf, bufsize);
       if (n_read == SAFE_READ_ERROR)
         error (EXIT_FAILURE, errno, "%s", infile);
@@ -956,6 +1093,7 @@ no_filters:
           files[i_file].ofd = OFD_APPEND;
         }
     }
+  IF_LINT (free (files));
 }
 
 #define FAIL_ONLY_ONE_WAY()					\
@@ -985,10 +1123,8 @@ parse_chunk (uintmax_t *k_units, uintmax_t *n_units, char *slash)
 int
 main (int argc, char **argv)
 {
-  struct stat stat_buf;
   enum Split_type split_type = type_undef;
   size_t in_blk_size = 0;	/* optimal block size of input file device */
-  char *buf;			/* file i/o buffer */
   size_t page_size = getpagesize ();
   uintmax_t k_units = 0;
   uintmax_t n_units;
@@ -996,7 +1132,7 @@ main (int argc, char **argv)
   static char const multipliers[] = "bEGKkMmPTYZ0";
   int c;
   int digits_optind = 0;
-  off_t file_size;
+  off_t file_size IF_LINT (= 0);
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -1035,6 +1171,17 @@ main (int argc, char **argv)
               }
             suffix_length = tmp;
           }
+          break;
+
+        case ADDITIONAL_SUFFIX_OPTION:
+          if (last_component (optarg) != optarg)
+            {
+              error (0, 0,
+                     _("invalid suffix %s, contains directory separator"),
+                     quote (optarg));
+              usage (EXIT_FAILURE);
+            }
+          additional_suffix = optarg;
           break;
 
         case 'b':
@@ -1143,6 +1290,23 @@ main (int argc, char **argv)
 
         case 'd':
           suffix_alphabet = "0123456789";
+          if (optarg)
+            {
+              if (strlen (optarg) != strspn (optarg, suffix_alphabet))
+                {
+                  error (0, 0,
+                         _("%s: invalid start value for numerical suffix"),
+                         optarg);
+                  usage (EXIT_FAILURE);
+                }
+              else
+                {
+                  /* Skip any leading zero.  */
+                  while (*optarg == '0' && *(optarg + 1) != '\0')
+                    optarg++;
+                  numeric_suffix_start = optarg;
+                }
+            }
           break;
 
         case 'e':
@@ -1213,6 +1377,15 @@ main (int argc, char **argv)
       usage (EXIT_FAILURE);
     }
 
+  /* Check that the suffix length is large enough for the numerical
+     suffix start value.  */
+  if (numeric_suffix_start && strlen (numeric_suffix_start) > suffix_length)
+    {
+      error (0, 0, _("numerical suffix start value is too large "
+                     "for the suffix length"));
+      usage (EXIT_FAILURE);
+    }
+
   /* Open the input file.  */
   if (! STREQ (infile, "-")
       && fd_reopen (STDIN_FILENO, infile, O_RDONLY, 0) < 0)
@@ -1225,15 +1398,23 @@ main (int argc, char **argv)
 
   /* Get the optimal block size of input device and make a buffer.  */
 
-  if (fstat (STDIN_FILENO, &stat_buf) != 0)
+  if (fstat (STDIN_FILENO, &in_stat_buf) != 0)
     error (EXIT_FAILURE, errno, "%s", infile);
   if (in_blk_size == 0)
-    in_blk_size = io_blksize (stat_buf);
-  file_size = stat_buf.st_size;
+    in_blk_size = io_blksize (in_stat_buf);
 
   if (split_type == type_chunk_bytes || split_type == type_chunk_lines)
     {
       off_t input_offset = lseek (STDIN_FILENO, 0, SEEK_CUR);
+      if (usable_st_size (&in_stat_buf))
+        file_size = in_stat_buf.st_size;
+      else if (0 <= input_offset)
+        {
+          file_size = lseek (STDIN_FILENO, 0, SEEK_END);
+          input_offset = (file_size < 0
+                          ? file_size
+                          : lseek (STDIN_FILENO, input_offset, SEEK_SET));
+        }
       if (input_offset < 0)
         error (EXIT_FAILURE, 0, _("%s: cannot determine file size"),
                quote (infile));
@@ -1250,7 +1431,8 @@ main (int argc, char **argv)
       file_size = MAX (file_size, n_units);
     }
 
-  buf = ptr_align (xmalloc (in_blk_size + 1 + page_size - 1), page_size);
+  void *b = xmalloc (in_blk_size + 1 + page_size - 1);
+  char *buf = ptr_align (b, page_size);
 
   /* When filtering, closure of one pipe must not terminate the process,
      as there may still be other streams expecting input from us.  */
@@ -1276,7 +1458,7 @@ main (int argc, char **argv)
       break;
 
     case type_byteslines:
-      line_bytes_split (n_units);
+      line_bytes_split (n_units, buf, in_blk_size);
       break;
 
     case type_chunk_bytes:
@@ -1291,7 +1473,7 @@ main (int argc, char **argv)
       break;
 
     case type_rr:
-      /* Note, this is like `sed -n ${k}~${n}p` when k > 0,
+      /* Note, this is like 'sed -n ${k}~${n}p' when k > 0,
          but the functionality is provided for symmetry.  */
       lines_rr (k_units, n_units, buf, in_blk_size);
       break;
@@ -1299,6 +1481,8 @@ main (int argc, char **argv)
     default:
       abort ();
     }
+
+  IF_LINT (free (b));
 
   if (close (STDIN_FILENO) != 0)
     error (EXIT_FAILURE, errno, "%s", infile);

@@ -1,6 +1,6 @@
 /* Test whether a file descriptor is a pipe.
 
-   Copyright (C) 2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2006, 2008-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,11 +26,11 @@
 #if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
 /* Windows platforms.  */
 
-/* Get _get_osfhandle.  */
-# include <io.h>
-
 /* Get GetFileType.  */
 # include <windows.h>
+
+/* Get _get_osfhandle.  */
+# include "msvc-nothrow.h"
 
 int
 isapipe (int fd)

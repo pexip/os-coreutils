@@ -1,5 +1,5 @@
 /* link utility for GNU.
-   Copyright (C) 2001-2002, 2004, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 2001-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include "long-options.h"
 #include "quote.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "link"
 
 #define AUTHORS proper_name ("Michael Stone")
@@ -39,8 +39,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\

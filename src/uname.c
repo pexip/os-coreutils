@@ -1,7 +1,6 @@
 /* uname -- print system information
 
-   Copyright (C) 1989, 1992-1993, 1996-1997, 1999-2005, 2007-2011 Free Software
-   Foundation, Inc.
+   Copyright (C) 1989-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,13 +54,13 @@
 #include "quote.h"
 #include "uname.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME (uname_mode == UNAME_UNAME ? "uname" : "arch")
 
 #define AUTHORS proper_name ("David MacKenzie")
 #define ARCH_AUTHORS "David MacKenzie", "Karel Zak"
 
-/* Values that are bitwise or'd into `toprint'. */
+/* Values that are bitwise or'd into 'toprint'. */
 /* Kernel name. */
 #define PRINT_KERNEL_NAME 1
 
@@ -115,8 +114,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION]...\n"), program_name);
@@ -323,9 +321,9 @@ main (int argc, char **argv)
           if (element == unknown)
             {
               cpu_type_t cputype;
-              size_t s = sizeof cputype;
+              size_t cs = sizeof cputype;
               NXArchInfo const *ai;
-              if (sysctlbyname ("hw.cputype", &cputype, &s, NULL, 0) == 0
+              if (sysctlbyname ("hw.cputype", &cputype, &cs, NULL, 0) == 0
                   && (ai = NXGetArchInfoFromCpuType (cputype,
                                                      CPU_SUBTYPE_MULTIPLE))
                   != NULL)

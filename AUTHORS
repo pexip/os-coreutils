@@ -12,6 +12,7 @@ chown: David MacKenzie, Jim Meyering
 chroot: Roland McGrath
 cksum: Q. Frank Xia
 comm: Richard M. Stallman, David MacKenzie
+coreutils: Alex Deymo
 cp: Torbjörn Granlund, David MacKenzie, Jim Meyering
 csplit: Stuart Kemp, David MacKenzie
 cut: David M. Ihnat, David MacKenzie, Jim Meyering
@@ -26,7 +27,7 @@ echo: Brian Fox, Chet Ramey
 env: Richard Mlynarik, David MacKenzie
 expand: David MacKenzie
 expr: Mike Parker, James Youngman, Paul Eggert
-factor: Paul Rubin
+factor: Paul Rubin, Torbjörn Granlund, Niels Möller
 false: Jim Meyering
 fmt: Ross Paterson
 fold: David MacKenzie
@@ -52,6 +53,7 @@ nice: David MacKenzie
 nl: Scott Bartram, David MacKenzie
 nohup: Jim Meyering
 nproc: Giuseppe Scrivano
+numfmt: Assaf Gordon
 od: Jim Meyering
 paste: David M. Ihnat, David MacKenzie
 pathchk: Paul Eggert, David MacKenzie, Jim Meyering
@@ -62,6 +64,7 @@ printf: David MacKenzie
 ptx: François Pinard
 pwd: Jim Meyering
 readlink: Dmitry V. Levin
+realpath: Pádraig Brady
 rm: Paul Rubin, David MacKenzie, Richard M. Stallman, Jim Meyering
 rmdir: David MacKenzie
 runcon: Russell Coker
@@ -79,7 +82,6 @@ split: Torbjörn Granlund, Richard M. Stallman
 stat: Michael Meskes
 stdbuf: Pádraig Brady
 stty: David MacKenzie
-su: David MacKenzie
 sum: Kayvan Aghaiepour, David MacKenzie
 sync: Jim Meyering
 tac: Jay Lepreau, David MacKenzie

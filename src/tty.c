@@ -1,5 +1,5 @@
 /* tty -- print the name of the terminal connected to standard input
-   Copyright (C) 1990-2005, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 1990-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ enum
     TTY_WRITE_ERROR = 3
   };
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "tty"
 
 #define AUTHORS proper_name ("David MacKenzie")
@@ -58,8 +58,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION]...\n"), program_name);

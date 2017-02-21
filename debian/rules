@@ -21,11 +21,9 @@ ifeq ($(DEB_HOST_ARCH_OS),)
 endif
 
 # implement no optimization build option
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-CFLAGS = -g -O0
-else
-CFLAGS ?= -g -O2
-endif
+CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS = $(shell dpkg-buildflags --get LDFLAGS)
+CPPFLAGS = $(shell dpkg-buildflags --get CPPFLAGS)
 CFLAGS += -DSYSLOG_SUCCESS -DSYSLOG_FAILURE -DSYSLOG_NON_ROOT
 
 # Renesas SH(sh4) need -mieee option.
@@ -34,11 +32,7 @@ ifeq ($(DEB_HOST_ARCH_CPU),sh4)
 endif
 
 # programs to include/not include
-ifeq ($(DEB_HOST_ARCH_OS),hurd)
-  BUILDPROG_OPTS := --enable-install-program=su,arch
-else
-  BUILDPROG_OPTS := --enable-install-program=arch
-endif
+BUILDPROG_OPTS := --enable-install-program=arch
 
 BIN_PROGS = cat chgrp chmod chown cp date dd df dir echo false ln ls mkdir \
 	mknod mv pwd readlink rm rmdir vdir sleep stty sync touch true uname \
@@ -50,28 +44,28 @@ default: binary
 configure: patch configure-stamp 
 configure-stamp: 
 	dh_testdir
+	dh_autotools-dev_updateconfig
 
-	CFLAGS="$(CFLAGS)" \
+	CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" \
 		LDFLAGS='$(LDFLAGS)' ./configure \
 		--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE) \
 		--prefix=/usr -v \
 		--libexecdir=/usr/lib \
 		--infodir=/usr/share/info --mandir=/usr/share/man \
+		--disable-silent-rules \
 		$(BUILDPROG_OPTS)
 
 	echo configured > configure-stamp
 
-build: patch configure build-arch build-indep
-build-arch: build-stamp
-build-indep: build-stamp
+build: build-arch
+build-arch: patch configure build-stamp
+
+build-indep:
+	# do nothing
+
 build-stamp: 
 	dh_testdir
 	$(MAKE)
-ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
-  ifeq (,$(findstring mips,$(DEB_BUILD_ARCH)))
-	$(MAKE) check VERBOSE=yes CFLAGS="$(filter-out -Werror=format-security,$(CFLAGS))"
-  endif
-endif
 	echo built > build-stamp
 
 clean: unpatch clean1
@@ -80,6 +74,7 @@ clean1:
 	rm -f build-stamp configure-stamp
 	rm -rf debian/buildinfo
 	make distclean || true
+	dh_autotools-dev_restoreconfig
 	rm -f config.log
 	rm -f config.status
 	dh_clean
@@ -88,18 +83,17 @@ patch: patch-stamp
 patch-stamp: 
 	dpatch apply-all
 	dpatch cat-all > patch-stamp
-	touch man/*.1
 	touch patch-stamp
 
 unpatch: 
 	dpatch deapply-all
 	rm -rf patch-stamp debian-patched
 
-install: build
+install-arch: build-arch
 	dh_testdir
 	dh_testroot
-	dh_clean -k
-	dh_installdirs
+	dh_clean -a -k
+	dh_installdirs -a
 
 	$(MAKE) install DESTDIR=$(CURDIR)/$(d)
 
@@ -122,9 +116,6 @@ ifeq ($(DEB_HOST_ARCH_OS),linux)
 	rm -f $(d)/usr/bin/kill $(d)/usr/share/man/man1/kill.1
 else
 	mv $(d)/usr/bin/kill $(d)/bin
-endif
-ifneq ($(DEB_HOST_ARCH_OS),hurd)
-		rm -f $(d)/usr/bin/su $(d)/usr/share/man/man1/su.1
 endif
 	rm -f $(d)/usr/bin/hostname $(d)/usr/share/man/man1/hostname.1
 	rm -f $(d)/usr/bin/uptime $(d)/usr/share/man/man1/uptime.1
@@ -150,10 +141,17 @@ endif
 		TODO \
 		$(d)/usr/share/doc/coreutils
 
-	dh_install
+	dh_install -a
+
+install-indep: build-indep
+	dh_testdir
+	dh_testroot
+	dh_clean -i -k
+	dh_installdirs -i
+	dh_install -i
 
 # Build architecture-independent files here.
-binary-indep: build install
+binary-indep: build-indep install
 	dh_testdir -i
 	dh_testroot -i
 	dh_installchangelogs -i
@@ -171,7 +169,7 @@ binary-indep: build install
 	dh_builddeb -i
 
 # Build architecture-dependent files here.
-binary-arch: build install
+binary-arch: build-arch install-arch
 	dh_testdir -a
 	dh_testroot -a
 	dh_installchangelogs -a ChangeLog 
@@ -186,9 +184,6 @@ endif
 	dh_link -a
 	dh_compress -a
 	dh_fixperms -a
-ifeq ($(DEB_HOST_ARCH_OS),hurd)
-	chmod u+s $(d)/usr/bin/su
-endif
 	dh_installdeb -a
 	dh_shlibdeps -a
 	dh_gencontrol -a
@@ -196,4 +191,4 @@ endif
 	dh_builddeb -a
 
 binary: binary-indep binary-arch 
-.PHONY: build clean binary-indep binary-arch binary install patch unpatch clean1
+.PHONY: build build-arch build-indep clean binary-indep binary-arch binary install patch unpatch clean1

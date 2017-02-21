@@ -1,5 +1,5 @@
 /* stty -- change and print terminal line settings
-   Copyright (C) 1990-2005, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 1990-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@
 #endif
 #include <getopt.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "system.h"
 #include "error.h"
@@ -59,7 +60,7 @@
 #include "quote.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "stty"
 
 #define AUTHORS proper_name ("David MacKenzie")
@@ -116,8 +117,8 @@
 # define CSWTCH _POSIX_VDISABLE
 #endif
 
-/* SunOS 5.3 loses (^Z doesn't work) if `swtch' is the same as `susp'.
-   So the default is to disable `swtch.'  */
+/* SunOS 5.3 loses (^Z doesn't work) if 'swtch' is the same as 'susp'.
+   So the default is to disable 'swtch.'  */
 #if defined __sparc__ && defined __svr4__
 # undef CSWTCH
 # define CSWTCH _POSIX_VDISABLE
@@ -178,16 +179,16 @@ enum output_type
     changed, all, recoverable	/* Default, -a, -g.  */
   };
 
-/* Which member(s) of `struct termios' a mode uses.  */
+/* Which member(s) of 'struct termios' a mode uses.  */
 enum mode_type
   {
     control, input, output, local, combination
   };
 
-/* Flags for `struct mode_info'. */
-#define SANE_SET 1		/* Set in `sane' mode. */
-#define SANE_UNSET 2		/* Unset in `sane' mode. */
-#define REV 4			/* Can be turned off by prepending `-'. */
+/* Flags for 'struct mode_info'. */
+#define SANE_SET 1		/* Set in 'sane' mode. */
+#define SANE_UNSET 2		/* Unset in 'sane' mode. */
+#define REV 4			/* Can be turned off by prepending '-'. */
 #define OMIT 8			/* Don't display value. */
 
 /* Each mode.  */
@@ -204,6 +205,9 @@ static struct mode_info const mode_info[] =
 {
   {"parenb", control, REV, PARENB, 0},
   {"parodd", control, REV, PARODD, 0},
+#ifdef CMSPAR
+  {"cmspar", control, REV, CMSPAR, 0},
+#endif
   {"cs5", control, 0, CS5, CSIZE},
   {"cs6", control, 0, CS6, CSIZE},
   {"cs7", control, 0, CS7, CSIZE},
@@ -215,6 +219,9 @@ static struct mode_info const mode_info[] =
   {"clocal", control, REV, CLOCAL, 0},
 #ifdef CRTSCTS
   {"crtscts", control, REV, CRTSCTS, 0},
+#endif
+#ifdef CDTRDSR
+  {"cdtrdsr", control, REV, CDTRDSR, 0},
 #endif
 
   {"ignbrk", input, SANE_UNSET | REV, IGNBRK, 0},
@@ -366,7 +373,7 @@ static struct mode_info const mode_info[] =
 struct control_info
   {
     const char *name;		/* Name given on command line.  */
-    cc_t saneval;		/* Value to set for `stty sane'.  */
+    cc_t saneval;		/* Value to set for 'stty sane'.  */
     size_t offset;		/* Offset in c_cc.  */
   };
 
@@ -503,8 +510,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -515,7 +521,11 @@ Usage: %s [-F DEVICE | --file=DEVICE] [SETTING]...\n\
               program_name, program_name, program_name);
       fputs (_("\
 Print or change terminal characteristics.\n\
-\n\
+"), stdout);
+
+      emit_mandatory_arg_note ();
+
+      fputs (_("\
   -a, --all          print all current settings in human-readable form\n\
   -g, --save         print all current settings in a stty-readable form\n\
   -F, --file=DEVICE  open and use the specified DEVICE instead of stdin\n\
@@ -577,14 +587,16 @@ Control settings:\n\
    [-]clocal     disable modem control signals\n\
    [-]cread      allow input to be received\n\
  * [-]crtscts    enable RTS/CTS handshaking\n\
+ * [-]cdtrdsr    enable DTR/DSR handshaking\n\
    csN           set character size to N bits, N in [5..8]\n\
 "), stdout);
       fputs (_("\
-   [-]cstopb     use two stop bits per character (one with `-')\n\
+   [-]cstopb     use two stop bits per character (one with '-')\n\
    [-]hup        send a hangup signal when the last process closes the tty\n\
    [-]hupcl      same as [-]hup\n\
    [-]parenb     generate parity bit in output and expect parity bit in input\n\
-   [-]parodd     set odd parity (even with `-')\n\
+   [-]parodd     set odd parity (or even parity with '-')\n\
+ * [-]cmspar     use \"stick\" (mark/space) parity\n\
 "), stdout);
       fputs (_("\
 \n\
@@ -622,7 +634,7 @@ Output settings:\n\
 "), stdout);
       fputs (_("\
  * [-]ocrnl      translate carriage return to newline\n\
- * [-]ofdel      use delete characters for fill instead of null characters\n\
+ * [-]ofdel      use delete characters for fill instead of NUL characters\n\
  * [-]ofill      use fill (padding) characters instead of timing for delays\n\
  * [-]olcuc      translate lowercase characters to uppercase\n\
  * [-]onlcr      translate newline to carriage return-newline\n\
@@ -644,7 +656,7 @@ Local settings:\n\
  * -crtkill      kill all line by obeying the echoctl and echok settings\n\
 "), stdout);
       fputs (_("\
- * [-]ctlecho    echo control characters in hat notation (`^c')\n\
+ * [-]ctlecho    echo control characters in hat notation ('^c')\n\
    [-]echo       echo input characters\n\
  * [-]echoctl    same as [-]ctlecho\n\
    [-]echoe      same as [-]crterase\n\
@@ -653,7 +665,7 @@ Local settings:\n\
       fputs (_("\
  * [-]echoke     same as [-]crtkill\n\
    [-]echonl     echo newline even if not echoing other characters\n\
- * [-]echoprt    echo erased characters backward, between `\\' and '/'\n\
+ * [-]echoprt    echo erased characters backward, between '\\' and '/'\n\
    [-]icanon     enable erase, kill, werase, and rprnt special characters\n\
    [-]iexten     enable non-POSIX special characters\n\
 "), stdout);
@@ -662,7 +674,7 @@ Local settings:\n\
    [-]noflsh     disable flushing after interrupt and quit special characters\n\
  * [-]prterase   same as [-]echoprt\n\
  * [-]tostop     stop background jobs that try to write to the terminal\n\
- * [-]xcase      with icanon, escape with `\\' for uppercase characters\n\
+ * [-]xcase      with icanon, escape with '\\' for uppercase characters\n\
 "), stdout);
       fputs (_("\
 \n\
@@ -730,14 +742,14 @@ main (int argc, char **argv)
 {
   /* Initialize to all zeroes so there is no risk memcmp will report a
      spurious difference in an uninitialized portion of the structure.  */
-  struct termios mode = { 0, };
+  static struct termios mode;
 
   enum output_type output_type;
   int optc;
   int argi = 0;
   int opti = 1;
   bool require_set_attr;
-  bool speed_was_set;
+  bool speed_was_set _GL_UNUSED;
   bool verbose_output;
   bool recoverable_output;
   int k;
@@ -1003,14 +1015,14 @@ main (int argc, char **argv)
     {
       /* Initialize to all zeroes so there is no risk memcmp will report a
          spurious difference in an uninitialized portion of the structure.  */
-      struct termios new_mode = { 0, };
+      static struct termios new_mode;
 
       if (tcsetattr (STDIN_FILENO, TCSADRAIN, &mode))
         error (EXIT_FAILURE, errno, "%s", device_name);
 
       /* POSIX (according to Zlotnick's book) tcsetattr returns zero if
          it performs *any* of the requested operations.  This means it
-         can report `success' when it has actually failed to perform
+         can report 'success' when it has actually failed to perform
          some proper subset of the requested operations.  To detect
          this partial failure, get the current terminal attributes and
          compare them to the requested ones.  */
@@ -1019,7 +1031,7 @@ main (int argc, char **argv)
         error (EXIT_FAILURE, errno, "%s", device_name);
 
       /* Normally, one shouldn't use memcmp to compare structures that
-         may have `holes' containing uninitialized data, but we have been
+         may have 'holes' containing uninitialized data, but we have been
          careful to initialize the storage of these two variables to all
          zeroes.  One might think it more efficient simply to compare the
          modified fields, but that would require enumerating those fields --
@@ -1345,8 +1357,8 @@ set_window_size (int rows, int cols, char const *device_name)
      it's almost certainly a "struct winsize" instead.
 
      At any rate, the bug manifests itself when ws_row == 0; the symptom is
-     that ws_row is set to ws_col, and ws_col is set to (ws_xpixel<<16) +
-     ws_ypixel.  Since GNU stty sets rows and columns separately, this bug
+     that ws_row is set to ws_col, and ws_col is set to (ws_xpixel<<16)
+     + ws_ypixel.  Since GNU stty sets rows and columns separately, this bug
      caused "stty rows 0 cols 0" to set rows to cols and cols to 0, while
      "stty cols 0 rows 0" would do the right thing.  On a little-endian
      machine like the sun386i, the problem is the same, but for ws_col == 0.
@@ -1539,6 +1551,12 @@ display_changed (struct termios *mode)
 
       bitsp = mode_type_flag (mode_info[i].type, mode);
       mask = mode_info[i].mask ? mode_info[i].mask : mode_info[i].bits;
+
+      /* bitsp would be NULL only for "combination" modes, yet those
+         are filtered out above via the OMIT flag.  Tell static analysis
+         tools that it's ok to dereference bitsp here.  */
+      assert (bitsp);
+
       if ((*bitsp & mask) == mode_info[i].bits)
         {
           if (mode_info[i].flags & SANE_UNSET)
@@ -1616,6 +1634,7 @@ display_all (struct termios *mode, char const *device_name)
 
       bitsp = mode_type_flag (mode_info[i].type, mode);
       mask = mode_info[i].mask ? mode_info[i].mask : mode_info[i].bits;
+      assert (bitsp); /* See the identical assertion and comment above.  */
       if ((*bitsp & mask) == mode_info[i].bits)
         wrapf ("%s", mode_info[i].name);
       else if (mode_info[i].flags & REV)
@@ -1842,7 +1861,7 @@ sane_mode (struct termios *mode)
 }
 
 /* Return a string that is the printable representation of character CH.  */
-/* Adapted from `cat' by Torbjorn Granlund.  */
+/* Adapted from 'cat' by Torbjorn Granlund.  */
 
 static const char *
 visible (cc_t ch)

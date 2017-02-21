@@ -1,5 +1,5 @@
 /* remove.c -- core functions for removing files and directories
-   Copyright (C) 1988, 1990-1991, 1994-2011 Free Software Foundation, Inc.
+   Copyright (C) 1988-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 #include "system.h"
 #include "error.h"
-#include "euidaccess-stat.h"
 #include "file-type.h"
 #include "ignore-value.h"
 #include "quote.h"
@@ -89,30 +88,13 @@ cache_stat_init (struct stat *st)
   return st;
 }
 
-/* Return true if *ST has been statted.  */
-static inline bool
-cache_statted (struct stat *st)
-{
-  return (st->st_size != -1);
-}
-
-/* Return true if *ST has been statted successfully.  */
-static inline bool
-cache_stat_ok (struct stat *st)
-{
-  return (0 <= st->st_size);
-}
-
 /* Return 1 if FILE is an unwritable non-symlink,
    0 if it is writable or some other type of file,
    -1 and set errno if there is some problem in determining the answer.
-   Use FULL_NAME only if necessary.
-   Set *BUF to the file status.
-   This is to avoid calling euidaccess when FILE is a symlink.  */
+   Set *BUF to the file status.  */
 static int
 write_protected_non_symlink (int fd_cwd,
                              char const *file,
-                             char const *full_name,
                              struct stat *buf)
 {
   if (can_write_any_file ())
@@ -133,7 +115,7 @@ write_protected_non_symlink (int fd_cwd,
      the implementation choices [#4 and #5 were suggested by Paul Eggert]:
      1) call openat with O_WRONLY|O_NOCTTY
         Disadvantage: may create the file and doesn't work for directory,
-        may mistakenly report `unwritable' for EROFS or ACLs even though
+        may mistakenly report 'unwritable' for EROFS or ACLs even though
         perm bits say the file is writable.
 
      2) fake eaccessat (save_cwd, fchdir, call euidaccess, restore_cwd)
@@ -170,32 +152,10 @@ write_protected_non_symlink (int fd_cwd,
         mess up with long file names). */
 
   {
-    /* This implements #1: on decent systems, either faccessat is
-       native or /proc/self/fd allows us to skip a chdir.  */
-    if (!openat_needs_fchdir ())
-      {
-        if (faccessat (fd_cwd, file, W_OK, AT_EACCESS) == 0)
-          return 0;
-
-        return errno == EACCES ? 1 : -1;
-      }
-
-    /* This implements #5: */
-    size_t file_name_len = strlen (full_name);
-
-    if (MIN (PATH_MAX, 8192) <= file_name_len)
-      return ! euidaccess_stat (buf, W_OK);
-    if (euidaccess (full_name, W_OK) == 0)
+    if (faccessat (fd_cwd, file, W_OK, AT_EACCESS) == 0)
       return 0;
-    if (errno == EACCES)
-      {
-        errno = 0;
-        return 1;
-      }
 
-    /* Perhaps some other process has removed the file, or perhaps this
-       is a buggy NFS client.  */
-    return -1;
+    return errno == EACCES ? 1 : -1;
   }
 }
 
@@ -207,7 +167,7 @@ write_protected_non_symlink (int fd_cwd,
 
    IS_DIR is true if ENT designates a directory, false otherwise.
 
-   Depending on MODE, ask whether to `descend into' or to `remove' the
+   Depending on MODE, ask whether to 'descend into' or to 'remove' the
    directory FILENAME.  MODE is ignored when FILENAME is not a directory.
    Set *IS_EMPTY_P to T_YES if FILENAME is an empty directory, and it is
    appropriate to try to remove it with rmdir (e.g. recursive mode).
@@ -230,6 +190,13 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
   int dirent_type = is_dir ? DT_DIR : DT_UNKNOWN;
   int write_protected = 0;
 
+  bool is_empty = false;
+  if (is_empty_p)
+    {
+      is_empty = is_empty_dir (fd_cwd, filename);
+      *is_empty_p = is_empty ? T_YES : T_NO;
+    }
+
   /* When nonzero, this indicates that we failed to remove a child entry,
      either because the user declined an interactive prompt, or due to
      some other failure, like permissions.  */
@@ -244,8 +211,7 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
       && ((x->interactive == RMI_ALWAYS) || x->stdin_tty)
       && dirent_type != DT_LNK)
     {
-      write_protected = write_protected_non_symlink (fd_cwd, filename,
-                                                     full_name, sbuf);
+      write_protected = write_protected_non_symlink (fd_cwd, filename, sbuf);
       wp_errno = errno;
     }
 
@@ -263,7 +229,7 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
             }
           else
             {
-              /* This happens, e.g., with `rm '''.  */
+              /* This happens, e.g., with 'rm '''.  */
               write_protected = -1;
               wp_errno = errno;
             }
@@ -279,7 +245,10 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
             break;
 
           case DT_DIR:
-            if (!x->recursive)
+             /* Unless we're either deleting directories or deleting
+                recursively, we want to raise an EISDIR error rather than
+                prompting the user  */
+            if ( ! (x->recursive || (x->remove_empty_directories && is_empty)))
               {
                 write_protected = -1;
                 wp_errno = EISDIR;
@@ -294,15 +263,6 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
           error (0, wp_errno, _("cannot remove %s"), quoted_name);
           return RM_ERROR;
         }
-
-      bool is_empty;
-      if (is_empty_p)
-        {
-          is_empty = is_empty_dir (fd_cwd, filename);
-          *is_empty_p = is_empty ? T_YES : T_NO;
-        }
-      else
-        is_empty = false;
 
       /* Issue the prompt.  */
       if (dirent_type == DT_DIR
@@ -323,10 +283,11 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
 
           fprintf (stderr,
                    (write_protected
-                    /* TRANSLATORS: You may find it more convenient to
-                       translate "%s: remove %s (write-protected) %s? "
-                       instead.  It should avoid grammatical problems
-                       with the output of file_type.  */
+                    /* TRANSLATORS: In the next two strings the second %s is
+                       replaced by the type of the file.  To avoid grammatical
+                       problems, it may be more convenient to translate these
+                       strings instead as: "%1$s: %3$s is write-protected and
+                       is of type '%2$s' -- remove it? ".  */
                     ? _("%s: remove write-protected %s %s? ")
                     : _("%s: remove %s %s? ")),
                    program_name, file_type (sbuf), quoted_name);
@@ -336,36 +297,6 @@ prompt (FTS const *fts, FTSENT const *ent, bool is_dir,
         return RM_USER_DECLINED;
     }
   return RM_OK;
-}
-
-/* Return true if FILENAME is a directory (and not a symlink to a directory).
-   Otherwise, including the case in which lstat fails, return false.
-   *ST is FILENAME's tstatus.
-   Do not modify errno.  */
-static inline bool
-is_dir_lstat (int fd_cwd, char const *filename, struct stat *st)
-{
-  int saved_errno = errno;
-  bool is_dir =
-    (cache_fstatat (fd_cwd, filename, st, AT_SYMLINK_NOFOLLOW) == 0
-     && S_ISDIR (st->st_mode));
-  errno = saved_errno;
-  return is_dir;
-}
-
-/* Return true if FILENAME is a non-directory.
-   Otherwise, including the case in which lstat fails, return false.
-   *ST is FILENAME's tstatus.
-   Do not modify errno.  */
-static inline bool
-is_nondir_lstat (int fd_cwd, char const *filename, struct stat *st)
-{
-  int saved_errno = errno;
-  bool is_non_dir =
-    (cache_fstatat (fd_cwd, filename, st, AT_SYMLINK_NOFOLLOW) == 0
-     && !S_ISDIR (st->st_mode));
-  errno = saved_errno;
-  return is_non_dir;
 }
 
 /* When a function like unlink, rmdir, or fstatat fails with an errno
@@ -462,11 +393,15 @@ excise (FTS *fts, FTSENT *ent, struct rm_options const *x, bool is_dir)
   if (ignorable_missing (x, errno))
     return RM_OK;
 
-  /* When failing to rmdir an unreadable directory, the typical
-     errno value is EISDIR, but that is not as useful to the user
-     as the errno value from the failed open (probably EPERM).
-     Use the earlier, more descriptive errno value.  */
-  if (ent->fts_info == FTS_DNR)
+  /* When failing to rmdir an unreadable directory, we see errno values
+     like EISDIR or ENOTDIR (or, on Solaris 10, EEXIST), but they would be
+     meaningless in a diagnostic.  When that happens and the errno value
+     from the failed open is EPERM or EACCES, use the earlier, more
+     descriptive errno value.  */
+  if (ent->fts_info == FTS_DNR
+      && (errno == ENOTEMPTY || errno == EISDIR || errno == ENOTDIR
+          || errno == EEXIST)
+      && (ent->fts_errno == EPERM || ent->fts_errno == EACCES))
     errno = ent->fts_errno;
   error (0, errno, _("cannot remove %s"), quote (ent->fts_path));
   mark_ancestor_dirs (ent);
@@ -485,11 +420,16 @@ rm_fts (FTS *fts, FTSENT *ent, struct rm_options const *x)
   switch (ent->fts_info)
     {
     case FTS_D:			/* preorder directory */
-      if (! x->recursive)
+      if (! x->recursive
+          && !(x->remove_empty_directories
+               && is_empty_dir (fts->fts_cwd_fd, ent->fts_accpath)))
         {
-          /* This is the first (pre-order) encounter with a directory.
-             Not recursive, so arrange to skip contents.  */
-          error (0, EISDIR, _("cannot remove %s"), quote (ent->fts_path));
+          /* This is the first (pre-order) encounter with a directory
+             that we cannot delete.
+             Not recursive, and it's not an empty directory (if we're removing
+             them) so arrange to skip contents.  */
+          int err = x->remove_empty_directories ? ENOTEMPTY : EISDIR;
+          error (0, err, _("cannot remove %s"), quote (ent->fts_path));
           mark_ancestor_dirs (ent);
           fts_skip_tree (fts, ent);
           return RM_ERROR;
@@ -498,20 +438,21 @@ rm_fts (FTS *fts, FTSENT *ent, struct rm_options const *x)
       /* Perform checks that can apply only for command-line arguments.  */
       if (ent->fts_level == FTS_ROOTLEVEL)
         {
-          if (strip_trailing_slashes (ent->fts_path))
-            ent->fts_pathlen = strlen (ent->fts_path);
-
-          /* If the basename of a command line argument is "." or "..",
+          /* POSIX says:
+             If the basename of a command line argument is "." or "..",
              diagnose it and do nothing more with that argument.  */
           if (dot_or_dotdot (last_component (ent->fts_accpath)))
             {
-              error (0, 0, _("cannot remove directory: %s"),
-                     quote (ent->fts_path));
+              error (0, 0,
+                     _("refusing to remove %s or %s directory: skipping %s"),
+                     quote_n (0, "."), quote_n (1, ".."),
+                     quote_n (2, ent->fts_path));
               fts_skip_tree (fts, ent);
               return RM_ERROR;
             }
 
-          /* If a command line argument resolves to "/" (and --preserve-root
+          /* POSIX also says:
+             If a command line argument resolves to "/" (and --preserve-root
              is in effect -- default) diagnose and skip it.  */
           if (ROOT_DEV_INO_CHECK (x->root_dev_ino, ent->fts_statp))
             {

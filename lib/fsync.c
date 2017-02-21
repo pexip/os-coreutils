@@ -1,5 +1,3 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Emulate fsync on platforms that lack it, primarily Windows and
    cross-compilers like MinGW.
 
@@ -9,7 +7,7 @@
 
    Written by Richard W.M. Jones <rjones.at.redhat.com>
 
-   Copyright (C) 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2008-2014 Free Software Foundation, Inc.
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public
@@ -29,14 +27,14 @@
 
 #if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
 
-/* _get_osfhandle */
-# include <io.h>
-
 /* FlushFileBuffers */
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
 
 # include <errno.h>
+
+/* Get _get_osfhandle.  */
+# include "msvc-nothrow.h"
 
 int
 fsync (int fd)
@@ -59,6 +57,11 @@ fsync (int fd)
       err = GetLastError ();
       switch (err)
         {
+        case ERROR_ACCESS_DENIED:
+          /* For a read-only handle, fsync should succeed, even though we have
+             no way to sync the access-time changes.  */
+          return 0;
+
           /* eg. Trying to fsync a tty. */
         case ERROR_INVALID_HANDLE:
           errno = EINVAL;

@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Tests of readlinkat.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -60,6 +58,19 @@ main (void)
 
   /* Remove any leftovers from a previous partial run.  */
   ignore_value (system ("rm -rf " BASE "*"));
+
+  /* Test behaviour for invalid file descriptors.  */
+  {
+    errno = 0;
+    ASSERT (readlinkat (-1, "foo", buf, sizeof buf) == -1);
+    ASSERT (errno == EBADF);
+  }
+  {
+    close (99);
+    errno = 0;
+    ASSERT (readlinkat (99, "foo", buf, sizeof buf) == -1);
+    ASSERT (errno == EBADF);
+  }
 
   /* Perform same checks as counterpart functions.  */
   result = test_readlink (do_readlink, false);

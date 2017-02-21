@@ -1,5 +1,5 @@
 /* csplit - split a file into sections determined by context lines
-   Copyright (C) 1991, 1995-2011 Free Software Foundation, Inc.
+   Copyright (C) 1991-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #include <config.h>
 
+#include <assert.h>
 #include <getopt.h>
 #include <sys/types.h>
 #include <signal.h>
@@ -34,7 +35,7 @@
 #include "stdio--.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "csplit"
 
 #define AUTHORS \
@@ -51,7 +52,7 @@ struct control
   uintmax_t lines_required;	/* Number of lines required. */
   uintmax_t repeat;		/* Repeat count. */
   int argnum;			/* ARGV index. */
-  bool repeat_forever;		/* True if `*' used as a repeat count. */
+  bool repeat_forever;		/* True if '*' used as a repeat count. */
   bool ignore;			/* If true, produce no output (for regexp). */
   bool regexpr;			/* True if regular expression was used. */
   struct re_pattern_buffer re_compiled;	/* Compiled regular expression. */
@@ -111,7 +112,6 @@ static void close_output_file (void);
 static void create_output_file (void);
 static void delete_all_files (bool);
 static void save_line_to_file (const struct cstring *line);
-void usage (int status);
 
 /* Start of buffer list. */
 static struct buffer_record *head = NULL;
@@ -119,7 +119,7 @@ static struct buffer_record *head = NULL;
 /* Partially read line. */
 static char *hold_area = NULL;
 
-/* Number of bytes in `hold_area'. */
+/* Number of bytes in 'hold_area'. */
 static size_t hold_count = 0;
 
 /* Number of the last line in the buffers. */
@@ -167,15 +167,25 @@ static bool volatile remove_files;
 /* If true, remove all output files which have a zero length. */
 static bool elide_empty_files;
 
+/* If true, suppress the lines that match the PATTERN */
+static bool suppress_matched;
+
 /* The compiled pattern arguments, which determine how to split
    the input file. */
 static struct control *controls;
 
-/* Number of elements in `controls'. */
+/* Number of elements in 'controls'. */
 static size_t control_used;
 
 /* The set of signals that are caught.  */
 static sigset_t caught_signals;
+
+/* For long options that have no equivalent short option, use a
+   non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
+enum
+{
+  SUPPRESS_MATCHED_OPTION = CHAR_MAX + 1
+};
 
 static struct option const longopts[] =
 {
@@ -186,6 +196,7 @@ static struct option const longopts[] =
   {"elide-empty-files", no_argument, NULL, 'z'},
   {"prefix", required_argument, NULL, 'f'},
   {"suffix-format", required_argument, NULL, 'b'},
+  {"suppress-matched", no_argument, NULL, SUPPRESS_MATCHED_OPTION},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
@@ -426,6 +437,7 @@ free_buffer (struct buffer_record *buf)
       free (l);
       l = n;
     }
+  buf->line_start = NULL;
   free (buf->buffer);
   buf->buffer = NULL;
 }
@@ -487,7 +499,7 @@ load_buffer (void)
       bytes_avail = b->bytes_alloc; /* Size of buffer returned. */
       p = b->buffer;
 
-      /* First check the `holding' area for a partial line. */
+      /* First check the 'holding' area for a partial line. */
       if (hold_count)
         {
           memcpy (p, hold_area, hold_count);
@@ -500,8 +512,6 @@ load_buffer (void)
       b->bytes_used += read_input (p, bytes_avail);
 
       lines_found = record_line_starts (b);
-      if (!lines_found)
-        free_buffer (b);
 
       if (lines_found || have_read_eof)
         break;
@@ -516,7 +526,10 @@ load_buffer (void)
   if (lines_found)
     save_buffer (b);
   else
-    free (b);
+    {
+      free_buffer (b);
+      free (b);
+    }
 
   return lines_found != 0;
 }
@@ -600,6 +613,7 @@ find_line (uintmax_t linenum)
 
   for (b = head;;)
     {
+      assert (b);
       if (linenum < b->start_line + b->num_lines)
         {
           /* The line is in this buffer. */
@@ -716,15 +730,19 @@ process_line_count (const struct control *p, uintmax_t repetition)
 {
   uintmax_t linenum;
   uintmax_t last_line_to_save = p->lines_required * (repetition + 1);
-  struct cstring *line;
 
   create_output_file ();
 
-  linenum = get_first_line_in_buffer ();
+  /* Ensure that the line number specified is not 1 greater than
+     the number of lines in the file.
+     When suppressing matched lines, check before the loop. */
+  if (no_more_lines () && suppress_matched)
+    handle_line_error (p, repetition);
 
+  linenum = get_first_line_in_buffer ();
   while (linenum++ < last_line_to_save)
     {
-      line = remove_line ();
+      struct cstring *line = remove_line ();
       if (line == NULL)
         handle_line_error (p, repetition);
       save_line_to_file (line);
@@ -732,9 +750,12 @@ process_line_count (const struct control *p, uintmax_t repetition)
 
   close_output_file ();
 
+  if (suppress_matched)
+    remove_line ();
+
   /* Ensure that the line number specified is not 1 greater than
      the number of lines in the file. */
-  if (no_more_lines ())
+  if (no_more_lines () && !suppress_matched)
     handle_line_error (p, repetition);
 }
 
@@ -776,6 +797,9 @@ process_regexp (struct control *p, uintmax_t repetition)
 
   if (!ignore)
     create_output_file ();
+
+  if (suppress_matched && current_line > 0)
+    remove_line ();
 
   /* If there is no offset for the regular expression, or
      it is positive, then it is not necessary to buffer the lines. */
@@ -1071,7 +1095,7 @@ parse_repeat_count (int argnum, struct control *p, char *str)
 
   end = str + strlen (str) - 1;
   if (*end != '}')
-    error (EXIT_FAILURE, 0, _("%s: `}' is required in repeat count"), str);
+    error (EXIT_FAILURE, 0, _("%s: '}' is required in repeat count"), str);
   *end = '\0';
 
   if (str+1 == end-1 && *(str+1) == '*')
@@ -1081,7 +1105,7 @@ parse_repeat_count (int argnum, struct control *p, char *str)
       if (xstrtoumax (str + 1, NULL, 10, &val, "") != LONGINT_OK)
         {
           error (EXIT_FAILURE, 0,
-                 _("%s}: integer required between `{' and `}'"),
+                 _("%s}: integer required between '{' and '}'"),
                  global_argv[argnum]);
         }
       p->repeat = val;
@@ -1108,7 +1132,7 @@ extract_regexp (int argnum, bool ignore, char const *str)
   closing_delim = strrchr (str + 1, delim);
   if (closing_delim == NULL)
     error (EXIT_FAILURE, 0,
-           _("%s: closing delimiter `%c' missing"), str, delim);
+           _("%s: closing delimiter '%c' missing"), str, delim);
 
   len = closing_delim - str - 1;
   p = new_control_record ();
@@ -1323,6 +1347,7 @@ main (int argc, char **argv)
   control_used = 0;
   suppress_count = false;
   remove_files = true;
+  suppress_matched = false;
   prefix = DEFAULT_PREFIX;
 
   while ((optc = getopt_long (argc, argv, "f:b:kn:sqz", longopts, NULL)) != -1)
@@ -1354,6 +1379,10 @@ main (int argc, char **argv)
 
       case 'z':
         elide_empty_files = true;
+        break;
+
+      case SUPPRESS_MATCHED_OPTION:
+        suppress_matched = true;
         break;
 
       case_GETOPT_HELP_CHAR;
@@ -1444,8 +1473,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -1453,17 +1481,19 @@ Usage: %s [OPTION]... FILE PATTERN...\n\
 "),
               program_name);
       fputs (_("\
-Output pieces of FILE separated by PATTERN(s) to files `xx00', `xx01', ...,\n\
+Output pieces of FILE separated by PATTERN(s) to files 'xx00', 'xx01', ...,\n\
 and output byte counts of each piece to standard output.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -b, --suffix-format=FORMAT  use sprintf FORMAT instead of %02d\n\
-  -f, --prefix=PREFIX        use PREFIX instead of `xx'\n\
+  -f, --prefix=PREFIX        use PREFIX instead of 'xx'\n\
   -k, --keep-files           do not remove output files on errors\n\
+"), stdout);
+      fputs (_("\
+  -m, --suppress-matched     suppress the lines matching PATTERN\n\
 "), stdout);
       fputs (_("\
   -n, --digits=DIGITS        use specified number of digits instead of 2\n\
@@ -1484,7 +1514,7 @@ Read standard input if FILE is -.  Each PATTERN may be:\n\
   {INTEGER}          repeat the previous pattern specified number of times\n\
   {*}                repeat the previous pattern as many times as possible\n\
 \n\
-A line OFFSET is a required `+' or `-' followed by a positive integer.\n\
+A line OFFSET is a required '+' or '-' followed by a positive integer.\n\
 "), stdout);
       emit_ancillary_info ();
     }

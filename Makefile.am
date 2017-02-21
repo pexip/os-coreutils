@@ -1,6 +1,6 @@
 # Make coreutils.					-*-Makefile-*-
 
-# Copyright (C) 1990, 1993-2011 Free Software Foundation, Inc.
+# Copyright (C) 1990-2014 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 ALL_RECURSIVE_TARGETS =
 
-SUBDIRS = lib src doc man po tests gnulib-tests
+SUBDIRS = po . gnulib-tests
 
 changelog_etc =				\
   ChangeLog-2005			\
@@ -49,28 +49,47 @@ EXTRA_DIST =				\
   THANKStt.in				\
   bootstrap				\
   bootstrap.conf			\
-  build-aux/cvsu			\
+  build-aux/gen-lists-of-programs.sh	\
+  build-aux/gen-single-binary.sh	\
   cfg.mk				\
   dist-check.mk				\
   maint.mk				\
+  tests/GNUmakefile			\
   thanks-gen
 
-ALL_RECURSIVE_TARGETS += install-root
-install-root:
-	cd src && $(MAKE) $@
+gen_progs_lists = $(top_srcdir)/build-aux/gen-lists-of-programs.sh
+gen_single_binary = $(top_srcdir)/build-aux/gen-single-binary.sh
+
+# Keep these in sync with bootstrap.conf:bootstrap_post_import_hook().
+# Use '$(top_srcdir)/m4' and '$(srcdir)/src' for the benefit of non-GNU
+# makes: it is with those directories that 'cu-progs.m4' and 'cu-progs.mk'
+# appear in our dependencies.
+$(top_srcdir)/m4/cu-progs.m4: $(gen_progs_lists)
+	$(AM_V_GEN)rm -f $@ $@-t \
+	  && $(SHELL) $(gen_progs_lists) --autoconf >$@-t \
+	  && chmod a-w $@-t && mv -f $@-t $@
+$(srcdir)/src/cu-progs.mk: $(gen_progs_lists)
+	$(AM_V_GEN)rm -f $@ $@-t \
+	  && $(SHELL) $(gen_progs_lists) --automake >$@-t \
+	  && chmod a-w $@-t && mv -f $@-t $@
+$(srcdir)/src/single-binary.mk: $(gen_single_binary) $(srcdir)/src/local.mk
+	$(AM_V_GEN)rm -f $@ $@-t \
+	  && $(SHELL) $(gen_single_binary) $(srcdir)/src/local.mk >$@-t \
+	  && chmod a-w $@-t && mv -f $@-t $@
 
 ACLOCAL_AMFLAGS = -I m4
 
-# Some tests always need root privileges, others need them only sometimes.
-ALL_RECURSIVE_TARGETS += check-root
-check-root:
-	cd tests && $(MAKE) $@ SUBDIRS=
+# Shortcut targets to make it easier to run (very) expensive tests.
+check-expensive:
+	$(MAKE) check RUN_EXPENSIVE_TESTS=yes
+check-very-expensive:
+	$(MAKE) check-expensive RUN_VERY_EXPENSIVE_TESTS=yes
 
 # Just prior to distribution, ...
-# transform the automake-generated rule that runs `rm -f rm'.
+# transform the automake-generated rule that runs 'rm -f rm'.
 # On some systems, that command would fail with a diagnostic like
-# `rm: cannot unlink `rm': Text file busy' when `.' appears so early
-# in the shell's search path that running `rm' would run the `rm'
+# "rm: cannot unlink 'rm': Text file busy" when '.' appears so early
+# in the shell's search path that running 'rm' would run the 'rm'
 # executable in the current directory.
 # Similarly, adjust the clean-binPROGRAMS rule.
 rm_subst = \
@@ -86,16 +105,20 @@ BUILT_SOURCES = .version
 # See the rm_subst comment for details.
 dist-hook: gen-ChangeLog
 	$(AM_V_GEN)echo $(VERSION) > $(distdir)/.tarball-version
-	$(AM_V_at)perl -pi -e '$(rm_subst)' $(distdir)/src/Makefile.in
+	$(AM_V_at)perl -pi -e '$(rm_subst)' $(distdir)/Makefile.in
 
 gen_start_date = 2008-02-08
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d .git; then				\
+	  log_fix="$(srcdir)/build-aux/git-log-fix";			\
+	  test -e "$$log_fix"						\
+	    && amend_git_log="--amend=$$log_fix"			\
+	    || amend_git_log=;						\
 	  $(top_srcdir)/build-aux/gitlog-to-changelog			\
-	    --since=$(gen_start_date) > $(distdir)/cl-t;		\
-	  rm -f $(distdir)/ChangeLog;					\
-	  mv $(distdir)/cl-t $(distdir)/ChangeLog;			\
+	    $$amend_git_log --since=$(gen_start_date) > $(distdir)/cl-t && \
+	    { rm -f $(distdir)/ChangeLog &&				\
+	      mv $(distdir)/cl-t $(distdir)/ChangeLog; }		\
 	fi
 
 ALL_RECURSIVE_TARGETS += distcheck-hook
@@ -136,7 +159,7 @@ ASSORT = LC_ALL=C sort
 prologue = perl -ne '/^\#\#/ and exit; print' $(srcdir)/THANKS.in
 
 THANKS: THANKS.in Makefile.am .mailmap thanks-gen .version
-	$(AM_V_GEN)							\
+	$(AM_V_GEN)rm -f $@-t $@;					\
 	{								\
 	  $(prologue); echo;						\
 	  { perl -ne '/^$$/.../^$$/ and print' $(srcdir)/THANKS.in	\
@@ -147,4 +170,49 @@ THANKS: THANKS.in Makefile.am .mailmap thanks-gen .version
 	    | LC_ALL=en_US.UTF-8 sort -f;				\
 	  echo;								\
 	  printf ';; %s\n' 'Local Variables:' 'coding: utf-8' End:;	\
-	} > $@-t && mv $@-t $@
+	} > $@-t && chmod a-w $@-t && mv $@-t $@
+
+# Some of our git hook scripts are supposed to be identical to git's samples.
+# See if they are still in sync.
+.PHONY: check-git-hook-script-sync
+check-git-hook-script-sync:
+	@fail=0;							\
+	t=$$(mktemp -d)							\
+	  && cd $$t && git init -q && cd .git/hooks			\
+	  && for i in pre-commit pre-applypatch applypatch-msg; do	\
+	       diff $(abs_top_srcdir)/scripts/git-hooks/$$i $$i.sample	\
+		 || fail=1;						\
+	     done;							\
+	rm -rf $$t;							\
+	test $$fail = 0
+
+# If we are building a single-binary, create symlinks or shebangs for
+# the selected tools when installing.
+install-exec-hook:
+	$(AM_V_at)ctrans=$$(printf coreutils | sed -e "$(transform)");	\
+	for p in $(single_binary_progs); do				\
+	  ptrans=$$(printf '%s' "$$p" | sed -e "$(transform)");		\
+	  rm -f $(DESTDIR)$(bindir)/$$ptrans$(EXEEXT) || exit $$?;	\
+	  if test "x$(single_binary_install_type)" = xshebangs; then	\
+	    printf '#!%s --coreutils-prog-shebang=%s\n'			\
+	      $(bindir)/$$ctrans$(EXEEXT) $$p				\
+	      >$(DESTDIR)$(bindir)/$$ptrans$(EXEEXT) || exit $$?;	\
+	    chmod a+x,a-w $(DESTDIR)$(bindir)/$$ptrans$(EXEEXT) || exit $$?;\
+	  else								\
+	    $(LN_S) -s $$ctrans$(EXEEXT)				\
+	      $(DESTDIR)$(bindir)/$$ptrans$(EXEEXT) || exit $$?;	\
+	  fi								\
+	done
+
+noinst_LIBRARIES =
+MOSTLYCLEANFILES =
+CLEANFILES =
+MOSTLYCLEANDIRS =
+
+AM_CPPFLAGS = -Ilib -I$(top_srcdir)/lib -Isrc -I$(top_srcdir)/src
+
+include $(top_srcdir)/lib/local.mk
+include $(top_srcdir)/src/local.mk
+include $(top_srcdir)/doc/local.mk
+include $(top_srcdir)/man/local.mk
+include $(top_srcdir)/tests/local.mk

@@ -3,7 +3,7 @@ utilities.
 
 This package is maintained by Michael Stone <mstone@debian.org> and
 built from sources obtained from:
-  ftp://ftp.gnu.org/gnu/coreutils/coreutils-8.13.tar.gz
+  ftp://ftp.gnu.org/gnu/coreutils/coreutils-8.20.tar.xz
 
 This debian package was first created by Michael Stone <mstone@debian.org>,
 from coreutils 4.5.1.

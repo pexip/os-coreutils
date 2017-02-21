@@ -1,5 +1,5 @@
 /* od -- dump files in octal and other formats
-   Copyright (C) 1992, 1995-2011 Free Software Foundation, Inc.
+   Copyright (C) 1992-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include "system.h"
+#include "argmatch.h"
 #include "error.h"
 #include "ftoastr.h"
 #include "quote.h"
@@ -30,7 +31,7 @@
 #include "xprintf.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "od"
 
 #define AUTHORS proper_name ("Jim Meyering")
@@ -41,7 +42,7 @@
 #if HAVE_UNSIGNED_LONG_LONG_INT
 typedef unsigned long long int unsigned_long_long_int;
 #else
-/* This is just a place-holder to avoid a few `#if' directives.
+/* This is just a place-holder to avoid a few '#if' directives.
    In this case, the type isn't actually used.  */
 typedef unsigned long int unsigned_long_long_int;
 #endif
@@ -92,7 +93,7 @@ enum
 /* Ensure that our choice for FMT_BYTES_ALLOCATED is reasonable.  */
 verify (MAX_INTEGRAL_TYPE_SIZE * CHAR_BIT / 3 <= 99);
 
-/* Each output format specification (from `-t spec' or from
+/* Each output format specification (from '-t spec' or from
    old-style options) is represented by one of these structures.  */
 struct tspec
   {
@@ -156,7 +157,7 @@ static const int width_bytes[] =
   sizeof (long double)
 };
 
-/* Ensure that for each member of `enum size_spec' there is an
+/* Ensure that for each member of 'enum size_spec' there is an
    initializer in the width_bytes array.  */
 verify (ARRAY_CARDINALITY (width_bytes) == N_SIZE_SPECS);
 
@@ -192,7 +193,7 @@ static bool flag_dump_strings;
    offset and pseudo-start address.  */
 static bool traditional;
 
-/* True if an old-style `pseudo-address' was specified.  */
+/* True if an old-style 'pseudo-address' was specified.  */
 static bool flag_pseudo_start;
 
 /* The difference between the old-style pseudo starting address and
@@ -259,13 +260,37 @@ static enum size_spec integral_type_size[MAX_INTEGRAL_TYPE_SIZE + 1];
 #define MAX_FP_TYPE_SIZE sizeof (long double)
 static enum size_spec fp_type_size[MAX_FP_TYPE_SIZE + 1];
 
+#ifndef WORDS_BIGENDIAN
+# define WORDS_BIGENDIAN 0
+#endif
+
+/* Use native endianess by default.  */
+static bool input_swap;
+
 static char const short_options[] = "A:aBbcDdeFfHhIij:LlN:OoS:st:vw::Xx";
 
 /* For long options that have no equivalent short option, use a
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
 enum
 {
-  TRADITIONAL_OPTION = CHAR_MAX + 1
+  TRADITIONAL_OPTION = CHAR_MAX + 1,
+  ENDIAN_OPTION,
+};
+
+enum endian_type
+{
+  endian_little,
+  endian_big
+};
+
+static char const *const endian_args[] =
+{
+  "little", "big", NULL
+};
+
+static enum endian_type const endian_types[] =
+{
+  endian_little, endian_big
 };
 
 static struct option const long_options[] =
@@ -278,6 +303,7 @@ static struct option const long_options[] =
   {"strings", optional_argument, NULL, 'S'},
   {"traditional", no_argument, NULL, TRADITIONAL_OPTION},
   {"width", optional_argument, NULL, 'w'},
+  {"endian", required_argument, NULL, ENDIAN_OPTION },
 
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
@@ -288,8 +314,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -306,28 +331,42 @@ With no FILE, or when FILE is -, read standard input.\n\
 \n\
 "), stdout);
       fputs (_("\
-All arguments to long options are mandatory for short options.\n\
+If first and second call formats both apply, the second format is assumed\n\
+if the last operand begins with + or (if there are 2 operands) a digit.\n\
+An OFFSET operand means -j OFFSET.  LABEL is the pseudo-address\n\
+at first byte printed, incremented when dump is progressing.\n\
+For OFFSET and LABEL, a 0x or 0X prefix indicates hexadecimal;\n\
+suffixes may be . for octal and b for multiply by 512.\n\
 "), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
-  -A, --address-radix=RADIX   decide how file offsets are printed\n\
+  -A, --address-radix=RADIX   output format for file offsets; RADIX is one\n\
+                                of [doxn], for Decimal, Octal, Hex or None\n\
+      --endian={big|little}   swap input bytes according the specified order\n\
   -j, --skip-bytes=BYTES      skip BYTES input bytes first\n\
 "), stdout);
       fputs (_("\
   -N, --read-bytes=BYTES      limit dump to BYTES input bytes\n\
-  -S, --strings[=BYTES]       output strings of at least BYTES graphic chars\n\
+  -S BYTES, --strings[=BYTES]  output strings of at least BYTES graphic chars;\
+\n\
+                                3 is implied when BYTES is not specified\n\
   -t, --format=TYPE           select output format or formats\n\
   -v, --output-duplicates     do not use * to mark line suppression\n\
-  -w, --width[=BYTES]         output BYTES bytes per output line\n\
-      --traditional           accept arguments in traditional form\n\
+  -w[BYTES], --width[=BYTES]  output BYTES bytes per output line;\n\
+                                32 is implied when BYTES is not specified\n\
+      --traditional           accept arguments in third form above\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       fputs (_("\
 \n\
+\n\
 Traditional format specifications may be intermixed; they accumulate:\n\
   -a   same as -t a,  select named characters, ignoring high-order bit\n\
   -b   same as -t o1, select octal bytes\n\
-  -c   same as -t c,  select ASCII characters or backslash escapes\n\
+  -c   same as -t c,  select printable characters or backslash escapes\n\
   -d   same as -t u2, select unsigned decimal 2-byte units\n\
 "), stdout);
       fputs (_("\
@@ -340,19 +379,10 @@ Traditional format specifications may be intermixed; they accumulate:\n\
 "), stdout);
       fputs (_("\
 \n\
-If first and second call formats both apply, the second format is assumed\n\
-if the last operand begins with + or (if there are 2 operands) a digit.\n\
-An OFFSET operand means -j OFFSET.  LABEL is the pseudo-address\n\
-at first byte printed, incremented when dump is progressing.\n\
-For OFFSET and LABEL, a 0x or 0X prefix indicates hexadecimal;\n\
-suffixes may be . for octal and b for multiply by 512.\n\
-"), stdout);
-      fputs (_("\
 \n\
 TYPE is made up of one or more of these specifications:\n\
-\n\
   a          named character, ignoring high-order bit\n\
-  c          ASCII character or backslash escape\n\
+  c          printable character or backslash escape\n\
 "), stdout);
       fputs (_("\
   d[SIZE]    signed decimal, SIZE bytes per integer\n\
@@ -363,24 +393,26 @@ TYPE is made up of one or more of these specifications:\n\
 "), stdout);
       fputs (_("\
 \n\
-SIZE is a number.  For TYPE in doux, SIZE may also be C for\n\
+SIZE is a number.  For TYPE in [doux], SIZE may also be C for\n\
 sizeof(char), S for sizeof(short), I for sizeof(int) or L for\n\
 sizeof(long).  If TYPE is f, SIZE may also be F for sizeof(float), D\n\
 for sizeof(double) or L for sizeof(long double).\n\
 "), stdout);
       fputs (_("\
 \n\
-RADIX is d for decimal, o for octal, x for hexadecimal or n for none.\n\
-BYTES is hexadecimal with 0x or 0X prefix, and may have a multiplier suffix:\n\
-b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n\
-GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n\
-Adding a z suffix to any type displays printable characters at the end of each\
-\n\
-output line.\n\
+Adding a z suffix to any type displays printable characters at the end of\n\
+each output line.\n\
 "), stdout);
       fputs (_("\
-Option --string without a number implies 3; option --width without a number\n\
-implies 32.  By default, od uses -A o -t oS -w16.\n\
+\n\
+\n\
+BYTES is hex with 0x or 0X prefix, and may have a multiplier suffix:\n\
+  b    512\n\
+  KB   1000\n\
+  K    1024\n\
+  MB   1000*1000\n\
+  M    1024*1024\n\
+and so on for G, T, P, E, Z, Y.\n\
 "), stdout);
       emit_ancillary_info ();
     }
@@ -395,13 +427,27 @@ N (size_t fields, size_t blank, void const *block,                      \
    char const *FMT_STRING, int width, int pad)                          \
 {                                                                       \
   T const *p = block;                                                   \
-  size_t i;                                                             \
+  uintmax_t i;                                                          \
   int pad_remaining = pad;                                              \
   for (i = fields; blank < i; i--)                                      \
     {                                                                   \
       int next_pad = pad * (i - 1) / fields;                            \
       int adjusted_width = pad_remaining - next_pad + width;            \
-      T x = *p++;                                                       \
+      T x;                                                              \
+      if (input_swap && sizeof (T) > 1)                                 \
+        {                                                               \
+          size_t j;                                                     \
+          union {                                                       \
+            T x;                                                        \
+            char b[sizeof (T)];                                         \
+          } u;                                                          \
+          for (j = 0; j < sizeof (T); j++)                              \
+            u.b[j] = ((const char *) p)[sizeof (T) - 1 - j];            \
+          x = u.x;                                                      \
+        }                                                               \
+      else                                                              \
+        x = *p;                                                         \
+      p++;                                                              \
       ACTION;                                                           \
       pad_remaining = next_pad;                                         \
     }                                                                   \
@@ -411,7 +457,7 @@ N (size_t fields, size_t blank, void const *block,                      \
   PRINT_FIELDS (N, T, fmt_string, xprintf (fmt_string, adjusted_width, x))
 
 #define PRINT_FLOATTYPE(N, T, FTOASTR, BUFSIZE)                         \
-  PRINT_FIELDS (N, T, fmt_string ATTRIBUTE_UNUSED,                      \
+  PRINT_FIELDS (N, T, fmt_string _GL_UNUSED,                      \
                 char buf[BUFSIZE];                                      \
                 FTOASTR (buf, sizeof buf, 0, 0, x);                     \
                 xprintf ("%*s", adjusted_width, buf))
@@ -447,11 +493,11 @@ dump_hexl_mode_trailer (size_t n_bytes, const char *block)
 
 static void
 print_named_ascii (size_t fields, size_t blank, void const *block,
-                   const char *unused_fmt_string ATTRIBUTE_UNUSED,
+                   const char *unused_fmt_string _GL_UNUSED,
                    int width, int pad)
 {
   unsigned char const *p = block;
-  size_t i;
+  uintmax_t i;
   int pad_remaining = pad;
   for (i = fields; blank < i; i--)
     {
@@ -478,11 +524,11 @@ print_named_ascii (size_t fields, size_t blank, void const *block,
 
 static void
 print_ascii (size_t fields, size_t blank, void const *block,
-             const char *unused_fmt_string ATTRIBUTE_UNUSED, int width,
+             const char *unused_fmt_string _GL_UNUSED, int width,
              int pad)
 {
   unsigned char const *p = block;
-  size_t i;
+  uintmax_t i;
   int pad_remaining = pad;
   for (i = fields; blank < i; i--)
     {
@@ -641,8 +687,9 @@ decode_one_format (const char *s_orig, const char *s, const char **next,
               if (MAX_INTEGRAL_TYPE_SIZE < size
                   || integral_type_size[size] == NO_SIZE)
                 {
-                  error (0, 0, _("invalid type string %s;\n\
-this system doesn't provide a %lu-byte integral type"), quote (s_orig), size);
+                  error (0, 0, _("invalid type string %s;\nthis system"
+                                 " doesn't provide a %lu-byte integral type"),
+                         quote (s_orig), size);
                   return false;
                 }
               s = p;
@@ -760,8 +807,10 @@ this system doesn't provide a %lu-byte integral type"), quote (s_orig), size);
               if (size > MAX_FP_TYPE_SIZE
                   || fp_type_size[size] == NO_SIZE)
                 {
-                  error (0, 0, _("invalid type string %s;\n\
-this system doesn't provide a %lu-byte floating point type"),
+                  error (0, 0,
+                         _("invalid type string %s;\n"
+                           "this system doesn't provide a %lu-byte"
+                           " floating point type"),
                          quote (s_orig), size);
                   return false;
                 }
@@ -771,32 +820,34 @@ this system doesn't provide a %lu-byte floating point type"),
         }
       size_spec = fp_type_size[size];
 
-      struct lconv const *locale = localeconv ();
-      size_t decimal_point_len =
-        (locale->decimal_point[0] ? strlen (locale->decimal_point) : 1);
+      {
+        struct lconv const *locale = localeconv ();
+        size_t decimal_point_len =
+          (locale->decimal_point[0] ? strlen (locale->decimal_point) : 1);
 
-      switch (size_spec)
-        {
-        case FLOAT_SINGLE:
-          print_function = print_float;
-          field_width = FLT_STRLEN_BOUND_L (decimal_point_len);
-          break;
+        switch (size_spec)
+          {
+          case FLOAT_SINGLE:
+            print_function = print_float;
+            field_width = FLT_STRLEN_BOUND_L (decimal_point_len);
+            break;
 
-        case FLOAT_DOUBLE:
-          print_function = print_double;
-          field_width = DBL_STRLEN_BOUND_L (decimal_point_len);
-          break;
+          case FLOAT_DOUBLE:
+            print_function = print_double;
+            field_width = DBL_STRLEN_BOUND_L (decimal_point_len);
+            break;
 
-        case FLOAT_LONG_DOUBLE:
-          print_function = print_long_double;
-          field_width = LDBL_STRLEN_BOUND_L (decimal_point_len);
-          break;
+          case FLOAT_LONG_DOUBLE:
+            print_function = print_long_double;
+            field_width = LDBL_STRLEN_BOUND_L (decimal_point_len);
+            break;
 
-        default:
-          abort ();
-        }
+          default:
+            abort ();
+          }
 
-      break;
+        break;
+      }
 
     case 'a':
       ++s;
@@ -815,7 +866,7 @@ this system doesn't provide a %lu-byte floating point type"),
       break;
 
     default:
-      error (0, 0, _("invalid character `%c' in type string %s"),
+      error (0, 0, _("invalid character '%c' in type string %s"),
              *s, quote (s_orig));
       return false;
     }
@@ -979,8 +1030,7 @@ skip (uintmax_t n_skip)
 
       if (fstat (fileno (in_stream), &file_stats) == 0)
         {
-          /* The st_size field is valid only for regular files
-             (and for symbolic links, which cannot occur here).
+          /* The st_size field is valid for regular files.
              If the number of bytes left to skip is larger than
              the size of the current file, we can decrement n_skip
              and go on to the next file.  Skip this optimization also
@@ -1047,8 +1097,8 @@ skip (uintmax_t n_skip)
 }
 
 static void
-format_address_none (uintmax_t address ATTRIBUTE_UNUSED,
-                     char c ATTRIBUTE_UNUSED)
+format_address_none (uintmax_t address _GL_UNUSED,
+                     char c _GL_UNUSED)
 {
 }
 
@@ -1283,8 +1333,8 @@ parse_old_offset (const char *s, uintmax_t *offset)
   if (s[0] == '+')
     ++s;
 
-  /* Determine the radix we'll use to interpret S.  If there is a `.',
-     it's decimal, otherwise, if the string begins with `0X'or `0x',
+  /* Determine the radix we'll use to interpret S.  If there is a '.',
+     it's decimal, otherwise, if the string begins with '0X'or '0x',
      it's hexadecimal, else octal.  */
   if (strchr (s, '.') != NULL)
     radix = 10;
@@ -1389,7 +1439,7 @@ dump (void)
 }
 
 /* STRINGS mode.  Find each "string constant" in the input.
-   A string constant is a run of at least `string_min' ASCII
+   A string constant is a run of at least 'string_min' ASCII
    graphic (or formatting) characters terminated by a null.
    Based on a function written by Richard Stallman for a
    traditional version of od.  Return true if successful.  */
@@ -1407,7 +1457,7 @@ dump_strings (void)
       size_t i;
       int c;
 
-      /* See if the next `string_min' chars are all printing chars.  */
+      /* See if the next 'string_min' chars are all printing chars.  */
     tryline:
 
       if (limit_bytes_to_format
@@ -1429,7 +1479,7 @@ dump_strings (void)
           buf[i] = c;
         }
 
-      /* We found a run of `string_min' printable characters.
+      /* We found a run of 'string_min' printable characters.
          Now see if it is terminated with a null byte.  */
       while (!limit_bytes_to_format || address < end_offset)
         {
@@ -1452,7 +1502,7 @@ dump_strings (void)
         }
 
       /* If we get here, the string is all printable and null-terminated,
-         so print it.  It is all in `buf' and `i' is its length.  */
+         so print it.  It is all in 'buf' and 'i' is its length.  */
       buf[i] = 0;
       format_address (address - i - 1, ' ');
 
@@ -1517,7 +1567,7 @@ main (int argc, char **argv)
   size_t width_per_block = 0;
   static char const multipliers[] = "bEGKkMmPTYZ0";
 
-  /* The old-style `pseudo starting address' to be printed in parentheses
+  /* The old-style 'pseudo starting address' to be printed in parentheses
      after any true address.  */
   uintmax_t pseudo_start IF_LINT ( = 0);
 
@@ -1537,8 +1587,8 @@ main (int argc, char **argv)
   integral_type_size[sizeof (int)] = INT;
   integral_type_size[sizeof (long int)] = LONG;
 #if HAVE_UNSIGNED_LONG_LONG_INT
-  /* If `long int' and `long long int' have the same size, it's fine
-     to overwrite the entry for `long' with this one.  */
+  /* If 'long int' and 'long long int' have the same size, it's fine
+     to overwrite the entry for 'long' with this one.  */
   integral_type_size[sizeof (unsigned_long_long_int)] = LONG_LONG;
 #endif
 
@@ -1546,7 +1596,7 @@ main (int argc, char **argv)
     fp_type_size[i] = NO_SIZE;
 
   fp_type_size[sizeof (float)] = FLOAT_SINGLE;
-  /* The array entry for `double' is filled in after that for `long double'
+  /* The array entry for 'double' is filled in after that for 'long double'
      so that if they are the same size, we avoid any overhead of
      long double computation in libc.  */
   fp_type_size[sizeof (long double)] = FLOAT_LONG_DOUBLE;
@@ -1597,8 +1647,8 @@ main (int argc, char **argv)
               break;
             default:
               error (EXIT_FAILURE, 0,
-                     _("invalid output address radix `%c'; \
-it must be one character from [doxn]"),
+                     _("invalid output address radix '%c';\
+ it must be one character from [doxn]"),
                      optarg[0]);
               break;
             }
@@ -1653,6 +1703,18 @@ it must be one character from [doxn]"),
 
         case TRADITIONAL_OPTION:
           traditional = true;
+          break;
+
+        case ENDIAN_OPTION:
+          switch (XARGMATCH ("--endian", optarg, endian_args, endian_types))
+            {
+              case endian_big:
+                  input_swap = ! WORDS_BIGENDIAN;
+                  break;
+              case endian_little:
+                  input_swap = WORDS_BIGENDIAN;
+                  break;
+            }
           break;
 
           /* The next several cases map the traditional format

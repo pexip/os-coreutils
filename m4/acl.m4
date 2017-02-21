@@ -1,7 +1,7 @@
 # acl.m4 - check for access control list (ACL) primitives
-# serial 13
+# serial 17
 
-# Copyright (C) 2002, 2004-2011 Free Software Foundation, Inc.
+# Copyright (C) 2002, 2004-2014 Free Software Foundation, Inc.
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -14,16 +14,16 @@ AC_DEFUN([gl_FUNC_ACL],
     AS_HELP_STRING([--disable-acl], [do not support ACLs]),
     , [enable_acl=auto])
 
+  AC_CHECK_FUNCS_ONCE([fchmod])
   LIB_ACL=
   use_acl=0
-  AC_REQUIRE([AC_C_INLINE])
   if test "x$enable_acl" != "xno"; then
     dnl On all platforms, the ACL related API is declared in <sys/acl.h>.
     AC_CHECK_HEADERS([sys/acl.h])
     if test $ac_cv_header_sys_acl_h = yes; then
       ac_save_LIBS=$LIBS
 
-      dnl Test for POSIX-draft-like API (Linux, FreeBSD, MacOS X, IRIX, Tru64).
+      dnl Test for POSIX-draft-like API (Linux, FreeBSD, Mac OS X, IRIX, Tru64).
       dnl -lacl is needed on Linux, -lpacl is needed on OSF/1.
       if test $use_acl = 0; then
         AC_SEARCH_LIBS([acl_get_file], [acl pacl],
@@ -33,7 +33,7 @@ AC_DEFUN([gl_FUNC_ACL],
            AC_CHECK_FUNCS(
              [acl_get_file acl_get_fd acl_set_file acl_set_fd \
               acl_free acl_from_mode acl_from_text \
-              acl_delete_def_file acl_extended_file acl_extended_file_nofollow \
+              acl_delete_def_file acl_extended_file \
               acl_delete_fd_np acl_delete_file_np \
               acl_copy_ext_native acl_create_entry_np \
               acl_to_short_text acl_free_text])
@@ -55,7 +55,7 @@ int type = ACL_FIRST_ENTRY;]])],
                AC_DEFINE([HAVE_ACL_FIRST_ENTRY], [1],
                  [Define to 1 if the constant ACL_FIRST_ENTRY exists.])
              fi
-             dnl On MacOS X, other types of ACLs are supported.
+             dnl On Mac OS X, other types of ACLs are supported.
              AC_CACHE_CHECK([for ACL_TYPE_EXTENDED],
                [gl_cv_acl_ACL_TYPE_EXTENDED],
                [AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -140,14 +140,16 @@ int type = ACL_TYPE_EXTENDED;]])],
 
 # gl_ACL_GET_FILE(IF-WORKS, IF-NOT)
 # -------------------------------------
-# If `acl_get_file' works (does not have a particular bug),
+# If 'acl_get_file' works (does not have a particular bug),
 # run IF-WORKS, otherwise, IF-NOT.
-# This tests for a Darwin 8.7.0 bug, whereby acl_get_file returns NULL,
-# but sets errno = ENOENT for an existing file or directory.
+# When building natively, test for a Darwin 8.7.0 bug, whereby acl_get_file
+# returns NULL, but sets errno = ENOENT for an existing file or directory.
+# When cross-compiling, assume that this old bug no longer applies.
 AC_DEFUN([gl_ACL_GET_FILE],
 [
   AC_CACHE_CHECK([for working acl_get_file], [gl_cv_func_working_acl_get_file],
-    [AC_RUN_IFELSE(
+    [gl_cv_func_working_acl_get_file=no
+     AC_LINK_IFELSE(
        [AC_LANG_PROGRAM(
           [[#include <sys/types.h>
            #include <sys/acl.h>
@@ -157,9 +159,10 @@ AC_DEFUN([gl_ACL_GET_FILE],
               return 1;
             return 0;
           ]])],
-       [gl_cv_func_working_acl_get_file=yes],
-       [gl_cv_func_working_acl_get_file=no],
-       [gl_cv_func_working_acl_get_file=cross-compiling])])
-
-  AS_IF([test $gl_cv_func_working_acl_get_file = yes], [$1], [$2])
+       [if test $cross_compiling = yes; then
+          gl_cv_func_working_acl_get_file="guessing yes"
+        elif ./conftest$ac_exeext; then
+          gl_cv_func_working_acl_get_file=yes
+        fi])])
+  AS_IF([test "$gl_cv_func_working_acl_get_file" != no], [$1], [$2])
 ])

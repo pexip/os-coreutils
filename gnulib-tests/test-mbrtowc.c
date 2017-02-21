@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of conversion of multibyte character to wide character.
-   Copyright (C) 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 2008-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -48,10 +46,7 @@ main (int argc, char *argv[])
     memset (&state, '\0', sizeof (mbstate_t));
     wc = (wchar_t) 0xBADFACE;
     ret = mbrtowc (&wc, "x", 0, &state);
-    /* gnulib's implementation returns (size_t)(-2).
-       The AIX 5.1 implementation returns (size_t)(-1).
-       glibc's implementation returns 0.  */
-    ASSERT (ret == (size_t)(-2) || ret == (size_t)(-1) || ret == 0);
+    ASSERT (ret == (size_t)(-2));
     ASSERT (mbsinit (&state));
   }
 

@@ -1,4 +1,4 @@
-#serial 77
+#serial 78
 
 dnl We use gl_ for non Autoconf macros.
 m4_pattern_forbid([^gl_[ABCDEFGHIJKLMNOPQRSTUVXYZ]])dnl
@@ -7,7 +7,7 @@ m4_pattern_forbid([^gl_[ABCDEFGHIJKLMNOPQRSTUVXYZ]])dnl
 # directory of the coreutils package.
 
 
-# Copyright (C) 1998, 2000-2001, 2003-2011 Free Software Foundation, Inc.
+# Copyright (C) 1998-2014 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,10 +36,5 @@ AC_DEFUN([gl_PREREQ],
   # Invoke macros of modules that may migrate into gnulib.
   # There's no need to list gnulib modules here, since gnulib-tool
   # handles that; see ../bootstrap.conf.
-  AC_REQUIRE([gl_EUIDACCESS_STAT])
-  AC_REQUIRE([gl_FD_REOPEN])
   AC_REQUIRE([gl_FUNC_XATTR])
-  AC_REQUIRE([gl_FUNC_XFTS])
-  AC_REQUIRE([gl_STRINTCMP])
-  AC_REQUIRE([gl_STRNUMCMP])
 ])

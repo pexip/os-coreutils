@@ -1,5 +1,5 @@
 /* cp.c  -- file copying (main routines)
-   Copyright (C) 1989-1991, 1995-2011 Free Software Foundation, Inc.
+   Copyright (C) 1989-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@
     }							\
   while (0)
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "cp"
 
 #define AUTHORS \
@@ -141,6 +141,7 @@ static struct option const long_opts[] =
   {"target-directory", required_argument, NULL, 't'},
   {"update", no_argument, NULL, 'u'},
   {"verbose", no_argument, NULL, 'v'},
+  {GETOPT_SELINUX_CONTEXT_OPTION_DECL},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
@@ -150,8 +151,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -162,11 +162,10 @@ Usage: %s [OPTION]... [-T] SOURCE DEST\n\
               program_name, program_name, program_name);
       fputs (_("\
 Copy SOURCE to DEST, or multiple SOURCE(s) to DIRECTORY.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -a, --archive                same as -dR --preserve=all\n\
       --attributes-only        don't copy the file data, just the attributes\n\
@@ -178,9 +177,8 @@ Mandatory arguments to long options are mandatory for short options too.\n\
 "), stdout);
       fputs (_("\
   -f, --force                  if an existing destination file cannot be\n\
-                                 opened, remove it and try again (redundant if\
-\n\
-                                 the -n option is used)\n\
+                                 opened, remove it and try again (this option\n\
+                                 is ignored when the -n option is also used)\n\
   -i, --interactive            prompt before overwrite (overrides a previous -n\
 \n\
                                   option)\n\
@@ -231,6 +229,12 @@ Mandatory arguments to long options are mandatory for short options too.\n\
   -v, --verbose                explain what is being done\n\
   -x, --one-file-system        stay on this file system\n\
 "), stdout);
+      fputs (_("\
+  -Z                           set SELinux security context of destination\n\
+                                 file to default type\n\
+      --context[=CTX]          like -Z, or if CTX is specified then set the\n\
+                                 SELinux or SMACK security context to CTX\n\
+"), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       fputs (_("\
@@ -247,7 +251,7 @@ fails, or if --reflink=auto is specified, fall back to a standard copy.\n\
 "), stdout);
       fputs (_("\
 \n\
-The backup suffix is `~', unless set with --suffix or SIMPLE_BACKUP_SUFFIX.\n\
+The backup suffix is '~', unless set with --suffix or SIMPLE_BACKUP_SUFFIX.\n\
 The version control method may be selected via the --backup option or through\n\
 the VERSION_CONTROL environment variable.  Here are the values:\n\
 \n\
@@ -280,10 +284,10 @@ regular file.\n\
    ATTR_LIST is a null-terminated linked list of structures that
    indicates the end of the filename of each intermediate directory
    in CONST_DST_NAME that may need to have its attributes changed.
-   The command `cp --parents --preserve a/b/c d/e_dir' changes the
+   The command 'cp --parents --preserve a/b/c d/e_dir' changes the
    attributes of the directories d/e_dir/a and d/e_dir/a/b to match
    the corresponding source directories regardless of whether they
-   existed before the `cp' command was given.
+   existed before the 'cp' command was given.
 
    Return true if the parent of CONST_DST_NAME and any intermediate
    directories specified by ATTR_LIST have the proper permissions
@@ -295,7 +299,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
 {
   struct dir_attr *p;
   char *dst_name;		/* A copy of CONST_DST_NAME we can change. */
-  char *src_name;		/* The source name in `dst_name'. */
+  char *src_name;		/* The source name in 'dst_name'. */
 
   ASSIGN_STRDUPA (dst_name, const_dst_name);
   src_name = dst_name + src_offset;
@@ -452,7 +456,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
 
               /* This component does not exist.  We must set
                  *new_dst and new->st.st_mode inside this loop because,
-                 for example, in the command `cp --parents ../a/../b/c e_dir',
+                 for example, in the command 'cp --parents ../a/../b/c e_dir',
                  make_dir_parents_private creates only e_dir/../a if
                  ./b already exists. */
               *new_dst = true;
@@ -532,7 +536,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
             *new_dst = false;
           *slash++ = '/';
 
-          /* Avoid unnecessary calls to `stat' when given
+          /* Avoid unnecessary calls to 'stat' when given
              file names containing multiple adjacent slashes.  */
           while (*slash == '/')
             slash++;
@@ -570,7 +574,7 @@ target_directory_operand (char const *file, struct stat *st, bool *new_dst)
   if (err)
     {
       if (err != ENOENT)
-        error (EXIT_FAILURE, err, _("accessing %s"), quote (file));
+        error (EXIT_FAILURE, err, _("failed to access %s"), quote (file));
       *new_dst = true;
     }
   return is_a_dir;
@@ -624,8 +628,8 @@ do_copy (int n_files, char **file, const char *target_directory,
   if (target_directory)
     {
       /* cp file1...filen edir
-         Copy the files `file1' through `filen'
-         to the existing directory `edir'. */
+         Copy the files 'file1' through 'filen'
+         to the existing directory 'edir'. */
       int i;
 
       /* Initialize these hash tables only if we'll need them.
@@ -654,15 +658,15 @@ do_copy (int n_files, char **file, const char *target_directory,
             {
               char *arg_no_trailing_slash;
 
-              /* Use `arg' without trailing slashes in constructing destination
+              /* Use 'arg' without trailing slashes in constructing destination
                  file names.  Otherwise, we can end up trying to create a
-                 directory via `mkdir ("dst/foo/"...', which is not portable.
+                 directory via 'mkdir ("dst/foo/"...', which is not portable.
                  It fails, due to the trailing slash, on at least
                  NetBSD 1.[34] systems.  */
               ASSIGN_STRDUPA (arg_no_trailing_slash, arg);
               strip_trailing_slashes (arg_no_trailing_slash);
 
-              /* Append all of `arg' (minus any trailing slash) to `dest'.  */
+              /* Append all of 'arg' (minus any trailing slash) to 'dest'.  */
               dst_name = file_name_concat (target_directory,
                                            arg_no_trailing_slash,
                                            &arg_in_concat);
@@ -679,10 +683,10 @@ do_copy (int n_files, char **file, const char *target_directory,
           else
             {
               char *arg_base;
-              /* Append the last component of `arg' to `target_directory'.  */
+              /* Append the last component of 'arg' to 'target_directory'.  */
 
               ASSIGN_BASENAME_STRDUPA (arg_base, arg);
-              /* For `cp -R source/.. dest', don't copy into `dest/..'. */
+              /* For 'cp -R source/.. dest', don't copy into 'dest/..'. */
               dst_name = (STREQ (arg_base, "..")
                           ? xstrdup (target_directory)
                           : file_name_concat (target_directory, arg_base,
@@ -735,7 +739,7 @@ do_copy (int n_files, char **file, const char *target_directory,
       /* When the force and backup options have been specified and
          the source and destination are the same name for an existing
          regular file, convert the user's command, e.g.,
-         `cp --force --backup foo foo' to `cp --force foo fooSUFFIX'
+         'cp --force --backup foo foo' to 'cp --force foo fooSUFFIX'
          where SUFFIX is determined by any version control options used.  */
 
       if (x->unlink_dest_after_failed_open
@@ -746,9 +750,9 @@ do_copy (int n_files, char **file, const char *target_directory,
           static struct cp_options x_tmp;
 
           new_dest = find_backup_file_name (dest, x->backup_type);
-          /* Set x->backup_type to `no_backups' so that the normal backup
+          /* Set x->backup_type to 'no_backups' so that the normal backup
              mechanism is not used when performing the actual copy.
-             backup_type must be set to `no_backups' only *after* the above
+             backup_type must be set to 'no_backups' only *after* the above
              call to find_backup_file_name -- that function uses
              backup_type to determine the suffix it applies.  */
           x_tmp = *x;
@@ -784,8 +788,10 @@ cp_option_init (struct cp_options *x)
   x->preserve_links = false;
   x->preserve_mode = false;
   x->preserve_timestamps = false;
-  x->preserve_security_context = false;
-  x->require_preserve_context = false;
+  x->explicit_no_preserve_mode = false;
+  x->preserve_security_context = false; /* -a or --preserve=context.  */
+  x->require_preserve_context = false;  /* --preserve=context.  */
+  x->set_security_context = false;      /* -Z, set sys default context. */
   x->preserve_xattr = false;
   x->reduce_diagnostics = false;
   x->require_preserve_xattr = false;
@@ -835,7 +841,7 @@ decode_preserve_arg (char const *arg, struct cp_options *x, bool on_off)
       PRESERVE_OWNERSHIP, PRESERVE_LINK, PRESERVE_CONTEXT, PRESERVE_XATTR,
       PRESERVE_ALL
     };
-  /* Valid arguments to the `--preserve' option. */
+  /* Valid arguments to the '--preserve' option. */
   static char const* const preserve_args[] =
     {
       "mode", "timestamps",
@@ -856,11 +862,13 @@ decode_preserve_arg (char const *arg, struct cp_options *x, bool on_off)
         *comma++ = 0;
 
       /* process S.  */
-      val = XARGMATCH ("--preserve", s, preserve_args, preserve_vals);
+      val = XARGMATCH (on_off ? "--preserve" : "--no-preserve",
+                       s, preserve_args, preserve_vals);
       switch (val)
         {
         case PRESERVE_MODE:
           x->preserve_mode = on_off;
+          x->explicit_no_preserve_mode = !on_off;
           break;
 
         case PRESERVE_TIMESTAMPS:
@@ -876,8 +884,8 @@ decode_preserve_arg (char const *arg, struct cp_options *x, bool on_off)
           break;
 
         case PRESERVE_CONTEXT:
-          x->preserve_security_context = on_off;
           x->require_preserve_context = on_off;
+          x->preserve_security_context = on_off;
           break;
 
         case PRESERVE_XATTR:
@@ -890,6 +898,7 @@ decode_preserve_arg (char const *arg, struct cp_options *x, bool on_off)
           x->preserve_timestamps = on_off;
           x->preserve_ownership = on_off;
           x->preserve_links = on_off;
+          x->explicit_no_preserve_mode = !on_off;
           if (selinux_enabled)
             x->preserve_security_context = on_off;
           x->preserve_xattr = on_off;
@@ -917,6 +926,7 @@ main (int argc, char **argv)
   bool copy_contents = false;
   char *target_directory = NULL;
   bool no_target_directory = false;
+  char const *scontext = NULL;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -933,7 +943,7 @@ main (int argc, char **argv)
      we'll actually use backup_suffix_string.  */
   backup_suffix_string = getenv ("SIMPLE_BACKUP_SUFFIX");
 
-  while ((c = getopt_long (argc, argv, "abdfHilLnprst:uvxPRS:T",
+  while ((c = getopt_long (argc, argv, "abdfHilLnprst:uvxPRS:TZ",
                            long_opts, NULL))
          != -1)
     {
@@ -1021,7 +1031,7 @@ main (int argc, char **argv)
         case PRESERVE_ATTRIBUTES_OPTION:
           if (optarg == NULL)
             {
-              /* Fall through to the case for `p' below.  */
+              /* Fall through to the case for 'p' below.  */
             }
           else
             {
@@ -1066,7 +1076,8 @@ main (int argc, char **argv)
             {
               struct stat st;
               if (stat (optarg, &st) != 0)
-                error (EXIT_FAILURE, errno, _("accessing %s"), quote (optarg));
+                error (EXIT_FAILURE, errno, _("failed to access %s"),
+                       quote (optarg));
               if (! S_ISDIR (st.st_mode))
                 error (EXIT_FAILURE, 0, _("target %s is not a directory"),
                        quote (optarg));
@@ -1088,6 +1099,23 @@ main (int argc, char **argv)
 
         case 'x':
           x.one_file_system = true;
+          break;
+
+        case 'Z':
+          /* politely decline if we're not on a selinux-enabled kernel.  */
+          if (selinux_enabled)
+            {
+              if (optarg)
+                scontext = optarg;
+              else
+                x.set_security_context = true;
+            }
+          else if (optarg)
+            {
+              error (0, 0,
+                     _("warning: ignoring --context; "
+                       "it requires an SELinux-enabled kernel"));
+            }
           break;
 
         case 'S':
@@ -1133,7 +1161,7 @@ main (int argc, char **argv)
 
   if (x.dereference == DEREF_UNDEFINED)
     {
-      if (x.recursive)
+      if (x.recursive && ! x.hard_link)
         /* This is compatible with FreeBSD.  */
         x.dereference = DEREF_NEVER;
       else
@@ -1148,13 +1176,30 @@ main (int argc, char **argv)
   if (x.unlink_dest_after_failed_open && (x.hard_link || x.symbolic_link))
     x.unlink_dest_before_opening = true;
 
-  if (x.preserve_security_context)
-    {
-      if (!selinux_enabled)
-        error (EXIT_FAILURE, 0,
-               _("cannot preserve security context "
-                 "without an SELinux-enabled kernel"));
-    }
+  /* Ensure -Z overrides -a.  */
+  if ((x.set_security_context || scontext)
+      && ! x.require_preserve_context)
+    x.preserve_security_context = false;
+
+  if (x.preserve_security_context && (x.set_security_context || scontext))
+    error (EXIT_FAILURE, 0,
+           _("cannot set target context and preserve it"));
+
+  if (x.require_preserve_context && ! selinux_enabled)
+    error (EXIT_FAILURE, 0,
+           _("cannot preserve security context "
+             "without an SELinux-enabled kernel"));
+
+  /* FIXME: This handles new files.  But what about existing files?
+     I.E. if updating a tree, new files would have the specified context,
+     but shouldn't existing files be updated for consistency like this?
+       if (scontext)
+         restorecon (dst_path, 0, true);
+   */
+  if (scontext && setfscreatecon (se_const (scontext)) < 0)
+    error (EXIT_FAILURE, errno,
+           _("failed to set default file creation context to %s"),
+           quote (scontext));
 
 #if !USE_XATTR
   if (x.require_preserve_xattr)

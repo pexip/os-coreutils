@@ -1,5 +1,5 @@
 /* fold -- wrap each input line to fit in specified width.
-   Copyright (C) 1991, 1995-2006, 2008-2011 Free Software Foundation, Inc.
+   Copyright (C) 1991-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 #define TAB_WIDTH 8
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "fold"
 
 #define AUTHORS proper_name ("David MacKenzie")
@@ -60,8 +60,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -71,11 +70,10 @@ Usage: %s [OPTION]... [FILE]...\n\
       fputs (_("\
 Wrap input lines in each FILE (standard input by default), writing to\n\
 standard output.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -b, --bytes         count bytes rather than columns\n\
   -s, --spaces        break at spaces\n\
@@ -124,7 +122,7 @@ fold_file (char const *filename, size_t width)
   FILE *istream;
   int c;
   size_t column = 0;		/* Screen column where next char will go. */
-  size_t offset_out = 0;	/* Index in `line_out' for next char. */
+  size_t offset_out = 0;	/* Index in 'line_out' for next char. */
   static char *line_out = NULL;
   static size_t allocated_out = 0;
   int saved_errno;

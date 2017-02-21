@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Tests of linkat.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,6 +94,31 @@ main (void)
 
   /* Clean up any trash from prior testsuite runs.  */
   ignore_value (system ("rm -rf " BASE "*"));
+
+  /* Test behaviour for invalid file descriptors.  */
+  {
+    errno = 0;
+    ASSERT (linkat (-1, "foo", AT_FDCWD, "bar", 0) == -1);
+    ASSERT (errno == EBADF);
+  }
+  {
+    close (99);
+    errno = 0;
+    ASSERT (linkat (99, "foo", AT_FDCWD, "bar", 0) == -1);
+    ASSERT (errno == EBADF);
+  }
+  ASSERT (close (creat (BASE "oo", 0600)) == 0);
+  {
+    errno = 0;
+    ASSERT (linkat (AT_FDCWD, BASE "oo", -1, "bar", 0) == -1);
+    ASSERT (errno == EBADF);
+  }
+  {
+    errno = 0;
+    ASSERT (linkat (AT_FDCWD, BASE "oo", 99, "bar", 0) == -1);
+    ASSERT (errno == EBADF);
+  }
+  ASSERT (unlink (BASE "oo") == 0);
 
   /* Test basic link functionality, without mentioning symlinks.  */
   result = test_link (do_link, true);

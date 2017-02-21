@@ -1,5 +1,5 @@
 /* nice -- run a program with modified niceness
-   Copyright (C) 1990-2005, 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 1990-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 #include "quote.h"
 #include "xstrtol.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "nice"
 
 #define AUTHORS proper_name ("David MacKenzie")
@@ -66,19 +66,22 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("Usage: %s [OPTION] [COMMAND [ARG]...]\n"), program_name);
       printf (_("\
 Run COMMAND with an adjusted niceness, which affects process scheduling.\n\
-With no COMMAND, print the current niceness.  Nicenesses range from\n\
-%d (most favorable scheduling) to %d (least favorable).\n\
-\n\
-  -n, --adjustment=N   add integer N to the niceness (default 10)\n\
+With no COMMAND, print the current niceness.  Niceness values range from\n\
+%d (most favorable to the process) to %d (least favorable to the process).\n\
 "),
               - NZERO, NZERO - 1);
+
+      emit_mandatory_arg_note ();
+
+      fputs (_("\
+  -n, --adjustment=N   add integer N to the niceness (default 10)\n\
+"), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       printf (USAGE_BUILTIN_WARNING, PROGRAM_NAME);

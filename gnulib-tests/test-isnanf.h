@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of isnanf() substitute.
-   Copyright (C) 2007-2011 Free Software Foundation, Inc.
+   Copyright (C) 2007-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +19,7 @@
 #include <limits.h>
 
 #include "minus-zero.h"
+#include "infinity.h"
 #include "nan.h"
 #include "macros.h"
 
@@ -37,8 +36,8 @@ main ()
   ASSERT (!isnanf (0.0f));
   ASSERT (!isnanf (minus_zerof));
   /* Infinite values.  */
-  ASSERT (!isnanf (1.0f / 0.0f));
-  ASSERT (!isnanf (-1.0f / 0.0f));
+  ASSERT (!isnanf (Infinityf ()));
+  ASSERT (!isnanf (- Infinityf ()));
   /* Quiet NaN.  */
   ASSERT (isnanf (NaNf ()));
 #if defined FLT_EXPBIT0_WORD && defined FLT_EXPBIT0_BIT

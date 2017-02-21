@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Test of getting load average.
-   Copyright (C) 2011 Free Software Foundation, Inc.
+   Copyright (C) 2011-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -62,7 +60,7 @@ main (int argc, char **argv)
       int loads = getloadavg (avg, 3);
       if (loads == -1)
         {
-          if (! (errno == ENOSYS || errno == ENOTSUP))
+          if (! (errno == ENOSYS || errno == ENOTSUP || errno == ENOENT))
             return 1;
           perror ("Skipping test; load average not supported");
           return 77;

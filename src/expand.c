@@ -1,6 +1,5 @@
 /* expand - convert tabs to spaces
-   Copyright (C) 1989, 1991, 1995-2006, 2008-2011 Free Software Foundation,
-   Inc.
+   Copyright (C) 1989-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +43,7 @@
 #include "quote.h"
 #include "xstrndup.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "expand"
 
 #define AUTHORS proper_name ("David MacKenzie")
@@ -53,25 +52,25 @@
    read on the line.  */
 static bool convert_entire_line;
 
-/* If nonzero, the size of all tab stops.  If zero, use `tab_list' instead.  */
+/* If nonzero, the size of all tab stops.  If zero, use 'tab_list' instead.  */
 static uintmax_t tab_size;
 
 /* Array of the explicit column numbers of the tab stops;
-   after `tab_list' is exhausted, each additional tab is replaced
+   after 'tab_list' is exhausted, each additional tab is replaced
    by a space.  The first column is column 0.  */
 static uintmax_t *tab_list;
 
-/* The number of allocated entries in `tab_list'.  */
+/* The number of allocated entries in 'tab_list'.  */
 static size_t n_tabs_allocated;
 
-/* The index of the first invalid element of `tab_list',
+/* The index of the first invalid element of 'tab_list',
    where the next element can be added.  */
 static size_t first_free_tab;
 
 /* Null-terminated array of input filenames.  */
 static char **file_list;
 
-/* Default for `file_list' if no files are given on the command line.  */
+/* Default for 'file_list' if no files are given on the command line.  */
 static char *stdin_argv[] =
 {
   (char *) "-", NULL
@@ -98,8 +97,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -109,11 +107,10 @@ Usage: %s [OPTION]... [FILE]...\n\
       fputs (_("\
 Convert tabs in each FILE to spaces, writing to standard output.\n\
 With no FILE, or when FILE is -, read standard input.\n\
-\n\
 "), stdout);
-      fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
       fputs (_("\
   -i, --initial       do not convert tabs after non blanks\n\
   -t, --tabs=NUMBER   have tabs NUMBER characters apart, not 8\n\
@@ -128,7 +125,7 @@ Mandatory arguments to long options are mandatory for short options too.\n\
   exit (status);
 }
 
-/* Add tab stop TABVAL to the end of `tab_list'.  */
+/* Add tab stop TABVAL to the end of 'tab_list'.  */
 
 static void
 add_tab_stop (uintmax_t tabval)
@@ -214,7 +211,7 @@ validate_tab_stops (uintmax_t const *tabs, size_t entries)
 
 /* Close the old stream pointer FP if it is non-NULL,
    and return a new one opened to read the next input file.
-   Open a filename of `-' as the standard input.
+   Open a filename of '-' as the standard input.
    Return NULL if there are no more input files.  */
 
 static FILE *
@@ -261,7 +258,7 @@ next_file (FILE *fp)
 }
 
 /* Change tabs to spaces, writing to stdout.
-   Read each file in `file_list', in order.  */
+   Read each file in 'file_list', in order.  */
 
 static void
 expand (void)

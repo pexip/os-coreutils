@@ -1,5 +1,5 @@
 /* uniq -- remove duplicate lines from a sorted file
-   Copyright (C) 1986, 1991, 1995-2011 Free Software Foundation, Inc.
+   Copyright (C) 1986-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 #include "xstrtol.h"
 #include "memcasecmp.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "uniq"
 
 #define AUTHORS \
@@ -108,11 +108,47 @@ static enum delimit_method const delimit_method_map[] =
 /* Select whether/how to delimit groups of duplicate lines.  */
 static enum delimit_method delimit_groups;
 
+enum grouping_method
+{
+  /* No grouping, when "--group" isn't used */
+  GM_NONE,
+
+  /* Delimiter preceges all groups.  --group=prepend */
+  GM_PREPEND,
+
+  /* Delimiter follows all groups.   --group=append */
+  GM_APPEND,
+
+  /* Delimiter between groups.    --group[=separate] */
+  GM_SEPARATE,
+
+  /* Delimiter before and after each group. --group=both */
+  GM_BOTH
+};
+
+static char const *const grouping_method_string[] =
+{
+  "prepend", "append", "separate", "both", NULL
+};
+
+static enum grouping_method const grouping_method_map[] =
+{
+  GM_PREPEND, GM_APPEND, GM_SEPARATE, GM_BOTH
+};
+
+static enum grouping_method grouping = GM_NONE;
+
+enum
+{
+  GROUP_OPTION = CHAR_MAX + 1
+};
+
 static struct option const longopts[] =
 {
   {"count", no_argument, NULL, 'c'},
   {"repeated", no_argument, NULL, 'd'},
   {"all-repeated", optional_argument, NULL, 'D'},
+  {"group", optional_argument, NULL, GROUP_OPTION},
   {"ignore-case", no_argument, NULL, 'i'},
   {"unique", no_argument, NULL, 'u'},
   {"skip-fields", required_argument, NULL, 'f'},
@@ -128,8 +164,7 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
@@ -141,24 +176,33 @@ Filter adjacent matching lines from INPUT (or standard input),\n\
 writing to OUTPUT (or standard output).\n\
 \n\
 With no options, matching lines are merged to the first occurrence.\n\
-\n\
 "), stdout);
-     fputs (_("\
-Mandatory arguments to long options are mandatory for short options too.\n\
-"), stdout);
+
+      emit_mandatory_arg_note ();
+
      fputs (_("\
   -c, --count           prefix lines by the number of occurrences\n\
-  -d, --repeated        only print duplicate lines\n\
+  -d, --repeated        only print duplicate lines, one for each group\n\
 "), stdout);
      fputs (_("\
-  -D, --all-repeated[=delimit-method]  print all duplicate lines\n\
-                        delimit-method={none(default),prepend,separate}\n\
-                        Delimiting is done with blank lines\n\
+  -D, --all-repeated[=METHOD]  print all duplicate lines\n\
+                          groups can be delimited with an empty line\n\
+                          METHOD={none(default),prepend,separate}\n\
+"), stdout);
+     fputs (_("\
   -f, --skip-fields=N   avoid comparing the first N fields\n\
+"), stdout);
+     fputs (_("\
+      --group[=METHOD]  show all items, separating groups with an empty line\n\
+                          METHOD={separate(default),prepend,append,both}\n\
+"), stdout);
+     fputs (_("\
   -i, --ignore-case     ignore differences in case when comparing\n\
   -s, --skip-chars=N    avoid comparing the first N characters\n\
   -u, --unique          only print unique lines\n\
-  -z, --zero-terminated  end lines with 0 byte, not newline\n\
+"), stdout);
+      fputs (_("\
+  -z, --zero-terminated     line delimiter is NUL, not newline\n\
 "), stdout);
      fputs (_("\
   -w, --check-chars=N   compare no more than N characters in lines\n\
@@ -173,8 +217,8 @@ characters.  Fields are skipped before chars.\n\
      fputs (_("\
 \n\
 Note: 'uniq' does not detect repeated lines unless they are adjacent.\n\
-You may want to sort the input first, or use `sort -u' without `uniq'.\n\
-Also, comparisons honor the rules specified by `LC_COLLATE'.\n\
+You may want to sort the input first, or use 'sort -u' without 'uniq'.\n\
+Also, comparisons honor the rules specified by 'LC_COLLATE'.\n\
 "), stdout);
       emit_ancillary_info ();
     }
@@ -294,28 +338,49 @@ check_file (const char *infile, const char *outfile, char delimiter)
   initbuffer (thisline);
   initbuffer (prevline);
 
-  /* The duplication in the following `if' and `else' blocks is an
-     optimization to distinguish the common case (in which none of
-     the following options has been specified: --count, -repeated,
-     --all-repeated, --unique) from the others.  In the common case,
-     this optimization lets uniq output each different line right away,
-     without waiting to see if the next one is different.  */
+  /* The duplication in the following 'if' and 'else' blocks is an
+     optimization to distinguish between when we can print input
+     lines immediately (1. & 2.) or not.
 
+     1. --group => all input lines are printed.
+        checking for unique/duplicated lines is used only for printing
+        group separators.
+
+     2. The default case in which none of these options has been specified:
+          --count, --repeated,  --all-repeated, --unique
+        In the default case, this optimization lets uniq output each different
+        line right away, without waiting to see if the next one is different.
+
+     3. All other cases.
+  */
   if (output_unique && output_first_repeated && countmode == count_none)
     {
       char *prevfield IF_LINT ( = NULL);
       size_t prevlen IF_LINT ( = 0);
+      bool first_group_printed = false;
 
       while (!feof (stdin))
         {
           char *thisfield;
           size_t thislen;
+          bool new_group;
+
           if (readlinebuffer_delim (thisline, stdin, delimiter) == 0)
             break;
+
           thisfield = find_field (thisline);
           thislen = thisline->length - 1 - (thisfield - thisline->buffer);
-          if (prevline->length == 0
-              || different (thisfield, prevfield, thislen, prevlen))
+
+          new_group = (prevline->length == 0
+                       || different (thisfield, prevfield, thislen, prevlen));
+
+          if (new_group && grouping != GM_NONE
+              && (grouping == GM_PREPEND || grouping == GM_BOTH
+                  || (first_group_printed && (grouping == GM_APPEND
+                                              || grouping == GM_SEPARATE))))
+            putchar (delimiter);
+
+          if (new_group || grouping != GM_NONE)
             {
               fwrite (thisline->buffer, sizeof (char),
                       thisline->length, stdout);
@@ -323,8 +388,11 @@ check_file (const char *infile, const char *outfile, char delimiter)
               SWAP_LINES (prevline, thisline);
               prevfield = thisfield;
               prevlen = thislen;
+              first_group_printed = true;
             }
         }
+      if ((grouping == GM_BOTH || grouping == GM_APPEND) && first_group_printed)
+        putchar (delimiter);
     }
   else
     {
@@ -417,6 +485,7 @@ main (int argc, char **argv)
   int nfiles = 0;
   char const *file[2];
   char delimiter = '\n';	/* change with --zero-terminated, -z */
+  bool output_option_used = false;   /* if true, one of -u/-d/-D/-c was used */
 
   file[0] = file[1] = "-";
   initialize_main (&argc, &argv);
@@ -500,10 +569,12 @@ main (int argc, char **argv)
 
         case 'c':
           countmode = count_occurrences;
+          output_option_used = true;
           break;
 
         case 'd':
           output_unique = false;
+          output_option_used = true;
           break;
 
         case 'D':
@@ -515,6 +586,16 @@ main (int argc, char **argv)
             delimit_groups = XARGMATCH ("--all-repeated", optarg,
                                         delimit_method_string,
                                         delimit_method_map);
+          output_option_used = true;
+          break;
+
+        case GROUP_OPTION:
+          if (optarg == NULL)
+            grouping = GM_SEPARATE;
+          else
+            grouping = XARGMATCH ("--group", optarg,
+                                  grouping_method_string,
+                                  grouping_method_map);
           break;
 
         case 'f':
@@ -534,6 +615,7 @@ main (int argc, char **argv)
 
         case 'u':
           output_first_repeated = false;
+          output_option_used = true;
           break;
 
         case 'w':
@@ -552,6 +634,23 @@ main (int argc, char **argv)
         default:
           usage (EXIT_FAILURE);
         }
+    }
+
+  /* Note we could allow --group with -D at least, and that would
+     avoid the need to specify a grouping method to --all-repeated.
+     It was thought best to avoid deprecating those parameters though
+     and keep --group separate to other options.  */
+  if (grouping != GM_NONE && output_option_used)
+    {
+      error (0, 0, _("--group is mutually exclusive with -c/-d/-D/-u"));
+      usage (EXIT_FAILURE);
+    }
+
+  if (grouping != GM_NONE && countmode != count_none)
+    {
+      error (0, 0,
+           _("grouping and printing repeat counts is meaningless"));
+      usage (EXIT_FAILURE);
     }
 
   if (countmode == count_occurrences && output_later_repeated)

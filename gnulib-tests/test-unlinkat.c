@@ -1,7 +1,5 @@
-/* -*- buffer-read-only: t -*- vi: set ro: */
-/* DO NOT EDIT! GENERATED AUTOMATICALLY! */
 /* Tests of unlinkat.
-   Copyright (C) 2009-2011 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -69,6 +67,19 @@ main (int argc _GL_UNUSED, char *argv[])
 
   /* Remove any leftovers from a previous partial run.  */
   ignore_value (system ("rm -rf " BASE "*"));
+
+  /* Test behaviour for invalid file descriptors.  */
+  {
+    errno = 0;
+    ASSERT (unlinkat (-1, "foo", 0) == -1);
+    ASSERT (errno == EBADF);
+  }
+  {
+    close (99);
+    errno = 0;
+    ASSERT (unlinkat (99, "foo", 0) == -1);
+    ASSERT (errno == EBADF);
+  }
 
   result1 = test_rmdir_func (rmdirat, false);
   result2 = test_unlink_func (unlinker, false);

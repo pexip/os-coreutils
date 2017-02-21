@@ -1,6 +1,5 @@
 /* sleep - delay for a specified amount of time.
-   Copyright (C) 1984, 1991-1997, 1999-2005, 2007-2011 Free Software
-   Foundation, Inc.
+   Copyright (C) 1984-2014 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +27,7 @@
 #include "xnanosleep.h"
 #include "xstrtod.h"
 
-/* The official name of this program (e.g., no `g' prefix).  */
+/* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "sleep"
 
 #define AUTHORS \
@@ -39,15 +38,14 @@ void
 usage (int status)
 {
   if (status != EXIT_SUCCESS)
-    fprintf (stderr, _("Try `%s --help' for more information.\n"),
-             program_name);
+    emit_try_help ();
   else
     {
       printf (_("\
 Usage: %s NUMBER[SUFFIX]...\n\
   or:  %s OPTION\n\
-Pause for NUMBER seconds.  SUFFIX may be `s' for seconds (the default),\n\
-`m' for minutes, `h' for hours or `d' for days.  Unlike most implementations\n\
+Pause for NUMBER seconds.  SUFFIX may be 's' for seconds (the default),\n\
+'m' for minutes, 'h' for hours or 'd' for days.  Unlike most implementations\n\
 that require NUMBER be an integer, here NUMBER may be an arbitrary floating\n\
 point number.  Given two or more arguments, pause for the amount of time\n\
 specified by the sum of their values.\n\
@@ -63,8 +61,8 @@ specified by the sum of their values.\n\
 
 /* Given a floating point value *X, and a suffix character, SUFFIX_CHAR,
    scale *X by the multiplier implied by SUFFIX_CHAR.  SUFFIX_CHAR may
-   be the NUL byte or `s' to denote seconds, `m' for minutes, `h' for
-   hours, or `d' for days.  If SUFFIX_CHAR is invalid, don't modify *X
+   be the NUL byte or 's' to denote seconds, 'm' for minutes, 'h' for
+   hours, or 'd' for days.  If SUFFIX_CHAR is invalid, don't modify *X
    and return false.  Otherwise return true.  */
 
 static bool
