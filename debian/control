@@ -6,7 +6,7 @@ Section: utils
 Priority: required
 Standards-Version: 3.9.2.0
 Build-Depends: gettext:any (>= 0.10.37), debhelper (>= 5.0.0), dh-buildinfo, texinfo (>= 4.2), groff, dpatch, libattr1-dev | not+linux-gnu, libacl1-dev | not+linux-gnu, libselinux1-dev (>= 1.32) | not+linux-gnu, gperf, bison, valgrind [!armhf]
-XS-Pexip-Upstream: http://archive.ubuntu.com/ubuntu/ precise
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ jessie
 
 Package: coreutils
 Architecture: any
