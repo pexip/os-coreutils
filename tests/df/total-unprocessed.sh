@@ -2,7 +2,7 @@
 # Ensure that df exits non-Zero and writes an error message when
 # --total is used but no file system has been processed.
 
-# Copyright (C) 2012-2014 Free Software Foundation, Inc.
+# Copyright (C) 2012-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ if test "$(df --output=fstype . | tail -n1)" != '-'; then
 fi
 
 cat <<\EOF > exp || framework_failure_
-df: '_does_not_exist_': No such file or directory
+df: _does_not_exist_: No such file or directory
 EOF
 
 # Ensure that df writes the error message also in the following case.

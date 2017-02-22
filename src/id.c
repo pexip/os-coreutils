@@ -1,5 +1,5 @@
 /* id -- print real and effective UIDs and GIDs
-   Copyright (C) 1989-2014 Free Software Foundation, Inc.
+   Copyright (C) 1989-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <selinux/selinux.h>
 
 #include "system.h"
+#include "die.h"
 #include "error.h"
 #include "mgetgroups.h"
 #include "quote.h"
@@ -104,7 +105,7 @@ or (when USER omitted) for the current user.\n\
 \n\
 Without any OPTION, print some useful set of identified information.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -147,13 +148,13 @@ main (int argc, char **argv)
           /* politely decline if we're not on a SELinux/SMACK-enabled kernel. */
 #ifdef HAVE_SMACK
           if (!selinux_enabled && !smack_enabled)
-            error (EXIT_FAILURE, 0,
-                   _("--context (-Z) works only on "
-                     "an SELinux/SMACK-enabled kernel"));
+            die (EXIT_FAILURE, 0,
+                 _("--context (-Z) works only on "
+                   "an SELinux/SMACK-enabled kernel"));
 #else
           if (!selinux_enabled)
-            error (EXIT_FAILURE, 0,
-                   _("--context (-Z) works only on an SELinux-enabled kernel"));
+            die (EXIT_FAILURE, 0,
+                 _("--context (-Z) works only on an SELinux-enabled kernel"));
 #endif
           just_context = true;
           break;
@@ -191,22 +192,24 @@ main (int argc, char **argv)
     }
 
   if (n_ids && just_context)
-    error (EXIT_FAILURE, 0,
-           _("cannot print security context when user specified"));
+    die (EXIT_FAILURE, 0,
+         _("cannot print security context when user specified"));
 
   if (just_user + just_group + just_group_list + just_context > 1)
-    error (EXIT_FAILURE, 0, _("cannot print \"only\" of more than one choice"));
+    die (EXIT_FAILURE, 0, _("cannot print \"only\" of more than one choice"));
 
-  bool default_format = (just_user + just_group + just_group_list
-                         + just_context == 0);
+  bool default_format = ! (just_user
+                           || just_group
+                           || just_group_list
+                           || just_context);
 
   if (default_format && (use_real || use_name))
-    error (EXIT_FAILURE, 0,
-           _("cannot print only names or real IDs in default format"));
+    die (EXIT_FAILURE, 0,
+         _("cannot print only names or real IDs in default format"));
 
   if (default_format && opt_zero)
-    error (EXIT_FAILURE, 0,
-           _("option --zero not permitted in default format"));
+    die (EXIT_FAILURE, 0,
+         _("option --zero not permitted in default format"));
 
   /* If we are on a SELinux/SMACK-enabled kernel, no user is specified, and
      either --context is specified or none of (-u,-g,-G) is specified,
@@ -222,7 +225,7 @@ main (int argc, char **argv)
           || (smack_enabled
               && smack_new_label_from_self (&context) < 0
               && just_context))
-        error (EXIT_FAILURE, 0, _("can't get process context"));
+        die (EXIT_FAILURE, 0, _("can't get process context"));
     }
 
   if (n_ids == 1)
@@ -243,7 +246,7 @@ main (int argc, char **argv)
             }
         }
       if (pwd == NULL)
-        error (EXIT_FAILURE, 0, _("%s: no such user"), spec);
+        die (EXIT_FAILURE, 0, _("%s: no such user"), quote (spec));
       pw_name = xstrdup (pwd->pw_name);
       ruid = euid = pwd->pw_uid;
       rgid = egid = pwd->pw_gid;
@@ -262,7 +265,7 @@ main (int argc, char **argv)
           errno = 0;
           euid = geteuid ();
           if (euid == NO_UID && errno)
-            error (EXIT_FAILURE, errno, _("cannot get effective UID"));
+            die (EXIT_FAILURE, errno, _("cannot get effective UID"));
         }
 
       if (just_user ? use_real
@@ -271,7 +274,7 @@ main (int argc, char **argv)
           errno = 0;
           ruid = getuid ();
           if (ruid == NO_UID && errno)
-            error (EXIT_FAILURE, errno, _("cannot get real UID"));
+            die (EXIT_FAILURE, errno, _("cannot get real UID"));
         }
 
       if (!just_user && (just_group || just_group_list || !just_context))
@@ -279,12 +282,12 @@ main (int argc, char **argv)
           errno = 0;
           egid = getegid ();
           if (egid == NO_GID && errno)
-            error (EXIT_FAILURE, errno, _("cannot get effective GID"));
+            die (EXIT_FAILURE, errno, _("cannot get effective GID"));
 
           errno = 0;
           rgid = getgid ();
           if (rgid == NO_GID && errno)
-            error (EXIT_FAILURE, errno, _("cannot get real GID"));
+            die (EXIT_FAILURE, errno, _("cannot get real GID"));
         }
     }
 
@@ -314,7 +317,7 @@ main (int argc, char **argv)
   putchar (opt_zero ? '\0' : '\n');
 
   IF_LINT (free (pw_name));
-  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 /* Convert a gid_t to string.  Do not use this function directly.

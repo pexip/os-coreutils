@@ -1,5 +1,5 @@
 /* libstdbuf -- a shared lib to preload to setup stdio buffering for a command
-   Copyright (C) 2009-2014 Free Software Foundation, Inc.
+   Copyright (C) 2009-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
 
 #include <config.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "system.h"
-#include "verify.h"
 
 /* Note currently for glibc (2.3.5) the following call does not change
    the buffer size, and more problematically does not give any indication

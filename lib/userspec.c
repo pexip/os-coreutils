@@ -1,5 +1,5 @@
 /* userspec.c -- Parse a user and group string.
-   Copyright (C) 1989-1992, 1997-1998, 2000, 2002-2014 Free Software
+   Copyright (C) 1989-1992, 1997-1998, 2000, 2002-2016 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -234,7 +234,7 @@ parse_with_separator (char const *spec, char const *separator,
 
   free (u);
   free (gname);
-  return _(error_msg);
+  return error_msg ? _(error_msg) : NULL;
 }
 
 /* Extract from SPEC, which has the form "[user][:.][group]",

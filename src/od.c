@@ -1,5 +1,5 @@
 /* od -- dump files in octal and other formats
-   Copyright (C) 1992-2014 Free Software Foundation, Inc.
+   Copyright (C) 1992-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,9 +24,11 @@
 #include <sys/types.h>
 #include "system.h"
 #include "argmatch.h"
+#include "die.h"
 #include "error.h"
 #include "ftoastr.h"
 #include "quote.h"
+#include "stat-size.h"
 #include "xfreopen.h"
 #include "xprintf.h"
 #include "xstrtol.h"
@@ -327,10 +329,12 @@ Usage: %s [OPTION]... [FILE]...\n\
 Write an unambiguous representation, octal bytes by default,\n\
 of FILE to standard output.  With more than one FILE argument,\n\
 concatenate them in the listed order to form the input.\n\
-With no FILE, or when FILE is -, read standard input.\n\
-\n\
 "), stdout);
+
+      emit_stdin_note ();
+
       fputs (_("\
+\n\
 If first and second call formats both apply, the second format is assumed\n\
 if the last operand begins with + or (if there are 2 operands) a digit.\n\
 An OFFSET operand means -j OFFSET.  LABEL is the pseudo-address\n\
@@ -414,7 +418,7 @@ BYTES is hex with 0x or 0X prefix, and may have a multiplier suffix:\n\
   M    1024*1024\n\
 and so on for G, T, P, E, Z, Y.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -918,7 +922,7 @@ open_next_file (void)
           in_stream = fopen (input_filename, (O_BINARY ? "rb" : "r"));
           if (in_stream == NULL)
             {
-              error (0, errno, "%s", input_filename);
+              error (0, errno, "%s", quotef (input_filename));
               ok = false;
             }
         }
@@ -947,14 +951,14 @@ check_and_close (int in_errno)
     {
       if (ferror (in_stream))
         {
-          error (0, in_errno, _("%s: read error"), input_filename);
+          error (0, in_errno, _("%s: read error"), quotef (input_filename));
           if (! STREQ (file_list[-1], "-"))
             fclose (in_stream);
           ok = false;
         }
       else if (! STREQ (file_list[-1], "-") && fclose (in_stream) != 0)
         {
-          error (0, errno, "%s", input_filename);
+          error (0, errno, "%s", quotef (input_filename));
           ok = false;
         }
 
@@ -1034,9 +1038,11 @@ skip (uintmax_t n_skip)
              If the number of bytes left to skip is larger than
              the size of the current file, we can decrement n_skip
              and go on to the next file.  Skip this optimization also
-             when st_size is 0, because some kernels report that
-             nonempty files in /proc have st_size == 0.  */
-          if (S_ISREG (file_stats.st_mode) && 0 < file_stats.st_size)
+             when st_size is no greater than the block size, because
+             some kernels report nonsense small file sizes for
+             proc-like file systems.  */
+          if (usable_st_size (&file_stats)
+              && ST_BLKSIZE (file_stats) < file_stats.st_size)
             {
               if ((uintmax_t) file_stats.st_size < n_skip)
                 n_skip -= file_stats.st_size;
@@ -1052,6 +1058,7 @@ skip (uintmax_t n_skip)
             }
 
           /* If it's not a regular file with nonnegative size,
+             or if it's so small that it might be in a proc-like file system,
              position the file pointer by reading.  */
 
           else
@@ -1067,10 +1074,15 @@ skip (uintmax_t n_skip)
                   n_skip -= n_bytes_read;
                   if (n_bytes_read != n_bytes_to_read)
                     {
-                      in_errno = errno;
-                      ok = false;
-                      n_skip = 0;
-                      break;
+                      if (ferror (in_stream))
+                        {
+                          in_errno = errno;
+                          ok = false;
+                          n_skip = 0;
+                          break;
+                        }
+                      if (feof (in_stream))
+                        break;
                     }
                 }
             }
@@ -1081,7 +1093,7 @@ skip (uintmax_t n_skip)
 
       else   /* cannot fstat() file */
         {
-          error (0, errno, "%s", input_filename);
+          error (0, errno, "%s", quotef (input_filename));
           ok = false;
         }
 
@@ -1091,7 +1103,7 @@ skip (uintmax_t n_skip)
     }
 
   if (n_skip != 0)
-    error (EXIT_FAILURE, 0, _("cannot skip past end of combined input"));
+    die (EXIT_FAILURE, 0, _("cannot skip past end of combined input"));
 
   return ok;
 }
@@ -1279,9 +1291,6 @@ read_block (size_t n, char *block, size_t *n_bytes_in_buffer)
   assert (0 < n && n <= bytes_per_block);
 
   *n_bytes_in_buffer = 0;
-
-  if (n == 0)
-    return true;
 
   while (in_stream != NULL)	/* EOF.  */
     {
@@ -1646,10 +1655,10 @@ main (int argc, char **argv)
               address_pad_len = 0;
               break;
             default:
-              error (EXIT_FAILURE, 0,
-                     _("invalid output address radix '%c';\
+              die (EXIT_FAILURE, 0,
+                   _("invalid output address radix '%c';\
  it must be one character from [doxn]"),
-                     optarg[0]);
+                   optarg[0]);
               break;
             }
           break;
@@ -1684,7 +1693,7 @@ main (int argc, char **argv)
               /* The minimum string length may be no larger than SIZE_MAX,
                  since we may allocate a buffer of this size.  */
               if (SIZE_MAX < tmp)
-                error (EXIT_FAILURE, 0, _("%s is too large"), optarg);
+                die (EXIT_FAILURE, 0, _("%s is too large"), quote (optarg));
 
               string_min = tmp;
             }
@@ -1765,7 +1774,7 @@ main (int argc, char **argv)
               if (s_err != LONGINT_OK)
                 xstrtol_fatal (s_err, oi, c, long_options, optarg);
               if (SIZE_MAX < w_tmp)
-                error (EXIT_FAILURE, 0, _("%s is too large"), optarg);
+                die (EXIT_FAILURE, 0, _("%s is too large"), quote (optarg));
               desired_width = w_tmp;
             }
           break;
@@ -1781,11 +1790,11 @@ main (int argc, char **argv)
     }
 
   if (!ok)
-    exit (EXIT_FAILURE);
+    return EXIT_FAILURE;
 
   if (flag_dump_strings && n_specs > 0)
-    error (EXIT_FAILURE, 0,
-           _("no type may be specified when dumping strings"));
+    die (EXIT_FAILURE, 0,
+         _("no type may be specified when dumping strings"));
 
   n_files = argc - optind;
 
@@ -1881,7 +1890,7 @@ main (int argc, char **argv)
     {
       end_offset = n_bytes_to_skip + max_bytes_to_format;
       if (end_offset < n_bytes_to_skip)
-        error (EXIT_FAILURE, 0, _("skip-bytes + read-bytes is too large"));
+        die (EXIT_FAILURE, 0, _("skip-bytes + read-bytes is too large"));
     }
 
   if (n_specs == 0)
@@ -1953,7 +1962,8 @@ main (int argc, char **argv)
     }
 
 #ifdef DEBUG
-  printf ("lcm=%d, width_per_block=%zu\n", l_c_m, width_per_block);
+  printf ("lcm=%d, width_per_block=%"PRIuMAX"\n", l_c_m,
+          (uintmax_t) width_per_block);
   for (i = 0; i < n_specs; i++)
     {
       int fields_per_block = bytes_per_block / width_bytes[spec[i].size];
@@ -1970,7 +1980,7 @@ main (int argc, char **argv)
 cleanup:
 
   if (have_read_stdin && fclose (stdin) == EOF)
-    error (EXIT_FAILURE, errno, _("standard input"));
+    die (EXIT_FAILURE, errno, _("standard input"));
 
-  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

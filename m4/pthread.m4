@@ -1,5 +1,5 @@
-# pthread.m4 serial 8
-dnl Copyright (C) 2009-2014 Free Software Foundation, Inc.
+# pthread.m4 serial 10
+dnl Copyright (C) 2009-2016 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -16,7 +16,7 @@ AC_DEFUN([gl_PTHREAD_CHECK],
       [AC_COMPILE_IFELSE(
         [AC_LANG_PROGRAM(
           [[#include <pthread.h>
-            #ifdef strtok_r
+            #if defined strtok_r || defined localtime_r
             #error
              break me
             #endif
@@ -63,7 +63,7 @@ AC_DEFUN([gl_PTHREAD_CHECK],
        [gl_cv_lib_pthread],
        [gl_saved_libs=$LIBS
         gl_cv_lib_pthread=
-        for gl_lib_prefix in '' '-lpthread'; do
+        for gl_lib_prefix in '' '-pthread' '-lpthread'; do
           LIBS="$gl_lib_prefix $gl_saved_libs"
           AC_LINK_IFELSE(
             [AC_LANG_PROGRAM(

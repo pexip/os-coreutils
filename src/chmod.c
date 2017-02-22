@@ -1,5 +1,5 @@
 /* chmod -- change permission modes of files
-   Copyright (C) 1989-2014 Free Software Foundation, Inc.
+   Copyright (C) 1989-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,12 +23,12 @@
 
 #include "system.h"
 #include "dev-ino.h"
+#include "die.h"
 #include "error.h"
 #include "filemode.h"
 #include "ignore-value.h"
 #include "modechange.h"
 #include "quote.h"
-#include "quotearg.h"
 #include "root-dev-ino.h"
 #include "xfts.h"
 
@@ -125,7 +125,7 @@ mode_changed (int dir_fd, char const *file, char const *file_full_name,
         {
           if (! force_silent)
             error (0, errno, _("getting new attributes of %s"),
-                   quote (file_full_name));
+                   quoteaf (file_full_name));
           return false;
         }
 
@@ -149,7 +149,7 @@ describe_change (const char *file, mode_t old_mode, mode_t mode,
   if (changed == CH_NOT_APPLIED)
     {
       printf (_("neither symbolic link %s nor referent has been changed\n"),
-              quote (file));
+              quoteaf (file));
       return;
     }
 
@@ -169,13 +169,13 @@ describe_change (const char *file, mode_t old_mode, mode_t mode,
       break;
     case CH_NO_CHANGE_REQUESTED:
       fmt = _("mode of %s retained as %04lo (%s)\n");
-      printf (fmt, quote (file),
+      printf (fmt, quoteaf (file),
               (unsigned long int) (mode & CHMOD_MODE_BITS), &perms[1]);
       return;
     default:
       abort ();
     }
-  printf (fmt, quote (file),
+  printf (fmt, quoteaf (file),
           (unsigned long int) (old_mode & CHMOD_MODE_BITS), &old_perms[1],
           (unsigned long int) (mode & CHMOD_MODE_BITS), &perms[1]);
 }
@@ -216,27 +216,27 @@ process_file (FTS *fts, FTSENT *ent)
         }
       if (! force_silent)
         error (0, ent->fts_errno, _("cannot access %s"),
-               quote (file_full_name));
+               quoteaf (file_full_name));
       ok = false;
       break;
 
     case FTS_ERR:
       if (! force_silent)
-        error (0, ent->fts_errno, "%s", quote (file_full_name));
+        error (0, ent->fts_errno, "%s", quotef (file_full_name));
       ok = false;
       break;
 
     case FTS_DNR:
       if (! force_silent)
         error (0, ent->fts_errno, _("cannot read directory %s"),
-               quote (file_full_name));
+               quoteaf (file_full_name));
       ok = false;
       break;
 
     case FTS_SLNONE:
       if (! force_silent)
         error (0, 0, _("cannot operate on dangling symlink %s"),
-               quote (file_full_name));
+               quoteaf (file_full_name));
       ok = false;
       break;
 
@@ -276,7 +276,7 @@ process_file (FTS *fts, FTSENT *ent)
             {
               if (! force_silent)
                 error (0, errno, _("changing permissions of %s"),
-                       quote (file_full_name));
+                       quoteaf (file_full_name));
               ok = false;
             }
         }
@@ -312,7 +312,7 @@ process_file (FTS *fts, FTSENT *ent)
           new_perms[10] = naively_expected_perms[10] = '\0';
           error (0, 0,
                  _("%s: new permissions are %s, not %s"),
-                 quotearg_colon (file_full_name),
+                 quotef (file_full_name),
                  new_perms + 1, naively_expected_perms + 1);
           ok = false;
         }
@@ -403,7 +403,7 @@ With --reference, change the mode of each FILE to that of RFILE.\n\
 \n\
 Each MODE is of the form '[ugoa]*([-+=]([rwxXst]*|[ugo]))+|[-+=][0-7]+'.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -536,8 +536,8 @@ main (int argc, char **argv)
     {
       change = mode_create_from_ref (reference_file);
       if (!change)
-        error (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
-               quote (reference_file));
+        die (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
+             quoteaf (reference_file));
     }
   else
     {
@@ -555,8 +555,8 @@ main (int argc, char **argv)
       static struct dev_ino dev_ino_buf;
       root_dev_ino = get_root_dev_ino (&dev_ino_buf);
       if (root_dev_ino == NULL)
-        error (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
-               quote ("/"));
+        die (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
+             quoteaf ("/"));
     }
   else
     {
@@ -566,5 +566,5 @@ main (int argc, char **argv)
   ok = process_files (argv + optind,
                       FTS_COMFOLLOW | FTS_PHYSICAL | FTS_DEFER_STAT);
 
-  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

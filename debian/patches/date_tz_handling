@@ -1,0 +1,15 @@
+Author: Pádraig Brady <P@draigBrady.com>
+Description: fix timezone used for output when timezone specified in date -d
+Index: coreutils-8.26/src/date.c
+===================================================================
+--- coreutils-8.26.orig/src/date.c	2016-11-14 07:05:20.000000000 -0500
++++ coreutils-8.26/src/date.c	2017-01-20 09:39:26.167786700 -0500
+@@ -578,6 +578,8 @@
+ {
+   struct tm tm;
+ 
++  tzset ();
++
+   if (localtime_rz (tz, &when.tv_sec, &tm))
+     {
+       if (format == rfc_2822_format)

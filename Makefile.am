@@ -1,6 +1,6 @@
 # Make coreutils.					-*-Makefile-*-
 
-# Copyright (C) 1990-2014 Free Software Foundation, Inc.
+# Copyright (C) 1990-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -99,12 +99,15 @@ BUILT_SOURCES = .version
 .version:
 	$(AM_V_GEN)echo $(VERSION) > $@-t && mv $@-t $@
 
-# Arrange so that .tarball-version appears only in the distribution
-# tarball, and never in a checked-out repository.
+# Have no read-only files in the tarball to allow easy removal.
+# Have .tarball-version based versions only in tarball builds.
+# Have .timestamp based dates only in tarball builds.
 # The perl substitution is to change some key uses of "rm" to "/bin/rm".
 # See the rm_subst comment for details.
 dist-hook: gen-ChangeLog
+	$(AM_V_GEN)chmod -R +rw $(distdir)
 	$(AM_V_GEN)echo $(VERSION) > $(distdir)/.tarball-version
+	$(AM_V_GEN)date +%s > $(distdir)/.timestamp
 	$(AM_V_at)perl -pi -e '$(rm_subst)' $(distdir)/Makefile.in
 
 gen_start_date = 2008-02-08
@@ -158,16 +161,24 @@ ASSORT = LC_ALL=C sort
 # Extract all lines up to the first one starting with "##".
 prologue = perl -ne '/^\#\#/ and exit; print' $(srcdir)/THANKS.in
 
+# FIXME: avoid dependency to build our own 'sort' for 'make dist' ...
+# when common platforms have a functional case-folding implementation:
+#   $ test 'abácad' = "$(printf '%s\n' 'ab' 'ác' 'ad' \
+#                          | LC_ALL=en_US.UTF-8 sort -f \
+#                          | tr -d '\n')" && echo GOOD || echo BAD
+# Note we don't enable case folding (-f) in the sort below, due to bugs
+# in the I18N patch used in many distros (as of 2015).  Also using our
+# own src/sort here would induce awkward dependencies for `make dist`.
 THANKS: THANKS.in Makefile.am .mailmap thanks-gen .version
 	$(AM_V_GEN)rm -f $@-t $@;					\
 	{								\
 	  $(prologue); echo;						\
-	  { perl -ne '/^$$/.../^$$/ and print' $(srcdir)/THANKS.in	\
-	      | grep -v '^$$' | perl -pe 's/  +/\0/';			\
+	  { perl -ne '/^$$/.../^$$/ and !/^$$/ and s/  +/\0/ and print'	\
+	      $(srcdir)/THANKS.in;					\
 	    git log --pretty=format:'%aN%x00%aE'			\
 	      | $(ASSORT) -u;						\
 	  } | $(srcdir)/thanks-gen					\
-	    | LC_ALL=en_US.UTF-8 sort -f;				\
+	    | LC_ALL=en_US.UTF-8 sort -k1,1;				\
 	  echo;								\
 	  printf ';; %s\n' 'Local Variables:' 'coding: utf-8' End:;	\
 	} > $@-t && chmod a-w $@-t && mv $@-t $@
@@ -190,7 +201,8 @@ check-git-hook-script-sync:
 # the selected tools when installing.
 install-exec-hook:
 	$(AM_V_at)ctrans=$$(printf coreutils | sed -e "$(transform)");	\
-	for p in $(single_binary_progs); do				\
+	for p in x $(single_binary_progs); do				\
+	  test $$p = x && continue;					\
 	  ptrans=$$(printf '%s' "$$p" | sed -e "$(transform)");		\
 	  rm -f $(DESTDIR)$(bindir)/$$ptrans$(EXEEXT) || exit $$?;	\
 	  if test "x$(single_binary_install_type)" = xshebangs; then	\

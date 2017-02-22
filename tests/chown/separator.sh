@@ -1,7 +1,7 @@
 #!/bin/sh
 # Make sure "chown USER:GROUP FILE" works, and similar tests with separators.
 
-# Copyright (C) 2004-2014 Free Software Foundation, Inc.
+# Copyright (C) 2004-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ for u in $id_u "$id_un" ''; do
     esac
     for sep in $seps; do
       case $u$sep$g in
-        [0-9]*$sep) chown "$u$sep$g" . 2> /dev/null && fail=1 ;;
+        [0-9]*$sep) returns_ 1 chown "$u$sep$g" . 2>/dev/null || fail=1 ;;
         *) chown "$u$sep$g" . || fail=1 ;;
       esac
     done

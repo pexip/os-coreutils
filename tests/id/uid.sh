@@ -1,6 +1,6 @@
 #!/bin/sh
 # Ensure that "id" works with numeric user ids
-# Copyright (C) 2013-2014 Free Software Foundation, Inc.
+# Copyright (C) 2013-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ uid=$(id -u) || fail=1
 user=$(id -nu) || fail=1
 
 # Ensure the empty user spec is discarded
-id '' && fail=1
+returns_ 1 id '' || fail=1
 
 for mode in '' '-G' '-g'; do
   id $mode $user > user_out || fail=1 # lookup name for comparison

@@ -1,5 +1,5 @@
 /* chroot -- run command or shell with special root directory
-   Copyright (C) 1995-2014 Free Software Foundation, Inc.
+   Copyright (C) 1995-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <grp.h>
 
 #include "system.h"
+#include "die.h"
 #include "error.h"
 #include "ignore-value.h"
 #include "mgetgroups.h"
@@ -49,13 +50,15 @@ static inline bool gid_unset (gid_t gid) { return gid == (gid_t) -1; }
 enum
 {
   GROUPS = UCHAR_MAX + 1,
-  USERSPEC
+  USERSPEC,
+  SKIP_CHDIR
 };
 
 static struct option const long_opts[] =
 {
   {"groups", required_argument, NULL, GROUPS},
   {"userspec", required_argument, NULL, USERSPEC},
+  {"skip-chdir", no_argument, NULL, SKIP_CHDIR},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
@@ -160,20 +163,17 @@ parse_additional_groups (char const *groups, GETGROUPS_T **pgids,
   return ret;
 }
 
+/* Return whether the passed path is equivalent to "/".
+   Note we don't compare against get_root_dev_ino() as "/"
+   could be bind mounted to a separate location.  */
+
 static bool
 is_root (const char* dir)
 {
-  struct dev_ino root_ino;
-  if (! get_root_dev_ino (&root_ino))
-    error (EXIT_CANCELED, errno, _("failed to get attributes of %s"),
-           quote ("/"));
-
-  struct stat arg_st;
-  if (stat (dir, &arg_st) == -1)
-    error (EXIT_CANCELED, errno, _("failed to get attributes of %s"),
-           quote (dir));
-
-  return SAME_INODE (root_ino, arg_st);
+  char *resolved = canonicalize_file_name (dir);
+  bool is_res_root = resolved && STREQ ("/", resolved);
+  free (resolved);
+  return is_res_root;
 }
 
 void
@@ -194,9 +194,14 @@ Run COMMAND with root directory set to NEWROOT.\n\
 "), stdout);
 
       fputs (_("\
-  --userspec=USER:GROUP  specify user and group (ID or name) to use\n\
   --groups=G_LIST        specify supplementary groups as g1,g2,..,gN\n\
 "), stdout);
+      fputs (_("\
+  --userspec=USER:GROUP  specify user and group (ID or name) to use\n\
+"), stdout);
+      printf (_("\
+  --skip-chdir           do not change working directory to %s\n\
+"), quoteaf ("/"));
 
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -204,7 +209,7 @@ Run COMMAND with root directory set to NEWROOT.\n\
 \n\
 If no command is given, run '${SHELL} -i' (default: '/bin/sh -i').\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -218,6 +223,7 @@ main (int argc, char **argv)
   char *userspec = NULL;
   char const *username = NULL;
   char const *groups = NULL;
+  bool skip_chdir = false;
 
   /* Parsed user and group IDs.  */
   uid_t uid = -1;
@@ -254,6 +260,10 @@ main (int argc, char **argv)
           groups = optarg;
           break;
 
+        case SKIP_CHDIR:
+          skip_chdir = true;
+          break;
+
         case_GETOPT_HELP_CHAR;
 
         case_GETOPT_VERSION_CHAR (PROGRAM_NAME, AUTHORS);
@@ -269,9 +279,17 @@ main (int argc, char **argv)
       usage (EXIT_CANCELED);
     }
 
-  /* Only do chroot specific actions if actually changing root.
-     The main difference here is that we don't change working dir.  */
-  if (! is_root (argv[optind]))
+  char const *newroot = argv[optind];
+  bool is_oldroot = is_root (newroot);
+
+  if (! is_oldroot && skip_chdir)
+    {
+      error (0, 0, _("option --skip-chdir only permitted if NEWROOT is old %s"),
+             quoteaf ("/"));
+      usage (EXIT_CANCELED);
+    }
+
+  if (! is_oldroot)
     {
       /* We have to look up users and groups twice.
         - First, outside the chroot to load potentially necessary passwd/group
@@ -306,14 +324,14 @@ main (int argc, char **argv)
             n_gids = ngroups;
         }
 #endif
-
-      if (chroot (argv[optind]) != 0)
-        error (EXIT_CANCELED, errno, _("cannot change root directory to %s"),
-               argv[optind]);
-
-      if (chdir ("/"))
-        error (EXIT_CANCELED, errno, _("cannot chdir to root directory"));
     }
+
+  if (chroot (newroot) != 0)
+    die (EXIT_CANCELED, errno, _("cannot change root directory to %s"),
+         quoteaf (newroot));
+
+  if (! skip_chdir && chdir ("/"))
+    die (EXIT_CANCELED, errno, _("cannot chdir to root directory"));
 
   if (argc == optind + 1)
     {
@@ -338,7 +356,7 @@ main (int argc, char **argv)
       char const *err = parse_user_spec (userspec, &uid, &gid, NULL, NULL);
 
       if (err && uid_unset (uid) && gid_unset (gid))
-        error (EXIT_CANCELED, errno, "%s", err);
+        die (EXIT_CANCELED, errno, "%s", (err));
     }
 
   /* If no gid is supplied or looked up, do so now.
@@ -354,8 +372,8 @@ main (int argc, char **argv)
         }
       else if (gid_unset (gid))
         {
-          error (EXIT_CANCELED, errno,
-                 _("no group specified for unknown uid: %d"), (int) uid);
+          die (EXIT_CANCELED, errno,
+               _("no group specified for unknown uid: %d"), (int) uid);
         }
     }
 
@@ -366,7 +384,7 @@ main (int argc, char **argv)
       if (parse_additional_groups (groups, &in_gids, &n_gids, !n_gids) != 0)
         {
           if (! n_gids)
-            exit (EXIT_CANCELED);
+            return EXIT_CANCELED;
           /* else look-up outside the chroot worked, then go with those.  */
         }
       else
@@ -379,8 +397,8 @@ main (int argc, char **argv)
       if (ngroups <= 0)
         {
           if (! n_gids)
-            error (EXIT_CANCELED, errno,
-                   _("failed to get supplemental groups"));
+            die (EXIT_CANCELED, errno,
+                 _("failed to get supplemental groups"));
           /* else look-up outside the chroot worked, then go with those.  */
         }
       else
@@ -392,24 +410,21 @@ main (int argc, char **argv)
 #endif
 
   if ((uid_set (uid) || groups) && setgroups (n_gids, gids) != 0)
-    error (EXIT_CANCELED, errno, _("failed to %s supplemental groups"),
-           gids ? "set" : "clear");
+    die (EXIT_CANCELED, errno, _("failed to set supplemental groups"));
 
   free (in_gids);
   free (out_gids);
 
   if (gid_set (gid) && setgid (gid))
-    error (EXIT_CANCELED, errno, _("failed to set group-ID"));
+    die (EXIT_CANCELED, errno, _("failed to set group-ID"));
 
   if (uid_set (uid) && setuid (uid))
-    error (EXIT_CANCELED, errno, _("failed to set user-ID"));
+    die (EXIT_CANCELED, errno, _("failed to set user-ID"));
 
   /* Execute the given command.  */
   execvp (argv[0], argv);
 
-  {
-    int exit_status = (errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE);
-    error (0, errno, _("failed to run command %s"), quote (argv[0]));
-    exit (exit_status);
-  }
+  int exit_status = errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE;
+  error (0, errno, _("failed to run command %s"), quote (argv[0]));
+  return exit_status;
 }

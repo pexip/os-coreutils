@@ -1,6 +1,6 @@
 #!/bin/sh
 # Ensure that "id" outputs SELinux context only without specified user
-# Copyright (C) 2008-2014 Free Software Foundation, Inc.
+# Copyright (C) 2008-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,10 @@ id | grep context= >/dev/null || fail=1
 
 # Check with specified user, no context string should be present.
 # But if the current user is nameless, skip this part.
-id -nu > /dev/null \
-  && id $(id -nu) | grep context= >/dev/null && fail=1
+name=$(id -nu) || { test $? -ne 1 && fail=1; }
+if test "$name"; then
+  id "$name" > id_name || fail=1
+  grep context= id_name >/dev/null && fail=1
+fi
 
 Exit $fail

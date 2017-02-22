@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure that cp copies contents of non-empty "regular" file with st_size==0
 
-# Copyright (C) 2007-2014 Free Software Foundation, Inc.
+# Copyright (C) 2007-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ cat $f > out || fail=1
 # number of the file changed during the cp run.
 cp $f exp 2>err \
   || { fail=1;
-       grep 'replaced while being copied' \
+       grep 'replaced while being copied' err \
          && skip_ "File $f is being replaced while being copied"; }
 
 # Don't simply compare contents; they might differ,

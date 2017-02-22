@@ -1,5 +1,397 @@
 GNU coreutils NEWS                                    -*- outline -*-
 
+* Noteworthy changes in release 8.26 (2016-11-30) [stable]
+
+** Bug fixes
+
+  cp, mv, and install no longer run into undefined behavior when
+  handling ACLs on Cygwin and Solaris platforms. [bug introduced in
+  coreutils-8.24]
+
+  cp --parents --no-preserve=mode, no longer copies permissions from source
+  directories, instead using default permissions for created directories.
+  [bug introduced in coreutils-5.93]
+
+  chcon, chgrp, chmod, chown, du, and rm, or specifically utilities
+  using the FTS interface, now diagnose failures returned by readdir().
+  [this bug was inherent in the use of fts: thus, for rm the bug was
+  introduced in coreutils-8.0.  du, chmod, chgrp and chown started using
+  fts in 6.0.  chcon was added in coreutils-6.9.91 with fts support.  ]
+
+  date, du, ls, and pr no longer mishandle time zone abbreviations on
+  System V style platforms where this information is available only
+  in the global variable 'tzname'. [bug introduced in coreutils-8.24]
+
+  factor again outputs immediately when numbers are input interactively.
+  [bug introduced in coreutils-8.24]
+
+  head no longer tries to process non-seekable input as seekable,
+  which resulted in failures on FreeBSD 11 at least.
+  [bug introduced in coreutils-8.24]
+
+  install -DZ and mkdir -pZ now set default SELinux context correctly even if
+  two or more directories nested in each other are created and each of them
+  defaults to a different SELinux context.
+
+  ls --time-style no longer mishandles '%%b' in formats.
+  [bug introduced in coreutils-7.2]
+
+  md5sum --check --ignore-missing no longer treats files with checksums
+  starting with "00" as missing.  This also affects sha*sum.
+  [bug introduced with the --ignore-missing feature in coreutils-8.25]
+
+  nl now resets numbering for each page section rather than just for each page.
+  [This bug was present in "the beginning".]
+
+  pr now handles specified separator strings containing tabs correctly.
+  Previously it would have output random data from memory.
+  [This bug was detected with ASAN and present in "the beginning".]
+
+  sort -h -k now works even in locales that use blank as thousands separator.
+
+  stty --help no longer outputs extraneous gettext header lines
+  for translated languages. [bug introduced in coreutils-8.24]
+
+  stty "sane" again sets "susp" to ^z on Solaris, and leaves "swtch" undefined.
+  [This bug previously fixed only on some older Solaris systems]
+
+  seq now immediately exits upon write errors.
+  [This bug was present in "the beginning".]
+
+  tac no longer crashes when there are issues reading from non-seekable inputs.
+  [bug introduced in coreutils-8.15]
+
+  tail -F now continues to process initially untailable files that are replaced
+  by a tailable file.  This was handled correctly when inotify was available,
+  and is now handled correctly in all cases.
+  [bug introduced in fileutils-4.0h]
+
+  tail -f - 'untailable file' will now terminate when there is no more data
+  to read from stdin.  Previously it behaved as if --retry was specified.
+  [This bug was present in "the beginning".]
+
+  tail -f 'remote file' will now avoid outputting repeated data on network
+  file systems that misreport file sizes through stale metadata.
+  [This bug was present in "the beginning" but exacerbated in coreutils-8.24]
+
+  tail -f --retry 'missing file' will now process truncations of that file.
+  Previously truncation was ignored thus not outputting new data in the file.
+  [bug introduced in coreutils-5.3.0]
+
+  tail -f will no longer continually try to open inaccessible files,
+  only doing so if --retry is specified.
+  [This bug was present in "the beginning".]
+
+  yes now handles short writes, rather than assuming all writes complete.
+  [bug introduced in coreutils-8.24]
+
+** Changes in behavior
+
+  rm no longer accepts shortened variants of the --no-preserve-root option.
+
+  seq no longer accepts 0 value as increment, and now also rejects NaN
+  values for any argument.
+
+  stat now outputs nanosecond information for time stamps even if
+  they are out of localtime range.
+
+  sort, tail, and uniq now support traditional usage like 'sort +2'
+  and 'tail +10' on systems conforming to POSIX 1003.1-2008 and later.
+  The 2008 edition of POSIX dropped the requirement that arguments
+  like '+2' must be treated as file names.
+
+** Improvements
+
+  df now filters the system mount list more efficiently, with 20000
+  mount entries now being processed in about 1.1s compared to 1.7s.
+
+  du, shuf, sort, and uniq no longer fail to process a specified file
+  when their stdin is closed, which would have happened with glibc >= 2.14.
+
+  install -Z now also sets the default SELinux context for created directories.
+
+  ls is now fully responsive to signals until the first escape sequence is
+  written to a terminal.
+
+  ls now aligns quoted items with non quoted items, which is easier to read,
+  and also better indicates that the quote is not part of the actual name.
+
+  stat and tail now know about these file systems:
+    "balloon-kvm-fs"    KVM dynamic RAM allocation support,
+    "cgroup2"           Linux Control Groups V2 support,
+    "daxfs"             Optical media file system,
+    "m1fs"              A Plexistor file system,
+    "prl_fs"            A parallels file system,
+    "smb2"              Samba for SMB protocol V2,
+    "wslfs"             Windows Subsystem for Linux,
+    "zsmalloc"          Linux compressed swap support,
+  stat -f --format=%T now reports the file system type, and
+  tail -f uses polling for "prl_fs" and "smb2", and inotify for others.
+
+  stat --format=%N for quoting file names now honors the
+  same QUOTING_STYLE environment variable values as ls.
+
+** New programs
+
+  b2sum is added to support the BLAKE2 digest algorithm with
+  a similar interface to the existing md5sum and sha1sum, etc. commands.
+
+** New Features
+
+  comm now accepts the --total option to output a summary at the end.
+
+  date now accepts the --debug option, to annotate the parsed date string,
+  display timezone information, and warn about potential misuse.
+
+  date now accepts the %q format to output the quarter of the year.
+
+
+* Noteworthy changes in release 8.25 (2016-01-20) [stable]
+
+** Bug fixes
+
+  cp now correctly copies files with a hole at the end of the file,
+  and extents allocated beyond the apparent size of the file.
+  That combination resulted in the trailing hole not being reproduced.
+  [bug introduced in coreutils-8.10]
+
+  cut --fields no longer outputs extraneous characters on some uClibc configs.
+  [bug introduced in coreutils-6.11]
+
+  install -D again copies relative file names when absolute file names
+  are also specified along with an absolute destination directory name.
+  [bug introduced in coreutils-6.2]
+
+  ls no longer prematurely wraps lines when printing short file names.
+  [bug introduced in coreutils-5.1.0]
+
+  mv no longer causes data loss due to removing a source directory specified
+  multiple times, when that directory is also specified as the destination.
+  [bug introduced in coreutils-8.24]
+
+  shred again uses defined patterns for all iteration counts.
+  [bug introduced in coreutils-5.93]
+
+  sort --debug -b now correctly marks the matching extents for keys
+  that specify an offset for the first field.
+  [bug introduced with the --debug feature in coreutils-8.6]
+
+  tail -F now works with initially non existent files on a remote file system.
+  [bug introduced in coreutils-7.5]
+
+** New commands
+
+  base32 is added to complement the existing base64 command,
+  and encodes and decodes printable text as per RFC 4648.
+
+** New features
+
+  comm,cut,head,numfmt,paste,tail now have the -z,--zero-terminated option, and
+  tac --separator accepts an empty argument, to work with NUL delimited items.
+
+  dd now summarizes sizes in --human-readable format too, not just --si.
+  E.g., "3441325000 bytes (3.4 GB, 3.2 GiB) copied".  It omits the summaries
+  if they would not provide useful information, e.g., "3 bytes copied".
+  Its status=progress output now uses the same format as ordinary status,
+  perhaps with trailing spaces to erase previous progress output.
+
+  md5sum now supports the --ignore-missing option to allow
+  verifying a subset of files given a larger list of checksums.
+  This also affects sha1sum, sha224sum, sha256sum, sha384sum and sha512sum.
+
+  printf now supports the '%q' format to print arguments in a form that
+  is reusable by most shells, with non-printable characters escaped
+  with the POSIX proposed $'...' syntax.
+
+  stty now supports the "[-]drain" setting to control whether to wait
+  for transmission of pending output before application of settings.
+
+** Changes in behavior
+
+  base64 no longer supports hex or oct --wrap parameters,
+  thus better supporting decimals with leading zeros.
+
+  date --iso-8601 now uses +00:00 timezone format rather than +0000.
+  The standard states to use this "extended" format throughout a timestamp.
+
+  df now prefers sources towards the root of a device when
+  eliding duplicate bind mounted entries.
+
+  ls now quotes file names unambiguously and appropriate for use in a shell,
+  when outputting to a terminal.
+
+  join, sort, uniq with --zero-terminated, now treat '\n' as a field delimiter.
+
+** Improvements
+
+  All utilities now quote user supplied arguments in error strings,
+  which avoids confusing error messages in the presence of '\r' chars etc.
+
+  Utilities that traverse directories, like chmod, cp, and rm etc., will operate
+  more efficiently on XFS through the use of "leaf optimization".
+
+  md5sum now ensures a single line per file for status on standard output,
+  by using a '\' at the start of the line, and replacing any newlines with '\n'.
+  This also affects sha1sum, sha224sum, sha256sum, sha384sum and sha512sum.
+
+  dircolors now supports globbing of TERM entries in its database.
+  For example "TERM *256color*" is now supported.
+
+  du no longer stats all mount points at startup, only doing so
+  upon detection of a directory cycle.
+  [issue introduced in coreutils-8.20]
+
+  ls -w0 is now interpreted as no limit on the length of the outputted line.
+
+  stat -f --format=%T now reports the file system type for new Linux
+  pseudo file systems "bpf_fs", "btrfs_test", "nsfs", "overlayfs"
+  and "tracefs", and remote file system "acfs".
+
+  wc now ensures a single line per file for counts on standard output,
+  by quoting names containing '\n' characters; appropriate for use in a shell.
+
+
+* Noteworthy changes in release 8.24 (2015-07-03) [stable]
+
+** Bug fixes
+
+  dd supports more robust SIGINFO/SIGUSR1 handling for outputting statistics.
+  Previously those signals may have inadvertently terminated the process.
+
+  df --local no longer hangs with inaccessible remote mounts.
+  [bug introduced in coreutils-8.21]
+
+  du now silently ignores all directory cycles due to bind mounts.
+  Previously it would issue a warning and exit with a failure status.
+  [bug introduced in coreutils-8.1 and partially fixed in coreutils-8.23]
+
+  chroot again calls chroot(DIR) and chdir("/"), even if DIR is "/".
+  This handles separate bind mounted "/" trees, and environments
+  depending on the implicit chdir("/").
+  [bugs introduced in coreutils-8.23]
+
+  cp no longer issues an incorrect warning about directory hardlinks when a
+  source directory is specified multiple times.  Now, consistent with other
+  file types, a warning is issued for source directories with duplicate names,
+  or with -H the directory is copied again using the symlink name.
+
+  factor avoids writing partial lines, thus supporting parallel operation.
+  [the bug dates back to the initial implementation]
+
+  head, od, split, tac, tail, and wc no longer mishandle input from files in
+  /proc and /sys file systems that report somewhat-incorrect file sizes.
+
+  mkdir --parents -Z now correctly sets the context for the last component,
+  even if the parent directory exists and has a different default context.
+  [bug introduced with the -Z restorecon functionality in coreutils-8.22]
+
+  numfmt no longer outputs incorrect overflowed values seen with certain
+  large numbers, or with numbers with increased precision.
+  [bug introduced when numfmt was added in coreutils-8.21]
+
+  numfmt now handles leading zeros correctly, not counting them when
+  settings processing limits, and making them optional with floating point.
+  [bug introduced when numfmt was added in coreutils-8.21]
+
+  paste no longer truncates output for large input files.  This would happen
+  for example with files larger than 4GiB on 32 bit systems with a '\n'
+  character at the 4GiB position.
+  [the bug dates back to the initial implementation]
+
+  rm indicates the correct number of arguments in its confirmation prompt,
+  on all platforms.  [bug introduced in coreutils-8.22]
+
+  shuf -i with a single redundant operand, would crash instead of issuing
+  a diagnostic.  [bug introduced in coreutils-8.22]
+
+  tail releases inotify resources when unused.  Previously it could exhaust
+  resources with many files, or with -F if files were replaced many times.
+  [bug introduced in coreutils-7.5]
+
+  tail -f again follows changes to a file after it's renamed.
+  [bug introduced in coreutils-7.5]
+
+  tail --follow no longer misses changes to files if those files were
+  replaced before inotify watches were created.
+  [bug introduced in coreutils-7.5]
+
+  tail --follow consistently outputs all data for a truncated file.
+  [bug introduced in the beginning]
+
+  tail --follow=name correctly outputs headers for multiple files
+  when those files are being created or renamed.
+  [bug introduced in coreutils-7.5]
+
+** New features
+
+  chroot accepts the new --skip-chdir option to not change the working directory
+  to "/" after changing into the chroot(2) jail, thus retaining the current wor-
+  king directory.  The new option is only permitted if the new root directory is
+  the old "/", and therefore is useful with the --group and --userspec options.
+
+  dd accepts a new status=progress level to print data transfer statistics
+  on stderr approximately every second.
+
+  numfmt can now process multiple fields with field range specifications similar
+  to cut, and supports setting the output precision with the --format option.
+
+  split accepts a new --separator option to select a record separator character
+  other than the default newline character.
+
+  stty allows setting the "extproc" option where supported, which is
+  a useful setting with high latency links.
+
+  sync no longer ignores arguments, and syncs each specified file, or with the
+  --file-system option, the file systems associated with each specified file.
+
+  tee accepts a new --output-error option to control operation with pipes
+  and output errors in general.
+
+** Changes in behavior
+
+  df no longer suppresses separate exports of the same remote device, as
+  these are generally explicitly mounted.  The --total option does still
+  suppress duplicate remote file systems.
+  [suppression was introduced in coreutils-8.21]
+
+  mv no longer supports moving a file to a hardlink, instead issuing an error.
+  The implementation was susceptible to races in the presence of multiple mv
+  instances, which could result in both hardlinks being deleted.  Also on case
+  insensitive file systems like HFS, mv would just remove a hardlinked 'file'
+  if called like `mv file File`.  The feature was added in coreutils-5.0.1.
+
+  numfmt --from-unit and --to-unit options now interpret suffixes as SI units,
+  and IEC (power of 2) units are now specified by appending 'i'.
+
+  tee will exit early if there are no more writable outputs.
+
+  tee does not treat the file operand '-' as meaning standard output any longer,
+  for better conformance to POSIX.  This feature was added in coreutils-5.3.0.
+
+  timeout --foreground no longer sends SIGCONT to the monitored process,
+  which was seen to cause intermittent issues with GDB for example.
+
+** Improvements
+
+  cp,install,mv will convert smaller runs of NULs in the input to holes,
+  and cp --sparse=always avoids speculative preallocation on XFS for example.
+
+  cp will read sparse files more efficiently when the destination is a
+  non regular file.  For example when copying a disk image to a device node.
+
+  mv will try a reflink before falling back to a standard copy, which is
+  more efficient when moving files across BTRFS subvolume boundaries.
+
+  stat and tail now know about IBRIX.  stat -f --format=%T now reports the file
+  system type, and tail -f uses polling for files on IBRIX file systems.
+
+  wc -l processes short lines much more efficiently.
+
+  References from --help and the man pages of utilities have been corrected
+  in various cases, and more direct links to the corresponding online
+  documentation are provided.
+
+
 * Noteworthy changes in release 8.23 (2014-07-18) [stable]
 
 ** Bug fixes
@@ -9,7 +401,7 @@ GNU coreutils NEWS                                    -*- outline -*-
 
   cp -a, mv, and install --preserve-context, once again set the correct SELinux
   context for existing directories in the destination.  Previously they set
-  the context of an existing directory to that of its last copied descendent.
+  the context of an existing directory to that of its last copied descendant.
   [bug introduced in coreutils-8.22]
 
   cp -a, mv, and install --preserve-context, no longer seg fault when running
@@ -334,7 +726,7 @@ GNU coreutils NEWS                                    -*- outline -*-
   du recognizes -t SIZE as equivalent, for compatibility with FreeBSD.
 
   timeout now accepts the --preserve-status option to always propagate the exit
-  status, useful for commands that can run for an indeterminite amount of time.
+  status, useful for commands that can run for an indeterminate amount of time.
 
 ** Bug fixes
 
@@ -841,7 +1233,7 @@ GNU coreutils NEWS                                    -*- outline -*-
 ** Bug fixes
 
   chown and chgrp with the -v --from= options, now output the correct owner.
-  I.E. for skipped files, the original ownership is output, not the new one.
+  I.e., for skipped files, the original ownership is output, not the new one.
   [bug introduced in sh-utils-2.0g]
 
   cp -r could mistakenly change the permissions of an existing destination
@@ -2364,7 +2756,7 @@ GNU coreutils NEWS                                    -*- outline -*-
   the DF_BLOCK_SIZE, BLOCK_SIZE, and BLOCKSIZE environment variables.  It
   is still affected by POSIXLY_CORRECT, though.
 
-  Using pr -m -s (i.e. merging files, with TAB as the output separator)
+  Using pr -m -s (i.e., merging files, with TAB as the output separator)
   no longer inserts extraneous spaces between output columns.
 
 * Noteworthy changes in release 6.8 (2007-02-24) [not-unstable]
@@ -4217,7 +4609,7 @@ packages, see ./old/*/NEWS.
 
 ========================================================================
 
-Copyright (C) 2001-2014 Free Software Foundation, Inc.
+Copyright (C) 2001-2016 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or

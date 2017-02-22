@@ -1,5 +1,5 @@
 /* Permuted index for GNU, with keywords in their context.
-   Copyright (C) 1990-2014 Free Software Foundation, Inc.
+   Copyright (C) 1990-2016 Free Software Foundation, Inc.
    François Pinard <pinard@iro.umontreal.ca>, 1988.
 
    This program is free software: you can redistribute it and/or modify
@@ -22,13 +22,13 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include "system.h"
+#include "die.h"
 #include <regex.h>
 #include "argmatch.h"
 #include "diacrit.h"
 #include "error.h"
 #include "fadvise.h"
 #include "quote.h"
-#include "quotearg.h"
 #include "read-file.h"
 #include "stdio--.h"
 #include "xstrtol.h"
@@ -55,7 +55,7 @@
 # define MALLOC_FUNC_CHECK 1
 # include <dmalloc.h>
 #endif
-
+
 /* Global definitions.  */
 
 /* FIXME: There are many unchecked integer overflows in this file,
@@ -273,7 +273,7 @@ static BLOCK head;		/* head field */
 static int head_truncation;	/* flag truncation before the head field */
 
 static BLOCK reference;		/* reference field for input reference mode */
-
+
 /* Miscellaneous routines.  */
 
 /* Diagnose an error in the regular expression matcher.  Then exit.  */
@@ -281,8 +281,7 @@ static BLOCK reference;		/* reference field for input reference mode */
 static void ATTRIBUTE_NORETURN
 matcher_error (void)
 {
-  error (0, errno, _("error in regular expression matcher"));
-  exit (EXIT_FAILURE);
+  die (EXIT_FAILURE, errno, _("error in regular expression matcher"));
 }
 
 /*------------------------------------------------------.
@@ -417,7 +416,7 @@ compile_regex (struct regex_data *regex)
 
   message = re_compile_pattern (string, strlen (string), pattern);
   if (message)
-    error (EXIT_FAILURE, 0, _("%s (for regexp %s)"), message, quote (string));
+    die (EXIT_FAILURE, 0, _("%s (for regexp %s)"), message, quote (string));
 
   /* The fastmap should be compiled before 're_match'.  The following
      call is not mandatory, because 're_search' is always called sooner,
@@ -521,11 +520,11 @@ swallow_file_in_memory (const char *file_name, BLOCK *block)
     block->start = read_file (file_name, &used_length);
 
   if (!block->start)
-    error (EXIT_FAILURE, errno, "%s", quote (using_stdin ? "-" : file_name));
+    die (EXIT_FAILURE, errno, "%s", quotef (using_stdin ? "-" : file_name));
 
   block->end = block->start + used_length;
 }
-
+
 /* Sort and search routines.  */
 
 /*--------------------------------------------------------------------------.
@@ -631,11 +630,11 @@ sort_found_occurs (void)
 {
 
   /* Only one language for the time being.  */
-
-  qsort (occurs_table[0], number_of_occurs[0], sizeof **occurs_table,
-         compare_occurs);
+  if (number_of_occurs[0])
+    qsort (occurs_table[0], number_of_occurs[0], sizeof **occurs_table,
+           compare_occurs);
 }
-
+
 /* Parameter files reading routines.  */
 
 /*----------------------------------------------------------------------.
@@ -737,7 +736,7 @@ digest_word_file (const char *file_name, WORD_TABLE *table)
 
   qsort (table->start, table->length, sizeof table->start[0], compare_words);
 }
-
+
 /* Keyword recognition and selection.  */
 
 /*----------------------------------------------------------------------.
@@ -1016,7 +1015,7 @@ find_occurs_in_text (size_t file_index)
         }
     }
 }
-
+
 /* Formatting and actual output - service routines.  */
 
 /*-----------------------------------------.
@@ -1190,7 +1189,7 @@ print_field (BLOCK field)
         putchar (*cursor);
     }
 }
-
+
 /* Formatting and actual output - planning routines.  */
 
 /*--------------------------------------------------------------------.
@@ -1201,7 +1200,7 @@ print_field (BLOCK field)
 static void
 fix_output_parameters (void)
 {
-  int file_index;		/* index in text input file arrays */
+  size_t file_index;		/* index in text input file arrays */
   int line_ordinal;		/* line ordinal value for reference */
   char ordinal_string[12];	/* edited line ordinal for reference */
   int reference_width;		/* width for the whole reference */
@@ -1236,6 +1235,8 @@ fix_output_parameters (void)
 
   if ((auto_reference || input_reference) && !right_reference)
     line_width -= reference_max_width + gap_size;
+  if (line_width < 0)
+    line_width = 0;
 
   /* The output lines, minimally, will contain from left to right a left
      context, a gap, and a keyword followed by the right context with no
@@ -1553,7 +1554,7 @@ define_all_fields (OCCURS *occurs)
       SKIP_NON_WHITE (reference.end, right_context_end);
     }
 }
-
+
 /* Formatting and actual output - control routines.  */
 
 /*----------------------------------------------------------------------.
@@ -1803,7 +1804,7 @@ generate_all_output (void)
       occurs_cursor++;
     }
 }
-
+
 /* Option decoding and main program.  */
 
 /*------------------------------------------------------.
@@ -1825,12 +1826,16 @@ Usage: %s [OPTION]... [INPUT]...   (without -G)\n\
 Output a permuted index, including context, of the words in the input files.\n\
 "), stdout);
 
+      emit_stdin_note ();
       emit_mandatory_arg_note ();
 
       fputs (_("\
   -A, --auto-reference           output automatically generated references\n\
   -G, --traditional              behave more like System V 'ptx'\n\
-  -F, --flag-truncation=STRING   use STRING for flagging line truncations\n\
+"), stdout);
+      fputs (_("\
+  -F, --flag-truncation=STRING   use STRING for flagging line truncations.\n\
+                                 The default is '/'\n\
 "), stdout);
       fputs (_("\
   -M, --macro-name=STRING        macro name to use instead of 'xx'\n\
@@ -1854,11 +1859,7 @@ Output a permuted index, including context, of the words in the input files.\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
-      fputs (_("\
-\n\
-With no FILE, or when FILE is -, read standard input.  Default is '-F /'.\n\
-"), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -1948,8 +1949,8 @@ main (int argc, char **argv)
             unsigned long int tmp_ulong;
             if (xstrtoul (optarg, NULL, 0, &tmp_ulong, NULL) != LONGINT_OK
                 || ! (0 < tmp_ulong && tmp_ulong <= INT_MAX))
-              error (EXIT_FAILURE, 0, _("invalid gap width: %s"),
-                     quotearg (optarg));
+              die (EXIT_FAILURE, 0, _("invalid gap width: %s"),
+                   quote (optarg));
             gap_size = tmp_ulong;
             break;
           }
@@ -1975,8 +1976,8 @@ main (int argc, char **argv)
             unsigned long int tmp_ulong;
             if (xstrtoul (optarg, NULL, 0, &tmp_ulong, NULL) != LONGINT_OK
                 || ! (0 < tmp_ulong && tmp_ulong <= INT_MAX))
-              error (EXIT_FAILURE, 0, _("invalid line width: %s"),
-                     quotearg (optarg));
+              die (EXIT_FAILURE, 0, _("invalid line width: %s"),
+                   quote (optarg));
             line_width = tmp_ulong;
             break;
           }
@@ -2077,7 +2078,7 @@ main (int argc, char **argv)
       if (optind < argc)
         {
           if (! freopen (argv[optind], "w", stdout))
-            error (EXIT_FAILURE, errno, "%s", argv[optind]);
+            die (EXIT_FAILURE, errno, "%s", quotef (argv[optind]));
           optind++;
         }
 
@@ -2155,5 +2156,5 @@ main (int argc, char **argv)
 
   /* All done.  */
 
-  exit (EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }

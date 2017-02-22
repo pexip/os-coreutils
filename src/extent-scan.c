@@ -1,5 +1,5 @@
 /* extent-scan.c -- core functions for scanning extents
-   Copyright (C) 2010-2014 Free Software Foundation, Inc.
+   Copyright (C) 2010-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -139,6 +139,8 @@ extent_scan_read (struct extent_scan *scan)
         {
           assert (fm_extents[i].fe_logical
                   <= OFF_T_MAX - fm_extents[i].fe_length);
+
+          verify (sizeof last_ei->ext_flags >= sizeof fm_extents->fe_flags);
 
           if (si && last_ei->ext_flags
               == (fm_extents[i].fe_flags & ~FIEMAP_EXTENT_LAST)

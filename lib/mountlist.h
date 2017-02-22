@@ -1,6 +1,6 @@
 /* mountlist.h -- declarations for list of mounted file systems
 
-   Copyright (C) 1991-1992, 1998, 2000-2005, 2009-2014 Free Software
+   Copyright (C) 1991-1992, 1998, 2000-2005, 2009-2016 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -27,6 +27,8 @@ struct mount_entry
 {
   char *me_devname;             /* Device node name, including "/dev/". */
   char *me_mountdir;            /* Mount point directory name. */
+  char *me_mntroot;             /* Directory on filesystem of device used */
+                                /* as root for the (bind) mount. */
   char *me_type;                /* "nfs", "4.2", etc. */
   dev_t me_dev;                 /* Device number of me_mountdir. */
   unsigned int me_dummy : 1;    /* Nonzero for dummy file systems. */
