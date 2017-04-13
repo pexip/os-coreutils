@@ -1,6 +1,10 @@
 coreutils (8.23-4pexip1) pexip; urgency=low
 
   * Migrate to Jessie
+  * Retain the following changes from Ubuntu:
+    - debian/patches/80_fedora_sysinfo.dpatch
+      + Make 'uname -i -p' return the real processor/hardware,
+        instead of unknown.
 
  -- John-Mark Bell <jmb@pexip.com>  Tue, 21 Feb 2017 12:52:48 +0000
 
