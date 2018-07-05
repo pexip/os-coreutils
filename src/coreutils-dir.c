@@ -1,5 +1,5 @@
 /* dir -- wrapper to ls with the right ls_mode.
-   Copyright (C) 2014 Free Software Foundation, Inc.
+   Copyright (C) 2014-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,11 +22,12 @@
 #include "ls.h"
 /* Ensure that the main for ls is declared even if the tool is not being built
    in this single-binary. */
-int _single_binary_main_ls (int argc, char** argv) ATTRIBUTE_NORETURN;
-int _single_binary_main_dir (int argc, char** argv) ATTRIBUTE_NORETURN;
+int single_binary_main_ls (int argc, char **argv);
+int single_binary_main_dir (int argc, char **argv);
 
-int _single_binary_main_dir (int argc, char** argv)
+int
+single_binary_main_dir (int argc, char **argv)
 {
   ls_mode = LS_MULTI_COL;
-  _single_binary_main_ls (argc, argv);
+  return single_binary_main_ls (argc, argv);
 }

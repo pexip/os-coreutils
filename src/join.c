@@ -1,5 +1,5 @@
 /* join - join lines of two files on a common field
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
+   Copyright (C) 1991-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <getopt.h>
 
 #include "system.h"
+#include "die.h"
 #include "error.h"
 #include "fadvise.h"
 #include "hard-locale.h"
@@ -194,8 +195,14 @@ Usage: %s [OPTION]... FILE1 FILE2\n\
               program_name);
       fputs (_("\
 For each pair of input lines with identical join fields, write a line to\n\
-standard output.  The default join field is the first, delimited\n\
-by whitespace.  When FILE1 or FILE2 (not both) is -, read standard input.\n\
+standard output.  The default join field is the first, delimited by blanks.\
+\n\
+"), stdout);
+      fputs (_("\
+\n\
+When FILE1 or FILE2 (not both) is -, read standard input.\n\
+"), stdout);
+      fputs (_("\
 \n\
   -a FILENUM        also print unpairable lines from file FILENUM, where\n\
                       FILENUM is 1 or 2, corresponding to FILE1 or FILE2\n\
@@ -239,7 +246,7 @@ Note, comparisons honor the rules specified by 'LC_COLLATE'.\n\
 If the input is not sorted and some lines cannot be joined, a\n\
 warning message will be given.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -278,19 +285,19 @@ xfields (struct line *line)
   else if (tab < 0)
     {
       /* Skip leading blanks before the first field.  */
-      while (isblank (to_uchar (*ptr)))
+      while (field_sep (*ptr))
         if (++ptr == lim)
           return;
 
       do
         {
           char *sep;
-          for (sep = ptr + 1; sep != lim && ! isblank (to_uchar (*sep)); sep++)
+          for (sep = ptr + 1; sep != lim && ! field_sep (*sep); sep++)
             continue;
           extract_field (line, ptr, sep - ptr);
           if (sep == lim)
             return;
-          for (ptr = sep + 1; ptr != lim && isblank (to_uchar (*ptr)); ptr++)
+          for (ptr = sep + 1; ptr != lim && field_sep (*ptr); ptr++)
             continue;
         }
       while (ptr != lim);
@@ -455,7 +462,7 @@ get_line (FILE *fp, struct line **linep, int which)
   if (! readlinebuffer_delim (&line->buf, fp, eolchar))
     {
       if (ferror (fp))
-        error (EXIT_FAILURE, errno, _("read error"));
+        die (EXIT_FAILURE, errno, _("read error"));
       freeline (line);
       return false;
     }
@@ -844,7 +851,7 @@ string_to_join_field (char const *str)
   if (s_err == LONGINT_OVERFLOW || (s_err == LONGINT_OK && SIZE_MAX < val))
     val = SIZE_MAX;
   else if (s_err != LONGINT_OK || val == 0)
-    error (EXIT_FAILURE, 0, _("invalid field number: %s"), quote (str));
+    die (EXIT_FAILURE, 0, _("invalid field number: %s"), quote (str));
 
   result = val - 1;
 
@@ -865,7 +872,7 @@ decode_field_spec (const char *s, int *file_index, size_t *field_index)
       if (s[1])
         {
           /* '0' must be all alone -- no '.FIELD'.  */
-          error (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
+          die (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
         }
       *file_index = 0;
       *field_index = 0;
@@ -874,14 +881,14 @@ decode_field_spec (const char *s, int *file_index, size_t *field_index)
     case '1':
     case '2':
       if (s[1] != '.')
-        error (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
+        die (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
       *file_index = s[0] - '0';
       *field_index = string_to_join_field (s + 2);
       break;
 
     default:
-      error (EXIT_FAILURE, 0,
-             _("invalid file number in field spec: %s"), quote (s));
+      die (EXIT_FAILURE, 0,
+           _("invalid file number in field spec: %s"), quote (s));
 
       /* Tell gcc -W -Wall that we can't get beyond this point.
          This avoids a warning (otherwise legit) that the caller's copies
@@ -924,8 +931,8 @@ set_join_field (size_t *var, size_t val)
     {
       unsigned long int var1 = *var + 1;
       unsigned long int val1 = val + 1;
-      error (EXIT_FAILURE, 0, _("incompatible join fields %lu, %lu"),
-             var1, val1);
+      die (EXIT_FAILURE, 0,
+           _("incompatible join fields %lu, %lu"), var1, val1);
     }
   *var = val;
 }
@@ -965,7 +972,7 @@ add_file_name (char *name, char *names[2],
       switch (operand_status[op0])
         {
         case MUST_BE_OPERAND:
-          error (0, 0, _("extra operand %s"), quote (name));
+          error (0, 0, _("extra operand %s"), quoteaf (name));
           usage (EXIT_FAILURE);
 
         case MIGHT_BE_J1_ARG:
@@ -1041,8 +1048,8 @@ main (int argc, char **argv)
             unsigned long int val;
             if (xstrtoul (optarg, NULL, 10, &val, "") != LONGINT_OK
                 || (val != 1 && val != 2))
-              error (EXIT_FAILURE, 0,
-                     _("invalid field number: %s"), quote (optarg));
+              die (EXIT_FAILURE, 0,
+                   _("invalid field number: %s"), quote (optarg));
             if (val == 1)
               print_unpairables_1 = true;
             else
@@ -1052,8 +1059,8 @@ main (int argc, char **argv)
 
         case 'e':
           if (empty_filler && ! STREQ (empty_filler, optarg))
-            error (EXIT_FAILURE, 0,
-                   _("conflicting empty-field replacement strings"));
+            die (EXIT_FAILURE, 0,
+                 _("conflicting empty-field replacement strings"));
           empty_filler = optarg;
           break;
 
@@ -1105,11 +1112,11 @@ main (int argc, char **argv)
                 if (STREQ (optarg, "\\0"))
                   newtab = '\0';
                 else
-                  error (EXIT_FAILURE, 0, _("multi-character tab %s"),
-                         quote (optarg));
+                  die (EXIT_FAILURE, 0, _("multi-character tab %s"),
+                       quote (optarg));
               }
             if (0 <= tab && tab != newtab)
-              error (EXIT_FAILURE, 0, _("incompatible tabs"));
+              die (EXIT_FAILURE, 0, _("incompatible tabs"));
             tab = newtab;
           }
           break;
@@ -1177,21 +1184,21 @@ main (int argc, char **argv)
 
   fp1 = STREQ (g_names[0], "-") ? stdin : fopen (g_names[0], "r");
   if (!fp1)
-    error (EXIT_FAILURE, errno, "%s", g_names[0]);
+    die (EXIT_FAILURE, errno, "%s", quotef (g_names[0]));
   fp2 = STREQ (g_names[1], "-") ? stdin : fopen (g_names[1], "r");
   if (!fp2)
-    error (EXIT_FAILURE, errno, "%s", g_names[1]);
+    die (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
   if (fp1 == fp2)
-    error (EXIT_FAILURE, errno, _("both files cannot be standard input"));
+    die (EXIT_FAILURE, errno, _("both files cannot be standard input"));
   join (fp1, fp2);
 
   if (fclose (fp1) != 0)
-    error (EXIT_FAILURE, errno, "%s", g_names[0]);
+    die (EXIT_FAILURE, errno, "%s", quotef (g_names[0]));
   if (fclose (fp2) != 0)
-    error (EXIT_FAILURE, errno, "%s", g_names[1]);
+    die (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
 
   if (issued_disorder_warning[0] || issued_disorder_warning[1])
-    exit (EXIT_FAILURE);
+    return EXIT_FAILURE;
   else
-    exit (EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }

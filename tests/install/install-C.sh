@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure "install -C" works. (basic tests)
 
-# Copyright (C) 2008-2014 Free Software Foundation, Inc.
+# Copyright (C) 2008-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -107,9 +107,9 @@ ginstall -Cv -m$mode2 a b > out || fail=1
 compare out out_empty || fail=1
 
 # options -C and --preserve-timestamps are mutually exclusive
-ginstall -C --preserve-timestamps a b && fail=1
+returns_ 1 ginstall -C --preserve-timestamps a b || fail=1
 
 # options -C and --strip are mutually exclusive
-ginstall -C --strip --strip-program=echo a b && fail=1
+returns_ 1 ginstall -C --strip --strip-program=echo a b || fail=1
 
 Exit $fail

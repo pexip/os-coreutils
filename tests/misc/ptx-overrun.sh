@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2008-2014 Free Software Foundation, Inc.
+# Copyright (C) 2008-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,5 +40,10 @@ printf '%s\n' 'This is a ptx whitespace Trimming test' > ws.in
 ptx ws.in ws.in | sort | uniq -u > out
 compare /dev/null out || fail=1
 
+
+# Trigger an invalid heap reference noticed by gcc -fsanitize=address
+# from coreutils-8.25 and earlier.
+echo a > a
+ptx -w1 -A "$PWD/a" >/dev/null || fail=1
 
 Exit $fail

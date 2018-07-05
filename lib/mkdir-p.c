@@ -1,6 +1,6 @@
 /* mkdir-p.c -- Ensure that a directory and its parents exist.
 
-   Copyright (C) 1990, 1997-2000, 2002-2007, 2009-2014 Free Software
+   Copyright (C) 1990, 1997-2000, 2002-2007, 2009-2016 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -136,9 +136,7 @@ make_dir_parents (char *dir,
               announce (dir, options);
               preserve_existing = (keep_owner & keep_special_mode_bits
                                    & umask_must_be_ok);
-              savewd_chdir_options |=
-                (SAVEWD_CHDIR_NOFOLLOW
-                 | (mode & S_IRUSR ? SAVEWD_CHDIR_READABLE : 0));
+              savewd_chdir_options |= SAVEWD_CHDIR_NOFOLLOW;
             }
           else
             {

@@ -1,6 +1,6 @@
 ## DO NOT EDIT! GENERATED AUTOMATICALLY!
 ## Process this file with automake to produce Makefile.in.
-# Copyright (C) 2002-2014 Free Software Foundation, Inc.
+# Copyright (C) 2002-2016 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -79,16 +79,14 @@ EXTRA_DIST += test-accept.c signature.h macros.h
 ## begin gnulib module acl-tests
 
 TESTS += \
-  test-file-has-acl.sh test-file-has-acl-1.sh test-file-has-acl-2.sh \
   test-set-mode-acl.sh test-set-mode-acl-1.sh test-set-mode-acl-2.sh \
   test-copy-acl.sh test-copy-acl-1.sh test-copy-acl-2.sh
 TESTS_ENVIRONMENT += USE_ACL=$(USE_ACL)
-check_PROGRAMS += test-file-has-acl test-set-mode-acl test-copy-acl test-sameacls
-test_file_has_acl_LDADD = $(LDADD) $(LIB_ACL)
+check_PROGRAMS += test-set-mode-acl test-copy-acl test-sameacls
 test_set_mode_acl_LDADD = $(LDADD) $(LIB_ACL) @LIBINTL@
 test_copy_acl_LDADD = $(LDADD) $(LIB_ACL) @LIBINTL@
 test_sameacls_LDADD = $(LDADD) $(LIB_ACL) @LIBINTL@
-EXTRA_DIST += test-file-has-acl.sh test-file-has-acl-1.sh test-file-has-acl-2.sh test-set-mode-acl.sh test-set-mode-acl-1.sh test-set-mode-acl-2.sh test-copy-acl.sh test-copy-acl-1.sh test-copy-acl-2.sh test-file-has-acl.c test-set-mode-acl.c test-copy-acl.c test-sameacls.c macros.h
+EXTRA_DIST += test-set-mode-acl.sh test-set-mode-acl-1.sh test-set-mode-acl-2.sh test-copy-acl.sh test-copy-acl-1.sh test-copy-acl-2.sh test-set-mode-acl.c test-copy-acl.c test-sameacls.c macros.h
 
 ## end   gnulib module acl-tests
 
@@ -161,6 +159,14 @@ EXTRA_DIST += test-arpa_inet.c
 
 ## end   gnulib module arpa_inet-tests
 
+## begin gnulib module base32-tests
+
+TESTS += test-base32
+check_PROGRAMS += test-base32
+EXTRA_DIST += test-base32.c macros.h
+
+## end   gnulib module base32-tests
+
 ## begin gnulib module base64-tests
 
 TESTS += test-base64
@@ -224,7 +230,6 @@ EXTRA_DIST += test-btowc1.sh test-btowc2.sh test-btowc.c signature.h macros.h
 
 TESTS += test-c-ctype
 check_PROGRAMS += test-c-ctype
-
 EXTRA_DIST += test-c-ctype.c macros.h
 
 ## end   gnulib module c-ctype-tests
@@ -557,6 +562,17 @@ check_PROGRAMS += test-fgetc
 EXTRA_DIST += test-fgetc.c signature.h macros.h
 
 ## end   gnulib module fgetc-tests
+
+## begin gnulib module file-has-acl-tests
+
+TESTS += \
+  test-file-has-acl.sh test-file-has-acl-1.sh test-file-has-acl-2.sh
+TESTS_ENVIRONMENT += USE_ACL=$(USE_ACL)
+check_PROGRAMS += test-file-has-acl
+test_file_has_acl_LDADD = $(LDADD) $(LIB_HAS_ACL)
+EXTRA_DIST += test-file-has-acl.sh test-file-has-acl-1.sh test-file-has-acl-2.sh test-file-has-acl.c macros.h
+
+## end   gnulib module file-has-acl-tests
 
 ## begin gnulib module filenamecat-tests
 
@@ -908,22 +924,15 @@ EXTRA_DIST += macros.h signature.h test-getopt.c test-getopt.h test-getopt_long.
 
 ## end   gnulib module getopt-posix-tests
 
-## begin gnulib module gettext
+## begin gnulib module getprogname-tests
 
-# If your project uses "gettextize --intl" to put a source-code
-# copy of libintl into the package, every Makefile.am needs
-# -I$(top_builddir)/intl, so that <libintl.h> can be found in this directory.
-# Here's one way to do this:
-#AM_CPPFLAGS += -I$(top_builddir)/intl
-# This option has no effect when the user disables NLS (because then
-# the intl directory contains no libintl.h file).  This option is not
-# enabled by default because the intl directory might not exist if
-# your project does not use "gettext --intl", and some compilers
-# complain about -I options applied to nonexistent directories.
+DEFS += -DEXEEXT=\"@EXEEXT@\"
+TESTS += test-getprogname
+check_PROGRAMS += test-getprogname
+test_getprogname_LDADD = $(LDADD)
+EXTRA_DIST += test-getprogname.c
 
-EXTRA_DIST += $(top_srcdir)/build-aux/config.rpath
-
-## end   gnulib module gettext
+## end   gnulib module getprogname-tests
 
 ## begin gnulib module gettimeofday-tests
 
@@ -1120,6 +1129,14 @@ EXTRA_DIST += nap.h test-lchown.h test-lchown.c signature.h macros.h
 
 ## end   gnulib module lchown-tests
 
+## begin gnulib module limits-h-tests
+
+TESTS += test-limits-h
+check_PROGRAMS += test-limits-h
+EXTRA_DIST += test-limits-h.c
+
+## end   gnulib module limits-h-tests
+
 ## begin gnulib module link-tests
 
 TESTS += test-link
@@ -1244,6 +1261,7 @@ EXTRA_DIST += test-math.c macros.h
 
 TESTS += \
   test-mbrtowc1.sh test-mbrtowc2.sh test-mbrtowc3.sh test-mbrtowc4.sh \
+  test-mbrtowc5.sh \
   test-mbrtowc-w32-1.sh test-mbrtowc-w32-2.sh test-mbrtowc-w32-3.sh \
   test-mbrtowc-w32-4.sh test-mbrtowc-w32-5.sh
 TESTS_ENVIRONMENT += \
@@ -1252,8 +1270,7 @@ TESTS_ENVIRONMENT += \
   LOCALE_JA='@LOCALE_JA@' \
   LOCALE_ZH_CN='@LOCALE_ZH_CN@'
 check_PROGRAMS += test-mbrtowc test-mbrtowc-w32
-
-EXTRA_DIST += test-mbrtowc1.sh test-mbrtowc2.sh test-mbrtowc3.sh test-mbrtowc4.sh test-mbrtowc.c test-mbrtowc-w32-1.sh test-mbrtowc-w32-2.sh test-mbrtowc-w32-3.sh test-mbrtowc-w32-4.sh test-mbrtowc-w32-5.sh test-mbrtowc-w32.c signature.h macros.h
+EXTRA_DIST += test-mbrtowc1.sh test-mbrtowc2.sh test-mbrtowc3.sh test-mbrtowc4.sh test-mbrtowc5.sh test-mbrtowc.c test-mbrtowc-w32-1.sh test-mbrtowc-w32-2.sh test-mbrtowc-w32-3.sh test-mbrtowc-w32-4.sh test-mbrtowc-w32-5.sh test-mbrtowc-w32.c signature.h macros.h
 
 ## end   gnulib module mbrtowc-tests
 
@@ -2204,6 +2221,26 @@ EXTRA_DIST += test-time.c
 
 ## end   gnulib module time-tests
 
+## begin gnulib module timespec-add
+
+libtests_a_SOURCES += timespec-add.c
+
+## end   gnulib module timespec-add
+
+## begin gnulib module timespec-sub
+
+libtests_a_SOURCES += timespec-sub.c
+
+## end   gnulib module timespec-sub
+
+## begin gnulib module timespec-tests
+
+TESTS += test-timespec
+check_PROGRAMS += test-timespec
+EXTRA_DIST += test-timespec.c macros.h
+
+## end   gnulib module timespec-tests
+
 ## begin gnulib module tls-tests
 
 TESTS += test-tls
@@ -2388,6 +2425,11 @@ EXTRA_DIST += test-vc-list-files-git.sh test-vc-list-files-cvs.sh
 TESTS_ENVIRONMENT += MAKE='$(MAKE)'
 TESTS += test-verify test-verify.sh
 check_PROGRAMS += test-verify
+
+# This test expects compilation of test-verify.c to fail, and
+# each time it fails, the makefile rule does not perform the usual
+#  "mv -f $name.Tpo $name.po, so tell make clean to remove that file.
+MOSTLYCLEANFILES += .deps/test-verify.Tpo
 EXTRA_DIST += test-verify.c test-verify.sh
 
 ## end   gnulib module verify-tests
@@ -2472,7 +2514,6 @@ EXTRA_DIST += test-wctype-h.c macros.h
 
 TESTS += test-wcwidth
 check_PROGRAMS += test-wcwidth
-
 EXTRA_DIST += test-wcwidth.c signature.h macros.h
 
 ## end   gnulib module wcwidth-tests

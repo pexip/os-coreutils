@@ -1,7 +1,7 @@
 # Make coreutils programs.                             -*-Makefile-*-
 # This is included by the top-level Makefile.am.
 
-## Copyright (C) 1990-2014 Free Software Foundation, Inc.
+## Copyright (C) 1990-2016 Free Software Foundation, Inc.
 
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -43,7 +43,9 @@ noinst_HEADERS =		\
   src/chown-core.h		\
   src/copy.h			\
   src/cp-hash.h			\
+  src/die.h			\
   src/dircolors.h		\
+  src/expand-common.h		\
   src/fiemap.h			\
   src/find-mount-point.h	\
   src/fs.h			\
@@ -55,6 +57,7 @@ noinst_HEADERS =		\
   src/operand2sig.h		\
   src/prog-fprintf.h		\
   src/remove.h			\
+  src/set-fields.h		\
   src/system.h			\
   src/uname.h
 
@@ -63,8 +66,7 @@ EXTRA_DIST +=		\
   src/dircolors.hin	\
   src/primes.h		\
   src/tac-pipe.c	\
-  src/extract-magic	\
-  src/c99-to-c89.diff
+  src/extract-magic
 
 CLEANFILES += $(SCRIPTS)
 
@@ -94,6 +96,7 @@ LDADD = src/libver.a lib/libcoreutils.a $(LIBINTL) lib/libcoreutils.a
 # See [ below.
 src_arch_LDADD = $(LDADD)
 src_base64_LDADD = $(LDADD)
+src_base32_LDADD = $(LDADD)
 src_basename_LDADD = $(LDADD)
 src_cat_LDADD = $(LDADD)
 src_chcon_LDADD = $(LDADD)
@@ -263,6 +266,7 @@ src_ls_LDADD += $(LIB_CAP)
 # for fdatasync
 src_dd_LDADD += $(LIB_FDATASYNC)
 src_shred_LDADD += $(LIB_FDATASYNC)
+src_sync_LDADD += $(LIB_FDATASYNC)
 
 # for xnanosleep
 src_sleep_LDADD += $(LIB_NANOSLEEP)
@@ -278,25 +282,15 @@ src_uptime_LDADD += $(GETLOADAVG_LIBS)
 
 # for various ACL functions
 copy_ldadd += $(LIB_ACL)
-src_ls_LDADD += $(LIB_ACL)
+src_ls_LDADD += $(LIB_HAS_ACL)
 
 # for various xattr functions
 copy_ldadd += $(LIB_XATTR)
 
 # for print_unicode_char, proper_name_utf8
-src_cat_LDADD += $(LIBICONV)
-src_cp_LDADD += $(LIBICONV)
-src_df_LDADD += $(LIBICONV)
-src_du_LDADD += $(LIBICONV)
 src_factor_LDADD += $(LIBICONV)
-src_getlimits_LDADD += $(LIBICONV)
 src_printf_LDADD += $(LIBICONV)
 src_ptx_LDADD += $(LIBICONV)
-src_realpath_LDADD += $(LIBICONV)
-src_split_LDADD += $(LIBICONV)
-src_stdbuf_LDADD += $(LIBICONV)
-src_timeout_LDADD += $(LIBICONV)
-src_truncate_LDADD += $(LIBICONV)
 
 # for libcrypto hash routines
 src_md5sum_LDADD += $(LIB_CRYPTO)
@@ -340,7 +334,14 @@ copy_sources = \
 # confusion with the 'install' target.  The install rule transforms 'ginstall'
 # to install before applying any user-specified name transformations.
 
-transform = s/ginstall/install/; $(program_transform_name)
+# Don't apply prefix transformations to libstdbuf shared lib
+# as that's not generally needed, and we need to reference the
+# name directly in LD_PRELOAD etc.  In general it's surprising
+# that $(transform) is applied to libexec at all given that is
+# for internal package naming, not privy to $(transform).
+
+transform = s/ginstall/install/;/libstdbuf/!$(program_transform_name)
+
 src_ginstall_SOURCES = src/install.c src/prog-fprintf.c $(copy_sources) \
 		       $(selinux_sources)
 
@@ -378,6 +379,9 @@ src_stat_SOURCES = src/stat.c src/find-mount-point.c
 src_uname_SOURCES = src/uname.c src/uname-uname.c
 src_arch_SOURCES = src/uname.c src/uname-arch.c
 
+src_cut_SOURCES = src/cut.c src/set-fields.c
+src_numfmt_SOURCES = src/numfmt.c src/set-fields.c
+
 src_md5sum_CPPFLAGS = -DHASH_ALGO_MD5=1 $(AM_CPPFLAGS)
 src_sha1sum_SOURCES = src/md5sum.c
 src_sha1sum_CPPFLAGS = -DHASH_ALGO_SHA1=1 $(AM_CPPFLAGS)
@@ -389,8 +393,21 @@ src_sha384sum_SOURCES = src/md5sum.c
 src_sha384sum_CPPFLAGS = -DHASH_ALGO_SHA384=1 $(AM_CPPFLAGS)
 src_sha512sum_SOURCES = src/md5sum.c
 src_sha512sum_CPPFLAGS = -DHASH_ALGO_SHA512=1 $(AM_CPPFLAGS)
+src_b2sum_CPPFLAGS = -include config.h -DHASH_ALGO_BLAKE2=1 \
+		     $(AM_CPPFLAGS)
+src_b2sum_SOURCES = src/md5sum.c \
+		    src/blake2/blake2.h src/blake2/blake2-impl.h \
+		    src/blake2/blake2b-ref.c \
+		    src/blake2/b2sum.c src/blake2/b2sum.h
+
+src_base64_CPPFLAGS = -DBASE_TYPE=64 $(AM_CPPFLAGS)
+src_base32_SOURCES = src/base64.c
+src_base32_CPPFLAGS = -DBASE_TYPE=32 $(AM_CPPFLAGS)
 
 src_ginstall_CPPFLAGS = -DENABLE_MATCHPATHCON=1 $(AM_CPPFLAGS)
+
+src_expand_SOURCES = src/expand.c src/expand-common.c
+src_unexpand_SOURCES = src/unexpand.c src/expand-common.c
 
 # Ensure we don't link against libcoreutils.a as that lib is
 # not compiled with -fPIC which causes issues on 64 bit at least
@@ -420,7 +437,9 @@ endif SINGLE_BINARY
 CLEANFILES += src/coreutils_symlinks
 src/coreutils_symlinks: Makefile
 	$(AM_V_GEN)touch $@
-	$(AM_V_at)for i in $(single_binary_progs); do \
+	$(AM_V_at)${MKDIR_P} src
+	$(AM_V_at)for i in x $(single_binary_progs); do \
+		test $$i = x && continue; \
 		rm -f src/$$i$(EXEEXT) || exit $$?; \
 		$(LN_S) -s coreutils$(EXEEXT) src/$$i$(EXEEXT) || exit $$?; \
 	done
@@ -428,7 +447,9 @@ src/coreutils_symlinks: Makefile
 CLEANFILES += src/coreutils_shebangs
 src/coreutils_shebangs: Makefile
 	$(AM_V_GEN)touch $@
-	$(AM_V_at)for i in $(single_binary_progs); do \
+	$(AM_V_at)${MKDIR_P} src
+	$(AM_V_at)for i in x $(single_binary_progs); do \
+		test $$i = x && continue; \
 		rm -f src/$$i$(EXEEXT) || exit $$?; \
 		printf '#!%s --coreutils-prog-shebang=%s\n' \
 			$(abs_top_builddir)/src/coreutils$(EXEEXT) $$i \
@@ -437,7 +458,8 @@ src/coreutils_shebangs: Makefile
 	done
 
 clean-local:
-	$(AM_V_at)for i in $(single_binary_progs); do \
+	$(AM_V_at)for i in x $(single_binary_progs); do \
+		test $$i = x && continue; \
 		rm -f src/$$i$(EXEEXT) || exit $$?; \
 	done
 
@@ -445,6 +467,7 @@ clean-local:
 BUILT_SOURCES += src/dircolors.h
 src/dircolors.h: src/dcgen src/dircolors.hin
 	$(AM_V_GEN)rm -f $@ $@-t
+	$(AM_V_at)${MKDIR_P} src
 	$(AM_V_at)$(PERL) -w -- $(srcdir)/src/dcgen \
 				$(srcdir)/src/dircolors.hin > $@-t
 	$(AM_V_at)chmod a-w $@-t
@@ -457,6 +480,7 @@ src/dircolors.h: src/dcgen src/dircolors.hin
 # known ints (currently 128-bit).
 BUILT_SOURCES += $(top_srcdir)/src/primes.h
 $(top_srcdir)/src/primes.h:
+	$(AM_V_at)${MKDIR_P} src
 	$(MAKE) src/make-prime-list$(EXEEXT)
 	$(AM_V_GEN)rm -f $@ $@-t
 	$(AM_V_at)src/make-prime-list$(EXEEXT) 5000 > $@-t
@@ -534,6 +558,7 @@ src/fs-kernel-magic: Makefile src/fs-latest-magic.h
 BUILT_SOURCES += src/fs-is-local.h
 src/fs-is-local.h: src/stat.c src/extract-magic
 	$(AM_V_GEN)rm -f $@
+	$(AM_V_at)${MKDIR_P} src
 	$(AM_V_at)$(PERL) $(srcdir)/src/extract-magic \
 			  --local $(srcdir)/src/stat.c > $@t
 	$(AM_V_at)chmod a-w $@t
@@ -542,6 +567,7 @@ src/fs-is-local.h: src/stat.c src/extract-magic
 BUILT_SOURCES += src/fs.h
 src/fs.h: src/stat.c src/extract-magic
 	$(AM_V_GEN)rm -f $@
+	$(AM_V_at)${MKDIR_P} src
 	$(AM_V_at)$(PERL) $(srcdir)/src/extract-magic \
 			  $(srcdir)/src/stat.c > $@t
 	$(AM_V_at)chmod a-w $@t
@@ -550,6 +576,7 @@ src/fs.h: src/stat.c src/extract-magic
 BUILT_SOURCES += src/version.c
 src/version.c: Makefile
 	$(AM_V_GEN)rm -f $@
+	$(AM_V_at)${MKDIR_P} src
 	$(AM_V_at)printf '#include <config.h>\n' > $@t
 	$(AM_V_at)printf 'char const *Version = "$(PACKAGE_VERSION)";\n' >> $@t
 	$(AM_V_at)chmod a-w $@t
@@ -558,6 +585,7 @@ src/version.c: Makefile
 BUILT_SOURCES += src/version.h
 src/version.h: Makefile
 	$(AM_V_GEN)rm -f $@
+	$(AM_V_at)${MKDIR_P} src
 	$(AM_V_at)printf 'extern char const *Version;\n' > $@t
 	$(AM_V_at)chmod a-w $@t
 	$(AM_V_at)mv $@t $@
@@ -570,7 +598,9 @@ src/version.h: Makefile
 DISTCLEANFILES += src/coreutils.h
 src/coreutils.h: Makefile
 	$(AM_V_GEN)rm -f $@
-	$(AM_V_at)for prog in $(single_binary_progs); do	\
+	$(AM_V_at)${MKDIR_P} src
+	$(AM_V_at)for prog in x $(single_binary_progs); do	\
+	  test $$prog = x && continue;				\
 	  prog=`basename $$prog`;				\
 	  main=`echo $$prog | tr '[' '_'`;			\
 	  echo "SINGLE_BINARY_PROGRAM(\"$$prog\", $$main)";	\
@@ -619,4 +649,4 @@ cu_install_program = @INSTALL_PROGRAM@
 else
 cu_install_program = src/ginstall
 endif
-INSTALL_PROGRAM = $(cu_install_program)
+INSTALL = $(cu_install_program) -c

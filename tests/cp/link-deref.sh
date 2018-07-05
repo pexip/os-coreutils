@@ -1,7 +1,7 @@
 #!/bin/sh
 # Exercise cp --link's behavior regarding the dereferencing of symbolic links.
 
-# Copyright (C) 2013-2014 Free Software Foundation, Inc.
+# Copyright (C) 2013-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ cp
 
-if grep '^#define HAVE_LINKAT 1' "$CONFIG_HEADER" > /dev/null \
+if { grep '^#define HAVE_LINKAT 1' "$CONFIG_HEADER" > /dev/null \
+     && grep '#undef LINKAT_SYMLINK_NOTSUP' "$CONFIG_HEADER" > /dev/null; } \
    || grep '^#define LINK_FOLLOWS_SYMLINKS 0' "$CONFIG_HEADER" > /dev/null; then
   # With this config cp will attempt to linkat() to hardlink a symlink.
   # So now double check the current file system supports this operation.
@@ -91,7 +92,7 @@ for src in dirlink filelink danglink; do
         exp_result=1
         exp_inode=
         exp_ftype=
-        exp_error="cp: omitting directory 'dirlink'"
+        exp_error="cp: -r not specified; omitting directory 'dirlink'"
       elif [ "$src" = 'dirlink' ]; then
         # cp --link -R 'dirlink' should create a new directory.
         exp_result=0

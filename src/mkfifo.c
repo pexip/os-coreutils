@@ -1,5 +1,5 @@
 /* mkfifo -- make fifo's (named pipes)
-   Copyright (C) 1990-2014 Free Software Foundation, Inc.
+   Copyright (C) 1990-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <selinux/selinux.h>
 
 #include "system.h"
+#include "die.h"
 #include "error.h"
 #include "modechange.h"
 #include "quote.h"
@@ -67,7 +68,7 @@ Create named pipes (FIFOs) with the given NAMEs.\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -139,9 +140,9 @@ main (int argc, char **argv)
         ret = setfscreatecon (se_const (scontext));
 
       if (ret < 0)
-        error (EXIT_FAILURE, errno,
-               _("failed to set default file creation context to %s"),
-               quote (scontext));
+        die (EXIT_FAILURE, errno,
+             _("failed to set default file creation context to %s"),
+             quote (scontext));
     }
 
   newmode = MODE_RW_UGO;
@@ -150,14 +151,14 @@ main (int argc, char **argv)
       mode_t umask_value;
       struct mode_change *change = mode_compile (specified_mode);
       if (!change)
-        error (EXIT_FAILURE, 0, _("invalid mode"));
+        die (EXIT_FAILURE, 0, _("invalid mode"));
       umask_value = umask (0);
       umask (umask_value);
       newmode = mode_adjust (newmode, false, umask_value, change, NULL);
       free (change);
       if (newmode & ~S_IRWXUGO)
-        error (EXIT_FAILURE, 0,
-               _("mode must specify only file permission bits"));
+        die (EXIT_FAILURE, 0,
+             _("mode must specify only file permission bits"));
     }
 
   for (; optind < argc; ++optind)
@@ -166,16 +167,16 @@ main (int argc, char **argv)
         defaultcon (argv[optind], S_IFIFO);
       if (mkfifo (argv[optind], newmode) != 0)
         {
-          error (0, errno, _("cannot create fifo %s"), quote (argv[optind]));
+          error (0, errno, _("cannot create fifo %s"), quoteaf (argv[optind]));
           exit_status = EXIT_FAILURE;
         }
       else if (specified_mode && lchmod (argv[optind], newmode) != 0)
         {
           error (0, errno, _("cannot set permissions of %s"),
-                 quote (argv[optind]));
+                 quoteaf (argv[optind]));
           exit_status = EXIT_FAILURE;
         }
     }
 
-  exit (exit_status);
+  return exit_status;
 }

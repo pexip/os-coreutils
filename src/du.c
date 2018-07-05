@@ -1,5 +1,5 @@
 /* du -- summarize disk usage
-   Copyright (C) 1988-2014 Free Software Foundation, Inc.
+   Copyright (C) 1988-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,13 +31,13 @@
 #include "argmatch.h"
 #include "argv-iter.h"
 #include "di-set.h"
+#include "die.h"
 #include "error.h"
 #include "exclude.h"
 #include "fprintftime.h"
 #include "human.h"
 #include "mountlist.h"
 #include "quote.h"
-#include "quotearg.h"
 #include "stat-size.h"
 #include "stat-time.h"
 #include "stdio--.h"
@@ -50,7 +50,7 @@ extern bool fts_debug;
 #define PROGRAM_NAME "du"
 
 #define AUTHORS \
-  proper_name_utf8 ("Torbjorn Granlund", "Torbj\303\266rn Granlund"), \
+  proper_name ("Torbjorn Granlund"), \
   proper_name ("David MacKenzie"), \
   proper_name ("Paul Eggert"), \
   proper_name ("Jim Meyering")
@@ -183,6 +183,9 @@ static char const *time_style = NULL;
 /* Format used to display date / time. Controlled by --time-style */
 static char const *time_format = NULL;
 
+/* The local time zone rules, as per the TZ environment variable.  */
+static timezone_t localtz;
+
 /* The units to use when printing sizes.  */
 static uintmax_t output_block_size;
 
@@ -283,7 +286,7 @@ Usage: %s [OPTION]... [FILE]...\n\
   or:  %s [OPTION]... --files0-from=F\n\
 "), program_name, program_name);
       fputs (_("\
-Summarize disk usage of each FILE, recursively for directories.\n\
+Summarize disk usage of the set of FILEs, recursively for directories.\n\
 "), stdout);
 
       emit_mandatory_arg_note ();
@@ -351,7 +354,7 @@ Summarize disk usage of each FILE, recursively for directories.\n\
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       emit_blocksize_note ("DU");
       emit_size_note ();
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -373,19 +376,18 @@ hash_ins (struct di_set *di_set, ino_t ino, dev_t dev)
    in FORMAT.  */
 
 static void
-show_date (const char *format, struct timespec when)
+show_date (const char *format, struct timespec when, timezone_t tz)
 {
-  struct tm *tm = localtime (&when.tv_sec);
-  if (! tm)
+  struct tm tm;
+  if (localtime_rz (tz, &when.tv_sec, &tm))
+    fprintftime (stdout, format, &tm, tz, when.tv_nsec);
+  else
     {
       char buf[INT_BUFSIZE_BOUND (intmax_t)];
       char *when_str = timetostr (when.tv_sec, buf);
-      error (0, 0, _("time %s is out of range"), when_str);
+      error (0, 0, _("time %s is out of range"), quote (when_str));
       fputs (when_str, stdout);
-      return;
     }
-
-  fprintftime (stdout, format, tm, 0, when.tv_nsec);
 }
 
 /* Print N_BYTES.  Convert it to a readable value before printing.  */
@@ -413,10 +415,68 @@ print_size (const struct duinfo *pdui, const char *string)
   if (opt_time)
     {
       putchar ('\t');
-      show_date (time_format, pdui->tmax);
+      show_date (time_format, pdui->tmax, localtz);
     }
   printf ("\t%s%c", string, opt_nul_terminate_output ? '\0' : '\n');
   fflush (stdout);
+}
+
+/* Fill the di_mnt set with local mount point dev/ino pairs.  */
+
+static void
+fill_mount_table (void)
+{
+  struct mount_entry *mnt_ent = read_file_system_list (false);
+  while (mnt_ent)
+    {
+      struct mount_entry *mnt_free;
+      if (!mnt_ent->me_remote && !mnt_ent->me_dummy)
+        {
+          struct stat buf;
+          if (!stat (mnt_ent->me_mountdir, &buf))
+            hash_ins (di_mnt, buf.st_ino, buf.st_dev);
+          else
+            {
+              /* Ignore stat failure.  False positives are too common.
+                 E.g., "Permission denied" on /run/user/<name>/gvfs.  */
+            }
+        }
+
+      mnt_free = mnt_ent;
+      mnt_ent = mnt_ent->me_next;
+      free_mount_entry (mnt_free);
+    }
+}
+
+/* This function checks whether any of the directories in the cycle that
+   fts detected is a mount point.  */
+
+static bool
+mount_point_in_fts_cycle (FTSENT const *ent)
+{
+  FTSENT const *cycle_ent = ent->fts_cycle;
+
+  if (!di_mnt)
+    {
+      /* Initialize the set of dev,inode pairs.  */
+      di_mnt = di_set_alloc ();
+      if (!di_mnt)
+        xalloc_die ();
+
+      fill_mount_table ();
+    }
+
+  while (ent && ent != cycle_ent)
+    {
+      if (di_set_lookup (di_mnt, ent->fts_statp->st_dev,
+                         ent->fts_statp->st_ino) > 0)
+        {
+          return true;
+        }
+      ent = ent->fts_parent;
+    }
+
+  return false;
 }
 
 /* This function is called once for every file system object that fts
@@ -449,7 +509,7 @@ process_file (FTS *fts, FTSENT *ent)
   if (info == FTS_DNR)
     {
       /* An error occurred, but the size is known, so count it.  */
-      error (0, ent->fts_errno, _("cannot read directory %s"), quote (file));
+      error (0, ent->fts_errno, _("cannot read directory %s"), quoteaf (file));
       ok = false;
     }
   else if (info != FTS_DP)
@@ -469,7 +529,7 @@ process_file (FTS *fts, FTSENT *ent)
 
           if (info == FTS_NS || info == FTS_SLNONE)
             {
-              error (0, ent->fts_errno, _("cannot access %s"), quote (file));
+              error (0, ent->fts_errno, _("cannot access %s"), quoteaf (file));
               return false;
             }
 
@@ -509,14 +569,14 @@ process_file (FTS *fts, FTSENT *ent)
 
         case FTS_ERR:
           /* An error occurred, but the size is known, so count it.  */
-          error (0, ent->fts_errno, "%s", quote (file));
+          error (0, ent->fts_errno, "%s", quotef (file));
           ok = false;
           break;
 
         case FTS_DC:
           /* If not following symlinks and not a (bind) mount point.  */
           if (cycle_warning_required (fts, ent)
-              && ! di_set_lookup (di_mnt, sb->st_dev, sb->st_ino))
+              && ! mount_point_in_fts_cycle (ent))
             {
               emit_cycle_warning (file);
               return false;
@@ -634,7 +694,7 @@ du_files (char **files, int bit_flags)
               if (errno != 0)
                 {
                   error (0, errno, _("fts_read failed: %s"),
-                         quotearg_colon (fts->fts_path));
+                         quotef (fts->fts_path));
                   ok = false;
                 }
 
@@ -657,33 +717,6 @@ du_files (char **files, int bit_flags)
     }
 
   return ok;
-}
-
-/* Fill the di_mnt set with local mount point dev/ino pairs.  */
-
-static void
-fill_mount_table (void)
-{
-  struct mount_entry *mnt_ent = read_file_system_list (false);
-  while (mnt_ent)
-    {
-      struct mount_entry *mnt_free;
-      if (!mnt_ent->me_remote && !mnt_ent->me_dummy)
-        {
-          struct stat buf;
-          if (!stat (mnt_ent->me_mountdir, &buf))
-            hash_ins (di_mnt, buf.st_ino, buf.st_dev);
-          else
-            {
-              /* Ignore stat failure.  False positives are too common.
-                 E.g., "Permission denied" on /run/user/<name>/gvfs.  */
-            }
-        }
-
-      mnt_free = mnt_ent;
-      mnt_ent = mnt_ent->me_next;
-      free_mount_entry (mnt_free);
-    }
 }
 
 int
@@ -813,7 +846,7 @@ main (int argc, char **argv)
             if (opt_threshold == 0 && *optarg == '-')
               {
                 /* Do not allow -0, as this wouldn't make sense anyway.  */
-                error (EXIT_FAILURE, 0, _("invalid --threshold argument '-0'"));
+                die (EXIT_FAILURE, 0, _("invalid --threshold argument '-0'"));
               }
           }
           break;
@@ -852,7 +885,7 @@ main (int argc, char **argv)
           if (add_exclude_file (add_exclude, exclude, optarg,
                                 EXCLUDE_WILDCARDS, '\n'))
             {
-              error (0, errno, "%s", quotearg_colon (optarg));
+              error (0, errno, "%s", quotef (optarg));
               ok = false;
             }
           break;
@@ -875,6 +908,7 @@ main (int argc, char **argv)
             (optarg
              ? XARGMATCH ("--time", optarg, time_args, time_types)
              : time_mtime);
+          localtz = tzalloc (getenv ("TZ"));
           break;
 
         case TIME_STYLE_OPTION:
@@ -947,9 +981,9 @@ main (int argc, char **argv)
             {
               /* Ignore "posix-" prefix, for compatibility with ls.  */
               static char const posix_prefix[] = "posix-";
-              while (strncmp (time_style, posix_prefix, sizeof posix_prefix - 1)
-                     == 0)
-                time_style += sizeof posix_prefix - 1;
+              static const size_t prefix_len = sizeof posix_prefix - 1;
+              while (STREQ_LEN (time_style, posix_prefix, prefix_len))
+                time_style += prefix_len;
             }
         }
 
@@ -989,8 +1023,8 @@ main (int argc, char **argv)
         }
 
       if (! (STREQ (files_from, "-") || freopen (files_from, "r", stdin)))
-        error (EXIT_FAILURE, errno, _("cannot open %s for reading"),
-               quote (files_from));
+        die (EXIT_FAILURE, errno, _("cannot open %s for reading"),
+             quoteaf (files_from));
 
       ai = argv_iter_init_stream (stdin);
 
@@ -1013,13 +1047,6 @@ main (int argc, char **argv)
     xalloc_die ();
 
   /* Initialize the set of dev,inode pairs.  */
-
-  di_mnt = di_set_alloc ();
-  if (!di_mnt)
-    xalloc_die ();
-
-  fill_mount_table ();
-
   di_files = di_set_alloc ();
   if (!di_files)
     xalloc_die ();
@@ -1045,7 +1072,7 @@ main (int argc, char **argv)
               goto argv_iter_done;
             case AI_ERR_READ:
               error (0, errno, _("%s: read error"),
-                     quotearg_colon (files_from));
+                     quotef (files_from));
               ok = false;
               goto argv_iter_done;
             case AI_ERR_MEM:
@@ -1060,7 +1087,7 @@ main (int argc, char **argv)
              printf - | du --files0-from=- */
           error (0, 0, _("when reading file names from stdin, "
                          "no file name of %s allowed"),
-                 quote (file_name));
+                 quoteaf (file_name));
           skip_file = true;
         }
 
@@ -1082,7 +1109,7 @@ main (int argc, char **argv)
                  not totally appropriate, since NUL is the separator, not NL,
                  but it might be better than nothing.  */
               unsigned long int file_number = argv_iter_n_args (ai);
-              error (0, 0, "%s:%lu: %s", quotearg_colon (files_from),
+              error (0, 0, "%s:%lu: %s", quotef (files_from),
                      file_number, _("invalid zero-length file name"));
             }
           skip_file = true;
@@ -1100,13 +1127,14 @@ main (int argc, char **argv)
 
   argv_iter_free (ai);
   di_set_free (di_files);
-  di_set_free (di_mnt);
+  if (di_mnt)
+    di_set_free (di_mnt);
 
   if (files_from && (ferror (stdin) || fclose (stdin) != 0) && ok)
-    error (EXIT_FAILURE, 0, _("error reading %s"), quote (files_from));
+    die (EXIT_FAILURE, 0, _("error reading %s"), quoteaf (files_from));
 
   if (print_grand_total)
     print_size (&tot_dui, _("total"));
 
-  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

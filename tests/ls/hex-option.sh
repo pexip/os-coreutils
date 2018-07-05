@@ -1,7 +1,7 @@
 #!/bin/sh
-# test for "tee -".
+# accept hex/oct numbers to -w and -T
 
-# Copyright (C) 2005-2014 Free Software Foundation, Inc.
+# Copyright (C) 2014-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
-print_ver_ tee
+print_ver_ ls
 
-tee - </dev/null || fail=1
+ls -x -T0x10 -w010 || fail=1
 
 Exit $fail

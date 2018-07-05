@@ -1,7 +1,7 @@
 #!/bin/sh
-# ensure that mv's --verbose options works even in this unusual case
+# Check that cat operates correctly when the input is the same as the output.
 
-# Copyright (C) 2006-2014 Free Software Foundation, Inc.
+# Copyright 2014-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,17 +17,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
-print_ver_ mv
+print_ver_ cat
 
-touch x || framework_failure_
-ln x y || framework_failure_
+echo x >out || framework_failure_
+echo x >out1 || framework_failure_
+returns_ 1 cat out >>out || fail=1
+compare out out1 || fail=1
 
-
-mv --verbose x y > out || fail=1
-cat <<\EOF > exp || fail=1
-removed 'x'
-EOF
-
-compare exp out || fail=1
+# This example is taken from the POSIX spec for 'cat'.
+echo x >doc || framework_failure_
+echo y >doc.end || framework_failure_
+cat doc doc.end >doc || fail=1
+compare doc doc.end || fail=1
 
 Exit $fail

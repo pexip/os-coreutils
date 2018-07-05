@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Basic tests for "md5sum".
 
-# Copyright (C) 1998-2014 Free Software Foundation, Inc.
+# Copyright (C) 1998-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@ my $prog = 'md5sum';
 @ENV{qw(LANGUAGE LANG LC_ALL)} = ('C') x 3;
 
 my $degenerate = "d41d8cd98f00b204e9800998ecf8427e";
+
+my $try_help = "Try 'md5sum --help' for more information.\n";
 
 my @Tests =
     (
@@ -92,7 +94,8 @@ my @Tests =
                                       . "invalid\n" }},
                                 {AUX=> {f=> 'foo'}},
                                 {OUT=>"f: FAILED\nf: FAILED\n"},
-              {ERR=>"md5sum: f.md5: 3: improperly formatted MD5 checksum line\n"
+              {ERR=>"md5sum: f.md5: 3: "
+                              . "improperly formatted MD5 checksum line\n"
                   . "md5sum: WARNING: 1 line is improperly formatted\n"
                   . "md5sum: WARNING: 2 computed checksums did NOT match\n"},
                                 {EXIT=> 1}],
@@ -119,6 +122,40 @@ my @Tests =
      ['check-openssl3', '--check', '--status',
                                 {IN=> {'f.md5' => "MD5(f)= $degenerate\n"}},
                                 {AUX=> {f=> 'bar'}}, {EXIT=> 1}],
+     ['check-ignore-missing-1', '--check', '--ignore-missing',
+                                {AUX=> {f=> ''}},
+                                {IN=> {'f.md5' => "$degenerate  f\n".
+                                                  "$degenerate  f.missing\n"}},
+                                {OUT=>"f: OK\n"}],
+     ['check-ignore-missing-2', '--check', '--ignore-missing',
+                                {AUX=> {f=> ''}},
+                                {IN=> {'f.md5' => "$degenerate  f\n".
+                                                  "$degenerate  f.missing\n"}},
+                                {OUT=>"f: OK\n"}],
+     ['check-ignore-missing-3', '--check', '--quiet', '--ignore-missing',
+                                {AUX=> {f=> ''}},
+                                {IN=> {'f.md5' => "$degenerate  missing/f\n".
+                                                  "$degenerate  f\n"}},
+                                {OUT=>""}],
+     ['check-ignore-missing-4', '--ignore-missing',
+                                {IN=> {f=> ''}},
+                                {ERR=>"md5sum: the --ignore-missing option is ".
+                                   "meaningful only when verifying checksums\n".
+                                   $try_help},
+                                {EXIT=> 1}],
+     ['check-ignore-missing-5', '--check', '--ignore-missing',
+                                {AUX=> {f=> ''}},
+                                {IN=> {'f.md5' => "$degenerate  missing\n"}},
+                                {ERR=>
+                                    "md5sum: f.md5: no file was verified\n"},
+                                {EXIT=> 1}],
+     # coreutils-8.25 with --ignore-missing treated checksums starting with 00
+     # as if the file was not present
+     ['check-ignore-missing-6', '--check', '--ignore-missing',
+                                {AUX=> {f=> '9t'}},
+                                {IN=> {'f.md5' =>
+                                    "006999e6df389641adf1fa3a74801d9d  f\n"}},
+                                {OUT=>"f: OK\n"}],
      ['bsd-segv', '--check', {IN=> {'z' => "MD5 ("}}, {EXIT=> 1},
       {ERR=> "$prog: z: no properly formatted MD5 checksum lines found\n"}],
 

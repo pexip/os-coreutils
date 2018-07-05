@@ -1,7 +1,7 @@
-#! /bin/sh
+#!/bin/sh
 # Basic tests for "install".
 
-# Copyright (C) 1998-2014 Free Software Foundation, Inc.
+# Copyright (C) 1998-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -80,8 +80,8 @@ iwd=$(pwd)
 mkdir sub || fail=1
 (cd sub &&
  chmod 0 . &&
- ginstall -d "$iwd/xx/yy" rel/sub1 rel/sub2 2> /dev/null
-) && fail=1
+ returns_ 1 ginstall -d "$iwd/xx/yy" rel/sub1 rel/sub2 2> /dev/null
+) || fail=1
 chmod 755 sub
 
 # Ensure that the first argument-dir has been created.
@@ -142,5 +142,10 @@ ginstall -t sub4/dir_exists -Dv file >out 2>&1 || fail=1
 compare - out <<\EOF || fail=1
 'file' -> 'sub4/dir_exists/file'
 EOF
+
+# Ensure omitted directories are diagnosed
+returns_ 1 ginstall . . 2>err || fail=1
+printf '%s\n' "ginstall: omitting directory '.'" >exp || framework_failure_
+compare exp err || fail=1
 
 Exit $fail
