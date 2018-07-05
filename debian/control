@@ -6,7 +6,7 @@ Priority: required
 Standards-Version: 3.9.6.0
 Build-Depends: gettext (>= 0.10.37), debhelper (>= 5.0.0), autotools-dev, dh-buildinfo, texinfo (>= 4.2), groff, dpatch, libattr1-dev [linux-any], libacl1-dev [linux-any], libselinux1-dev (>= 1.32) [linux-any], gperf, bison
 XS-Testsuite: autopkgtest
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ jessie
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ stretch
 
 Package: coreutils
 Architecture: any
