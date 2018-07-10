@@ -4,7 +4,7 @@
 # Check also locally if --preserve=context, -a and --preserve=all
 # does work
 
-# Copyright (C) 2007-2014 Free Software Foundation, Inc.
+# Copyright (C) 2007-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,14 +49,16 @@ rm -f f
 # in the destination, so SELinux contexts should be updated too.
 chmod o+rw restore/existing_dir
 mkdir -p backup/existing_dir/ || framework_failure_
-ls -Zd backup/existing_dir | grep $ctx && framework_failure_
+ls -Zd backup/existing_dir > ed_ctx || fail=1
+grep $ctx ed_ctx && framework_failure_
 touch backup/existing_dir/file || framework_failure_
 chcon $ctx backup/existing_dir/file || framework_failure_
 # Set the dir context to ensure it is reset
 mkdir -p --context="$ctx" restore/existing_dir || framework_failure_
 # Copy and ensure existing directories updated
 cp -a backup/. restore/
-ls -Zd restore/existing_dir | grep $ctx &&
+ls -Zd restore/existing_dir > ed_ctx || fail=1
+grep $ctx ed_ctx &&
   { ls -lZd restore/existing_dir; fail=1; }
 
 # Check restorecon (-Z) functionality for file and directory
@@ -64,14 +66,15 @@ get_selinux_type() { ls -Zd "$1" | sed -n 's/.*:\(.*_t\):.*/\1/p'; }
 # Also make a dir with our known context
 mkdir c_d || framework_failure_
 chcon $ctx c_d || framework_failure_
-# Get the type of this known context for file and dir
+# Get the type of this known context for file and dir for tracing
 old_type_f=$(get_selinux_type c)
 old_type_d=$(get_selinux_type c_d)
 # Setup copies for manipulation with restorecon
 # and get the adjusted type for comparison
 cp -a c Z1 || fail=1
 cp -a c_d Z1_d || fail=1
-if restorecon Z1 Z1_d 2>/dev/null; then
+if restorecon Z1 Z1_d 2>restorecon.err \
+   && compare /dev/null restorecon.err; then
   new_type_f=$(get_selinux_type Z1)
   new_type_d=$(get_selinux_type Z1_d)
 
@@ -80,7 +83,7 @@ if restorecon Z1 Z1_d 2>/dev/null; then
   cpZ_type_f=$(get_selinux_type Z2)
   test "$cpZ_type_f" = "$new_type_f" || fail=1
 
-  # Ensuze -Z overrides -a and that dirs are handled too
+  # Ensure -Z overrides -a and that dirs are handled too
   cp -aZ c Z3 || fail=1
   cp -aZ c_d Z3_d || fail=1
   cpaZ_type_f=$(get_selinux_type Z3)
@@ -175,6 +178,7 @@ for no_g_cmd in '' 'rm -f g'; do
   # restorecon equivalent.  Note even though the context
   # returned from matchpathcon() will not match $ctx
   # the resulting ENOTSUP warning will be suppressed.
+
    # With absolute path
   $no_g_cmd
   cp -Z ../f $(realpath g) || fail=1
@@ -186,7 +190,7 @@ for no_g_cmd in '' 'rm -f g'; do
   cp -Z -a ../f g || fail=1
    # -Z doesn't take an arg
   $no_g_cmd
-  cp -Z "$ctx" ../f g && fail=1
+  returns_ 1 cp -Z "$ctx" ../f g || fail=1
 
   # Explicit context
   $no_g_cmd
@@ -197,9 +201,9 @@ for no_g_cmd in '' 'rm -f g'; do
   cp -a --context="$ctx" ../f g || fail=1
 done
 
-# Mutually exlusive options
-cp -Z --preserve=context ../f g && fail=1
-cp --preserve=context -Z ../f g && fail=1
-cp --preserve=context --context="$ctx" ../f g && fail=1
+# Mutually exclusive options
+returns_ 1 cp -Z --preserve=context ../f g || fail=1
+returns_ 1 cp --preserve=context -Z ../f g || fail=1
+returns_ 1 cp --preserve=context --context="$ctx" ../f g || fail=1
 
 Exit $fail

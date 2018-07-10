@@ -1,7 +1,7 @@
 # -*- autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (C) 1991-2014 Free Software Foundation, Inc.
+# Copyright (C) 1991-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 dnl Written by Jim Meyering.
 
-AC_PREREQ([2.64])
+AC_PREREQ([2.69])
 
 # Make inter-release version strings look like, e.g., v6.9-219-g58ddd, which
 # indicates that it is built from the 219th delta (in _some_ repository)
@@ -132,6 +132,7 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wswitch-enum"            # Too many warnings for now
   nw="$nw -Wswitch-default"         # Too many warnings for now
   nw="$nw -Wstack-protector"        # not worth working around
+  nw="$nw -Wtype-limits"            # False alarms for portable code
   # things I might fix soon:
   nw="$nw -Wfloat-equal"            # sort.c, seq.c
   nw="$nw -Wmissing-format-attribute" # copy.c
@@ -150,6 +151,7 @@ if test "$gl_gcc_warnings" = yes; then
     gl_WARN_ADD([$w])
   done
   gl_WARN_ADD([-Wno-sign-compare])     # Too many warnings for now
+  gl_WARN_ADD([-Wno-type-limits])      # False alarms for portable code
   gl_WARN_ADD([-Wno-unused-parameter]) # Too many warnings for now
   gl_WARN_ADD([-Wno-format-nonliteral])
 
@@ -354,7 +356,9 @@ coreutils_DUMMY_1
 AC_MSG_CHECKING([ut_host in struct utmp])
 AC_CACHE_VAL([su_cv_func_ut_host_in_utmp],
 [AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <sys/types.h>
-#include <utmp.h>]], [[struct utmp ut; return !sizeof ut.ut_host;]])],
+                                   #include <utmp.h>
+                                   struct utmp ut;
+                                   int s = sizeof ut.ut_host;]])],
   [su_cv_func_ut_host_in_utmp=yes],
   [su_cv_func_ut_host_in_utmp=no])])
 AC_MSG_RESULT([$su_cv_func_ut_host_in_utmp])
@@ -367,7 +371,9 @@ if test -z "$have_ut_host"; then
   AC_MSG_CHECKING([ut_host in struct utmpx])
   AC_CACHE_VAL([su_cv_func_ut_host_in_utmpx],
   [AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <sys/types.h>
-#include <utmpx.h>]], [[struct utmpx ut; return !sizeof ut.ut_host;]])],
+                                     #include <utmpx.h>
+                                     struct utmpx ut;
+                                     int s = sizeof ut.ut_host;]])],
     [su_cv_func_ut_host_in_utmpx=yes],
     [su_cv_func_ut_host_in_utmpx=no])])
   AC_MSG_RESULT([$su_cv_func_ut_host_in_utmpx])
@@ -404,10 +410,12 @@ yes
   AC_MSG_CHECKING([c_line in struct termios])
   AC_CACHE_VAL([su_cv_sys_c_line_in_termios],
   [AC_LINK_IFELSE([AC_LANG_PROGRAM([[#if TERMIOS_NEEDS_XOPEN_SOURCE
-#define _XOPEN_SOURCE
-#endif
-#include <sys/types.h>
-#include <termios.h>]], [[struct termios t; return !sizeof t.c_line;]])],
+                                      #define _XOPEN_SOURCE
+                                     #endif
+                                     #include <sys/types.h>
+                                     #include <termios.h>
+                                     struct termios t;
+                                     int s = sizeof t.c_line;]])],
     [su_cv_sys_c_line_in_termios=yes],
     [su_cv_sys_c_line_in_termios=no])])
   AC_MSG_RESULT([$su_cv_sys_c_line_in_termios])
@@ -454,28 +462,37 @@ if test $gl_cv_list_mounted_fs = yes && test $gl_cv_fs_space = yes; then
   gl_ADD_PROG([optional_bin_progs], [df])
 fi
 
-AC_MSG_CHECKING([whether this is system supports stdbuf])
-AC_COMPILE_IFELSE(
+# Build stdbuf only if supported
+ac_save_CFLAGS=$CFLAGS
+ac_save_LDFLAGS=$LDFLAGS
+# Detect warnings about ignored "constructor" attributes.
+gl_WARN_ADD([-Werror], [CFLAGS])
+gl_WARN_ADD([-errwarn], [CFLAGS])
+# Put this message here, after gl_WARN_ADD's chatter.
+AC_MSG_CHECKING([whether this system supports stdbuf])
+CFLAGS="-fPIC $CFLAGS"
+LDFLAGS="-shared $LDFLAGS"
+stdbuf_supported=no
+# Note we only LINK here rather than RUN to support cross compilation
+AC_LINK_IFELSE(
   [AC_LANG_PROGRAM([[
     static int stdbuf = 0;
 
-    /* Restrict to ELF systems with compilers
-       that support the constructor attribute.  */
     void __attribute__ ((constructor))
     stdbuf_init (void)
     {
-      #if __ELF__
-        stdbuf = 1;
-      #endif
+      stdbuf = 1;
     }]],[[
-    return !(stdbuf == 1);]])
+    if (stdbuf != 1)
+      return 1;]])
   ],
-  [stdbuf_supported=yes],
-  [stdbuf_supported=no])
+  [stdbuf_supported=yes])
 AC_MSG_RESULT([$stdbuf_supported])
-if test "$stdbuf_supported" = "yes"; then
+if test "$stdbuf_supported" = "yes" && test -z "$EXEEXT"; then
   gl_ADD_PROG([optional_bin_progs], [stdbuf])
 fi
+CFLAGS=$ac_save_CFLAGS
+LDFLAGS=$ac_save_LDFLAGS
 
 ############################################################################
 
@@ -488,6 +505,8 @@ m4_include([m4/cu-progs.m4])
 
 # Now that we know which programs will actually be built, determine
 # which optional helper progs should be compiled.
+# Note it adding to pkglibexec_PROGRAMS, $(transform) in src/local.mk
+# may need to be updated accordingly.
 case " $optional_bin_progs " in
   *' stdbuf '*) pkglibexec_PROGRAMS='src/libstdbuf.so';;
   *) pkglibexec_PROGRAMS='';;
@@ -507,7 +526,9 @@ man1_MANS=`
 
 # Not installed by "make install", but must be built when creating
 # a distribution tarball.
-EXTRA_MANS=`for p in $no_install_progs_default; do echo man/$p.1; done`
+EXTRA_MANS=`for p in $no_install_progs_default $gl_no_install_prog; do
+              echo man/$p.1
+            done`
 
 # Replace all the programs by the single binary and symlinks if specified.
 single_binary_progs=
@@ -582,19 +603,10 @@ AM_CONDITIONAL([CROSS_COMPILING], [test "$cross_compiling" = yes])
 # As long as "grep 'PRI[diouxX]' po/*.pot" reports matches in
 # translatable strings, we must use need-formatstring-macros here.
 AM_GNU_GETTEXT([external], [need-formatstring-macros])
-AM_GNU_GETTEXT_VERSION([0.18.1])
+AM_GNU_GETTEXT_VERSION([0.19.2])
 
 # For a test of uniq: it uses the $LOCALE_FR envvar.
 gt_LOCALE_FR
-
-# If doing dynamic dependency checking, create man/dynamic-deps.mk so
-# that 'make' doesn't complain about its being absent.  Use an old
-# time stamp, so that 'make' thinks it is older than 'Makefile'.
-# Use time stamp 1, since some 'make' implementations treat 0 specially.
-# Use 'touch -t', since older 'touch' implementations don't grok -d.
-AC_CONFIG_COMMANDS([man/dynamic-deps.mk],
-  [test -n "$AMDEP_TRUE" ||
-   TZ=UTC0 touch -t 197001010000.01 man/dynamic-deps.mk])
 
 AC_CONFIG_FILES(
   Makefile

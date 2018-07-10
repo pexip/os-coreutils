@@ -1,5 +1,5 @@
 /* stdbuf -- setup the standard streams for a command
-   Copyright (C) 2009-2014 Free Software Foundation, Inc.
+   Copyright (C) 2009-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <assert.h>
 
 #include "system.h"
+#include "die.h"
 #include "error.h"
 #include "filenamecat.h"
 #include "quote.h"
@@ -34,7 +35,7 @@
 #define PROGRAM_NAME "stdbuf"
 #define LIB_NAME "libstdbuf.so" /* FIXME: don't hardcode  */
 
-#define AUTHORS proper_name_utf8 ("Padraig Brady", "P\303\241draig Brady")
+#define AUTHORS proper_name ("Padraig Brady")
 
 static char *program_path;
 
@@ -66,7 +67,7 @@ parse_size (char const *str, size_t *size)
 {
   uintmax_t tmp_size;
   enum strtol_error e = xstrtoumax (str, NULL, 10, &tmp_size, "EGkKMPTYZ0");
-  if (e == LONGINT_OK && tmp_size > SIZE_MAX)
+  if (e == LONGINT_OK && SIZE_MAX < tmp_size)
     e = LONGINT_OVERFLOW;
 
   if (e == LONGINT_OK)
@@ -76,7 +77,7 @@ parse_size (char const *str, size_t *size)
       return 0;
     }
 
-  errno = (e == LONGINT_OVERFLOW ? EOVERFLOW : 0);
+  errno = (e == LONGINT_OVERFLOW ? EOVERFLOW : errno);
   return -1;
 }
 
@@ -115,11 +116,11 @@ size set to MODE bytes.\n\
 "), stdout);
       fputs (_("\n\
 NOTE: If COMMAND adjusts the buffering of its standard streams ('tee' does\n\
-for e.g.) then that will override corresponding settings changed by 'stdbuf'.\n\
+for example) then that will override corresponding changes by 'stdbuf'.\n\
 Also some filters (like 'dd' and 'cat' etc.) don't use streams for I/O,\n\
 and are thus unaffected by 'stdbuf' settings.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -238,7 +239,7 @@ set_LD_PRELOAD (void)
 
       ++path;
       if ( ! *path)
-        error (EXIT_CANCELED, 0, _("failed to find %s"), quote (LIB_NAME));
+        die (EXIT_CANCELED, 0, _("failed to find %s"), quote (LIB_NAME));
     }
 
   /* FIXME: Do we need to support libstdbuf.dll, c:, '\' separators etc?  */
@@ -256,14 +257,14 @@ set_LD_PRELOAD (void)
   ret = putenv (LD_PRELOAD);
 #ifdef __APPLE__
   if (ret == 0)
-    ret = putenv ("DYLD_FORCE_FLAT_NAMESPACE=y");
+    ret = setenv ("DYLD_FORCE_FLAT_NAMESPACE", "y", 1);
 #endif
 
   if (ret != 0)
     {
-      error (EXIT_CANCELED, errno,
-             _("failed to update the environment with %s"),
-             quote (LD_PRELOAD));
+      die (EXIT_CANCELED, errno,
+           _("failed to update the environment with %s"),
+           quote (LD_PRELOAD));
     }
 }
 
@@ -295,9 +296,9 @@ set_libstdbuf_options (void)
 
           if (putenv (var) != 0)
             {
-              error (EXIT_CANCELED, errno,
-                     _("failed to update the environment with %s"),
-                     quote (var));
+              die (EXIT_CANCELED, errno,
+                   _("failed to update the environment with %s"),
+                   quote (var));
             }
 
           env_set = true;
@@ -348,7 +349,7 @@ main (int argc, char **argv)
 
           if (!STREQ (optarg, "L")
               && parse_size (optarg, &stdbuf[opt_fileno].size) == -1)
-            error (EXIT_CANCELED, errno, _("invalid mode %s"), quote (optarg));
+            die (EXIT_CANCELED, errno, _("invalid mode %s"), quote (optarg));
 
           break;
 
@@ -381,15 +382,13 @@ main (int argc, char **argv)
      stdbuf is running from.  */
   set_program_path (program_name);
   if (!program_path)
-    program_path = xstrdup (PKGLIBDIR);  /* Need to init to non NULL.  */
+    program_path = xstrdup (PKGLIBDIR);  /* Need to init to non-NULL.  */
   set_LD_PRELOAD ();
   free (program_path);
 
   execvp (*argv, argv);
 
-  {
-    int exit_status = (errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE);
-    error (0, errno, _("failed to run command %s"), quote (argv[0]));
-    exit (exit_status);
-  }
+  int exit_status = errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE;
+  error (0, errno, _("failed to run command %s"), quote (argv[0]));
+  return exit_status;
 }

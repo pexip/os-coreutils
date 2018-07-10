@@ -4,7 +4,7 @@
 # This test is skipped on systems that lack LD_PRELOAD support; that's fine.
 # Similarly, on a system that lacks lgetfilecon altogether, skipping it is fine.
 
-# Copyright (C) 2014 Free Software Foundation, Inc.
+# Copyright (C) 2014-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,14 +50,15 @@ gcc_shared_ k.c k.so \
 touch file_src
 
 # New file with SELinux context optionally included
-LD_PRELOAD=./k.so cp -a file_src file_dst || fail=1
+LD_PRELOAD=$LD_PRELOAD:./k.so cp -a file_src file_dst || fail=1
 
 # Existing file with SELinux context optionally included
-LD_PRELOAD=./k.so cp -a file_src file_dst || fail=1
+LD_PRELOAD=$LD_PRELOAD:./k.so cp -a file_src file_dst || fail=1
 
 # ENODATA should give an immediate error when required to preserve ctx
 # This is debatable, and maybe we should not fail when no context available?
-LD_PRELOAD=./k.so cp --preserve=context file_src file_dst && fail=1
+( export LD_PRELOAD=$LD_PRELOAD:./k.so
+  returns_ 1 cp --preserve=context file_src file_dst ) || fail=1
 
 test -e preloaded || skip_ 'LD_PRELOAD interception failed'
 

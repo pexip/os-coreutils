@@ -1,5 +1,5 @@
 /* cp.c  -- file copying (main routines)
-   Copyright (C) 1989-2014 Free Software Foundation, Inc.
+   Copyright (C) 1989-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "backupfile.h"
 #include "copy.h"
 #include "cp-hash.h"
+#include "die.h"
 #include "error.h"
 #include "filenamecat.h"
 #include "ignore-value.h"
@@ -53,7 +54,7 @@
 #define PROGRAM_NAME "cp"
 
 #define AUTHORS \
-  proper_name_utf8 ("Torbjorn Granlund", "Torbj\303\266rn Granlund"), \
+  proper_name ("Torbjorn Granlund"), \
   proper_name ("David MacKenzie"), \
   proper_name ("Jim Meyering")
 
@@ -249,26 +250,14 @@ When --reflink[=always] is specified, perform a lightweight copy, where the\n\
 data blocks are copied only when modified.  If this is not possible the copy\n\
 fails, or if --reflink=auto is specified, fall back to a standard copy.\n\
 "), stdout);
-      fputs (_("\
-\n\
-The backup suffix is '~', unless set with --suffix or SIMPLE_BACKUP_SUFFIX.\n\
-The version control method may be selected via the --backup option or through\n\
-the VERSION_CONTROL environment variable.  Here are the values:\n\
-\n\
-"), stdout);
-      fputs (_("\
-  none, off       never make backups (even if --backup is given)\n\
-  numbered, t     make numbered backups\n\
-  existing, nil   numbered if numbered backups exist, simple otherwise\n\
-  simple, never   always make simple backups\n\
-"), stdout);
+      emit_backup_suffix_note ();
       fputs (_("\
 \n\
 As a special case, cp makes a backup of SOURCE when the force and backup\n\
 options are given and SOURCE and DEST are the same name for an existing,\n\
 regular file.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -322,7 +311,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
           if (utimens (dst_name, timespec))
             {
               error (0, errno, _("failed to preserve times for %s"),
-                     quote (dst_name));
+                     quoteaf (dst_name));
               return false;
             }
         }
@@ -334,7 +323,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
               if (! chown_failure_ok (x))
                 {
                   error (0, errno, _("failed to preserve ownership for %s"),
-                         quote (dst_name));
+                         quoteaf (dst_name));
                   return false;
                 }
               /* Failing to preserve ownership is OK. Still, try to preserve
@@ -353,7 +342,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
           if (lchmod (dst_name, p->st.st_mode) != 0)
             {
               error (0, errno, _("failed to preserve permissions for %s"),
-                     quote (dst_name));
+                     quoteaf (dst_name));
               return false;
             }
         }
@@ -436,7 +425,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
               if (src_errno)
                 {
                   error (0, src_errno, _("failed to get attributes of %s"),
-                         quote (src));
+                         quoteaf (src));
                   return false;
                 }
 
@@ -476,11 +465,12 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
                  (src_mode & ~S_IRWXUGO) != 0.  However, common practice is
                  to ask mkdir to copy all the CHMOD_MODE_BITS, letting mkdir
                  decide what to do with S_ISUID | S_ISGID | S_ISVTX.  */
-              mkdir_mode = src_mode & CHMOD_MODE_BITS & ~omitted_permissions;
+              mkdir_mode = x->explicit_no_preserve_mode ? S_IRWXUGO : src_mode;
+              mkdir_mode &= CHMOD_MODE_BITS & ~omitted_permissions;
               if (mkdir (dir, mkdir_mode) != 0)
                 {
                   error (0, errno, _("cannot make directory %s"),
-                         quote (dir));
+                         quoteaf (dir));
                   return false;
                 }
               else
@@ -496,7 +486,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
               if (lstat (dir, &stats))
                 {
                   error (0, errno, _("failed to get attributes of %s"),
-                         quote (dir));
+                         quoteaf (dir));
                   return false;
                 }
 
@@ -521,7 +511,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
                   if (lchmod (dir, stats.st_mode | S_IRWXU) != 0)
                     {
                       error (0, errno, _("setting permissions for %s"),
-                             quote (dir));
+                             quoteaf (dir));
                       return false;
                     }
                 }
@@ -529,7 +519,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
           else if (!S_ISDIR (stats.st_mode))
             {
               error (0, 0, _("%s exists but is not a directory"),
-                     quote (dir));
+                     quoteaf (dir));
               return false;
             }
           else
@@ -547,7 +537,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
 
   else if (!S_ISDIR (stats.st_mode))
     {
-      error (0, 0, _("%s exists but is not a directory"), quote (dst_dir));
+      error (0, 0, _("%s exists but is not a directory"), quoteaf (dst_dir));
       return false;
     }
   else
@@ -574,7 +564,7 @@ target_directory_operand (char const *file, struct stat *st, bool *new_dst)
   if (err)
     {
       if (err != ENOENT)
-        error (EXIT_FAILURE, err, _("failed to access %s"), quote (file));
+        die (EXIT_FAILURE, err, _("failed to access %s"), quoteaf (file));
       *new_dst = true;
     }
   return is_a_dir;
@@ -597,19 +587,19 @@ do_copy (int n_files, char **file, const char *target_directory,
         error (0, 0, _("missing file operand"));
       else
         error (0, 0, _("missing destination file operand after %s"),
-               quote (file[0]));
+               quoteaf (file[0]));
       usage (EXIT_FAILURE);
     }
 
   if (no_target_directory)
     {
       if (target_directory)
-        error (EXIT_FAILURE, 0,
-               _("cannot combine --target-directory (-t) "
-                 "and --no-target-directory (-T)"));
+        die (EXIT_FAILURE, 0,
+             _("cannot combine --target-directory (-t) "
+               "and --no-target-directory (-T)"));
       if (2 < n_files)
         {
-          error (0, 0, _("extra operand %s"), quote (file[2]));
+          error (0, 0, _("extra operand %s"), quoteaf (file[2]));
           usage (EXIT_FAILURE);
         }
       /* Update NEW_DST and SB, which may be checked below.  */
@@ -621,8 +611,8 @@ do_copy (int n_files, char **file, const char *target_directory,
           && target_directory_operand (file[n_files - 1], &sb, &new_dst))
         target_directory = file[--n_files];
       else if (2 < n_files)
-        error (EXIT_FAILURE, 0, _("target %s is not a directory"),
-               quote (file[n_files - 1]));
+        die (EXIT_FAILURE, 0, _("target %s is not a directory"),
+             quoteaf (file[n_files - 1]));
     }
 
   if (target_directory)
@@ -781,6 +771,7 @@ cp_option_init (struct cp_options *x)
   x->hard_link = false;
   x->interactive = I_UNSPECIFIED;
   x->move_mode = false;
+  x->install_mode = false;
   x->one_file_system = false;
   x->reflink_mode = REFLINK_NEVER;
 
@@ -920,7 +911,6 @@ main (int argc, char **argv)
   int c;
   bool ok;
   bool make_backups = false;
-  char *backup_suffix_string;
   char *version_control_string = NULL;
   struct cp_options x;
   bool copy_contents = false;
@@ -938,10 +928,6 @@ main (int argc, char **argv)
 
   selinux_enabled = (0 < is_selinux_enabled ());
   cp_option_init (&x);
-
-  /* FIXME: consider not calling getenv for SIMPLE_BACKUP_SUFFIX unless
-     we'll actually use backup_suffix_string.  */
-  backup_suffix_string = getenv ("SIMPLE_BACKUP_SUFFIX");
 
   while ((c = getopt_long (argc, argv, "abdfHilLnprst:uvxPRS:TZ",
                            long_opts, NULL))
@@ -1039,6 +1025,7 @@ main (int argc, char **argv)
               x.require_preserve = true;
               break;
             }
+          /* fall through */
 
         case 'p':
           x.preserve_ownership = true;
@@ -1070,17 +1057,17 @@ main (int argc, char **argv)
 
         case 't':
           if (target_directory)
-            error (EXIT_FAILURE, 0,
-                   _("multiple target directories specified"));
+            die (EXIT_FAILURE, 0,
+                 _("multiple target directories specified"));
           else
             {
               struct stat st;
               if (stat (optarg, &st) != 0)
-                error (EXIT_FAILURE, errno, _("failed to access %s"),
-                       quote (optarg));
+                die (EXIT_FAILURE, errno, _("failed to access %s"),
+                     quoteaf (optarg));
               if (! S_ISDIR (st.st_mode))
-                error (EXIT_FAILURE, 0, _("target %s is not a directory"),
-                       quote (optarg));
+                die (EXIT_FAILURE, 0, _("target %s is not a directory"),
+                     quoteaf (optarg));
             }
           target_directory = optarg;
           break;
@@ -1120,7 +1107,7 @@ main (int argc, char **argv)
 
         case 'S':
           make_backups = true;
-          backup_suffix_string = optarg;
+          simple_backup_suffix = optarg;
           break;
 
         case_GETOPT_HELP_CHAR;
@@ -1151,9 +1138,6 @@ main (int argc, char **argv)
       usage (EXIT_FAILURE);
     }
 
-  if (backup_suffix_string)
-    simple_backup_suffix = xstrdup (backup_suffix_string);
-
   x.backup_type = (make_backups
                    ? xget_version (_("backup type"),
                                    version_control_string)
@@ -1182,29 +1166,29 @@ main (int argc, char **argv)
     x.preserve_security_context = false;
 
   if (x.preserve_security_context && (x.set_security_context || scontext))
-    error (EXIT_FAILURE, 0,
-           _("cannot set target context and preserve it"));
+    die (EXIT_FAILURE, 0,
+         _("cannot set target context and preserve it"));
 
   if (x.require_preserve_context && ! selinux_enabled)
-    error (EXIT_FAILURE, 0,
-           _("cannot preserve security context "
-             "without an SELinux-enabled kernel"));
+    die (EXIT_FAILURE, 0,
+         _("cannot preserve security context "
+           "without an SELinux-enabled kernel"));
 
   /* FIXME: This handles new files.  But what about existing files?
-     I.E. if updating a tree, new files would have the specified context,
+     I.e., if updating a tree, new files would have the specified context,
      but shouldn't existing files be updated for consistency like this?
        if (scontext)
          restorecon (dst_path, 0, true);
    */
   if (scontext && setfscreatecon (se_const (scontext)) < 0)
-    error (EXIT_FAILURE, errno,
-           _("failed to set default file creation context to %s"),
-           quote (scontext));
+    die (EXIT_FAILURE, errno,
+         _("failed to set default file creation context to %s"),
+         quote (scontext));
 
 #if !USE_XATTR
   if (x.require_preserve_xattr)
-    error (EXIT_FAILURE, 0, _("cannot preserve extended attributes, cp is "
-                              "built without xattr support"));
+    die (EXIT_FAILURE, 0, _("cannot preserve extended attributes, cp is "
+                            "built without xattr support"));
 #endif
 
   /* Allocate space for remembering copied and created files.  */
@@ -1214,7 +1198,9 @@ main (int argc, char **argv)
   ok = do_copy (argc - optind, argv + optind,
                 target_directory, no_target_directory, &x);
 
+#ifdef lint
   forget_all ();
+#endif
 
-  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

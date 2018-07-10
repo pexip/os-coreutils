@@ -1,7 +1,7 @@
 #!/bin/sh
 # Exercise df's --output option.
 
-# Copyright (C) 2012-2014 Free Software Foundation, Inc.
+# Copyright (C) 2012-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ EOF
 
 df -B1K --output=size '.' >out || fail=1
 sed -e '1 {
-          s/ //
+          s/ *//
           q
         }' out > out2
 compare exp out2 || fail=1

@@ -2,7 +2,7 @@
 # Ensure we diagnose and not continue writing to
 # the output if we get a write error.
 
-# Copyright (C) 2014 Free Software Foundation, Inc.
+# Copyright (C) 2014-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,14 +36,13 @@ printf '%s\n' "head: error writing 'standard output'" > exp
 for item in lines bytes; do
   for N in 0 1; do
     # pipe case
-    yes | timeout 10s head --$item=-$N > /dev/full 2> errt && fail=1
-    test $? = 124 && fail=1
+    yes | returns_ 1 timeout 10s head --$item=-$N > /dev/full 2> errt || fail=1
     sed 's/\(head:.*\):.*/\1/' errt > err
     compare exp err || fail=1
 
     # seekable case
-    timeout 10s head --$item=-$N bigseek > /dev/full 2> errt && fail=1
-    test $? = 124 && fail=1
+    returns_ 1 timeout 10s head --$item=-$N bigseek > /dev/full 2> errt \
+        || fail=1
     sed 's/\(head:.*\):.*/\1/' errt > err
     compare exp err || fail=1
   done

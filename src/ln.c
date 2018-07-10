@@ -1,5 +1,5 @@
 /* 'ln' program to create links between files.
-   Copyright (C) 1986-2014 Free Software Foundation, Inc.
+   Copyright (C) 1986-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
-
+
 /* Written by Mike Parker and David MacKenzie. */
 
 #include <config.h>
@@ -23,12 +23,12 @@
 
 #include "system.h"
 #include "backupfile.h"
+#include "die.h"
 #include "error.h"
 #include "filenamecat.h"
 #include "file-set.h"
 #include "hash.h"
 #include "hash-triple.h"
-#include "quote.h"
 #include "relpath.h"
 #include "same.h"
 #include "yesno.h"
@@ -130,9 +130,10 @@ target_directory_operand (char const *file)
   int err = (stat_result == 0 ? 0 : errno);
   bool is_a_dir = !err && S_ISDIR (st.st_mode);
   if (err && ! errno_nonexisting (errno))
-    error (EXIT_FAILURE, err, _("failed to access %s"), quote (file));
+    die (EXIT_FAILURE, err, _("failed to access %s"), quoteaf (file));
   if (is_a_dir < looks_like_a_dir)
-    error (EXIT_FAILURE, err, _("target %s is not a directory"), quote (file));
+    die (EXIT_FAILURE, err, _("target %s is not a directory"),
+         quoteaf (file));
   return is_a_dir;
 }
 
@@ -194,7 +195,7 @@ do_link (const char *source, const char *dest)
            : lstat (source, &source_stats))
           != 0)
         {
-          error (0, errno, _("failed to access %s"), quote (source));
+          error (0, errno, _("failed to access %s"), quoteaf (source));
           return false;
         }
 
@@ -204,7 +205,7 @@ do_link (const char *source, const char *dest)
           if (! hard_dir_link)
             {
               error (0, 0, _("%s: hard link not allowed for directory"),
-                     quote (source));
+                     quotef (source));
               return false;
             }
         }
@@ -215,7 +216,7 @@ do_link (const char *source, const char *dest)
       dest_lstat_ok = (lstat (dest, &dest_stats) == 0);
       if (!dest_lstat_ok && errno != ENOENT)
         {
-          error (0, errno, _("failed to access %s"), quote (dest));
+          error (0, errno, _("failed to access %s"), quoteaf (dest));
           return false;
         }
     }
@@ -228,7 +229,7 @@ do_link (const char *source, const char *dest)
     {
       error (0, 0,
              _("will not overwrite just-created %s with %s"),
-             quote_n (0, dest), quote_n (1, source));
+             quoteaf_n (0, dest), quoteaf_n (1, source));
       return false;
     }
 
@@ -260,7 +261,7 @@ do_link (const char *source, const char *dest)
       && (source_stats.st_nlink == 1 || same_name (source, dest)))
     {
       error (0, 0, _("%s and %s are the same file"),
-             quote_n (0, source), quote_n (1, dest));
+             quoteaf_n (0, source), quoteaf_n (1, dest));
       return false;
     }
 
@@ -268,12 +269,12 @@ do_link (const char *source, const char *dest)
     {
       if (S_ISDIR (dest_stats.st_mode))
         {
-          error (0, 0, _("%s: cannot overwrite directory"), quote (dest));
+          error (0, 0, _("%s: cannot overwrite directory"), quotef (dest));
           return false;
         }
       if (interactive)
         {
-          fprintf (stderr, _("%s: replace %s? "), program_name, quote (dest));
+          fprintf (stderr, _("%s: replace %s? "), program_name, quoteaf (dest));
           if (!yesno ())
             return true;
           remove_existing_files = true;
@@ -289,7 +290,8 @@ do_link (const char *source, const char *dest)
               dest_backup = NULL;
               if (rename_errno != ENOENT)
                 {
-                  error (0, rename_errno, _("cannot backup %s"), quote (dest));
+                  error (0, rename_errno, _("cannot backup %s"),
+                         quoteaf (dest));
                   return false;
                 }
             }
@@ -327,7 +329,7 @@ do_link (const char *source, const char *dest)
     {
       if (unlink (dest) != 0)
         {
-          error (0, errno, _("cannot remove %s"), quote (dest));
+          error (0, errno, _("cannot remove %s"), quoteaf (dest));
           free (dest_backup);
           free (rel_source);
           return false;
@@ -349,9 +351,9 @@ do_link (const char *source, const char *dest)
       if (verbose)
         {
           if (dest_backup)
-            printf ("%s ~ ", quote (dest_backup));
-          printf ("%s %c> %s\n", quote_n (0, dest), (symbolic_link ? '-' : '='),
-                  quote_n (1, source));
+            printf ("%s ~ ", quoteaf (dest_backup));
+          printf ("%s %c> %s\n", quoteaf_n (0, dest),
+                  (symbolic_link ? '-' : '='), quoteaf_n (1, source));
         }
     }
   else
@@ -367,12 +369,12 @@ do_link (const char *source, const char *dest)
                     || errno == EROFS)
                  ? _("failed to create hard link %s")
                  : _("failed to create hard link %s => %s"))),
-             quote_n (0, dest), quote_n (1, source));
+             quoteaf_n (0, dest), quoteaf_n (1, source));
 
       if (dest_backup)
         {
           if (rename (dest_backup, dest) != 0)
-            error (0, errno, _("cannot un-backup %s"), quote (dest));
+            error (0, errno, _("cannot un-backup %s"), quoteaf (dest));
         }
     }
 
@@ -434,25 +436,13 @@ interpreted in relation to its parent directory.\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
-      fputs (_("\
-\n\
-The backup suffix is '~', unless set with --suffix or SIMPLE_BACKUP_SUFFIX.\n\
-The version control method may be selected via the --backup option or through\n\
-the VERSION_CONTROL environment variable.  Here are the values:\n\
-\n\
-"), stdout);
-      fputs (_("\
-  none, off       never make backups (even if --backup is given)\n\
-  numbered, t     make numbered backups\n\
-  existing, nil   numbered if numbered backups exist, simple otherwise\n\
-  simple, never   always make simple backups\n\
-"), stdout);
+      emit_backup_suffix_note ();
       printf (_("\
 \n\
 Using -s ignores -L and -P.  Otherwise, the last option specified controls\n\
 behavior when a TARGET is a symbolic link, defaulting to %s.\n\
 "), LINK_FOLLOWS_SYMLINKS ? "-L" : "-P");
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -463,7 +453,6 @@ main (int argc, char **argv)
   int c;
   bool ok;
   bool make_backups = false;
-  char *backup_suffix_string;
   char *version_control_string = NULL;
   char const *target_directory = NULL;
   bool no_target_directory = false;
@@ -477,10 +466,6 @@ main (int argc, char **argv)
   textdomain (PACKAGE);
 
   atexit (close_stdin);
-
-  /* FIXME: consider not calling getenv for SIMPLE_BACKUP_SUFFIX unless
-     we'll actually use backup_suffix_string.  */
-  backup_suffix_string = getenv ("SIMPLE_BACKUP_SUFFIX");
 
   symbolic_link = remove_existing_files = interactive = verbose
     = hard_dir_link = false;
@@ -524,16 +509,16 @@ main (int argc, char **argv)
           break;
         case 't':
           if (target_directory)
-            error (EXIT_FAILURE, 0, _("multiple target directories specified"));
+            die (EXIT_FAILURE, 0, _("multiple target directories specified"));
           else
             {
               struct stat st;
               if (stat (optarg, &st) != 0)
-                error (EXIT_FAILURE, errno, _("failed to access %s"),
-                       quote (optarg));
+                die (EXIT_FAILURE, errno, _("failed to access %s"),
+                     quoteaf (optarg));
               if (! S_ISDIR (st.st_mode))
-                error (EXIT_FAILURE, 0, _("target %s is not a directory"),
-                       quote (optarg));
+                die (EXIT_FAILURE, 0, _("target %s is not a directory"),
+                     quoteaf (optarg));
             }
           target_directory = optarg;
           break;
@@ -545,7 +530,7 @@ main (int argc, char **argv)
           break;
         case 'S':
           make_backups = true;
-          backup_suffix_string = optarg;
+          simple_backup_suffix = optarg;
           break;
         case_GETOPT_HELP_CHAR;
         case_GETOPT_VERSION_CHAR (PROGRAM_NAME, AUTHORS);
@@ -567,17 +552,17 @@ main (int argc, char **argv)
   if (no_target_directory)
     {
       if (target_directory)
-        error (EXIT_FAILURE, 0,
-               _("cannot combine --target-directory "
-                 "and --no-target-directory"));
+        die (EXIT_FAILURE, 0,
+             _("cannot combine --target-directory "
+               "and --no-target-directory"));
       if (n_files != 2)
         {
           if (n_files < 2)
             error (0, 0,
                    _("missing destination file operand after %s"),
-                   quote (file[0]));
+                   quoteaf (file[0]));
           else
-            error (0, 0, _("extra operand %s"), quote (file[2]));
+            error (0, 0, _("extra operand %s"), quoteaf (file[2]));
           usage (EXIT_FAILURE);
         }
     }
@@ -588,12 +573,9 @@ main (int argc, char **argv)
       else if (2 <= n_files && target_directory_operand (file[n_files - 1]))
         target_directory = file[--n_files];
       else if (2 < n_files)
-        error (EXIT_FAILURE, 0, _("target %s is not a directory"),
-               quote (file[n_files - 1]));
+        die (EXIT_FAILURE, 0, _("target %s is not a directory"),
+             quoteaf (file[n_files - 1]));
     }
-
-  if (backup_suffix_string)
-    simple_backup_suffix = xstrdup (backup_suffix_string);
 
   backup_type = (make_backups
                  ? xget_version (_("backup type"), version_control_string)
@@ -601,8 +583,8 @@ main (int argc, char **argv)
 
   if (relative && !symbolic_link)
     {
-        error (EXIT_FAILURE, 0,
-               _("cannot do --relative without --symbolic"));
+        die (EXIT_FAILURE, 0,
+             _("cannot do --relative without --symbolic"));
     }
 
 
@@ -647,5 +629,5 @@ main (int argc, char **argv)
   else
     ok = do_link (file[0], file[1]);
 
-  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

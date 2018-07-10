@@ -1,5 +1,5 @@
 /* 'rm' file deletion utility for GNU.
-   Copyright (C) 1988-2014 Free Software Foundation, Inc.
+   Copyright (C) 1988-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,9 +26,8 @@
 
 #include "system.h"
 #include "argmatch.h"
+#include "die.h"
 #include "error.h"
-#include "quote.h"
-#include "quotearg.h"
 #include "remove.h"
 #include "root-dev-ino.h"
 #include "yesno.h"
@@ -118,8 +117,8 @@ diagnose_leading_hyphen (int argc, char **argv)
           fprintf (stderr,
                    _("Try '%s ./%s' to remove the file %s.\n"),
                    argv[0],
-                   quotearg_n_style (1, shell_quoting_style, arg),
-                   quote (arg));
+                   quotearg_n_style (1, shell_escape_quoting_style, arg),
+                   quoteaf (arg));
           break;
         }
     }
@@ -132,7 +131,7 @@ usage (int status)
     emit_try_help ();
   else
     {
-      printf (_("Usage: %s [OPTION]... FILE...\n"), program_name);
+      printf (_("Usage: %s [OPTION]... [FILE]...\n"), program_name);
       fputs (_("\
 Remove (unlink) the FILE(s).\n\
 \n\
@@ -180,7 +179,7 @@ Note that if you use rm to remove a file, it might be possible to recover\n\
 some of its contents, given sufficient expertise and/or time.  For greater\n\
 assurance that the contents are truly unrecoverable, consider using shred.\n\
 "), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -289,6 +288,9 @@ main (int argc, char **argv)
           break;
 
         case NO_PRESERVE_ROOT:
+          if (! STREQ (argv[optind - 1], "--no-preserve-root"))
+            die (EXIT_FAILURE, 0,
+                 _("you may not abbreviate the --no-preserve-root option"));
           preserve_root = false;
           break;
 
@@ -315,7 +317,7 @@ main (int argc, char **argv)
   if (argc <= optind)
     {
       if (x.ignore_missing_files)
-        exit (EXIT_SUCCESS);
+        return EXIT_SUCCESS;
       else
         {
           error (0, 0, _("missing operand"));
@@ -328,29 +330,29 @@ main (int argc, char **argv)
       static struct dev_ino dev_ino_buf;
       x.root_dev_ino = get_root_dev_ino (&dev_ino_buf);
       if (x.root_dev_ino == NULL)
-        error (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
-               quote ("/"));
+        die (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
+             quoteaf ("/"));
     }
 
-  size_t n_files = argc - optind;
+  uintmax_t n_files = argc - optind;
   char **file =  argv + optind;
 
   if (prompt_once && (x.recursive || 3 < n_files))
     {
       fprintf (stderr,
                (x.recursive
-                ? ngettext ("%s: remove %zu argument recursively? ",
-                            "%s: remove %zu arguments recursively? ",
+                ? ngettext ("%s: remove %"PRIuMAX" argument recursively? ",
+                            "%s: remove %"PRIuMAX" arguments recursively? ",
                             select_plural (n_files))
-                : ngettext ("%s: remove %zu argument? ",
-                            "%s: remove %zu arguments? ",
+                : ngettext ("%s: remove %"PRIuMAX" argument? ",
+                            "%s: remove %"PRIuMAX" arguments? ",
                             select_plural (n_files))),
                program_name, n_files);
       if (!yesno ())
-        exit (EXIT_SUCCESS);
+        return EXIT_SUCCESS;
     }
 
   enum RM_status status = rm (file, &x);
   assert (VALID_STATUS (status));
-  exit (status == RM_ERROR ? EXIT_FAILURE : EXIT_SUCCESS);
+  return status == RM_ERROR ? EXIT_FAILURE : EXIT_SUCCESS;
 }

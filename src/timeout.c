@@ -1,5 +1,5 @@
 /* timeout -- run a command with bounded time
-   Copyright (C) 2008-2014 Free Software Foundation, Inc.
+   Copyright (C) 2008-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@
 
 #define PROGRAM_NAME "timeout"
 
-#define AUTHORS proper_name_utf8 ("Padraig Brady", "P\303\241draig Brady")
+#define AUTHORS proper_name ("Padraig Brady")
 
 static int timed_out;
 static int term_signal = SIGTERM;  /* same default as kill command.  */
@@ -203,15 +203,17 @@ cleanup (int sig)
          in case it has itself become group leader,
          or is not running in a separate group.  */
       send_sig (monitored_pid, sig);
+
       /* The normal case is the job has remained in our
          newly created process group, so send to all processes in that.  */
       if (!foreground)
-        send_sig (0, sig);
-      if (sig != SIGKILL && sig != SIGCONT)
         {
-          send_sig (monitored_pid, SIGCONT);
-          if (!foreground)
-            send_sig (0, SIGCONT);
+          send_sig (0, sig);
+          if (sig != SIGKILL && sig != SIGCONT)
+            {
+              send_sig (monitored_pid, SIGCONT);
+              send_sig (0, SIGCONT);
+            }
         }
     }
   else /* we're the child or the child is not exec'd yet.  */
@@ -266,7 +268,7 @@ is specified, send the TERM signal upon timeout.  The TERM signal kills\n\
 any process that does not block or catch that signal.  It may be necessary\n\
 to use the KILL (9) signal, since this signal cannot be caught, in which\n\
 case the exit status is 128+9 rather than 124.\n"), stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
@@ -312,7 +314,7 @@ parse_duration (const char* str)
   double duration;
   const char *ep;
 
-  if (!xstrtod (str, &ep, &duration, c_strtod)
+  if (! (xstrtod (str, &ep, &duration, c_strtod) || errno == ERANGE)
       /* Nonnegative interval.  */
       || ! (0 <= duration)
       /* No extra chars after the number and an optional s,m,h,d char.  */
@@ -440,12 +442,10 @@ main (int argc, char **argv)
   if (monitored_pid == -1)
     {
       error (0, errno, _("fork system call failed"));
-      exit (EXIT_CANCELED);
+      return EXIT_CANCELED;
     }
   else if (monitored_pid == 0)
     {                           /* child */
-      int exit_status;
-
       /* exec doesn't reset SIG_IGN -> SIG_DFL.  */
       signal (SIGTTIN, SIG_DFL);
       signal (SIGTTOU, SIG_DFL);
@@ -453,9 +453,9 @@ main (int argc, char **argv)
       execvp (argv[0], argv);   /* FIXME: should we use "sh -c" ... here?  */
 
       /* exit like sh, env, nohup, ...  */
-      exit_status = (errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE);
+      int exit_status = errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE;
       error (0, errno, _("failed to run command %s"), quote (argv[0]));
-      exit (exit_status);
+      return exit_status;
     }
   else
     {
@@ -494,14 +494,13 @@ main (int argc, char **argv)
           else
             {
               /* shouldn't happen.  */
-              error (0, 0, _("unknown status from command (0x%X)"), status);
+              error (0, 0, _("unknown status from command (%d)"), status);
               status = EXIT_FAILURE;
             }
         }
 
       if (timed_out && !preserve_status)
-        exit (EXIT_TIMEDOUT);
-      else
-        exit (status);
+        status = EXIT_TIMEDOUT;
+      return status;
     }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright (C) 2013-2014 Free Software Foundation, Inc.
+# Copyright (C) 2013-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ d
 d
 EOF
 
-# Standard Coreotils::run_tests() structure, except the addition of
+# Standard Coreutils::run_tests() structure, except the addition of
 # "OUTPUTS" array, containing the expected content of the output files.
 # See code below for conversion into PRE/CMP/POST checks.
 my @csplit_tests =

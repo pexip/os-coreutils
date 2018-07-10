@@ -1,3 +1,63 @@
+coreutils (8.26-3pexip1) pexip; urgency=low
+
+  * Migrate to Stretch
+  * debian/patches/80_fedora_sysinfo.dpatch: Drop; never applied
+
+ -- John-Mark Bell <jmb@pexip.com>  Tue, 10 Jul 2018 17:51:10 +0100
+
+coreutils (8.26-3) unstable; urgency=medium
+
+  * Update standards version to 3.9.8.0 (no changes)
+  * Add -fno-schedule-insns to CFLAGS for sha256.o on PPC to fix
+    performance regression (Closes: #854053)
+
+ -- Michael Stone <mstone@debian.org>  Wed, 22 Feb 2017 07:23:45 -0500
+
+coreutils (8.26-2) unstable; urgency=low
+
+  * Fix regression in which specifying a TZ in date -d causes the 
+    displayed date to no longer be printed in the local time zone
+    Upstream patch from Pádraig Brady (Closes: #851934)
+
+ -- Michael Stone <mstone@debian.org>  Fri, 20 Jan 2017 09:46:22 -0500
+
+coreutils (8.26-1) unstable; urgency=low
+
+  * New upstream version 
+
+ -- Michael Stone <mstone@debian.org>  Fri, 09 Dec 2016 09:08:27 -0500
+
+coreutils (8.25-2) unstable; urgency=medium
+
+  * Disable default ls quoting for now to get the rest of 8.25 into testing.
+    (Closes: #813164)
+
+ -- Michael Stone <mstone@debian.org>  Tue, 16 Feb 2016 09:02:12 -0500
+
+coreutils (8.25-1) unstable; urgency=low
+
+  * New upstream version
+    - adds globbing to dircolors, hopefully color definitions less fragile in
+      future (Closes: #791921)
+    - date --iso-8601 now uses +00:00 timezone format rather than +0000.
+      (Closes: #799479)
+    - new df name selection logic hopefully less surprising for bind mounts
+      (Closes: #799131)
+  * update debhelper dependency
+
+ -- Michael Stone <mstone@debian.org>  Fri, 29 Jan 2016 10:51:32 -0500
+
+coreutils (8.24-1) unstable; urgency=low
+
+  * New upstream version (Closes: #804062)
+  * No longer include /usr/sbin/touch symlink, create in postinst if necessary
+    (Closes: #767710)
+  * [64] backport upstream patch for overlayfs (Closes: #810669)
+  * Switch to source format 3.0 (quilt)
+  * Drop auto tests, not working and needs to be revisited
+
+ -- Michael Stone <mstone@debian.org>  Mon, 18 Jan 2016 15:34:49 -0500
+
 coreutils (8.23-4pexip1) pexip; urgency=low
 
   * Migrate to Jessie

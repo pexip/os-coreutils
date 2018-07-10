@@ -1,101 +1,40 @@
 #!/usr/bin/make -f
-# This file is public domain software, originally written by Joey Hess.
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+#export DH_OPTIONS=-v
 
-# Uncomment this to turn on verbose mode. 
-export DH_VERBOSE=1
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/default.mk
 
-# work around dpkg changes
-DEB_HOST_ARCH_CPU := $(shell dpkg-architecture -qDEB_HOST_ARCH_CPU 2>/dev/null)
-DEB_HOST_ARCH_OS := $(shell dpkg-architecture -qDEB_HOST_ARCH_OS 2>/dev/null)
-ifeq ($(DEB_HOST_ARCH_CPU),)
-  DEB_HOST_ARCH_CPU := $(shell dpkg-architecture -qDEB_HOST_GNU_CPU)
-  ifeq ($(DEB_HOST_ARCH_CPU),x86_64)
-    DEB_HOST_ARCH_CPU := amd64
-  endif
-endif
-ifeq ($(DEB_HOST_ARCH_OS),)
-  DEB_HOST_ARCH_OS := $(subst -gnu,,$(shell dpkg-architecture -qDEB_HOST_GNU_SYSTEM))
-  ifeq ($(DEB_HOST_ARCH_OS),gnu)
-    DEB_HOST_ARCH_OS := hurd
-  endif
-endif
-
-# implement no optimization build option
-CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
-LDFLAGS = $(shell dpkg-buildflags --get LDFLAGS)
-CPPFLAGS = $(shell dpkg-buildflags --get CPPFLAGS)
-CFLAGS += -DSYSLOG_SUCCESS -DSYSLOG_FAILURE -DSYSLOG_NON_ROOT
+DEB_CFLAGS_MAINT_APPEND = -DSYSLOG_SUCCESS -DSYSLOG_FAILURE -DSYSLOG_NON_ROOT
 
 # Renesas SH(sh4) need -mieee option.
 ifeq ($(DEB_HOST_ARCH_CPU),sh4)
-  CFLAGS += -mieee
+  DEB_CFLAGS_MAINT_APPEND += -mieee
 endif
-
-# programs to include/not include
-BUILDPROG_OPTS := --enable-install-program=arch
 
 BIN_PROGS = cat chgrp chmod chown cp date dd df dir echo false ln ls mkdir \
 	mknod mv pwd readlink rm rmdir vdir sleep stty sync touch true uname \
 	mktemp
 d=debian/coreutils
 
-default: binary
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-install-program=arch 
 
-configure: patch configure-stamp 
-configure-stamp: 
-	dh_testdir
-	dh_autotools-dev_updateconfig
+%:
+	dh  $@ 
 
-	CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" \
-		LDFLAGS='$(LDFLAGS)' ./configure \
-		--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE) \
-		--prefix=/usr -v \
-		--libexecdir=/usr/lib \
-		--infodir=/usr/share/info --mandir=/usr/share/man \
-		--disable-silent-rules \
-		$(BUILDPROG_OPTS)
-
-	echo configured > configure-stamp
-
-build: build-arch
-build-arch: patch configure build-stamp
-
-build-indep:
-	# do nothing
-
-build-stamp: 
-	dh_testdir
-	$(MAKE)
-	echo built > build-stamp
-
-clean: unpatch clean1
-clean1: 
-	dh_testdir
-	rm -f build-stamp configure-stamp
-	rm -rf debian/buildinfo
+override_dh_auto_clean:
 	make distclean || true
-	dh_autotools-dev_restoreconfig
-	rm -f config.log
-	rm -f config.status
-	dh_clean
 
-patch: patch-stamp
-patch-stamp: 
-	dpatch apply-all
-	dpatch cat-all > patch-stamp
-	touch patch-stamp
+override_dh_auto_test:
+	# tests fail a lot on the buildds
 
-unpatch: 
-	dpatch deapply-all
-	rm -rf patch-stamp debian-patched
+override_dh_auto_install:
+	dh_auto_install --destdir=$(d)
 
-install-arch: build-arch
-	dh_testdir
-	dh_testroot
-	dh_clean -a -k
-	dh_installdirs -a
-
-	$(MAKE) install DESTDIR=$(CURDIR)/$(d)
+override_dh_install-arch: 
+	dh_install -a
 
 	# some things go in root rather than usr
 	for f in $(BIN_PROGS); do \
@@ -105,10 +44,6 @@ install-arch: build-arch
 	# backward compatability
 	ln -s /usr/bin/md5sum $(d)/usr/bin/md5sum.textutils
 	ln -s /usr/share/man/man1/md5sum.1 $(d)/usr/share/man/man1/md5sum.textutils.1
-ifneq ($(DEB_HOST_ARCH_OS),hurd)
-		# touch used to be in /usr/bin, don't break scripts
-		ln -s /bin/touch $(d)/usr/bin/touch
-endif
 
 	# remove stuff provided by other packages
 ifeq ($(DEB_HOST_ARCH_OS),linux)
@@ -132,63 +67,12 @@ endif
 	# some build environments will leave a dangling info dir
 	rm -f $(d)/usr/share/info/dir
 
-	# unneeded
+	# unneeded entries
 	rm -rf $(d)/usr/share/locale/*/LC_TIME
 
 	cp AUTHORS \
-		NEWS README \
-		THANKS \
-		TODO \
-		$(d)/usr/share/doc/coreutils
+ 		NEWS README \
+ 		THANKS \
+ 		TODO \
+ 		$(d)/usr/share/doc/coreutils
 
-	dh_install -a
-
-install-indep: build-indep
-	dh_testdir
-	dh_testroot
-	dh_clean -i -k
-	dh_installdirs -i
-	dh_install -i
-
-# Build architecture-independent files here.
-binary-indep: build-indep install
-	dh_testdir -i
-	dh_testroot -i
-	dh_installchangelogs -i
-	dh_installdocs -i
-	dh_buildinfo
-	dh_installexamples -i
-	dh_installinfo -i
-	dh_installman -i
-	dh_link -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_installdeb -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
-
-# Build architecture-dependent files here.
-binary-arch: build-arch install-arch
-	dh_testdir -a
-	dh_testroot -a
-	dh_installchangelogs -a ChangeLog 
-	dh_installdocs -a
-	dh_buildinfo -a
-	dh_installexamples -a
-	dh_installinfo -a doc/coreutils.info
-	dh_installman -a
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	dh_strip -a
-endif
-	dh_link -a
-	dh_compress -a
-	dh_fixperms -a
-	dh_installdeb -a
-	dh_shlibdeps -a
-	dh_gencontrol -a
-	dh_md5sums -a
-	dh_builddeb -a
-
-binary: binary-indep binary-arch 
-.PHONY: build build-arch build-indep clean binary-indep binary-arch binary install patch unpatch clean1

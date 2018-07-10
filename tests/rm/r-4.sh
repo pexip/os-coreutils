@@ -1,7 +1,7 @@
 #!/bin/sh
 # Try to remove '.' and '..' recursively.
 
-# Copyright (C) 2006-2014 Free Software Foundation, Inc.
+# Copyright (C) 2006-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@ rmtest 'd/..'    || fail=1
 rmtest 'd/../'   || fail=1
 
 
-# This test is too dangerous -- if there's a bug you're wiped out!
-# rm -fr / 2>/dev/null && fail=1
+# This test is handled more carefully in r-root.sh
+# returns_ 1 rm -fr / 2>/dev/null || fail=1
 
 test -f d/a || fail=1
 

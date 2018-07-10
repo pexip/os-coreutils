@@ -1,5 +1,5 @@
 /* Create a temporary file or directory, safely.
-   Copyright (C) 2007-2014 Free Software Foundation, Inc.
+   Copyright (C) 2007-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "system.h"
 
 #include "close-stream.h"
+#include "die.h"
 #include "error.h"
 #include "filenamecat.h"
 #include "quote.h"
@@ -96,7 +97,7 @@ Files are created u+rw, and directories u+rwx, minus umask restrictions.\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
-      emit_ancillary_info ();
+      emit_ancillary_info (PROGRAM_NAME);
     }
 
   exit (status);
@@ -226,9 +227,9 @@ main (int argc, char **argv)
       size_t len = strlen (template);
       if (!len || template[len - 1] != 'X')
         {
-          error (EXIT_FAILURE, 0,
-                 _("with --suffix, template %s must end in X"),
-                 quote (template));
+          die (EXIT_FAILURE, 0,
+               _("with --suffix, template %s must end in X"),
+               quote (template));
         }
       suffix_len = strlen (suffix);
       dest_name = xcharalloc (len + suffix_len + 1);
@@ -251,13 +252,13 @@ main (int argc, char **argv)
   /* At this point, template is malloc'd, and suffix points into template.  */
   if (suffix_len && last_component (suffix) != suffix)
     {
-      error (EXIT_FAILURE, 0,
-             _("invalid suffix %s, contains directory separator"),
-             quote (suffix));
+      die (EXIT_FAILURE, 0,
+           _("invalid suffix %s, contains directory separator"),
+           quote (suffix));
     }
   x_count = count_consecutive_X_s (template, suffix - template);
   if (x_count < 3)
-    error (EXIT_FAILURE, 0, _("too few X's in template %s"), quote (template));
+    die (EXIT_FAILURE, 0, _("too few X's in template %s"), quote (template));
 
   if (use_dest_dir)
     {
@@ -272,9 +273,9 @@ main (int argc, char **argv)
             dest_dir = "/tmp";
 
           if (last_component (template) != template)
-            error (EXIT_FAILURE, 0,
-                   _("invalid template, %s, contains directory separator"),
-                   quote (template));
+            die (EXIT_FAILURE, 0,
+                 _("invalid template, %s, contains directory separator"),
+                 quote (template));
         }
       else
         {
@@ -286,10 +287,10 @@ main (int argc, char **argv)
               dest_dir = (env && *env ? env : "/tmp");
             }
           if (IS_ABSOLUTE_FILE_NAME (template))
-            error (EXIT_FAILURE, 0,
-                   _("invalid template, %s; with --tmpdir,"
-                     " it may not be absolute"),
-                   quote (template));
+            die (EXIT_FAILURE, 0,
+                 _("invalid template, %s; with --tmpdir,"
+                   " it may not be absolute"),
+                 quote (template));
         }
 
       dest_name = file_name_concat (dest_dir, template, NULL);
@@ -345,5 +346,5 @@ main (int argc, char **argv)
   free (template);
 #endif
 
-  exit (status);
+  return status;
 }

@@ -1,8 +1,8 @@
-#! /bin/sh
+#!/bin/sh
 # Make sure all of these programs work properly
 # when invoked with --help or --version.
 
-# Copyright (C) 2000-2014 Free Software Foundation, Inc.
+# Copyright (C) 2000-2016 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,13 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Ensure that $SHELL is set to *some* value and exported.
-# This is required for dircolors, which would fail e.g., when
-# invoked via debuild (which removes SHELL from the environment).
-test "x$SHELL" = x && SHELL=/bin/sh
-export SHELL
-
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
+
+# Terminate any background processes
+cleanup_() { kill $pid 2>/dev/null && wait $pid; }
 
 expected_failure_status_chroot=125
 expected_failure_status_env=125
@@ -88,19 +85,19 @@ for i in $built_programs; do
 
   # Make sure they fail upon 'disk full' error.
   if test -w /dev/full && test -c /dev/full; then
-    env $i --help    >/dev/full 2>/dev/null && fail=1
-    env $i --version >/dev/full 2>/dev/null && fail=1
-    status=$?
     test $i = [ && prog=lbracket || prog=$(echo $i|sed "s/$EXEEXT$//")
     eval "expected=\$expected_failure_status_$prog"
     test x$expected = x && expected=1
-    if test $status = $expected; then
-      : # ok
-    else
+
+    returns_ $expected env $i --help    >/dev/full 2>/dev/null &&
+    returns_ $expected env $i --version >/dev/full 2>/dev/null ||
+    {
       fail=1
+      env $i --help >/dev/full 2>/dev/null
+      status=$?
       echo "*** $i: bad exit status '$status' (expected $expected)," 1>&2
       echo "  with --help or --version output redirected to /dev/full" 1>&2
-    fi
+    }
   fi
 done
 
@@ -216,8 +213,9 @@ id_setup () { args=-u; }
 
 # Use env to avoid invoking built-in sleep of Solaris 11's /bin/sh.
 kill_setup () {
-  env sleep 31.5 &
-  args=$!
+  external=env
+  $external sleep 10m & pid=$!
+  args=$pid
 }
 
 link_setup () { args="$tmp_in link-target"; }
