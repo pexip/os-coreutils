@@ -1,5 +1,5 @@
 /* GNU's users.
-   Copyright (C) 1992-2016 Free Software Foundation, Inc.
+   Copyright (C) 1992-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by jla; revised by djm */
 
@@ -35,6 +35,11 @@
 #define AUTHORS \
   proper_name ("Joseph Arceneaux"), \
   proper_name ("David MacKenzie")
+
+static struct option const long_options[] =
+{
+  {NULL, 0, NULL, 0}
+};
 
 static int
 userid_compare (const void *v_a, const void *v_b)
@@ -130,7 +135,7 @@ main (int argc, char **argv)
 
   parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, Version,
                       usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "", NULL, NULL) != -1)
+  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
     usage (EXIT_FAILURE);
 
   switch (argc - optind)

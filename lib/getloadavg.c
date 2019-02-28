@@ -1,6 +1,6 @@
 /* Get the system load averages.
 
-   Copyright (C) 1985-1989, 1991-1995, 1997, 1999-2000, 2003-2016 Free Software
+   Copyright (C) 1985-1989, 1991-1995, 1997, 1999-2000, 2003-2018 Free Software
    Foundation, Inc.
 
    NOTE: The canonical source of this file is maintained with gnulib.
@@ -17,7 +17,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Compile-time symbols that this file uses:
 
@@ -68,7 +68,7 @@
    UMAX
    UMAX4_3
    VMS
-   WINDOWS32                    No-op for Windows95/NT.
+   _WIN32                       Native Windows (possibly also defined on Cygwin)
    __linux__                    Linux: assumes /proc file system mounted.
                                 Support from Michael K. Johnson.
    __CYGWIN__                   Cygwin emulates linux /proc/loadavg.
@@ -96,6 +96,10 @@
 # endif
 
 # include "intprops.h"
+
+# if defined _WIN32 && ! defined __CYGWIN__
+#  define WINDOWS32
+# endif
 
 # if !defined (BSD) && defined (ultrix)
 /* Ultrix behaves like BSD on Vaxen.  */
@@ -324,7 +328,9 @@
 #  define LDAV_SYMBOL "avenrun"
 # endif
 
-# include <unistd.h>
+# ifdef HAVE_UNISTD_H
+#  include <unistd.h>
+# endif
 
 /* LOAD_AVE_TYPE should only get defined if we're going to use the
    nlist method.  */

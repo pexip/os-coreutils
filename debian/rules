@@ -22,7 +22,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- --enable-install-program=arch 
 
 %:
-	dh  $@ 
+	dh $@ --with autoreconf
 
 override_dh_auto_clean:
 	make distclean || true

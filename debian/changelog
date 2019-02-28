@@ -1,3 +1,51 @@
+coreutils (8.30-3) unstable; urgency=medium
+
+  * Fix renameat2 patch (Closes: #923420)
+
+ -- Michael Stone <mstone@debian.org>  Thu, 28 Feb 2019 10:30:31 -0500
+
+coreutils (8.30-2) unstable; urgency=medium
+
+  * Use renameat2 glibc function that can be intercepted by fakechroot
+    (Closes: #915559)
+  * Above requires autoreconf turned on again
+
+ -- Michael Stone <mstone@debian.org>  Tue, 26 Feb 2019 07:15:19 -0500
+
+coreutils (8.30-1) unstable; urgency=low
+
+  * New upstream version
+    - man pages are distributed again, should fix cross building issues
+      (Closes: #721358)
+    - fixes problem with install program location when cross building
+      (Closes: #879073)
+    - env -S support to pass multiple arguments in #! lines
+  * Standards version 4.2.1.0 (no changes)
+
+ -- Michael Stone <mstone@debian.org>  Wed, 29 Aug 2018 16:20:06 -0400
+
+coreutils (8.28-1) unstable; urgency=low
+
+  * New upstream version
+    - ls adds hyperlink format (terminals with appropriate support get
+      clickable links)
+    - env adds --chdir (-C) option
+    - another round of tail -f fixes/optimizations
+    - date introduces stable long option --rfc-email for -R
+    - nproc honors OMP_THREAD_LIMIT
+  * Reenable default ls quoting
+  * Get rid of old transition packages & logic for mktemp, timeout, 
+    and realpath
+  * drop hppa longlong patch
+  * drop PPC sha256.o patch
+    Discussion in 854053 indicated that it shouldn't be an issue with gcc 7. 
+    If people do still see a performance issue with sha256 on PPC we should 
+    be early enough in the buster cycle to fix it in gcc.
+  * Standards version 4.1.1.0
+    - update watch file & add upstream signing key
+
+ -- Michael Stone <mstone@debian.org>  Mon, 02 Oct 2017 13:51:20 -0400
+
 coreutils (8.26-3) unstable; urgency=medium
 
   * Update standards version to 3.9.8.0 (no changes)

@@ -1,5 +1,5 @@
 # Customize maint.mk                           -*- makefile -*-
-# Copyright (C) 2003-2016 Free Software Foundation, Inc.
+# Copyright (C) 2003-2018 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Used in maint.mk's web-manual rule
 manual_title = Core GNU utilities
 
 # Use the direct link.  This is guaranteed to work immediately, while
 # it can take a while for the faster mirror links to become usable.
-url_dir_list = http://ftp.gnu.org/gnu/$(PACKAGE)
+url_dir_list = https://ftp.gnu.org/gnu/$(PACKAGE)
 
 # Exclude bundled external projects from syntax checks
 VC_LIST_ALWAYS_EXCLUDE_REGEX = src/blake2/.*$$
@@ -48,7 +48,7 @@ export VERBOSE = yes
 # 4914152 9e
 export XZ_OPT = -8e
 
-old_NEWS_hash = 4cdc662ed636425161a383b9aa85b2eb
+old_NEWS_hash = 48668bce5e01bf434b1d1ff10d141884
 
 # Add an exemption for sc_makefile_at_at_check.
 _makefile_at_at_check_exceptions = ' && !/^cu_install_prog/ && !/dynamic-dep/'
@@ -320,11 +320,12 @@ sc_prohibit-gl-attributes:
 	  $(_sc_search_regexp)
 
 # Look for lines longer than 80 characters, except omit:
-# - program-generated long lines in diff headers,
+# - urls
 # - the help2man script copied from upstream,
 # - tests involving long checksum lines, and
 # - the 'pr' test cases.
 FILTER_LONG_LINES =						\
+  \|^[^:]*NEWS:.*https\{,1\}://| d;					\
   \|^[^:]*man/help2man:| d;					\
   \|^[^:]*tests/misc/sha[0-9]*sum.*\.pl[-:]| d;			\
   \|^[^:]*tests/pr/|{ \|^[^:]*tests/pr/pr-tests:| !d; };
@@ -514,6 +515,7 @@ sc_prohibit_and_fail_1:
 # that was seen to fail on FreeBSD /bin/sh at least
 sc_prohibit_env_returns:
 	@prohibit='=[^ ]* returns_ '					\
+	exclude='_ returns_ '						\
 	halt='Passing env vars to returns_ is non portable'		\
 	in_vc_files='^tests/'						\
 	  $(_sc_search_regexp)
@@ -785,11 +787,13 @@ sc_gitignore_missing:
 		'entries to .gitignore' >&2; exit 1; } || :
 
 # Flag redundant entries in .gitignore
-sc_gitignore_redundant:
-	@{ grep ^/lib $(srcdir)/.gitignore;				\
-	   sed 's|^|/lib|' $(srcdir)/lib/.gitignore; } |		\
-	    sort | uniq -d | grep . && { echo '$(ME): Remove above'	\
-	      'entries from .gitignore' >&2; exit 1; } || :
+# Disabled for now as too aggressive flagging
+# entries like /lib/arg-nonnull.h
+#sc_gitignore_redundant:
+#	@{ grep ^/lib $(srcdir)/.gitignore;				\
+#	   sed 's|^|/lib|' $(srcdir)/lib/.gitignore; } |		\
+#	    sort | uniq -d | grep . && { echo '$(ME): Remove above'	\
+#	      'entries from .gitignore' >&2; exit 1; } || :
 
 sc_prohibit-form-feed:
 	@prohibit=$$'\f' \
