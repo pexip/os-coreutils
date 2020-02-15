@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test warnings for sort options
 
-# Copyright (C) 2010-2016 Free Software Foundation, Inc.
+# Copyright (C) 2010-2018 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ sort
@@ -70,8 +70,6 @@ sort: using simple byte comparison
 sort: using simple byte comparison
 17
 sort: using simple byte comparison
-18
-sort: failed to set locale; using simple byte comparison
 EOF
 
 echo 1 >> out
@@ -108,10 +106,24 @@ echo 16 >> out
 sort -rM --debug /dev/null 2>>out #no warning
 echo 17 >> out
 sort -rM -k1,1 --debug /dev/null 2>>out #no warning
-echo 18 >> out
-LC_ALL=missing sort --debug /dev/null 2>>out
 
 compare exp out || fail=1
+
+
+cat <<\EOF > exp
+sort: failed to set locale
+sort: using simple byte comparison
+EOF
+
+LC_ALL=missing sort --debug /dev/null 2>out
+
+# musl libc maps unknown locales to the default utf8 locale
+# with no way to determine failures.  This is discussed at:
+# http://www.openwall.com/lists/musl/2016/04/02/1
+if ! grep -E 'using .*(missing|C.UTF-8).* sorting rules' out; then
+  compare exp out || fail=1
+fi
+
 
 cat <<\EOF > exp
 sort: using simple byte comparison

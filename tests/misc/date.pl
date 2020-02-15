@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test "date".
 
-# Copyright (C) 2005-2016 Free Software Foundation, Inc.
+# Copyright (C) 2005-2018 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use strict;
 
@@ -290,6 +290,12 @@ my @Tests =
      ['invalid-TZ-crash', "-d 'TZ=\"\"\"'",
       {ERR => "date: invalid date 'TZ=\"\"\"'\n"},
       {EXIT => 1},
+     ],
+
+     # https://bugs.debian.org/851934#10
+     ['cross-TZ-mishandled', "-d 'TZ=\"EST5\" 1970-01-01 00:00'",
+      {ENV => 'TZ=PST8'},
+      {OUT => 'Wed Dec 31 21:00:00 PST 1969'},
      ],
     );
 

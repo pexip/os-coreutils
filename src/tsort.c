@@ -1,5 +1,5 @@
 /* tsort - topological sort.
-   Copyright (C) 1998-2016 Free Software Foundation, Inc.
+   Copyright (C) 1998-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Mark Kettenis <kettenis@phys.uva.nl>.  */
 
@@ -39,6 +39,11 @@
 #define PROGRAM_NAME "tsort"
 
 #define AUTHORS proper_name ("Mark Kettenis")
+
+static struct option const long_options[] =
+{
+  {NULL, 0, NULL, 0}
+};
 
 /* Token delimiters when reading from a file.  */
 #define DELIM " \t\n"
@@ -553,7 +558,7 @@ main (int argc, char **argv)
 
   parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE, Version,
                       usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "", NULL, NULL) != -1)
+  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
     usage (EXIT_FAILURE);
 
   if (1 < argc - optind)

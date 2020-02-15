@@ -1,5 +1,5 @@
 /* cksum -- calculate and print POSIX checksums and sizes of files
-   Copyright (C) 1992-2016 Free Software Foundation, Inc.
+   Copyright (C) 1992-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Q. Frank Xia, qx@math.columbia.edu.
    Cosmetic changes and reorganization by David MacKenzie, djm@gnu.ai.mit.edu.
@@ -44,7 +44,7 @@
 #include <stdint.h>
 #include "system.h"
 #include "fadvise.h"
-#include "xfreopen.h"
+#include "xbinary-io.h"
 
 #ifdef CRCTAB
 
@@ -67,10 +67,8 @@ static uint_fast32_t r[8];
 static void
 fill_r (void)
 {
-  int i;
-
   r[0] = GEN;
-  for (i = 1; i < 8; i++)
+  for (int i = 1; i < 8; i++)
     r[i] = (r[i - 1] << 1) ^ ((r[i - 1] & SBIT) ? GEN : 0);
 }
 
@@ -78,9 +76,8 @@ static uint_fast32_t
 crc_remainder (int m)
 {
   uint_fast32_t rem = 0;
-  int i;
 
-  for (i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++)
     if (BIT (i) & m)
       rem ^= r[i];
 
@@ -90,11 +87,9 @@ crc_remainder (int m)
 int
 main (void)
 {
-  int i;
-
   fill_r ();
   printf ("static uint_fast32_t const crctab[256] =\n{\n  0x00000000");
-  for (i = 0; i < 51; i++)
+  for (int i = 0; i < 51; i++)
     {
       printf (",\n  0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x",
               crc_remainder (i * 5 + 1), crc_remainder (i * 5 + 2),
@@ -111,6 +106,11 @@ main (void)
 # include "long-options.h"
 # include "die.h"
 # include "error.h"
+
+static struct option const long_options[] =
+{
+  {NULL, 0, NULL, 0}
+};
 
 /* Number of bytes to read at once.  */
 # define BUFLEN (1 << 16)
@@ -194,8 +194,7 @@ cksum (const char *file, bool print_name)
     {
       fp = stdin;
       have_read_stdin = true;
-      if (O_BINARY && ! isatty (STDIN_FILENO))
-        xfreopen (NULL, "rb", stdin);
+      xset_binary_mode (STDIN_FILENO, O_BINARY);
     }
   else
     {
@@ -297,7 +296,7 @@ main (int argc, char **argv)
 
   parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE, Version,
                       usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "", NULL, NULL) != -1)
+  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
     usage (EXIT_FAILURE);
 
   have_read_stdin = false;

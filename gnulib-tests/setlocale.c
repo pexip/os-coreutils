@@ -1,5 +1,5 @@
 /* Set the current locale.  -*- coding: utf-8 -*-
-   Copyright (C) 2009, 2011-2016 Free Software Foundation, Inc.
+   Copyright (C) 2009, 2011-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Bruno Haible <bruno@clisp.org>, 2009.  */
 
@@ -72,7 +72,7 @@ category_to_name (int category)
   return retval;
 }
 
-# if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
+# if defined _WIN32 && ! defined __CYGWIN__
 
 /* The native Windows setlocale() function expects locale names of the form
    "German" or "German_Germany" or "DEU", but not "de" or "de_DE".  We need
@@ -633,6 +633,13 @@ setlocale_unixlike (int category, const char *locale)
   char ll_buf[64];
   char CC_buf[64];
 
+  /* The native Windows implementation of setlocale understands the special
+     locale name "C", but not "POSIX".  Therefore map "POSIX" to "C".  */
+#if defined _WIN32 && !defined __CYGWIN__
+  if (locale != NULL && strcmp (locale, "POSIX") == 0)
+    locale = "C";
+#endif
+
   /* First, try setlocale with the original argument unchanged.  */
   result = setlocale (category, locale);
   if (result != NULL)
@@ -845,7 +852,7 @@ rpl_setlocale (int category, const char *locale)
 
           if (setlocale_unixlike (LC_ALL, base_name) == NULL)
             goto fail;
-# if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
+# if defined _WIN32 && ! defined __CYGWIN__
           /* On native Windows, setlocale(LC_ALL,...) may succeed but set the
              LC_CTYPE category to an invalid value ("C") when it does not
              support the specified encoding.  Report a failure instead.  */
@@ -896,7 +903,7 @@ rpl_setlocale (int category, const char *locale)
     }
   else
     {
-# if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
+# if defined _WIN32 && ! defined __CYGWIN__
       if (category == LC_ALL && locale != NULL && strchr (locale, '.') != NULL)
         {
           char *saved_locale;
