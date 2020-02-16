@@ -1,3 +1,9 @@
+coreutils (8.30-3pexip1) pexip; urgency=medium
+
+  * Migrate to Buster
+
+ -- Vincent Sanders <vince@pexip.com>  Sun, 16 Feb 2020 23:38:47 +0000
+
 coreutils (8.30-3) unstable; urgency=medium
 
   * Fix renameat2 patch (Closes: #923420)
