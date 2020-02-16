@@ -1,5 +1,5 @@
 /* id -- print real and effective UIDs and GIDs
-   Copyright (C) 1989-2016 Free Software Foundation, Inc.
+   Copyright (C) 1989-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Arnold Robbins.
    Major rewrite by David MacKenzie, djm@gnu.ai.mit.edu. */
@@ -400,7 +400,6 @@ print_full_info (const char *username)
 
   {
     gid_t *groups;
-    int i;
 
     gid_t primary_group;
     if (username)
@@ -422,7 +421,7 @@ print_full_info (const char *username)
 
     if (n_groups > 0)
       fputs (_(" groups="), stdout);
-    for (i = 0; i < n_groups; i++)
+    for (int i = 0; i < n_groups; i++)
       {
         if (i > 0)
           putchar (',');

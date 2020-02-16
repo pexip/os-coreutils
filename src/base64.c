@@ -1,5 +1,5 @@
 /* Base64 encode/decode strings or files.
-   Copyright (C) 2004-2016 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
 
    This file is part of Base64.
 
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 /* Written by Simon Josefsson <simon@josefsson.org>.  */
 
@@ -31,7 +31,7 @@
 #include "quote.h"
 #include "xstrtol.h"
 #include "xdectoint.h"
-#include "xfreopen.h"
+#include "xbinary-io.h"
 
 #define AUTHORS proper_name ("Simon Josefsson")
 
@@ -224,12 +224,13 @@ do_decode (FILE *in, FILE *out, bool ignore_garbage)
 
           if (ignore_garbage)
             {
-              size_t i;
-              for (i = 0; n > 0 && i < n;)
-                if (isbase (inbuf[sum + i]) || inbuf[sum + i] == '=')
-                  i++;
-                else
-                  memmove (inbuf + sum + i, inbuf + sum + i + 1, --n - i);
+              for (size_t i = 0; n > 0 && i < n;)
+                {
+                  if (isbase (inbuf[sum + i]) || inbuf[sum + i] == '=')
+                    i++;
+                  else
+                    memmove (inbuf + sum + i, inbuf + sum + i + 1, --n - i);
+                }
             }
 
           sum += n;
@@ -320,8 +321,7 @@ main (int argc, char **argv)
 
   if (STREQ (infile, "-"))
     {
-      if (O_BINARY)
-        xfreopen (NULL, "rb", stdin);
+      xset_binary_mode (STDIN_FILENO, O_BINARY);
       input_fh = stdin;
     }
   else

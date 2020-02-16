@@ -1,6 +1,6 @@
 /* mountlist.h -- declarations for list of mounted file systems
 
-   Copyright (C) 1991-1992, 1998, 2000-2005, 2009-2016 Free Software
+   Copyright (C) 1991-1992, 1998, 2000-2005, 2009-2018 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #ifndef MOUNTLIST_H_
 # define MOUNTLIST_H_

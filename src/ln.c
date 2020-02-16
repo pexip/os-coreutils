@@ -1,5 +1,5 @@
 /* 'ln' program to create links between files.
-   Copyright (C) 1986-2016 Free Software Foundation, Inc.
+   Copyright (C) 1986-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Mike Parker and David MacKenzie. */
 
@@ -27,6 +27,7 @@
 #include "error.h"
 #include "filenamecat.h"
 #include "file-set.h"
+#include "force-link.h"
 #include "hash.h"
 #include "hash-triple.h"
 #include "relpath.h"
@@ -183,7 +184,6 @@ do_link (const char *source, const char *dest)
   char *rel_source = NULL;
   bool dest_lstat_ok = false;
   bool source_is_dir = false;
-  bool ok;
 
   if (!symbolic_link)
     {
@@ -301,12 +301,7 @@ do_link (const char *source, const char *dest)
   if (relative)
     source = rel_source = convert_abs_rel (source, dest);
 
-  ok = ((symbolic_link ? symlink (source, dest)
-         : linkat (AT_FDCWD, source, AT_FDCWD, dest,
-                   logical ? AT_SYMLINK_FOLLOW : 0))
-        == 0);
-
-  /* If the attempt to create a link failed and we are removing or
+  /* If the attempt to create a link fails and we are removing or
      backing up destinations, unlink the destination and try again.
 
      On the surface, POSIX describes an algorithm that states that
@@ -324,22 +319,12 @@ do_link (const char *source, const char *dest)
      that refer to the same file), rename succeeds and DEST remains.
      If we didn't remove DEST in that case, the subsequent symlink or link
      call would fail.  */
-
-  if (!ok && errno == EEXIST && (remove_existing_files || dest_backup))
-    {
-      if (unlink (dest) != 0)
-        {
-          error (0, errno, _("cannot remove %s"), quoteaf (dest));
-          free (dest_backup);
-          free (rel_source);
-          return false;
-        }
-
-      ok = ((symbolic_link ? symlink (source, dest)
-             : linkat (AT_FDCWD, source, AT_FDCWD, dest,
-                       logical ? AT_SYMLINK_FOLLOW : 0))
-            == 0);
-    }
+  bool ok_to_remove = remove_existing_files || dest_backup;
+  bool ok = 0 <= (symbolic_link
+                  ? force_symlinkat (source, AT_FDCWD, dest, ok_to_remove)
+                  : force_linkat (AT_FDCWD, source, AT_FDCWD, dest,
+                                  logical ? AT_SYMLINK_FOLLOW : 0,
+                                  ok_to_remove));
 
   if (ok)
     {
@@ -391,10 +376,10 @@ usage (int status)
   else
     {
       printf (_("\
-Usage: %s [OPTION]... [-T] TARGET LINK_NAME   (1st form)\n\
-  or:  %s [OPTION]... TARGET                  (2nd form)\n\
-  or:  %s [OPTION]... TARGET... DIRECTORY     (3rd form)\n\
-  or:  %s [OPTION]... -t DIRECTORY TARGET...  (4th form)\n\
+Usage: %s [OPTION]... [-T] TARGET LINK_NAME\n\
+  or:  %s [OPTION]... TARGET\n\
+  or:  %s [OPTION]... TARGET... DIRECTORY\n\
+  or:  %s [OPTION]... -t DIRECTORY TARGET...\n\
 "),
               program_name, program_name, program_name, program_name);
       fputs (_("\
@@ -453,6 +438,7 @@ main (int argc, char **argv)
   int c;
   bool ok;
   bool make_backups = false;
+  char const *backup_suffix = NULL;
   char *version_control_string = NULL;
   char const *target_directory = NULL;
   bool no_target_directory = false;
@@ -530,7 +516,7 @@ main (int argc, char **argv)
           break;
         case 'S':
           make_backups = true;
-          simple_backup_suffix = optarg;
+          backup_suffix = optarg;
           break;
         case_GETOPT_HELP_CHAR;
         case_GETOPT_VERSION_CHAR (PROGRAM_NAME, AUTHORS);
@@ -580,6 +566,7 @@ main (int argc, char **argv)
   backup_type = (make_backups
                  ? xget_version (_("backup type"), version_control_string)
                  : no_backups);
+  set_simple_backup_suffix (backup_suffix);
 
   if (relative && !symbolic_link)
     {
@@ -590,8 +577,6 @@ main (int argc, char **argv)
 
   if (target_directory)
     {
-      int i;
-
       /* Create the data structure we'll use to record which hard links we
          create.  Used to ensure that ln detects an obscure corner case that
          might result in user data loss.  Create it only if needed.  */
@@ -615,7 +600,7 @@ main (int argc, char **argv)
         }
 
       ok = true;
-      for (i = 0; i < n_files; ++i)
+      for (int i = 0; i < n_files; ++i)
         {
           char *dest_base;
           char *dest = file_name_concat (target_directory,

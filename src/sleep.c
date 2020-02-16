@@ -1,5 +1,5 @@
 /* sleep - delay for a specified amount of time.
-   Copyright (C) 1984-2016 Free Software Foundation, Inc.
+   Copyright (C) 1984-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include <config.h>
 #include <stdio.h>
@@ -34,6 +34,11 @@
 #define AUTHORS \
   proper_name ("Jim Meyering"), \
   proper_name ("Paul Eggert")
+
+static struct option const long_options[] =
+{
+  {NULL, 0, NULL, 0}
+};
 
 void
 usage (int status)
@@ -98,7 +103,6 @@ apply_suffix (double *x, char suffix_char)
 int
 main (int argc, char **argv)
 {
-  int i;
   double seconds = 0.0;
   bool ok = true;
 
@@ -112,7 +116,7 @@ main (int argc, char **argv)
 
   parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, Version,
                       usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "", NULL, NULL) != -1)
+  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
     usage (EXIT_FAILURE);
 
   if (argc == 1)
@@ -121,7 +125,7 @@ main (int argc, char **argv)
       usage (EXIT_FAILURE);
     }
 
-  for (i = optind; i < argc; i++)
+  for (int i = optind; i < argc; i++)
     {
       double s;
       const char *p;

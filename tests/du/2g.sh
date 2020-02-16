@@ -3,7 +3,7 @@
 # Before coreutils-5.93, on systems with a signed, 32-bit stat.st_blocks
 # one of du's computations would overflow.
 
-# Copyright (C) 2005-2016 Free Software Foundation, Inc.
+# Copyright (C) 2005-2018 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ du
@@ -62,7 +62,7 @@ du -k $big > out1 || fail=1
 rm -f $big
 sed 's/^2[0-9][0-9][0-9][0-9][0-9][0-9]	'$big'$/~2M/' out1 > out
 
-cat <<\EOF > exp || fail=1
+cat <<\EOF > exp || framework_failure_
 ~2M
 EOF
 

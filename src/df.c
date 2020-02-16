@@ -1,5 +1,5 @@
 /* df - summarize free disk space
-   Copyright (C) 1991-2016 Free Software Foundation, Inc.
+   Copyright (C) 1991-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by David MacKenzie <djm@gnu.ai.mit.edu>.
    --human-readable option added by lm@sgi.com.
@@ -674,9 +674,12 @@ filter_mount_list (bool devices_only)
          On Linux we probably have me_dev populated from /proc/self/mountinfo,
          however we still stat() in case another device was mounted later.  */
       if ((me->me_remote && show_local_fs)
+          || (me->me_dummy && !show_all_fs && !show_listed_fs)
+          || (!selected_fstype (me->me_type) || excluded_fstype (me->me_type))
           || -1 == stat (me->me_mountdir, &buf))
         {
-          /* If remote, and showing just local, add ME for filtering later.
+          /* If remote, and showing just local, or FS type is excluded,
+             add ME for filtering later.
              If stat failed; add ME to be able to complain about it later.  */
           buf.st_dev = me->me_dev;
         }
@@ -1699,26 +1702,25 @@ main (int argc, char **argv)
 
   if (optind < argc)
     {
-      int i;
-
-      /* Open each of the given entries to make sure any corresponding
+      /* stat each of the given entries to make sure any corresponding
          partition is automounted.  This must be done before reading the
          file system table.  */
       stats = xnmalloc (argc - optind, sizeof *stats);
-      for (i = optind; i < argc; ++i)
+      for (int i = optind; i < argc; ++i)
         {
-          /* Prefer to open with O_NOCTTY and use fstat, but fall back
-             on using "stat", in case the file is unreadable.  */
-          int fd = open (argv[i], O_RDONLY | O_NOCTTY);
-          if ((fd < 0 || fstat (fd, &stats[i - optind]))
-              && stat (argv[i], &stats[i - optind]))
+          if (stat (argv[i], &stats[i - optind]))
             {
               error (0, errno, "%s", quotef (argv[i]));
               exit_status = EXIT_FAILURE;
               argv[i] = NULL;
             }
-          if (0 <= fd)
-            close (fd);
+          else if (! S_ISFIFO (stats[i - optind].st_mode))
+            {
+              /* open() is needed to automount in some cases.  */
+              int fd = open (argv[i], O_RDONLY | O_NOCTTY);
+              if (0 <= fd)
+                close (fd);
+            }
         }
     }
 
@@ -1757,12 +1759,10 @@ main (int argc, char **argv)
 
   if (optind < argc)
     {
-      int i;
-
       /* Display explicitly requested empty file systems.  */
       show_listed_fs = true;
 
-      for (i = optind; i < argc; ++i)
+      for (int i = optind; i < argc; ++i)
         if (argv[i])
           get_entry (argv[i], &stats[i - optind]);
 

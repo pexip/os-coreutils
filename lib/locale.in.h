@@ -1,5 +1,5 @@
 /* A POSIX <locale.h>.
-   Copyright (C) 2007-2016 Free Software Foundation, Inc.
+   Copyright (C) 2007-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,17 +12,20 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #if __GNUC__ >= 3
 @PRAGMA_SYSTEM_HEADER@
 #endif
 @PRAGMA_COLUMNS@
 
-#ifdef _GL_ALREADY_INCLUDING_LOCALE_H
+#if (defined _WIN32 && !defined __CYGWIN__ && defined __need_locale_t) \
+    || defined _GL_ALREADY_INCLUDING_LOCALE_H
 
-/* Special invocation conventions to handle Solaris header files
-   (through Solaris 10) when combined with gettext's libintl.h.  */
+/* Special invocation convention:
+   - Inside mingw header files,
+   - To handle Solaris header files (through Solaris 10) when combined
+     with gettext's libintl.h.  */
 
 #@INCLUDE_NEXT@ @NEXT_LOCALE_H@
 
@@ -212,5 +215,5 @@ _GL_WARN_ON_USE (duplocale, "duplocale is buggy on some glibc systems - "
 #endif
 
 #endif /* _@GUARD_PREFIX@_LOCALE_H */
-#endif /* ! _GL_ALREADY_INCLUDING_LOCALE_H */
 #endif /* _@GUARD_PREFIX@_LOCALE_H */
+#endif /* !(__need_locale_t || _GL_ALREADY_INCLUDING_LOCALE_H) */
