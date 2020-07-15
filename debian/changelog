@@ -1,3 +1,9 @@
+coreutils (8.30-3pexip2) pexip; urgency=medium
+
+  * Rebuild in buster environment
+
+ -- Steve McIntyre <steve.mcintyre@pexip.com>  Wed, 15 Jul 2020 17:33:50 +0000
+
 coreutils (8.30-3pexip1) pexip; urgency=medium
 
   * Migrate to Buster
