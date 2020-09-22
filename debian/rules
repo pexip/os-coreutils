@@ -67,9 +67,6 @@ endif
 	# some build environments will leave a dangling info dir
 	rm -f $(d)/usr/share/info/dir
 
-	# unneeded entries
-	rm -rf $(d)/usr/share/locale/*/LC_TIME
-
 	cp AUTHORS \
  		NEWS README \
  		THANKS \

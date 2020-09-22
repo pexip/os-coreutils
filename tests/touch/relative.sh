@@ -2,7 +2,7 @@
 # Demonstrate using a combination of --reference and --date to
 # set the time of a file back by an arbitrary amount.
 
-# Copyright (C) 2004-2018 Free Software Foundation, Inc.
+# Copyright (C) 2004-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ TZ=UTC0 touch --date='2004-01-16 12:00 +0000' f || framework_failure_
 # Set times back by 5 days.
 touch --ref f --date='-5 days' f || fail=1
 
-TZ=UTC0 ls -og --time-style=+%Y-%m-%d f > out.1 || fail
+TZ=UTC0 ls -og --time-style=+%Y-%m-%d f > out.1 || fail=1
 sed 's/ f$//;s/.* //' out.1 > out
 
 cat <<\EOF > exp || framework_failure_

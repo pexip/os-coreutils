@@ -1,7 +1,7 @@
 # Make coreutils documentation.				-*-Makefile-*-
 # This is included by the top-level Makefile.am.
 
-# Copyright (C) 1995-2018 Free Software Foundation, Inc.
+# Copyright (C) 1995-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@ doc_coreutils_TEXINFOS = \
   doc/perm.texi \
   doc/parse-datetime.texi \
   doc/constants.texi \
-  doc/fdl.texi
+  doc/fdl.texi \
+  doc/sort-version.texi
 
 # The following is necessary if the package name is 8 characters or longer.
 # If the info documentation would be split into 10 or more separate files,

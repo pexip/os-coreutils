@@ -2,7 +2,7 @@
    Please send additions to bug-coreutils@gnu.org and meskes@debian.org.
    This file is generated automatically from ./src/stat.c. */
 
-#if defined __linux__
+#if defined __linux__ || defined __ANDROID__
 # define S_MAGIC_AAFS 0x5A3C69F0
 # define S_MAGIC_ACFS 0x61636673
 # define S_MAGIC_ADFS 0xADF5
@@ -15,6 +15,7 @@
 # define S_MAGIC_BEFS 0x42465331
 # define S_MAGIC_BDEVFS 0x62646576
 # define S_MAGIC_BFS 0x1BADFACE
+# define S_MAGIC_BINDERFS 0x6C6F6F70
 # define S_MAGIC_BPF_FS 0xCAFE4A11
 # define S_MAGIC_BINFMTFS 0x42494E4D
 # define S_MAGIC_BTRFS 0x9123683E
@@ -32,9 +33,11 @@
 # define S_MAGIC_DEBUGFS 0x64626720
 # define S_MAGIC_DEVFS 0x1373
 # define S_MAGIC_DEVPTS 0x1CD1
+# define S_MAGIC_DMA_BUF 0x444D4142
 # define S_MAGIC_ECRYPTFS 0xF15F
 # define S_MAGIC_EFIVARFS 0xDE5E81E4
 # define S_MAGIC_EFS 0x00414A53
+# define S_MAGIC_EROFS_V1 0xE0F5E1E2
 # define S_MAGIC_EXFS 0x45584653
 # define S_MAGIC_EXOFS 0x5DF5
 # define S_MAGIC_EXT 0x137D
@@ -85,6 +88,7 @@
 # define S_MAGIC_OVERLAYFS 0x794C7630
 # define S_MAGIC_PANFS 0xAAD7AAEA
 # define S_MAGIC_PIPEFS 0x50495045
+# define S_MAGIC_PPC_CMM 0xC7571590
 # define S_MAGIC_PRL_FS 0x7C7C6673
 # define S_MAGIC_PROC 0x9FA0
 # define S_MAGIC_PSTOREFS 0x6165676C
@@ -95,6 +99,7 @@
 # define S_MAGIC_REISERFS 0x52654973
 # define S_MAGIC_ROMFS 0x7275
 # define S_MAGIC_RPC_PIPEFS 0x67596969
+# define S_MAGIC_SDCARDFS 0x5DCA2DF5
 # define S_MAGIC_SECURITYFS 0x73636673
 # define S_MAGIC_SELINUX 0xF97CFF8C
 # define S_MAGIC_SMACK 0x43415D53
@@ -122,6 +127,7 @@
 # define S_MAGIC_XENIX 0x012FF7B4
 # define S_MAGIC_XFS 0x58465342
 # define S_MAGIC_XIAFS 0x012FD16D
+# define S_MAGIC_Z3FOLD 0x0033
 # define S_MAGIC_ZFS 0x2FC12FC1
 # define S_MAGIC_ZSMALLOC 0x58295829
 #elif defined __GNU__

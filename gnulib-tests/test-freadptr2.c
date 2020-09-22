@@ -1,5 +1,5 @@
 /* Test of freadptr() function.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ main (int argc, char **argv)
     {
       void *buf = malloc (nbytes);
       ASSERT (fread (buf, 1, nbytes, stdin) == nbytes);
+      free (buf);
     }
 
   if (nbytes == 0)

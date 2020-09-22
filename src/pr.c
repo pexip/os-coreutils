@@ -1,5 +1,5 @@
 /* pr -- convert text files for printing.
-   Copyright (C) 1988-2018 Free Software Foundation, Inc.
+   Copyright (C) 1988-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -322,6 +322,7 @@
 #include "stdio--.h"
 #include "strftime.h"
 #include "xstrtol.h"
+#include "xstrtol-error.h"
 #include "xdectoint.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */

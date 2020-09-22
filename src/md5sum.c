@@ -1,5 +1,5 @@
 /* Compute checksums of files or strings.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -287,7 +287,10 @@ The following five options are useful only when verifying checksums:\n\
 The sums are computed as described in %s.  When checking, the input\n\
 should be a former output of this program.  The default mode is to print a\n\
 line with checksum, a space, a character indicating input mode ('*' for binary,\
-\n' ' for text or where binary is insignificant), and name for each FILE.\n"),
+\n' ' for text or where binary is insignificant), and name for each FILE.\n\
+\n\
+Note: There is no difference between binary mode and text mode on GNU systems.\
+\n"),
               DIGEST_REFERENCE);
       emit_ancillary_info (PROGRAM_NAME);
     }
@@ -447,26 +450,23 @@ split_3 (char *s, size_t s_len,
       ptrdiff_t algo = argmatch (algo_name, algorithm_out_string, NULL, 0);
       if (algo < 0)
         return false;
-      else
-        b2_algorithm = algo;
+      b2_algorithm = algo;
       if (openssl_format)
         s[--i] = '(';
 
+      b2_length = blake2_max_len[b2_algorithm] * 8;
       if (length_specified)
         {
-          unsigned long int tmp_ulong;
-          if (xstrtoul (s + i, NULL, 0, &tmp_ulong, NULL) == LONGINT_OK
-              && 0 < tmp_ulong && tmp_ulong <= blake2_max_len[b2_algorithm] * 8
-              && tmp_ulong % 8 == 0)
-            b2_length = tmp_ulong;
-          else
+          uintmax_t length;
+          char *siend;
+          if (! (xstrtoumax (s + i, &siend, 0, &length, NULL) == LONGINT_OK
+                 && 0 < length && length <= b2_length
+                 && length % 8 == 0))
             return false;
 
-          while (ISDIGIT (s[i]))
-            ++i;
+          i = siend - s;
+          b2_length = length;
         }
-      else
-        b2_length = blake2_max_len[b2_algorithm] * 8;
 
       digest_hex_bytes = b2_length / 4;
 #endif

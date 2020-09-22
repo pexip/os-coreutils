@@ -1,9 +1,9 @@
-# serial 9
+# serial 11
 # Determine whether getcwd aborts when the length of the working directory
 # name is unusually large.  Any length between 4k and 16k trigger the bug
 # when using glibc-2.4.90-9 or older.
 
-# Copyright (C) 2006, 2009-2018 Free Software Foundation, Inc.
+# Copyright (C) 2006, 2009-2020 Free Software Foundation, Inc.
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -13,6 +13,7 @@
 # gl_FUNC_GETCWD_ABORT_BUG([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 AC_DEFUN([gl_FUNC_GETCWD_ABORT_BUG],
 [
+  AC_REQUIRE([AC_CANONICAL_HOST]) dnl for cross-compiles
   AC_CHECK_DECLS_ONCE([getcwd])
   AC_CHECK_HEADERS_ONCE([unistd.h])
   AC_REQUIRE([gl_PATHMAX_SNIPPET_PREREQ])
@@ -139,8 +140,22 @@ main ()
           gl_cv_func_getcwd_abort_bug=yes
         else
           gl_cv_func_getcwd_abort_bug=no
-        fi],
-       [gl_cv_func_getcwd_abort_bug=yes])
+        fi
+       ],
+       [case "$host_os" in
+                   # Guess no on musl systems.
+          *-musl*) gl_cv_func_getcwd_abort_bug="guessing no" ;;
+                   # Guess yes otherwise, even on glibc systems.
+          *)       gl_cv_func_getcwd_abort_bug="guessing yes"
+        esac
+       ])
     ])
-  AS_IF([test $gl_cv_func_getcwd_abort_bug = yes], [$1], [$2])
+  case "$gl_cv_func_getcwd_abort_bug" in
+    *yes)
+      $1
+      ;;
+    *)
+      $2
+      ;;
+  esac
 ])

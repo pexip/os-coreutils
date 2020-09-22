@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: coreutils 8.18-pre1\n"
 "Report-Msgid-Bugs-To: bug-coreutils@gnu.org\n"
-"POT-Creation-Date: 2018-07-01 17:59-0700\n"
+"POT-Creation-Date: 2020-03-05 13:28+0000\n"
 "PO-Revision-Date: 2012-07-03 01:06+0100\n"
 "Last-Translator: Ivan Masár <helix84@centrum.sk>\n"
 "Language-Team: Slovak <sk-i18n@lists.linux.sk>\n"
@@ -20,17 +20,17 @@ msgstr ""
 "X-Bugs: Report translation errors to the Language-Team address.\n"
 "Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
 
-#: lib/argmatch.c:134
+#: lib/argmatch.c:132
 #, c-format
 msgid "invalid argument %s for %s"
 msgstr "neplatný argument %s pre %s"
 
-#: lib/argmatch.c:135
+#: lib/argmatch.c:133
 #, c-format
 msgid "ambiguous argument %s for %s"
 msgstr "nejednoznačný argument %s pre %s"
 
-#: lib/argmatch.c:154
+#: lib/argmatch.c:152 lib/argmatch.h:223
 msgid "Valid arguments are:"
 msgstr "Platné argumenty sú:"
 
@@ -38,18 +38,19 @@ msgstr "Platné argumenty sú:"
 msgid "error closing file"
 msgstr "chyba pri zatváraní súboru"
 
-#: lib/closeout.c:122 src/base64.c:139 src/base64.c:151 src/base64.c:157
-#: src/base64.c:198 src/base64.c:255 src/cat.c:187 src/cat.c:203 src/cat.c:287
-#: src/cksum.c:251 src/expand.c:150 src/expand.c:175 src/factor.c:2387
-#: src/mktemp.c:339 src/od.c:968 src/paste.c:163 src/seq.c:287 src/shuf.c:590
-#: src/split.c:935 src/split.c:1189 src/split.c:1194 src/tail.c:1267
-#: src/tail.c:1421 src/tail.c:2483 src/tr.c:1587 src/tr.c:1813 src/tr.c:1905
-#: src/unexpand.c:234 src/unexpand.c:250
+#: lib/closeout.c:122 src/basenc.c:945 src/basenc.c:957 src/basenc.c:963
+#: src/basenc.c:1006 src/basenc.c:1071 src/cat.c:187 src/cat.c:203
+#: src/cat.c:287 src/cksum.c:245 src/expand.c:150 src/expand.c:175
+#: src/factor.c:2387 src/mktemp.c:339 src/od.c:970 src/paste.c:163
+#: src/seq.c:295 src/shuf.c:595 src/split.c:936 src/split.c:1190
+#: src/split.c:1195 src/tail.c:1291 src/tail.c:1445 src/tail.c:2507
+#: src/tr.c:1587 src/tr.c:1813 src/tr.c:1905 src/unexpand.c:234
+#: src/unexpand.c:250
 #, c-format
 msgid "write error"
 msgstr "chyba pri zápise"
 
-#: lib/copy-acl.c:54 src/copy.c:1393 src/copy.c:2908
+#: lib/copy-acl.c:54 src/copy.c:1427 src/copy.c:2945
 #, c-format
 msgid "preserving permissions for %s"
 msgstr "zachovávajú sa práva %s"
@@ -269,12 +270,19 @@ msgstr "%s: chybný prepínač -- %c\n"
 msgid "%s: option requires an argument -- '%c'\n"
 msgstr "%s: prepínač vyžaduje argument -- %c\n"
 
-#: lib/mkdir-p.c:179 src/install.c:512
+#: lib/mkdir-p.c:162 src/copy.c:1927 src/copy.c:1999 src/copy.c:2571
+#: src/copy.c:2932 src/find-mount-point.c:84 src/install.c:702
+#: src/realpath.c:146 src/stat.c:1440 src/truncate.c:327
+#, c-format
+msgid "cannot stat %s"
+msgstr "nie je možné stat() %s"
+
+#: lib/mkdir-p.c:190 src/install.c:512
 #, c-format
 msgid "cannot change permissions of %s"
 msgstr "nie je možné zmeniť práva %s"
 
-#: lib/mkdir-p.c:189 src/copy.c:2523 src/install.c:740 src/install.c:753
+#: lib/mkdir-p.c:200 src/copy.c:2560 src/install.c:740 src/install.c:753
 #, c-format
 msgid "cannot create directory %s"
 msgstr "nie je možné vytvoriť adresár %s"
@@ -329,8 +337,8 @@ msgstr "'"
 msgid "%s: end of file"
 msgstr "%s: koniec súboru"
 
-#: lib/randread.c:128 src/du.c:1073 src/md5sum.c:803 src/od.c:952 src/tac.c:251
-#: src/tac.c:357 src/tac.c:515 src/tac.c:596 src/wc.c:803
+#: lib/randread.c:128 src/du.c:1074 src/md5sum.c:803 src/od.c:954 src/tac.c:251
+#: src/tac.c:357 src/tac.c:515 src/tac.c:596 src/wc.c:824
 #, c-format
 msgid "%s: read error"
 msgstr "%s: chyba pri čítaní"
@@ -404,7 +412,7 @@ msgstr "Tegulárny výraz je príliš veľký"
 msgid "Unmatched ) or \\)"
 msgstr ") alebo \\) bez náprotivku"
 
-#: lib/regcomp.c:689
+#: lib/regcomp.c:676
 msgid "No previous regular expression"
 msgstr "Žiaden predošlý regulárny výraz"
 
@@ -443,7 +451,7 @@ msgstr "^[yYaAáÁ]"
 msgid "^[nN]"
 msgstr "^[nN]"
 
-#: lib/set-acl.c:46 src/copy.c:2546 src/cp.c:514
+#: lib/set-acl.c:46 src/copy.c:2583 src/cp.c:514
 #, c-format
 msgid "setting permissions for %s"
 msgstr "nastavujú sa práva %s"
@@ -640,12 +648,12 @@ msgstr "neplatná špec."
 msgid "unable to display error message"
 msgstr "nie je možné zobraziť chybovú správu"
 
-#: lib/version-etc.c:74
+#: lib/version-etc.c:73
 #, c-format
 msgid "Packaged by %s (%s)\n"
 msgstr "Balík vytvoril %s (%s)\n"
 
-#: lib/version-etc.c:77
+#: lib/version-etc.c:76
 #, c-format
 msgid "Packaged by %s\n"
 msgstr "Balík vytvoril %s\n"
@@ -653,19 +661,17 @@ msgstr "Balík vytvoril %s\n"
 #. TRANSLATORS: Translate "(C)" to the copyright symbol
 #. (C-in-a-circle), if this symbol is available in the user's
 #. locale.  Otherwise, do not translate "(C)"; leave it as-is.
-#: lib/version-etc.c:84
+#: lib/version-etc.c:83
 msgid "(C)"
 msgstr "©"
 
-#: lib/version-etc.c:86
-#, fuzzy
+#. TRANSLATORS: The %s placeholder is the web address of the GPL license.
+#: lib/version-etc.c:88
+#, fuzzy, c-format
 msgid ""
-"\n"
-"License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl."
-"html>.\n"
+"License GPLv3+: GNU GPL version 3 or later <%s>.\n"
 "This is free software: you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"
-"\n"
 msgstr ""
 "\n"
 "Licencia GPLv3+: GNU GPL versie 3 alebo neskoršia <http://gnu.org/licenses/"
@@ -675,19 +681,19 @@ msgstr ""
 "\n"
 
 #. TRANSLATORS: %s denotes an author name.
-#: lib/version-etc.c:102
+#: lib/version-etc.c:105
 #, c-format
 msgid "Written by %s.\n"
 msgstr "Napísal %s.\n"
 
 #. TRANSLATORS: Each %s denotes an author name.
-#: lib/version-etc.c:106
+#: lib/version-etc.c:109
 #, c-format
 msgid "Written by %s and %s.\n"
 msgstr "Napísal %s a %s.\n"
 
 #. TRANSLATORS: Each %s denotes an author name.
-#: lib/version-etc.c:110
+#: lib/version-etc.c:113
 #, c-format
 msgid "Written by %s, %s, and %s.\n"
 msgstr "Napísal %s, %s a %s.\n"
@@ -695,7 +701,7 @@ msgstr "Napísal %s, %s a %s.\n"
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:117
+#: lib/version-etc.c:120
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -707,7 +713,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:124
+#: lib/version-etc.c:127
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -719,7 +725,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:131
+#: lib/version-etc.c:134
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -731,7 +737,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:139
+#: lib/version-etc.c:142
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -743,7 +749,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:147
+#: lib/version-etc.c:150
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -757,7 +763,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:156
+#: lib/version-etc.c:159
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -771,7 +777,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:167
+#: lib/version-etc.c:170
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -786,35 +792,28 @@ msgstr ""
 #. for this package.  Please add _another line_ saying
 #. "Report translation bugs to <...>\n" with the address for translation
 #. bugs (typically your translation team's web or email address).
-#: lib/version-etc.c:245
+#: lib/version-etc.c:249
 #, fuzzy, c-format
-msgid ""
-"\n"
-"Report bugs to: %s\n"
+msgid "Report bugs to: %s\n"
 msgstr ""
 "\n"
 "Chyby v programe oznamujte tu: <%s>.\n"
 
-#: lib/version-etc.c:247
+#: lib/version-etc.c:251
 #, fuzzy, c-format
 msgid "Report %s bugs to: %s\n"
 msgstr ""
 "\n"
 "Chyby v programe oznamujte tu: <%s>.\n"
 
-#: lib/version-etc.c:251
+#: lib/version-etc.c:255 lib/version-etc.c:257
 #, c-format
 msgid "%s home page: <%s>\n"
 msgstr "Domovská stránka %s: <%s>\n"
 
-#: lib/version-etc.c:253
+#: lib/version-etc.c:260
 #, fuzzy, c-format
-msgid "%s home page: <https://www.gnu.org/software/%s/>\n"
-msgstr "Domovská stránka %s: <http://www.gnu.org/software/%s/>\n"
-
-#: lib/version-etc.c:256
-#, fuzzy
-msgid "General help using GNU software: <https://www.gnu.org/gethelp/>\n"
+msgid "General help using GNU software: <%s>\n"
 msgstr ""
 "Všeobecná pomoc pri používaní softvéru GNU: <http://www.gnu.org/gethelp/>\n"
 
@@ -859,96 +858,16 @@ msgid "%s%s argument '%s' too large"
 msgstr "%s%s argument „%s“ je príliš veľký"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/base64.c:36
-msgid "Simon Josefsson"
-msgstr "Simon Josefsson"
-
-#: src/base64.c:65
-#, fuzzy, c-format
-msgid ""
-"Usage: %s [OPTION]... [FILE]\n"
-"Base%d encode or decode FILE, or standard input, to standard output.\n"
-msgstr ""
-"Použitie: %s [VOĽBA] [SÚBOR]\n"
-"Base64 zakódovanie alebo dekódovanie SÚBORu alebo štand. vstupu na štand. "
-"výstup.\n"
-"\n"
-
-#: src/base64.c:73
-msgid ""
-"  -d, --decode          decode data\n"
-"  -i, --ignore-garbage  when decoding, ignore non-alphabet characters\n"
-"  -w, --wrap=COLS       wrap encoded lines after COLS character (default "
-"76).\n"
-"                          Use 0 to disable line wrapping\n"
-"\n"
-msgstr ""
-"  -d, --decode          dekódovať dáta\n"
-"  -i, --ignore-garbage  počas dekódovania ignorovať neabecedné znaky\n"
-"  -w, --wrap=STĹP       zalomiť nekódované riadky po STĹP znakoch "
-"(predvolene 76).\n"
-"                          Použite 0 na zamedzenie zalamovania riadkov\n"
-"\n"
-
-#: src/base64.c:82
-#, fuzzy, c-format
-msgid ""
-"\n"
-"The data are encoded as described for the %s alphabet in RFC 4648.\n"
-"When decoding, the input may contain newlines in addition to the bytes of\n"
-"the formal %s alphabet.  Use --ignore-garbage to attempt to recover\n"
-"from any other non-alphabet bytes in the encoded stream.\n"
-msgstr ""
-"\n"
-"Dáta sú zakódované podľa popisu base64 abecedy v RFC 3548.\n"
-"Pri dekódovaní môže vstup okrem bajtov formálnej base64 abecedy\n"
-"obsahovať znaky nového riadka.  Použitím --ignore-garbage zapnete\n"
-"pokus o zotavenie v prípade výskytu iných nealfabetických znakov\n"
-"v kódovanom toku.\n"
-
-#: src/base64.c:201 src/base64.c:239 src/csplit.c:277 src/csplit.c:1468
-#: src/join.c:465 src/shuf.c:233 src/shuf.c:279 src/shuf.c:554
-#: src/tac-pipe.c:76 src/tee.c:263 src/tr.c:1611
-#, c-format
-msgid "read error"
-msgstr "chyba pri čítaní"
-
-#: src/base64.c:258
-msgid "invalid input"
-msgstr "neplatný vstup"
-
-#: src/base64.c:295
-#, fuzzy
-msgid "invalid wrap size"
-msgstr "neplatná veľkosť zalamovania: %s"
-
-#: src/base64.c:313 src/basename.c:176 src/comm.c:489 src/cp.c:621
-#: src/date.c:470 src/dircolors.c:449 src/du.c:1018 src/hostid.c:79
-#: src/hostname.c:118 src/id.c:190 src/install.c:985 src/join.c:970
-#: src/link.c:91 src/ln.c:551 src/logname.c:77 src/mknod.c:182 src/mv.c:451
-#: src/nproc.c:115 src/od.c:1865 src/ptx.c:2082 src/seq.c:619 src/shuf.c:491
-#: src/sort.c:4595 src/split.c:1553 src/tr.c:1768 src/tsort.c:566 src/tty.c:113
-#: src/uname.c:252 src/uniq.c:533 src/uniq.c:550 src/unlink.c:87
-#: src/uptime.c:258 src/users.c:152 src/wc.c:737 src/who.c:831 src/whoami.c:85
-#, c-format
-msgid "extra operand %s"
-msgstr "nadbytočný operand %s"
-
-#: src/base64.c:344 src/cat.c:764
-msgid "closing standard input"
-msgstr "zatvára sa štandardný vstup"
-
-#. This is a proper name. See the gettext manual, section Names.
 #: src/basename.c:29 src/chgrp.c:38 src/chmod.c:39 src/chown.c:37 src/comm.c:39
-#: src/cp.c:48 src/csplit.c:45 src/cut.c:46 src/date.c:40 src/dd.c:46
-#: src/df.c:45 src/dirname.c:32 src/du.c:54 src/env.c:36 src/expand.c:49
+#: src/cp.c:48 src/csplit.c:45 src/cut.c:46 src/date.c:40 src/dd.c:45
+#: src/df.c:49 src/dirname.c:32 src/du.c:55 src/env.c:39 src/expand.c:49
 #: src/fold.c:36 src/groups.c:36 src/head.c:47 src/id.c:42 src/install.c:51
-#: src/ln.c:43 src/ls.c:131 src/mkdir.c:39 src/mkfifo.c:36 src/mknod.c:37
+#: src/ln.c:52 src/ls.c:137 src/mkdir.c:39 src/mkfifo.c:36 src/mknod.c:37
 #: src/mv.c:43 src/nice.c:40 src/nl.c:42 src/paste.c:53 src/pathchk.c:32
 #: src/pinky.c:38 src/printenv.c:44 src/printf.c:68 src/rm.c:41 src/rmdir.c:37
-#: src/stty.c:68 src/sum.c:39 src/tac.c:58 src/tail.c:73 src/tee.c:38
-#: src/touch.c:45 src/tty.c:44 src/uname.c:61 src/unexpand.c:50 src/uniq.c:43
-#: src/uptime.c:47 src/users.c:37 src/wc.c:51 src/who.c:51 src/yes.c:33
+#: src/stty.c:68 src/sum.c:39 src/tac.c:58 src/tail.c:77 src/tee.c:38
+#: src/touch.c:45 src/tty.c:44 src/uname.c:61 src/unexpand.c:50 src/uniq.c:41
+#: src/uptime.c:46 src/users.c:36 src/wc.c:51 src/who.c:51 src/yes.c:32
 msgid "David MacKenzie"
 msgstr "David MacKenzie"
 
@@ -1000,32 +919,192 @@ msgstr ""
 "  %s -s .h include/stdio.h  -> „stdio”\n"
 "  %s -a any/str1 any/str2   -> „str1” a následne „str2”\n"
 
-#: src/basename.c:170 src/chcon.c:536 src/chgrp.c:279 src/chmod.c:529
-#: src/chown.c:280 src/chroot.c:278 src/comm.c:481 src/csplit.c:1402
-#: src/dirname.c:116 src/expr.c:454 src/join.c:1160 src/link.c:83
-#: src/mkdir.c:252 src/mkfifo.c:130 src/mknod.c:171 src/nohup.c:114
+#: src/basename.c:170 src/chcon.c:537 src/chgrp.c:279 src/chmod.c:529
+#: src/chown.c:280 src/chroot.c:279 src/comm.c:481 src/csplit.c:1402
+#: src/dirname.c:116 src/expr.c:454 src/join.c:1159 src/link.c:76
+#: src/mkdir.c:252 src/mkfifo.c:130 src/mknod.c:171 src/nohup.c:107
 #: src/pathchk.c:147 src/printf.c:693 src/readlink.c:145 src/realpath.c:237
-#: src/rm.c:338 src/rmdir.c:222 src/seq.c:613 src/sleep.c:124 src/stat.c:1663
-#: src/stdbuf.c:370 src/tr.c:1753 src/unlink.c:81
+#: src/rm.c:338 src/rmdir.c:223 src/seq.c:633 src/sleep.c:116 src/stat.c:1885
+#: src/stdbuf.c:371 src/tr.c:1753 src/unlink.c:74
 #, c-format
 msgid "missing operand"
 msgstr "chýba operand"
 
+#: src/basename.c:176 src/basenc.c:1225 src/comm.c:489 src/cp.c:621
+#: src/date.c:471 src/dircolors.c:449 src/du.c:1019 src/hostid.c:72
+#: src/hostname.c:111 src/install.c:985 src/join.c:969 src/link.c:84
+#: src/ln.c:593 src/logname.c:70 src/mknod.c:182 src/mv.c:451 src/nproc.c:115
+#: src/od.c:1871 src/ptx.c:2082 src/seq.c:639 src/shuf.c:491 src/sort.c:4596
+#: src/split.c:1554 src/tr.c:1768 src/tsort.c:559 src/tty.c:113 src/uname.c:252
+#: src/uniq.c:520 src/uniq.c:537 src/unlink.c:80 src/uptime.c:252
+#: src/users.c:145 src/wc.c:758 src/who.c:831 src/whoami.c:78
+#, c-format
+msgid "extra operand %s"
+msgstr "nadbytočný operand %s"
+
 #. This is a proper name. See the gettext manual, section Names.
-#: src/cat.c:48 src/cp.c:47 src/df.c:44 src/du.c:53 src/factor.c:129
+#: src/basenc.c:37 src/basenc.c:40
+msgid "Simon Josefsson"
+msgstr "Simon Josefsson"
+
+#. This is a proper name. See the gettext manual, section Names.
+#: src/basenc.c:38 src/env.c:40 src/numfmt.c:43
+msgid "Assaf Gordon"
+msgstr ""
+
+#: src/basenc.c:101 src/dircolors.c:99 src/uptime.c:199 src/users.c:105
+#, c-format
+msgid "Usage: %s [OPTION]... [FILE]\n"
+msgstr "Použitie: %s [PREPÍNAČ]... [SÚBOR]...\n"
+
+#: src/basenc.c:106
+#, fuzzy
+msgid "basenc encode or decode FILE, or standard input, to standard output.\n"
+msgstr ""
+"Použitie: %s [VOĽBA] [SÚBOR]\n"
+"Base64 zakódovanie alebo dekódovanie SÚBORu alebo štand. vstupu na štand. "
+"výstup.\n"
+"\n"
+
+#: src/basenc.c:110
+#, fuzzy, c-format
+msgid "Base%d encode or decode FILE, or standard input, to standard output.\n"
+msgstr ""
+"Použitie: %s [VOĽBA] [SÚBOR]\n"
+"Base64 zakódovanie alebo dekódovanie SÚBORu alebo štand. vstupu na štand. "
+"výstup.\n"
+"\n"
+
+#: src/basenc.c:118
+msgid "      --base64          same as 'base64' program (RFC4648 section 4)\n"
+msgstr ""
+
+#: src/basenc.c:121
+msgid "      --base64url       file- and url-safe base64 (RFC4648 section 5)\n"
+msgstr ""
+
+#: src/basenc.c:124
+msgid "      --base32          same as 'base32' program (RFC4648 section 6)\n"
+msgstr ""
+
+#: src/basenc.c:127
+msgid ""
+"      --base32hex       extended hex alphabet base32 (RFC4648 section 7)\n"
+msgstr ""
+
+#: src/basenc.c:130
+msgid "      --base16          hex encoding (RFC4648 section 8)\n"
+msgstr ""
+
+#: src/basenc.c:133
+msgid ""
+"      --base2msbf       bit string with most significant bit (msb) first\n"
+msgstr ""
+
+#: src/basenc.c:136
+msgid ""
+"      --base2lsbf       bit string with least significant bit (lsb) first\n"
+msgstr ""
+
+#: src/basenc.c:140
+msgid ""
+"  -d, --decode          decode data\n"
+"  -i, --ignore-garbage  when decoding, ignore non-alphabet characters\n"
+"  -w, --wrap=COLS       wrap encoded lines after COLS character (default "
+"76).\n"
+"                          Use 0 to disable line wrapping\n"
+"\n"
+msgstr ""
+"  -d, --decode          dekódovať dáta\n"
+"  -i, --ignore-garbage  počas dekódovania ignorovať neabecedné znaky\n"
+"  -w, --wrap=STĹP       zalomiť nekódované riadky po STĹP znakoch "
+"(predvolene 76).\n"
+"                          Použite 0 na zamedzenie zalamovania riadkov\n"
+"\n"
+
+#: src/basenc.c:148
+msgid ""
+"      --z85             ascii85-like encoding (ZeroMQ spec:32/Z85);\n"
+"                        when encoding, input length must be a multiple of "
+"4;\n"
+"                        when decoding, input length must be a multiple of 5\n"
+msgstr ""
+
+#: src/basenc.c:157
+#, fuzzy
+msgid ""
+"\n"
+"When decoding, the input may contain newlines in addition to the bytes of\n"
+"the formal alphabet.  Use --ignore-garbage to attempt to recover\n"
+"from any other non-alphabet bytes in the encoded stream.\n"
+msgstr ""
+"\n"
+"Dáta sú zakódované podľa popisu base64 abecedy v RFC 3548.\n"
+"Pri dekódovaní môže vstup okrem bajtov formálnej base64 abecedy\n"
+"obsahovať znaky nového riadka.  Použitím --ignore-garbage zapnete\n"
+"pokus o zotavenie v prípade výskytu iných nealfabetických znakov\n"
+"v kódovanom toku.\n"
+
+#: src/basenc.c:164
+#, fuzzy, c-format
+msgid ""
+"\n"
+"The data are encoded as described for the %s alphabet in RFC 4648.\n"
+"When decoding, the input may contain newlines in addition to the bytes of\n"
+"the formal %s alphabet.  Use --ignore-garbage to attempt to recover\n"
+"from any other non-alphabet bytes in the encoded stream.\n"
+msgstr ""
+"\n"
+"Dáta sú zakódované podľa popisu base64 abecedy v RFC 3548.\n"
+"Pri dekódovaní môže vstup okrem bajtov formálnej base64 abecedy\n"
+"obsahovať znaky nového riadka.  Použitím --ignore-garbage zapnete\n"
+"pokus o zotavenie v prípade výskytu iných nealfabetických znakov\n"
+"v kódovanom toku.\n"
+
+#: src/basenc.c:619
+msgid "invalid input (length must be multiple of 4 characters)"
+msgstr ""
+
+#: src/basenc.c:1009 src/basenc.c:1055 src/csplit.c:277 src/csplit.c:1468
+#: src/join.c:465 src/shuf.c:233 src/shuf.c:279 src/shuf.c:559
+#: src/tac-pipe.c:76 src/tee.c:263 src/tr.c:1611
+#, c-format
+msgid "read error"
+msgstr "chyba pri čítaní"
+
+#: src/basenc.c:1074
+msgid "invalid input"
+msgstr "neplatný vstup"
+
+#: src/basenc.c:1121
+#, fuzzy
+msgid "invalid wrap size"
+msgstr "neplatná veľkosť zalamovania: %s"
+
+#: src/basenc.c:1218
+#, fuzzy, c-format
+msgid "missing encoding type"
+msgstr "chýba operand po %s"
+
+#: src/basenc.c:1256 src/cat.c:764
+msgid "closing standard input"
+msgstr "zatvára sa štandardný vstup"
+
+#. This is a proper name. See the gettext manual, section Names.
+#: src/cat.c:48 src/cp.c:47 src/df.c:48 src/du.c:54 src/factor.c:129
 #: src/split.c:49
 msgid "Torbjorn Granlund"
 msgstr "Torbjorn Granlund"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/cat.c:49 src/comm.c:38 src/ls.c:130 src/rm.c:42 src/split.c:50
-#: src/tee.c:37 src/uniq.c:42
+#: src/cat.c:49 src/comm.c:38 src/ls.c:136 src/rm.c:42 src/split.c:50
+#: src/tee.c:37 src/uniq.c:40
 msgid "Richard M. Stallman"
 msgstr "Richard M. Stallman"
 
-#: src/cat.c:88 src/df.c:1458 src/expand.c:69 src/fold.c:66 src/head.c:110
-#: src/ls.c:5131 src/nl.c:176 src/paste.c:436 src/pr.c:2736 src/rm.c:133
-#: src/sum.c:59 src/tac.c:132 src/tail.c:261 src/tee.c:87 src/unexpand.c:78
+#: src/cat.c:88 src/df.c:1511 src/expand.c:69 src/fold.c:66 src/head.c:110
+#: src/ls.c:5342 src/nl.c:176 src/paste.c:436 src/pr.c:2737 src/rm.c:133
+#: src/sum.c:59 src/tac.c:132 src/tail.c:265 src/tee.c:87 src/unexpand.c:78
 #, c-format
 msgid "Usage: %s [OPTION]... [FILE]...\n"
 msgstr "Použitie: %s [PREPÍNAČ]... [SÚBOR]...\n"
@@ -1085,8 +1164,8 @@ msgstr ""
 msgid "cannot do ioctl on %s"
 msgstr "nie je možné vykonať ioctl na %s"
 
-#: src/cat.c:638 src/dd.c:2433 src/sort.c:417 src/tail.c:2420 src/tee.c:207
-#: src/yes.c:131
+#: src/cat.c:638 src/dd.c:2492 src/sort.c:405 src/tail.c:2444 src/tee.c:207
+#: src/yes.c:128
 #, c-format
 msgid "standard output"
 msgstr "štandardný výstup"
@@ -1097,74 +1176,74 @@ msgid "%s: input file is output file"
 msgstr "%s: vstupný súbor je zároveň výstupným"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/chcon.c:36 src/runcon.c:57
+#: src/chcon.c:37 src/runcon.c:57
 msgid "Russell Coker"
 msgstr "Russell Coker"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/chcon.c:37 src/chgrp.c:39 src/chmod.c:40 src/chown.c:38 src/cp.c:49
-#: src/cut.c:47 src/dirname.c:33 src/du.c:56 src/head.c:48 src/hostid.c:33
-#: src/hostname.c:34 src/mktemp.c:36 src/mv.c:44 src/nohup.c:35 src/od.c:39
-#: src/pathchk.c:33 src/pwd.c:32 src/rm.c:43 src/sleep.c:35 src/sync.c:33
-#: src/tail.c:75 src/tr.c:38 src/true.c:33
+#: src/chcon.c:38 src/chgrp.c:39 src/chmod.c:40 src/chown.c:38 src/cp.c:49
+#: src/cut.c:47 src/dirname.c:33 src/du.c:57 src/head.c:48 src/hostid.c:32
+#: src/hostname.c:33 src/mktemp.c:36 src/mv.c:44 src/nohup.c:34 src/od.c:40
+#: src/pathchk.c:33 src/pwd.c:32 src/rm.c:43 src/sleep.c:34 src/sync.c:33
+#: src/tail.c:79 src/tr.c:38 src/true.c:33
 msgid "Jim Meyering"
 msgstr "Jim Meyering"
 
-#: src/chcon.c:100 src/runcon.c:202 src/runcon.c:233
+#: src/chcon.c:101 src/runcon.c:202 src/runcon.c:233
 #, c-format
 msgid "failed to create security context: %s"
 msgstr "nie je možné vytvoriť bezpečnostný kontext: %s"
 
-#: src/chcon.c:112
+#: src/chcon.c:113
 #, c-format
 msgid "failed to set %s security context component to %s"
 msgstr "nepodarilo sa nastaviť %s zložku bezpečnostného kontextu na %s"
 
-#: src/chcon.c:156 src/chcon.c:547 src/copy.c:924 src/runcon.c:216
-#: src/stat.c:793
+#: src/chcon.c:157 src/chcon.c:548 src/copy.c:958 src/runcon.c:216
+#: src/stat.c:833
 #, c-format
 msgid "failed to get security context of %s"
 msgstr "nepodarilo sa získať bezpečnostný kontext %s"
 
-#: src/chcon.c:166
+#: src/chcon.c:167
 #, c-format
 msgid "can't apply partial context to unlabeled file %s"
 msgstr "nie je možné použiť čiastočný kontext na súbor bez označenia %s"
 
-#: src/chcon.c:190
+#: src/chcon.c:191
 #, c-format
 msgid "failed to change context of %s to %s"
 msgstr "nepodarilo sa zmeniť bezpečnostný kontext %s na %s"
 
-#: src/chcon.c:255 src/chmod.c:218 src/chown-core.c:324 src/copy.c:725
-#: src/du.c:532 src/ls.c:3241
+#: src/chcon.c:256 src/chmod.c:218 src/chown-core.c:324 src/copy.c:759
+#: src/du.c:533 src/ls.c:3436
 #, c-format
 msgid "cannot access %s"
 msgstr "nie je možné pristupovať k %s"
 
-#: src/chcon.c:266 src/chmod.c:231 src/chown-core.c:337 src/du.c:512
+#: src/chcon.c:267 src/chmod.c:231 src/chown-core.c:337 src/du.c:513
 #, c-format
 msgid "cannot read directory %s"
 msgstr "nie je možné načítať adresár %s"
 
-#: src/chcon.c:293
+#: src/chcon.c:294
 #, c-format
 msgid "changing security context of %s\n"
 msgstr "zmena bezpečnostného kontextu %s\n"
 
-#: src/chcon.c:327 src/chmod.c:349 src/chown-core.c:538 src/remove.c:601
+#: src/chcon.c:328 src/chmod.c:349 src/chown-core.c:538 src/remove.c:601
 #: src/selinux.c:323
 #, c-format
 msgid "fts_read failed"
 msgstr "fts_read zlyhalo"
 
-#: src/chcon.c:338 src/chmod.c:360 src/chown-core.c:550 src/du.c:713
+#: src/chcon.c:339 src/chmod.c:360 src/chown-core.c:550 src/du.c:714
 #: src/remove.c:615 src/selinux.c:334
 #, fuzzy, c-format
 msgid "fts_close failed"
 msgstr "zlyhalo zatvorenie súboru"
 
-#: src/chcon.c:352
+#: src/chcon.c:353
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... CONTEXT FILE...\n"
@@ -1175,7 +1254,7 @@ msgstr ""
 "  alebo:  %s [VOĽBA]... [-u POUŽ] [-r ROLA] [-l ROZSAH] [-t TYP] SÚBOR...\n"
 "  alebo:  %s [VOĽBA]... --reference=RSÚBOR SÚBOR...\n"
 
-#: src/chcon.c:358
+#: src/chcon.c:359
 #, fuzzy
 msgid ""
 "Change the SELinux security context of each FILE to CONTEXT.\n"
@@ -1191,7 +1270,7 @@ msgstr ""
 "                         (toto je štandardné správanie) namiesto samotného\n"
 "                         symbolického odkazu\n"
 
-#: src/chcon.c:365 src/chgrp.c:125 src/chown.c:95
+#: src/chcon.c:366 src/chgrp.c:125 src/chown.c:95
 #, fuzzy
 msgid ""
 "      --dereference      affect the referent of each symbolic link (this is\n"
@@ -1208,7 +1287,7 @@ msgstr ""
 "                         (toto je štandardné správanie) namiesto samotného\n"
 "                         symbolického odkazu\n"
 
-#: src/chcon.c:370
+#: src/chcon.c:371
 #, fuzzy
 msgid ""
 "  -u, --user=USER        set user USER in the target security context\n"
@@ -1225,7 +1304,7 @@ msgstr ""
 "kontexte\n"
 "\n"
 
-#: src/chcon.c:376 src/chgrp.c:134 src/chmod.c:390 src/chown.c:111
+#: src/chcon.c:377 src/chgrp.c:134 src/chmod.c:390 src/chown.c:111
 msgid ""
 "      --no-preserve-root  do not treat '/' specially (the default)\n"
 "      --preserve-root    fail to operate recursively on '/'\n"
@@ -1233,7 +1312,7 @@ msgstr ""
 "      --no-preserve-root  nezaobchádzať „/“ špeciálne (predvolené)\n"
 "      --preserve-root    zabrániť rekurzívnemu prechádzaniu od „/“\n"
 
-#: src/chcon.c:380
+#: src/chcon.c:381
 msgid ""
 "      --reference=RFILE  use RFILE's security context rather than "
 "specifying\n"
@@ -1243,16 +1322,16 @@ msgstr ""
 "zadania\n"
 "                         hodnoty KONTEXT\n"
 
-#: src/chcon.c:384 src/chgrp.c:142 src/chown.c:119
+#: src/chcon.c:385 src/chgrp.c:142 src/chown.c:119
 msgid "  -R, --recursive        operate on files and directories recursively\n"
 msgstr "  -R, --recursive        rekurzívne prechádzať adresármi a súbormi\n"
 
-#: src/chcon.c:387
+#: src/chcon.c:388
 msgid "  -v, --verbose          output a diagnostic for every file processed\n"
 msgstr ""
 "  -v, --verbose          vypíše diagnostiku pri každom spracovanom súbore\n"
 
-#: src/chcon.c:390 src/chgrp.c:145 src/chown.c:122
+#: src/chcon.c:391 src/chgrp.c:145 src/chown.c:122
 #, fuzzy
 msgid ""
 "\n"
@@ -1277,32 +1356,32 @@ msgstr ""
 "  -P                     neprechádzať žiadne symbolické odkazy (štandardne)\n"
 "\n"
 
-#: src/chcon.c:517 src/chgrp.c:266 src/chown.c:267
+#: src/chcon.c:518 src/chgrp.c:266 src/chown.c:267
 msgid "-R --dereference requires either -H or -L"
 msgstr "-R --dereference vyžaduje buď -H alebo -L"
 
-#: src/chcon.c:523
+#: src/chcon.c:524
 msgid "-R -h requires -P"
 msgstr "-R -h vyžaduje -P"
 
-#: src/chcon.c:538 src/chgrp.c:281 src/chmod.c:531 src/chown.c:282
-#: src/comm.c:483 src/csplit.c:1404 src/join.c:1162 src/link.c:85
+#: src/chcon.c:539 src/chgrp.c:281 src/chmod.c:531 src/chown.c:282
+#: src/comm.c:483 src/csplit.c:1404 src/join.c:1161 src/link.c:78
 #: src/mknod.c:173 src/tr.c:1756
 #, c-format
 msgid "missing operand after %s"
 msgstr "chýba operand po %s"
 
-#: src/chcon.c:561 src/runcon.c:250
+#: src/chcon.c:563 src/runcon.c:250
 #, c-format
 msgid "invalid context: %s"
 msgstr "neplatný kontexxt: %s"
 
-#: src/chcon.c:567
+#: src/chcon.c:569
 #, c-format
 msgid "conflicting security context specifiers given"
 msgstr "boli zadané konflitné špecifikátory kontextu"
 
-#: src/chcon.c:576 src/chgrp.c:289 src/chgrp.c:307 src/chmod.c:539
+#: src/chcon.c:578 src/chgrp.c:289 src/chgrp.c:307 src/chmod.c:539
 #: src/chmod.c:558 src/chown.c:290 src/chown.c:319 src/cp.c:422 src/cp.c:489
 #: src/mv.c:99 src/pwd.c:276 src/rm.c:348 src/touch.c:348
 #, c-format
@@ -1594,17 +1673,17 @@ msgstr ""
 msgid "Roland McGrath"
 msgstr "Roland McGrath"
 
-#: src/chroot.c:138 src/install.c:608
+#: src/chroot.c:139 src/install.c:608
 #, c-format
 msgid "invalid group %s"
 msgstr "neplatná skupina %s"
 
-#: src/chroot.c:153
+#: src/chroot.c:154
 #, c-format
 msgid "invalid group list %s"
 msgstr "neplatný zoznam skupín %s"
 
-#: src/chroot.c:186
+#: src/chroot.c:187
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [OPTION] NEWROOT [COMMAND [ARG]...]\n"
@@ -1613,71 +1692,71 @@ msgstr ""
 "Použitie: %s NOVÝKOREŇ [PRÍKAZ...]\n"
 "  alebo:  %s VOĽBA\n"
 
-#: src/chroot.c:191
+#: src/chroot.c:192
 msgid ""
 "Run COMMAND with root directory set to NEWROOT.\n"
 "\n"
 msgstr ""
 
-#: src/chroot.c:196
+#: src/chroot.c:197
 msgid "  --groups=G_LIST        specify supplementary groups as g1,g2,..,gN\n"
 msgstr ""
 
-#: src/chroot.c:199
+#: src/chroot.c:200
 msgid "  --userspec=USER:GROUP  specify user and group (ID or name) to use\n"
 msgstr ""
 
-#: src/chroot.c:202
+#: src/chroot.c:203
 #, c-format
 msgid "  --skip-chdir           do not change working directory to %s\n"
 msgstr ""
 
-#: src/chroot.c:208
+#: src/chroot.c:209
 msgid ""
 "\n"
 "If no command is given, run '\"$SHELL\" -i' (default: '/bin/sh -i').\n"
 msgstr ""
 
-#: src/chroot.c:287
+#: src/chroot.c:288
 #, c-format
 msgid "option --skip-chdir only permitted if NEWROOT is old %s"
 msgstr ""
 
-#: src/chroot.c:330
+#: src/chroot.c:331
 #, c-format
 msgid "cannot change root directory to %s"
 msgstr "nie je možné zmeniť koreňový adresár na %s"
 
-#: src/chroot.c:334
+#: src/chroot.c:335
 msgid "cannot chdir to root directory"
 msgstr "nie je možné vojsť do koreňového adresára"
 
-#: src/chroot.c:376
+#: src/chroot.c:377
 #, c-format
 msgid "no group specified for unknown uid: %d"
 msgstr ""
 
-#: src/chroot.c:401
+#: src/chroot.c:402
 #, fuzzy
 msgid "failed to get supplemental groups"
 msgstr "nie je možné nastaviť ďalšie skupiny"
 
-#: src/chroot.c:413
+#: src/chroot.c:414
 #, fuzzy
 msgid "failed to set supplemental groups"
 msgstr "nie je možné nastaviť ďalšie skupiny"
 
-#: src/chroot.c:419
+#: src/chroot.c:420
 #, fuzzy
 msgid "failed to set group-ID"
 msgstr "nepodarilo sa nastaviť novú rolu %s"
 
-#: src/chroot.c:422
+#: src/chroot.c:423
 #, fuzzy
 msgid "failed to set user-ID"
 msgstr "nepodarilo sa nastaviť nového používateľa %s"
 
-#: src/chroot.c:428 src/nohup.c:229 src/stdbuf.c:391 src/timeout.c:519
+#: src/chroot.c:429 src/nohup.c:222 src/stdbuf.c:392 src/timeout.c:519
 #, fuzzy, c-format
 msgid "failed to run command %s"
 msgstr "nie je možné vykonať príkaz %s"
@@ -1687,12 +1766,12 @@ msgstr "nie je možné vykonať príkaz %s"
 msgid "Q. Frank Xia"
 msgstr "Q. Frank Xia"
 
-#: src/cksum.c:216
+#: src/cksum.c:210
 #, c-format
 msgid "%s: file too long"
 msgstr "%s: súbor je príliš dlhý"
 
-#: src/cksum.c:263
+#: src/cksum.c:257
 #, c-format
 msgid ""
 "Usage: %s [FILE]...\n"
@@ -1701,7 +1780,7 @@ msgstr ""
 "Použitie: %s [SÚBOR]...\n"
 " alebo:   %s [VOĽBA]\n"
 
-#: src/cksum.c:268
+#: src/cksum.c:262
 msgid ""
 "Print CRC checksum and byte counts of each FILE.\n"
 "\n"
@@ -1781,7 +1860,7 @@ msgid "  --total           output a summary\n"
 msgstr ""
 
 #: src/comm.c:147 src/cut.c:178 src/head.c:134 src/numfmt.c:945 src/paste.c:452
-#: src/tail.c:308
+#: src/tail.c:312
 msgid "  -z, --zero-terminated    line delimiter is NUL, not newline\n"
 msgstr ""
 
@@ -1805,7 +1884,7 @@ msgstr ""
 msgid "file %d is not in sorted order"
 msgstr ""
 
-#: src/comm.c:402 src/du.c:1136 src/ls.c:2872 src/wc.c:864
+#: src/comm.c:402 src/du.c:1137 src/ls.c:3067 src/wc.c:885
 msgid "total"
 msgstr "celkom"
 
@@ -1814,330 +1893,327 @@ msgstr "celkom"
 msgid "multiple output delimiters specified"
 msgstr "uvedených viacero oddeľovačov"
 
-#: src/copy.c:194 src/copy.c:465
+#: src/comm.c:496 src/join.c:1195
+msgid "input is not in sorted order"
+msgstr ""
+
+#: src/copy.c:230 src/copy.c:499
 #, c-format
 msgid "cannot lseek %s"
 msgstr "nie je možné vykonať lseek %s"
 
-#: src/copy.c:204 src/copy.c:571
+#: src/copy.c:240 src/copy.c:605
 #, fuzzy, c-format
 msgid "error deallocating %s"
 msgstr "chyba pri čítaní %s"
 
-#: src/copy.c:242 src/dd.c:1864 src/dd.c:2200 src/du.c:1133 src/head.c:156
-#: src/head.c:307 src/head.c:389 src/head.c:585 src/head.c:667 src/head.c:736
-#: src/head.c:786 src/head.c:809 src/tail.c:441 src/tail.c:534 src/tail.c:583
-#: src/tail.c:676 src/tail.c:804 src/tail.c:852 src/tail.c:889 src/tail.c:2013
-#: src/tail.c:2046 src/uniq.c:473
+#: src/copy.c:278 src/dd.c:1928 src/dd.c:2264 src/du.c:1134 src/head.c:157
+#: src/head.c:308 src/head.c:390 src/head.c:586 src/head.c:668 src/head.c:737
+#: src/head.c:787 src/head.c:810 src/tail.c:464 src/tail.c:557 src/tail.c:606
+#: src/tail.c:699 src/tail.c:827 src/tail.c:875 src/tail.c:912 src/tail.c:2037
+#: src/tail.c:2070 src/uniq.c:461
 #, c-format
 msgid "error reading %s"
 msgstr "chyba pri čítaní %s"
 
-#: src/copy.c:275 src/dd.c:2263 src/dd.c:2325 src/head.c:184 src/tail.c:415
+#: src/copy.c:311 src/dd.c:2327 src/dd.c:2389 src/head.c:185 src/tail.c:438
 #, c-format
 msgid "error writing %s"
 msgstr "chyba pri zápise %s"
 
-#: src/copy.c:306
+#: src/copy.c:340
 #, fuzzy, c-format
 msgid "overflow reading %s"
 msgstr "chyba pri čítaní %s"
 
-#: src/copy.c:419
+#: src/copy.c:453
 #, fuzzy, c-format
 msgid "%s: failed to get extents info"
 msgstr "nepodarilo sa zistiť aktuálny kontext"
 
-#: src/copy.c:491
+#: src/copy.c:525
 #, fuzzy, c-format
 msgid "%s: write failed"
 msgstr "chyba pri zápise"
 
-#: src/copy.c:564 src/copy.c:1308
+#: src/copy.c:598 src/copy.c:1342
 #, fuzzy, c-format
 msgid "failed to extend %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/copy.c:806
+#: src/copy.c:840
 #, c-format
 msgid "clearing permissions for %s"
 msgstr "čistia sa oprávnenia %s"
 
-#: src/copy.c:841 src/copy.c:2754 src/cp.c:318
+#: src/copy.c:875 src/copy.c:2791 src/cp.c:318
 #, c-format
 msgid "failed to preserve ownership for %s"
 msgstr "nepodarilo sa zachovať vlastníctvo %s"
 
-#: src/copy.c:867
+#: src/copy.c:901
 #, c-format
 msgid "failed to lookup file %s"
 msgstr "nepodarilo sa vyhľadať súbor %s"
 
-#: src/copy.c:872
+#: src/copy.c:906
 #, c-format
 msgid "failed to preserve authorship for %s"
 msgstr "nepodarilo sa zachovať autorstvo %s"
 
-#: src/copy.c:909 src/cp.c:1205 src/install.c:961 src/mkdir.c:269
+#: src/copy.c:943 src/cp.c:1205 src/install.c:961 src/mkdir.c:269
 #: src/mkfifo.c:144 src/mknod.c:200
 #, fuzzy, c-format
 msgid "failed to set default file creation context to %s"
 msgstr "zisťujem atribúty %s"
 
-#: src/copy.c:939
+#: src/copy.c:973
 #, fuzzy, c-format
 msgid "failed to set default file creation context for %s"
 msgstr "zisťujem atribúty %s"
 
-#: src/copy.c:965
+#: src/copy.c:999
 #, fuzzy, c-format
 msgid "failed to set the security context of %s"
 msgstr "nie je možné nastaviť bezpečnostný kontext %s na %s"
 
-#: src/copy.c:1038 src/csplit.c:655 src/du.c:1025 src/fmt.c:439 src/head.c:888
-#: src/split.c:1569 src/tail.c:1987 src/wc.c:749
+#: src/copy.c:1072 src/csplit.c:655 src/du.c:1026 src/fmt.c:439 src/head.c:889
+#: src/split.c:1570 src/tail.c:2011 src/wc.c:770
 #, c-format
 msgid "cannot open %s for reading"
 msgstr "nie je možné otvoriť %s pre čítanie"
 
-#: src/copy.c:1044 src/copy.c:1197 src/dd.c:1789 src/dd.c:2337 src/dd.c:2477
-#: src/head.c:847 src/tail.c:1827 src/tail.c:1890 src/truncate.c:114
+#: src/copy.c:1078 src/copy.c:1231 src/dd.c:1853 src/dd.c:2401 src/dd.c:2536
+#: src/head.c:848 src/tail.c:1851 src/tail.c:1914 src/truncate.c:114
 #, c-format
 msgid "cannot fstat %s"
 msgstr "nie je možné vykonať fstat %s"
 
-#: src/copy.c:1054
+#: src/copy.c:1088
 #, c-format
 msgid "skipping file %s, as it was replaced while being copied"
 msgstr "preskakuje sa súbor %s, keďže bol nahradený počas kopírovania"
 
-#: src/copy.c:1094 src/copy.c:2184 src/remove.c:263 src/remove.c:280
+#: src/copy.c:1128 src/copy.c:2221 src/remove.c:263 src/remove.c:280
 #: src/remove.c:406 src/remove.c:432
 #, c-format
 msgid "cannot remove %s"
 msgstr "nie je možné odstrániť %s"
 
-#: src/copy.c:1099 src/copy.c:1796 src/copy.c:2189 src/remove.c:376
+#: src/copy.c:1133 src/copy.c:1830 src/copy.c:2226 src/remove.c:376
 #, c-format
 msgid "removed %s\n"
 msgstr "odstránené %s\n"
 
-#: src/copy.c:1151
+#: src/copy.c:1185
 #, c-format
 msgid "not writing through dangling symlink %s"
 msgstr "nezapisuje sa prostredníctvom visiaceho symbolického odkazu %s"
 
-#: src/copy.c:1189
+#: src/copy.c:1223
 #, c-format
 msgid "cannot create regular file %s"
 msgstr "nie je možné vytvoriť obyčajný súbor %s"
 
-#: src/copy.c:1210
+#: src/copy.c:1244
 #, fuzzy, c-format
 msgid "failed to clone %s from %s"
 msgstr "nie je možné zatvoriť adresár %s"
 
-#: src/copy.c:1323 src/copy.c:2829
+#: src/copy.c:1357 src/copy.c:2866
 #, c-format
 msgid "preserving times for %s"
 msgstr "zachovávam časy %s"
 
-#: src/copy.c:1403 src/copy.c:1409 src/head.c:896 src/sync.c:162
-#: src/touch.c:173 src/truncate.c:392
+#: src/copy.c:1437 src/copy.c:1443 src/head.c:897 src/sync.c:164
+#: src/touch.c:173 src/truncate.c:381
 #, fuzzy, c-format
 msgid "failed to close %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/copy.c:1685
+#: src/copy.c:1719
 #, fuzzy, c-format
 msgid "%s: replace %s, overriding mode %04lo (%s)? "
 msgstr "%s: prepísať %s bez ohľadu na práva %04lo? "
 
-#: src/copy.c:1686
+#: src/copy.c:1720
 #, c-format
 msgid "%s: unwritable %s (mode %04lo, %s); try anyway? "
 msgstr ""
 
-#: src/copy.c:1693
+#: src/copy.c:1727
 #, c-format
 msgid "%s: overwrite %s? "
 msgstr "%s: prepísať %s? "
 
-#: src/copy.c:1763
+#: src/copy.c:1797
 #, c-format
 msgid " (backup: %s)"
 msgstr "(záloha: %s)"
 
-#: src/copy.c:1773
+#: src/copy.c:1807
 msgid "failed to restore the default file creation context"
 msgstr "nepodarilo sa obnoviť štandardný kontext vytvorenia súborového systému"
 
-#: src/copy.c:1791
+#: src/copy.c:1825
 #, fuzzy, c-format
 msgid "cannot create hard link %s to %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/copy.c:1891 src/copy.c:1963 src/copy.c:2534 src/copy.c:2895
-#: src/find-mount-point.c:84 src/install.c:702 src/realpath.c:146
-#: src/stat.c:1389 src/truncate.c:338
-#, c-format
-msgid "cannot stat %s"
-msgstr "nie je možné stat() %s"
-
-#: src/copy.c:1900
+#: src/copy.c:1936
 #, fuzzy, c-format
 msgid "-r not specified; omitting directory %s"
 msgstr "vynecháva sa adresár %s"
 
-#: src/copy.c:1901
+#: src/copy.c:1937
 #, c-format
 msgid "omitting directory %s"
 msgstr "vynecháva sa adresár %s"
 
-#: src/copy.c:1924
+#: src/copy.c:1960
 #, c-format
 msgid "warning: source file %s specified more than once"
 msgstr "upozornenie: zdrojový súbor %s uvedený viac ako jedenkrát"
 
-#: src/copy.c:1979 src/ln.c:263
+#: src/copy.c:2015 src/ln.c:275
 #, c-format
 msgid "%s and %s are the same file"
 msgstr "%s a %s predstavujú ten istý súbor"
 
-#: src/copy.c:2069
+#: src/copy.c:2105
 #, c-format
 msgid "cannot overwrite non-directory %s with directory %s"
 msgstr "nie je možné prepísať súbor %s (ktorý nie je adresár) adresárom %s"
 
-#: src/copy.c:2087 src/ln.c:231
+#: src/copy.c:2123 src/ln.c:246
 #, c-format
 msgid "will not overwrite just-created %s with %s"
 msgstr "nie je možné prepísať práve vytvorený %s súborom %s"
 
-#: src/copy.c:2105
+#: src/copy.c:2141
 #, c-format
 msgid "cannot overwrite directory %s with non-directory"
 msgstr "nie je možné prepísať adresár %s súborom (ktorý nie je adresár)"
 
-#: src/copy.c:2119
+#: src/copy.c:2155
 #, c-format
 msgid "cannot move directory onto non-directory: %s -> %s"
 msgstr "nie je možné presunúť adresár %s na súbor %s (ktorý nie je adresár)"
 
-#: src/copy.c:2146
+#: src/copy.c:2182
 #, fuzzy, c-format
 msgid "backing up %s might destroy source;  %s not moved"
 msgstr "vytvorenie záložnej kópie %s by zničilo zdroj; %s nebol presunutý"
 
-#: src/copy.c:2147
+#: src/copy.c:2183
 #, fuzzy, c-format
 msgid "backing up %s might destroy source;  %s not copied"
 msgstr "vytvorenie záložnej kópie %s by zničilo zdroj; %s nebol skopírovaný"
 
-#: src/copy.c:2168 src/ln.c:293
+#: src/copy.c:2205 src/ln.c:305
 #, c-format
 msgid "cannot backup %s"
 msgstr "nie je možné zálohovať %s"
 
-#: src/copy.c:2223
+#: src/copy.c:2260
 #, c-format
 msgid "will not copy %s through just-created symlink %s"
 msgstr ""
 "nie je možné skopírovať súbor %s práve vytvoreným symbolickým odkazom %s"
 
-#: src/copy.c:2303
+#: src/copy.c:2340
 #, fuzzy, c-format
 msgid "cannot copy a directory, %s, into itself, %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/copy.c:2311
+#: src/copy.c:2348
 #, fuzzy, c-format
 msgid "warning: source directory %s specified more than once"
 msgstr "upozornenie: zdrojový súbor %s uvedený viac ako jedenkrát"
 
-#: src/copy.c:2337
+#: src/copy.c:2374
 #, fuzzy, c-format
 msgid "will not create hard link %s to directory %s"
 msgstr "nie je možné vojsť do adresára, %s"
 
-#: src/copy.c:2361
+#: src/copy.c:2398
 #, fuzzy, c-format
 msgid "renamed "
 msgstr "čudný súbor"
 
-#: src/copy.c:2399
+#: src/copy.c:2436
 #, fuzzy, c-format
 msgid "cannot move %s to a subdirectory of itself, %s"
 msgstr "nie je možné vojsť do adresára, %s"
 
-#: src/copy.c:2442
+#: src/copy.c:2479
 #, fuzzy, c-format
 msgid "cannot move %s to %s"
 msgstr "ioctl na `%s' nie je možné vykonať"
 
-#: src/copy.c:2458
+#: src/copy.c:2495
 #, c-format
 msgid "inter-device move failed: %s to %s; unable to remove target"
 msgstr ""
 "presunutie medzi zariadeniami zlyhalo: %s na %s; nepodarilo sa odstrániť cieľ"
 
-#: src/copy.c:2466
+#: src/copy.c:2503
 #, c-format
 msgid "copied "
 msgstr ""
 
-#: src/copy.c:2503
+#: src/copy.c:2540
 #, c-format
 msgid "cannot copy cyclic symbolic link %s"
 msgstr "nie je možné skopírovať zacyklený symbolický odkaz %s"
 
-#: src/copy.c:2565
+#: src/copy.c:2602
 #, fuzzy, c-format
 msgid "created directory %s\n"
 msgstr "bol vytvorený adresár %s"
 
-#: src/copy.c:2628
+#: src/copy.c:2665
 #, c-format
 msgid "%s: can make relative symbolic links only in current directory"
 msgstr ""
 "%s: relatívne symbolické odkazy je možné vytvoriť iba v aktuálnom adresári"
 
-#: src/copy.c:2637
+#: src/copy.c:2675
 #, fuzzy, c-format
 msgid "cannot create symbolic link %s to %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/copy.c:2691 src/mkfifo.c:170
+#: src/copy.c:2729 src/mkfifo.c:170
 #, fuzzy, c-format
 msgid "cannot create fifo %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/copy.c:2700
+#: src/copy.c:2738
 #, fuzzy, c-format
 msgid "cannot create special file %s"
 msgstr "pozícia znaku je nula"
 
-#: src/copy.c:2711 src/ls.c:3455 src/stat.c:1071
+#: src/copy.c:2749 src/ls.c:3648 src/stat.c:1477
 #, fuzzy, c-format
 msgid "cannot read symbolic link %s"
 msgstr "ioctl na `%s' nie je možné vykonať"
 
-#: src/copy.c:2738
+#: src/copy.c:2775
 #, fuzzy, c-format
 msgid "cannot create symbolic link %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/copy.c:2770
+#: src/copy.c:2807
 #, c-format
 msgid "%s has unknown file type"
 msgstr "%s je neznámy typ souboru"
 
-#: src/copy.c:2935 src/ln.c:362
+#: src/copy.c:2972 src/ln.c:393
 #, fuzzy, c-format
 msgid "cannot un-backup %s"
 msgstr "nie je možné spustiť %s"
 
-#: src/copy.c:2939
+#: src/copy.c:2976
 #, c-format
 msgid "%s -> %s (unbackup)\n"
 msgstr "%s -> %s (obnovenie zálohy)\n"
@@ -2440,19 +2516,19 @@ msgstr "nie je možné vytvoriť adresár %s"
 msgid "%s exists but is not a directory"
 msgstr "%s existuje, ale nie je adresárom"
 
-#: src/cp.c:585 src/cp.c:1087 src/install.c:407 src/install.c:942 src/ln.c:134
-#: src/ln.c:198 src/ln.c:219 src/ln.c:503 src/mv.c:160 src/mv.c:393
+#: src/cp.c:585 src/cp.c:1087 src/install.c:407 src/install.c:942 src/ln.c:204
+#: src/ln.c:231 src/ln.c:536 src/mv.c:160 src/mv.c:393
 #, fuzzy, c-format
 msgid "failed to access %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/cp.c:606 src/install.c:970 src/ln.c:534 src/mv.c:436 src/shred.c:1283
-#: src/touch.c:430 src/truncate.c:329
+#: src/cp.c:606 src/install.c:970 src/ln.c:567 src/mv.c:436 src/shred.c:1251
+#: src/touch.c:430 src/truncate.c:318
 #, c-format
 msgid "missing file operand"
 msgstr "chýba operand súboru"
 
-#: src/cp.c:608 src/install.c:972 src/ln.c:548 src/mv.c:438
+#: src/cp.c:608 src/install.c:972 src/ln.c:590 src/mv.c:438
 #, c-format
 msgid "missing destination file operand after %s"
 msgstr "chýba operand cieľového súboru po %s"
@@ -2463,8 +2539,7 @@ msgid "cannot combine --target-directory (-t) and --no-target-directory (-T)"
 msgstr "Nie je možné kombinovať --target-directory a --no-target-directory"
 
 #: src/cp.c:635 src/cp.c:1090 src/install.c:409 src/install.c:945
-#: src/install.c:994 src/ln.c:136 src/ln.c:506 src/ln.c:562 src/mv.c:396
-#: src/mv.c:468
+#: src/install.c:994 src/ln.c:539 src/mv.c:396 src/mv.c:468
 #, c-format
 msgid "target %s is not a directory"
 msgstr "cieľ %s nie je adresárom"
@@ -2474,7 +2549,7 @@ msgstr "cieľ %s nie je adresárom"
 msgid "with --parents, the destination must be a directory"
 msgstr "pri použití voľby --parents cieľ musí byť adresárom"
 
-#: src/cp.c:1082 src/install.c:882 src/ln.c:498 src/mv.c:388
+#: src/cp.c:1082 src/install.c:882 src/ln.c:531 src/mv.c:388
 msgid "multiple target directories specified"
 msgstr "boli uvedené viaceré cieľové adresáre"
 
@@ -2498,7 +2573,7 @@ msgstr "prepínače --string a --check sa vzájomne vylučujú"
 msgid "--reflink can be used only with --sparse=auto"
 msgstr ""
 
-#: src/cp.c:1166 src/install.c:950 src/ln.c:567 src/mv.c:483
+#: src/cp.c:1166 src/install.c:950 src/ln.c:637 src/mv.c:483
 msgid "backup type"
 msgstr "typ zálohy"
 
@@ -2515,7 +2590,7 @@ msgid "cannot preserve extended attributes, cp is built without xattr support"
 msgstr ""
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/csplit.c:44 src/dd.c:47
+#: src/csplit.c:44 src/dd.c:46
 msgid "Stuart Kemp"
 msgstr "Stuart Kemp"
 
@@ -2543,7 +2618,7 @@ msgstr " v opakovaní %s\n"
 msgid "%s: %s: match not found"
 msgstr "%s: %s: zhoda nenájdená"
 
-#: src/csplit.c:838 src/csplit.c:878 src/nl.c:361 src/tac.c:286
+#: src/csplit.c:838 src/csplit.c:878 src/nl.c:357 src/tac.c:286
 #, c-format
 msgid "error in regular expression search"
 msgstr "chyba pri vyhľadávaní pomocou regulárneho výrazu"
@@ -2628,7 +2703,7 @@ msgstr "príliš mnoho typov konverzie %% v parametri prepínača"
 msgid "missing %% conversion specification in suffix"
 msgstr "v parametri prepínača chýba zadanie typu konverzie pomocou %%"
 
-#: src/csplit.c:1375 src/dd.c:1499 src/nproc.c:105 src/tail.c:2140
+#: src/csplit.c:1375 src/dd.c:1563 src/nproc.c:105 src/tail.c:2164
 #, fuzzy
 msgid "invalid number"
 msgstr "neplatné číslo %s"
@@ -2865,7 +2940,7 @@ msgstr ""
 
 #: src/date.c:196
 msgid ""
-"  %F   full date; same as %Y-%m-%d\n"
+"  %F   full date; like %+4Y-%m-%d\n"
 "  %g   last two digits of year of ISO week number (see %G)\n"
 "  %G   year of ISO week number (see %V); normally useful only with %V\n"
 msgstr ""
@@ -2941,11 +3016,12 @@ msgid ""
 "  -  (hyphen) do not pad the field\n"
 "  _  (underscore) pad with spaces\n"
 "  0  (zero) pad with zeros\n"
+"  +  pad with zeros, and put '+' before future years with >4 digits\n"
 "  ^  use upper case if possible\n"
 "  #  use opposite case if possible\n"
 msgstr ""
 
-#: src/date.c:259
+#: src/date.c:260
 msgid ""
 "\n"
 "After any flags comes an optional field width, as a decimal number;\n"
@@ -2954,7 +3030,7 @@ msgid ""
 "O to use the locale's alternate numeric symbols if available.\n"
 msgstr ""
 
-#: src/date.c:266
+#: src/date.c:267
 msgid ""
 "\n"
 "Examples:\n"
@@ -2968,34 +3044,34 @@ msgid ""
 "  $ date --date='TZ=\"America/Los_Angeles\" 09:00 next Fri'\n"
 msgstr ""
 
-#: src/date.c:300 src/dd.c:2416 src/head.c:880 src/md5sum.c:672
-#: src/md5sum.c:1107 src/od.c:913 src/od.c:1978 src/pr.c:1148 src/pr.c:1347
-#: src/pr.c:1470 src/stty.c:1368 src/tac.c:574 src/tail.c:364 src/tee.c:174
-#: src/tr.c:1911 src/tsort.c:541 src/wc.c:205
+#: src/date.c:301 src/dd.c:2475 src/head.c:881 src/md5sum.c:672
+#: src/md5sum.c:1107 src/od.c:915 src/od.c:1984 src/pr.c:1149 src/pr.c:1348
+#: src/pr.c:1471 src/stty.c:1368 src/tac.c:574 src/tail.c:387 src/tee.c:174
+#: src/tr.c:1911 src/tsort.c:535 src/wc.c:223
 msgid "standard input"
 msgstr "štandardný vstup"
 
-#: src/date.c:329 src/date.c:557
+#: src/date.c:330 src/date.c:558
 #, c-format
 msgid "invalid date %s"
 msgstr "neplatný dátum %s"
 
-#: src/date.c:443 src/date.c:477
+#: src/date.c:444 src/date.c:478
 #, fuzzy
 msgid "multiple output formats specified"
 msgstr "\\%c: neprípustná sekvencia"
 
-#: src/date.c:455
+#: src/date.c:456
 #, fuzzy, c-format
 msgid "the options to specify dates for printing are mutually exclusive"
 msgstr "prepínače --string a --check sa vzájomne vylučujú"
 
-#: src/date.c:462
+#: src/date.c:463
 #, c-format
 msgid "the options to print and set the time may not be used together"
 msgstr "voľby pre výpis a nastavenie času nemôžu byť použité spoločne"
 
-#: src/date.c:483
+#: src/date.c:484
 #, fuzzy, c-format
 msgid ""
 "the argument %s lacks a leading '+';\n"
@@ -3006,23 +3082,23 @@ msgstr ""
 "Pokiaľ je pre špecifikáciu dátumu použitá voľba, všetky argumenty,\n"
 "ktoré nie sú voľbami, musia byť formátovacím reťazcom s úvodným `+'."
 
-#: src/date.c:565
+#: src/date.c:566
 #, c-format
 msgid "cannot set date"
 msgstr "nie je možné nastaviť dátum"
 
-#: src/date.c:599 src/du.c:388
+#: src/date.c:600 src/du.c:389
 #, c-format
 msgid "time %s is out of range"
 msgstr "čas %s je mino rozsahu"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/dd.c:45 src/factor.c:128 src/rm.c:40 src/tail.c:72 src/touch.c:42
+#: src/dd.c:44 src/factor.c:128 src/rm.c:40 src/tail.c:76 src/touch.c:42
 #: src/wc.c:50
 msgid "Paul Rubin"
 msgstr "Paul Rubin"
 
-#: src/dd.c:564
+#: src/dd.c:558
 #, c-format
 msgid ""
 "Usage: %s [OPERAND]...\n"
@@ -3031,7 +3107,7 @@ msgstr ""
 "Použitie: %s [SÚBOR]...\n"
 " alebo:   %s [VOĽBA]\n"
 
-#: src/dd.c:569
+#: src/dd.c:563
 #, fuzzy
 msgid ""
 "Copy a file, converting and formatting according to the operands.\n"
@@ -3053,7 +3129,7 @@ msgstr ""
 "  count=BLOKOV    skopírovať iba BLOKOV vstupných blokov\n"
 "  ibs=BAJTOV      čítať BAJTOV bajtov naraz\n"
 
-#: src/dd.c:579
+#: src/dd.c:573
 #, fuzzy
 msgid ""
 "  if=FILE         read from FILE instead of stdin\n"
@@ -3078,13 +3154,14 @@ msgstr ""
 "  skip=BLOKOV     preskočiť BLOKOV s veľkosťou ibs na začiatku vstupu\n"
 "  status=noxfer   potlačiť výpis štatistiky prenosu\n"
 
-#: src/dd.c:592
+#: src/dd.c:586
 #, fuzzy
 msgid ""
 "\n"
 "N and BYTES may be followed by the following multiplicative suffixes:\n"
-"c =1, w =2, b =512, kB =1000, K =1024, MB =1000*1000, M =1024*1024, xM =M,\n"
-"GB =1000*1000*1000, G =1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"c=1, w=2, b=512, kB=1000, K=1024, MB=1000*1000, M=1024*1024, xM=M,\n"
+"GB=1000*1000*1000, G=1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 "\n"
 "Each CONV symbol may be:\n"
 "\n"
@@ -3097,7 +3174,7 @@ msgstr ""
 "Každý symbol KONV môže byť:\n"
 "\n"
 
-#: src/dd.c:601
+#: src/dd.c:596
 #, fuzzy
 msgid ""
 "  ascii     from EBCDIC to ASCII\n"
@@ -3107,7 +3184,7 @@ msgid ""
 "  unblock   replace trailing spaces in cbs-size records with newline\n"
 "  lcase     change upper case to lower case\n"
 "  ucase     change lower case to upper case\n"
-"  sparse    try to seek rather than write the output for NUL input blocks\n"
+"  sparse    try to seek rather than write all-NUL output blocks\n"
 "  swab      swap every pair of input bytes\n"
 "  sync      pad every input block with NULs to ibs-size; when used\n"
 "            with block or unblock, pad with spaces rather than NULs\n"
@@ -3125,7 +3202,7 @@ msgstr ""
 "            keď sa použije s block alebo unblock, vyplniť medzerami namiesto "
 "NULL\n"
 
-#: src/dd.c:614
+#: src/dd.c:609
 msgid ""
 "  excl      fail if the output file already exists\n"
 "  nocreat   do not create the output file\n"
@@ -3141,7 +3218,7 @@ msgstr ""
 "  fdatasync  pred ukončením fyzicky zapísať údaje\n"
 "  fsync     podobne, ale zapísať aj metadáta\n"
 
-#: src/dd.c:622
+#: src/dd.c:617
 msgid ""
 "\n"
 "Each FLAG symbol may be:\n"
@@ -3155,77 +3232,77 @@ msgstr ""
 "  append    režim pridávania (zmysluplné iba pre výstup; navrhuje sa "
 "conv=notrunc)\n"
 
-#: src/dd.c:629
+#: src/dd.c:624
 #, fuzzy
 msgid "  cio       use concurrent I/O for data\n"
 msgstr "  text      použiť pre dáta textový V/V\n"
 
-#: src/dd.c:631
+#: src/dd.c:626
 msgid "  direct    use direct I/O for data\n"
 msgstr "  direct    použiť pre dáta priamy V/V\n"
 
-#: src/dd.c:633
+#: src/dd.c:628
 #, fuzzy
 msgid "  directory  fail unless a directory\n"
 msgstr "%s existuje, ale nie je adresárom"
 
-#: src/dd.c:635
+#: src/dd.c:630
 msgid "  dsync     use synchronized I/O for data\n"
 msgstr "  dsync     použiť pre dáta synchronizovaný V/V\n"
 
-#: src/dd.c:637
+#: src/dd.c:632
 msgid "  sync      likewise, but also for metadata\n"
 msgstr "  sync      podobne, ale aj pre metadáta\n"
 
-#: src/dd.c:638
+#: src/dd.c:633
 msgid "  fullblock  accumulate full blocks of input (iflag only)\n"
 msgstr ""
 
-#: src/dd.c:641
+#: src/dd.c:636
 msgid "  nonblock  use non-blocking I/O\n"
 msgstr "  nonblock  použiť neblokoujúci V/V\n"
 
-#: src/dd.c:643
+#: src/dd.c:638
 msgid "  noatime   do not update access time\n"
 msgstr "  noatime   neaktualizovať čas posledného prístupu\n"
 
-#: src/dd.c:646
+#: src/dd.c:641
 msgid "  nocache   Request to drop cache.  See also oflag=sync\n"
 msgstr ""
 
-#: src/dd.c:650
+#: src/dd.c:645
 msgid "  noctty    do not assign controlling terminal from file\n"
 msgstr "  noctty    nepriraďovať zo súboru riadiaci terminál\n"
 
-#: src/dd.c:653
+#: src/dd.c:648
 msgid "  nofollow  do not follow symlinks\n"
 msgstr "  nofollow  nenasledovať symbolické odkazy\n"
 
-#: src/dd.c:655
+#: src/dd.c:650
 msgid "  nolinks   fail if multiply-linked\n"
 msgstr "  nolinks   skončiť neúspešne pri viacnásobnom odkaze\n"
 
-#: src/dd.c:657
+#: src/dd.c:652
 msgid "  binary    use binary I/O for data\n"
 msgstr "  binary    použiť pre dáta binárny V/V\n"
 
-#: src/dd.c:659
+#: src/dd.c:654
 msgid "  text      use text I/O for data\n"
 msgstr "  text      použiť pre dáta textový V/V\n"
 
-#: src/dd.c:661
+#: src/dd.c:656
 msgid "  count_bytes  treat 'count=N' as a byte count (iflag only)\n"
 msgstr ""
 
-#: src/dd.c:664
+#: src/dd.c:659
 msgid "  skip_bytes  treat 'skip=N' as a byte count (iflag only)\n"
 msgstr ""
 
-#: src/dd.c:667
+#: src/dd.c:662
 msgid "  seek_bytes  treat 'seek=N' as a byte count (oflag only)\n"
 msgstr ""
 
-#: src/dd.c:671
+#: src/dd.c:666
 #, c-format
 msgid ""
 "\n"
@@ -3236,22 +3313,22 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dd.c:707
+#: src/dd.c:702
 #, c-format
 msgid "memory exhausted by input buffer of size %<PRIuMAX> bytes (%s)"
 msgstr ""
 
-#: src/dd.c:735
+#: src/dd.c:730
 #, c-format
 msgid "memory exhausted by output buffer of size %<PRIuMAX> bytes (%s)"
 msgstr ""
 
-#: src/dd.c:803 src/du.c:400
+#: src/dd.c:798 src/du.c:401
 #, fuzzy
 msgid "Infinity"
 msgstr "nekonečno B"
 
-#: src/dd.c:822
+#: src/dd.c:817
 #, fuzzy, c-format
 msgid "%<PRIuMAX> byte copied, %s, %s"
 msgid_plural "%<PRIuMAX> bytes copied, %s, %s"
@@ -3259,17 +3336,17 @@ msgstr[0] "%<PRIuMAX> byte (%s) copied"
 msgstr[1] "%<PRIuMAX> skopírované bajty (%s)"
 msgstr[2] "%<PRIuMAX> skopírovaných bajtov (%s)"
 
-#: src/dd.c:828
+#: src/dd.c:823
 #, fuzzy, c-format
 msgid "%<PRIuMAX> bytes (%s) copied, %s, %s"
 msgstr "%<PRIuMAX> byte (%s) copied"
 
-#: src/dd.c:831
+#: src/dd.c:826
 #, fuzzy, c-format
 msgid "%<PRIuMAX> bytes (%s, %s) copied, %s, %s"
 msgstr "%<PRIuMAX> byte (%s) copied"
 
-#: src/dd.c:863
+#: src/dd.c:858
 #, c-format
 msgid ""
 "%<PRIuMAX>+%<PRIuMAX> records in\n"
@@ -3278,85 +3355,85 @@ msgstr ""
 "%<PRIuMAX>+%<PRIuMAX> záznamov prečítaných\n"
 "%<PRIuMAX>+%<PRIuMAX> záznamov zapísaných\n"
 
-#: src/dd.c:869
+#: src/dd.c:864
 #, fuzzy, c-format
 msgid "%<PRIuMAX> truncated record\n"
 msgid_plural "%<PRIuMAX> truncated records\n"
 msgstr[0] "skrátený záznam"
 msgstr[1] "skrátený záznam"
 
-#: src/dd.c:954
+#: src/dd.c:966
 #, fuzzy, c-format
 msgid "closing input file %s"
 msgstr "vytváram súbor `%s'\n"
 
-#: src/dd.c:961
+#: src/dd.c:973
 #, c-format
 msgid "closing output file %s"
 msgstr "zatváram výstupný súbor %s"
 
-#: src/dd.c:1194
+#: src/dd.c:1207
 #, fuzzy, c-format
 msgid "failed to turn off O_DIRECT: %s"
 msgstr "zmena skupiny %s na %s zlyhala\n"
 
-#: src/dd.c:1269 src/dd.c:2138
+#: src/dd.c:1282 src/dd.c:2202
 #, c-format
 msgid "writing to %s"
 msgstr "zápis do %s"
 
-#: src/dd.c:1388
+#: src/dd.c:1452
 #, fuzzy, c-format
 msgid "warning: %s is a zero multiplier; use %s if that is intended"
 msgstr "varovanie: chybná šírka %lu; namiesto nej použijem %d"
 
-#: src/dd.c:1426 src/dd.c:1487
+#: src/dd.c:1490 src/dd.c:1551
 #, c-format
 msgid "unrecognized operand %s"
 msgstr "neznámy operand %s"
 
-#: src/dd.c:1438
+#: src/dd.c:1502
 #, fuzzy
 msgid "invalid conversion"
 msgstr "neplatná konverzia: %s"
 
-#: src/dd.c:1441 src/dd.c:1530
+#: src/dd.c:1505 src/dd.c:1594
 #, fuzzy
 msgid "invalid input flag"
 msgstr "neplatný vstupný prepínač: %s"
 
-#: src/dd.c:1444 src/dd.c:1524 src/dd.c:1536
+#: src/dd.c:1508 src/dd.c:1588 src/dd.c:1600
 #, fuzzy
 msgid "invalid output flag"
 msgstr "neplatný výstupný prepínač: %sneplatná skupina"
 
-#: src/dd.c:1447
+#: src/dd.c:1511
 #, fuzzy
 msgid "invalid status level"
 msgstr "neplatný stavový prepínač: %s"
 
-#: src/dd.c:1582
+#: src/dd.c:1646
 msgid "cannot combine any two of {ascii,ebcdic,ibm}"
 msgstr "nie je možné skombinovať dve z {ascii,ebcdic,ibm}"
 
-#: src/dd.c:1584
+#: src/dd.c:1648
 msgid "cannot combine block and unblock"
 msgstr "nie je možné skombinovať  block a unblock"
 
-#: src/dd.c:1586
+#: src/dd.c:1650
 msgid "cannot combine lcase and ucase"
 msgstr "nie je možné skombinovať lcase a ucase"
 
-#: src/dd.c:1588
+#: src/dd.c:1652
 msgid "cannot combine excl and nocreat"
 msgstr "nie je možné skombinovať excl a nocreat"
 
-#: src/dd.c:1591
+#: src/dd.c:1655
 #, fuzzy
 msgid "cannot combine direct and nocache"
 msgstr "nie je možné skombinovať excl a nocreat"
 
-#: src/dd.c:1748
+#: src/dd.c:1812
 #, c-format
 msgid ""
 "warning: working around lseek kernel bug for file (%s)\n"
@@ -3365,62 +3442,62 @@ msgstr ""
 "upozornenie: obchádza sa chyba jadra vo funkcii lseek v súbore (%s)\n"
 "  mt_type=0x%0lx -- pozri zoznam typov v <sys/mtio.h>"
 
-#: src/dd.c:1836
+#: src/dd.c:1900
 #, fuzzy, c-format
 msgid "%s: cannot skip"
 msgstr "%s: nie je možné vyhľadať"
 
-#: src/dd.c:1838 src/dd.c:1869 src/dd.c:1930
+#: src/dd.c:1902 src/dd.c:1933 src/dd.c:1994
 #, c-format
 msgid "%s: cannot seek"
 msgstr "%s: nie je možné vyhľadať"
 
-#: src/dd.c:1910
+#: src/dd.c:1974
 #, c-format
 msgid "offset overflow while reading file %s"
 msgstr "pretečenie pozície pri čítaní súboru %s"
 
-#: src/dd.c:1922
+#: src/dd.c:1986
 #, c-format
 msgid "warning: invalid file offset after failed read"
 msgstr "upozornenie: chybný ofset v súbore po neúspešnom čítaní"
 
-#: src/dd.c:1926
+#: src/dd.c:1990
 #, c-format
 msgid "cannot work around kernel bug after all"
 msgstr "nakoniec nie je možné obísť chybu jadra"
 
-#: src/dd.c:2065
+#: src/dd.c:2129
 #, c-format
 msgid "setting flags for %s"
 msgstr "nastavujem príznaky %s"
 
-#: src/dd.c:2119
+#: src/dd.c:2183
 #, fuzzy, c-format
 msgid "%s: cannot skip to specified offset"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/dd.c:2348
+#: src/dd.c:2412
 #, fuzzy, c-format
 msgid "failed to truncate to %<PRIdMAX> bytes in output file %s"
 msgstr "presúvam sa za %s bajtov vo výstupnom súbore %s"
 
-#: src/dd.c:2361
+#: src/dd.c:2425
 #, c-format
 msgid "fdatasync failed for %s"
 msgstr "fdatasync zlyhalo na %s"
 
-#: src/dd.c:2371
+#: src/dd.c:2433
 #, c-format
 msgid "fsync failed for %s"
 msgstr "fsync zlyhalo na %s"
 
-#: src/dd.c:2422 src/dd.c:2452 src/nohup.c:164 src/nohup.c:166
+#: src/dd.c:2481 src/dd.c:2511 src/nohup.c:157 src/nohup.c:159
 #, c-format
 msgid "failed to open %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/dd.c:2462
+#: src/dd.c:2521
 #, c-format
 msgid ""
 "offset too large: cannot truncate to a length of seek=%<PRIuMAX> (%lu-byte) "
@@ -3429,105 +3506,105 @@ msgstr ""
 "hodnota pozície je príliš veľká: nie je možné skrátiť na dĺžku seek="
 "%<PRIuMAX> (%lu-bajtových) blokov"
 
-#: src/dd.c:2483
+#: src/dd.c:2542
 #, fuzzy, c-format
 msgid "failed to truncate to %<PRIuMAX> bytes in output file %s"
 msgstr "presúvam sa za %s bajtov vo výstupnom súbore %s"
 
-#: src/dd.c:2500 src/dd.c:2506
+#: src/dd.c:2559 src/dd.c:2565
 #, fuzzy, c-format
 msgid "failed to discard cache for: %s"
 msgstr "zmena skupiny %s na %s zlyhala\n"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/df.c:46 src/du.c:55 src/expr.c:153 src/kill.c:34 src/pathchk.c:31
-#: src/shuf.c:41 src/sleep.c:36 src/sort.c:67
+#: src/df.c:50 src/du.c:56 src/expr.c:153 src/kill.c:34 src/pathchk.c:31
+#: src/shuf.c:41 src/sleep.c:35 src/sort.c:68
 msgid "Paul Eggert"
 msgstr "Paul Eggert"
 
-#: src/df.c:178
+#: src/df.c:182
 msgid "Filesystem"
 msgstr "Súborový systém"
 
-#: src/df.c:181
+#: src/df.c:185
 msgid "Type"
 msgstr "Typ"
 
-#: src/df.c:184 src/df.c:551
+#: src/df.c:188 src/df.c:602
 msgid "blocks"
 msgstr "bloky"
 
-#: src/df.c:187
+#: src/df.c:191
 msgid "Used"
 msgstr "Použ"
 
-#: src/df.c:190
+#: src/df.c:194
 msgid "Available"
 msgstr "Dostupné"
 
-#: src/df.c:193
+#: src/df.c:197
 msgid "Use%"
 msgstr "Pou%"
 
-#: src/df.c:196
+#: src/df.c:200
 msgid "Inodes"
 msgstr "I-uzly"
 
-#: src/df.c:199
+#: src/df.c:203
 msgid "IUsed"
 msgstr "IPouž"
 
-#: src/df.c:202
+#: src/df.c:206
 msgid "IFree"
 msgstr "IVoľ"
 
-#: src/df.c:205
+#: src/df.c:209
 msgid "IUse%"
 msgstr "IPou%"
 
-#: src/df.c:208
+#: src/df.c:212
 msgid "Mounted on"
 msgstr "Pripojený na"
 
-#: src/df.c:211
+#: src/df.c:215
 msgid "File"
 msgstr ""
 
-#: src/df.c:391
+#: src/df.c:442
 #, fuzzy, c-format
 msgid "option --output: field %s unknown"
 msgstr "zatváram výstupný súbor %s"
 
-#: src/df.c:398
+#: src/df.c:449
 #, fuzzy, c-format
 msgid "option --output: field %s used more than once"
 msgstr "upozornenie: zdrojový súbor %s uvedený viac ako jedenkrát"
 
-#: src/df.c:419 src/df.c:458
+#: src/df.c:470 src/df.c:509
 msgid "Size"
 msgstr "Veľk"
 
-#: src/df.c:423 src/df.c:460
+#: src/df.c:474 src/df.c:511
 msgid "Avail"
 msgstr "Dost"
 
-#: src/df.c:483
+#: src/df.c:534
 msgid "Capacity"
 msgstr "Kapacita"
 
 #. TRANSLATORS: this is the "1K-blocks" header in "df" output.
 #. TRANSLATORS: this is the "1024-blocks" header in "df -P".
-#: src/df.c:554 src/df.c:563
+#: src/df.c:605 src/df.c:614
 #, c-format
 msgid "%s-%s"
 msgstr ""
 
-#: src/df.c:1290
+#: src/df.c:1343
 #, c-format
 msgid "cannot access %s: over-mounted by another device"
 msgstr ""
 
-#: src/df.c:1459
+#: src/df.c:1512
 #, fuzzy
 msgid ""
 "Show information about the file system on which each FILE resides,\n"
@@ -3539,7 +3616,7 @@ msgstr ""
 
 #. TRANSLATORS: The thousands and decimal separators are best
 #. adjusted to an appropriate default for your locale.
-#: src/df.c:1468
+#: src/df.c:1521
 #, fuzzy
 msgid ""
 "  -a, --all             include pseudo, duplicate, inaccessible file "
@@ -3556,7 +3633,7 @@ msgstr ""
 "(napr., 1K 234M 2G)\n"
 "  -H, --si              podobne, ale používať násobky 1000, nie 1024\n"
 
-#: src/df.c:1476
+#: src/df.c:1529
 msgid ""
 "  -i, --inodes          list inode information instead of block usage\n"
 "  -k                    like --block-size=1K\n"
@@ -3571,7 +3648,7 @@ msgstr ""
 "      --no-sync         nevyvolávať sync pred získaním informácií o využití "
 "(štandardne)\n"
 
-#: src/df.c:1483
+#: src/df.c:1536
 msgid ""
 "      --output[=FIELD_LIST]  use the output format defined by FIELD_LIST,\n"
 "                               or print all fields if FIELD_LIST is "
@@ -3580,13 +3657,13 @@ msgid ""
 "      --sync            invoke sync before getting usage info\n"
 msgstr ""
 
-#: src/df.c:1489
+#: src/df.c:1542
 msgid ""
 "      --total           elide all entries insignificant to available space,\n"
 "                          and produce a grand total\n"
 msgstr ""
 
-#: src/df.c:1493
+#: src/df.c:1546
 #, fuzzy
 msgid ""
 "  -t, --type=TYPE       limit listing to file systems of type TYPE\n"
@@ -3602,7 +3679,7 @@ msgstr ""
 "nie sú typu TYP\n"
 "  -v                    (ignoruje sa)\n"
 
-#: src/df.c:1503
+#: src/df.c:1556
 msgid ""
 "\n"
 "FIELD_LIST is a comma-separated list of columns to be included.  Valid\n"
@@ -3610,26 +3687,26 @@ msgid ""
 "'size', 'used', 'avail', 'pcent', 'file' and 'target' (see info page).\n"
 msgstr ""
 
-#: src/df.c:1540
+#: src/df.c:1593
 #, fuzzy, c-format
 msgid "options %s and %s are mutually exclusive"
 msgstr "prepínače --string a --check sa vzájomne vylučujú"
 
-#: src/df.c:1690
+#: src/df.c:1743
 #, c-format
 msgid "file system type %s both selected and excluded"
 msgstr "súborový systém %s je zároveň vybratý a vylúčený"
 
-#: src/df.c:1749
+#: src/df.c:1802
 msgid "Warning: "
 msgstr "Upozornenie: "
 
-#: src/df.c:1751 src/stat.c:904
+#: src/df.c:1804 src/stat.c:944
 #, fuzzy
 msgid "cannot read table of mounted file systems"
 msgstr "%snie je možné prečítať tabuľku pripojených súborových systémov"
 
-#: src/df.c:1788
+#: src/df.c:1841
 msgid "no file systems processed"
 msgstr "neboli spracované žiadne súborové systémy"
 
@@ -3637,11 +3714,6 @@ msgstr "neboli spracované žiadne súborové systémy"
 #: src/dircolors.c:37
 msgid "H. Peter Anvin"
 msgstr "H. Peter Anvin"
-
-#: src/dircolors.c:99 src/uptime.c:204 src/users.c:111
-#, c-format
-msgid "Usage: %s [OPTION]... [FILE]\n"
-msgstr "Použitie: %s [PREPÍNAČ]... [SÚBOR]...\n"
 
 #: src/dircolors.c:100
 #, fuzzy
@@ -3744,7 +3816,7 @@ msgid ""
 "  %s stdio.h            -> \".\"\n"
 msgstr ""
 
-#: src/du.c:284 src/sort.c:427 src/wc.c:115
+#: src/du.c:285 src/sort.c:415 src/wc.c:118
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... [FILE]...\n"
@@ -3753,7 +3825,7 @@ msgstr ""
 "Použitie: %s [VOĽBA]... [SÚBOR]...\n"
 "  or:  %s [VOĽBA]... --files0-from=F\n"
 
-#: src/du.c:288
+#: src/du.c:289
 #, fuzzy
 msgid ""
 "Summarize disk usage of the set of FILEs, recursively for directories.\n"
@@ -3762,7 +3834,7 @@ msgstr ""
 "adresáre.\n"
 "\n"
 
-#: src/du.c:294
+#: src/du.c:295
 #, fuzzy
 msgid ""
 "  -0, --null            end each output line with NUL, not newline\n"
@@ -3783,7 +3855,7 @@ msgstr ""
 "vnútornej\n"
 "                          fragmentácii, nepriamym blokom a podobne\n"
 
-#: src/du.c:303
+#: src/du.c:304
 #, fuzzy
 msgid ""
 "  -B, --block-size=SIZE  scale sizes by SIZE before printing them; e.g.,\n"
@@ -3806,7 +3878,7 @@ msgstr ""
 "uvedené\n"
 "                          na príkazovom riadku\n"
 
-#: src/du.c:316
+#: src/du.c:317
 #, fuzzy
 msgid ""
 "      --files0-from=F   summarize disk usage of the\n"
@@ -3826,7 +3898,7 @@ msgstr ""
 "(napr., 1K 234M 2G)\n"
 "      --si              ako -h, ale použiť násobky 1000, nie 1024\n"
 
-#: src/du.c:325
+#: src/du.c:326
 #, fuzzy
 msgid ""
 "  -k                    like --block-size=1K\n"
@@ -3838,7 +3910,7 @@ msgstr ""
 "  -l, --count-links     počítať veľkosť viacnásobne pri pevných odkazoch\n"
 "  -m                    ako --block-size=1M\n"
 
-#: src/du.c:331
+#: src/du.c:332
 #, fuzzy
 msgid ""
 "  -P, --no-dereference  don't follow any symbolic links (this is the "
@@ -3855,7 +3927,7 @@ msgstr ""
 "  -S, --separate-dirs   nevypisovať veľkosti podadresárov\n"
 "  -s, --summarize       zobraziť iba zhrnutie pre každý z argumentov\n"
 
-#: src/du.c:337
+#: src/du.c:338
 msgid ""
 "  -t, --threshold=SIZE  exclude entries smaller than SIZE if positive,\n"
 "                          or entries greater than SIZE if negative\n"
@@ -3869,74 +3941,74 @@ msgid ""
 "                            FORMAT is interpreted like in 'date'\n"
 msgstr ""
 
-#: src/du.c:348
+#: src/du.c:349
 msgid ""
 "  -X, --exclude-from=FILE  exclude files that match any pattern in FILE\n"
 "      --exclude=PATTERN    exclude files that match PATTERN\n"
 "  -x, --one-file-system    skip directories on different file systems\n"
 msgstr ""
 
-#: src/du.c:695
+#: src/du.c:696
 #, fuzzy, c-format
 msgid "fts_read failed: %s"
 msgstr "fts_read zlyhalo"
 
-#: src/du.c:819
+#: src/du.c:820
 #, fuzzy, c-format
 msgid "invalid maximum depth %s"
 msgstr "chybné číslo položky: `%s'"
 
-#: src/du.c:848
+#: src/du.c:849
 #, fuzzy
 msgid "invalid --threshold argument '-0'"
 msgstr "chybný argument %s pre `%s'"
 
-#: src/du.c:931
+#: src/du.c:932
 #, c-format
 msgid "cannot both summarize and show all entries"
 msgstr "nie je možné súčasne sumarizovať a vypisovať všetky položky"
 
-#: src/du.c:938
+#: src/du.c:939
 #, c-format
 msgid "warning: summarizing is the same as using --max-depth=0"
 msgstr "upozornenie: sumarizácia je to isté ako --max-depth=0"
 
-#: src/du.c:944
+#: src/du.c:945
 #, c-format
 msgid "warning: summarizing conflicts with --max-depth=%lu"
 msgstr "upozornenie: sumarizácia je v konflikte s --max-depth=%lu"
 
-#: src/du.c:955
+#: src/du.c:956
 #, c-format
 msgid "warning: options --apparent-size and -b are ineffective with --inodes"
 msgstr ""
 
-#: src/du.c:1020 src/sort.c:4597 src/wc.c:739
+#: src/du.c:1021 src/sort.c:4598 src/wc.c:760
 #, fuzzy
 msgid "file operands cannot be combined with --files0-from"
 msgstr "Operandy súboru nie je možné kombinovať s --print-database (-p)."
 
-#: src/du.c:1087 src/sort.c:4618 src/wc.c:817
+#: src/du.c:1088 src/sort.c:4619 src/wc.c:838
 #, c-format
 msgid "when reading file names from stdin, no file name of %s allowed"
 msgstr ""
 
-#: src/du.c:1104 src/du.c:1112 src/wc.c:830 src/wc.c:838
+#: src/du.c:1105 src/du.c:1113 src/wc.c:851 src/wc.c:859
 #, fuzzy
 msgid "invalid zero-length file name"
 msgstr "neplatná skupina"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/echo.c:26
+#: src/echo.c:27
 msgid "Brian Fox"
 msgstr "Brian Fox"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/echo.c:27
+#: src/echo.c:28
 msgid "Chet Ramey"
 msgstr "Chet Ramey"
 
-#: src/echo.c:41
+#: src/echo.c:42
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [SHORT-OPTION]... [STRING]...\n"
@@ -3945,33 +4017,33 @@ msgstr ""
 "Použitie: %s [SÚBOR]...\n"
 " alebo:   %s [VOĽBA]\n"
 
-#: src/echo.c:45
+#: src/echo.c:46
 msgid ""
 "Echo the STRING(s) to standard output.\n"
 "\n"
 "  -n             do not output the trailing newline\n"
 msgstr ""
 
-#: src/echo.c:51
+#: src/echo.c:52
 msgid ""
 "  -e             enable interpretation of backslash escapes (default)\n"
 "  -E             disable interpretation of backslash escapes\n"
 msgstr ""
 
-#: src/echo.c:54
+#: src/echo.c:55
 msgid ""
 "  -e             enable interpretation of backslash escapes\n"
 "  -E             disable interpretation of backslash escapes (default)\n"
 msgstr ""
 
-#: src/echo.c:60
+#: src/echo.c:61
 msgid ""
 "\n"
 "If -e is in effect, the following sequences are recognized:\n"
 "\n"
 msgstr ""
 
-#: src/echo.c:65 src/printf.c:110
+#: src/echo.c:66 src/printf.c:110
 msgid ""
 "  \\\\      backslash\n"
 "  \\a      alert (BEL)\n"
@@ -3985,32 +4057,27 @@ msgid ""
 "  \\v      vertical tab\n"
 msgstr ""
 
-#: src/echo.c:77
+#: src/echo.c:78
 msgid ""
 "  \\0NNN   byte with octal value NNN (1 to 3 digits)\n"
 "  \\xHH    byte with hexadecimal value HH (1 to 2 digits)\n"
 msgstr ""
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/env.c:35 src/printenv.c:45 src/whoami.c:36
+#: src/env.c:38 src/printenv.c:45 src/whoami.c:35
 msgid "Richard Mlynarik"
 msgstr "Richard Mlynarik"
 
-#. This is a proper name. See the gettext manual, section Names.
-#: src/env.c:37 src/numfmt.c:43
-msgid "Assaf Gordon"
-msgstr ""
-
-#: src/env.c:73
+#: src/env.c:112
 #, c-format
 msgid "Usage: %s [OPTION]... [-] [NAME=VALUE]... [COMMAND [ARG]...]\n"
 msgstr "Použitie: %s [VOĽBA]... [-] [NÁZOV=HODNOTA]... [PRÍKAZ [ARG]...]\n"
 
-#: src/env.c:76
+#: src/env.c:115
 msgid "Set each NAME to VALUE in the environment and run COMMAND.\n"
 msgstr ""
 
-#: src/env.c:82
+#: src/env.c:121
 #, fuzzy
 msgid ""
 "  -i, --ignore-environment  start with an empty environment\n"
@@ -4022,79 +4089,144 @@ msgstr ""
 "  -i, --ignore-environment   začať s prázdnym prostredím\n"
 "  -u, --unset=NAME           odstrániť premennú z prostredia\n"
 
-#: src/env.c:87
+#: src/env.c:126
 msgid "  -C, --chdir=DIR      change working directory to DIR\n"
 msgstr ""
 
-#: src/env.c:90
+#: src/env.c:129
 msgid ""
 "  -S, --split-string=S  process and split S into separate arguments;\n"
 "                        used to pass multiple arguments on shebang lines\n"
-"  -v, --debug          print verbose information for each processing step\n"
 msgstr ""
 
-#: src/env.c:97
+#: src/env.c:133
+msgid ""
+"      --block-signal[=SIG]    block delivery of SIG signal(s) to COMMAND\n"
+msgstr ""
+
+#: src/env.c:136
+msgid ""
+"      --default-signal[=SIG]  reset handling of SIG signal(s) to the "
+"default\n"
+msgstr ""
+
+#: src/env.c:139
+msgid ""
+"      --ignore-signal[=SIG]   set handling of SIG signals(s) to do nothing\n"
+msgstr ""
+
+#: src/env.c:142
+msgid ""
+"      --list-signal-handling  list non default signal handling to stderr\n"
+msgstr ""
+
+#: src/env.c:145
+#, fuzzy
+msgid ""
+"  -v, --debug          print verbose information for each processing step\n"
+msgstr ""
+"  -v, --verbose          vypíše diagnostiku pri každom spracovanom súbore\n"
+
+#: src/env.c:150
 msgid ""
 "\n"
 "A mere - implies -i.  If no COMMAND, print the resulting environment.\n"
 msgstr ""
 
-#: src/env.c:122
+#: src/env.c:154
+#, fuzzy
+msgid ""
+"\n"
+"SIG may be a signal name like 'PIPE', or a signal number like '13'.\n"
+"Without SIG, all known signals are included.  Multiple signals can be\n"
+"comma-separated.\n"
+msgstr ""
+"\n"
+"SIGNÁL môže byť názov signálu ako „HUP“ alebo číslo signálu ako „1“,\n"
+"alebo návratový kód procsu ukončeného signálom.\n"
+"PID je celé číslo; ak je záporné, označuje skupinu procesov.\n"
+
+#: src/env.c:181
 #, fuzzy, c-format
 msgid "cannot unset %s"
 msgstr "nie je možné spustiť %s"
 
-#: src/env.c:256
+#: src/env.c:315
 msgid "'\\c' must not appear in double-quoted -S string"
 msgstr ""
 
-#: src/env.c:260
+#: src/env.c:319
 #, fuzzy
 msgid "invalid backslash at end of string in -S"
 msgstr ""
 "upozornenie: spätná lomka na konci reťazca bez únikovej klauzuly nie je "
 "portabilná"
 
-#: src/env.c:263
+#: src/env.c:322
 #, c-format
 msgid "invalid sequence '\\%c' in -S"
 msgstr ""
 
-#: src/env.c:277
+#: src/env.c:336
 #, c-format
 msgid "only ${VARNAME} expansion is supported, error at: %s"
 msgstr ""
 
-#: src/env.c:288
+#: src/env.c:347
 msgid "no terminating quote in -S string"
 msgstr ""
 
-#: src/env.c:573
+#: src/env.c:613 src/env.c:702 src/operand2sig.c:88
+#, c-format
+msgid "%s: invalid signal"
+msgstr "%s: neplatný signál"
+
+#: src/env.c:645
+#, fuzzy, c-format
+msgid "failed to get signal action for signal %d"
+msgstr "zmena skupiny %s na %s zlyhala\n"
+
+#: src/env.c:653
+#, fuzzy, c-format
+msgid "failed to set signal action for signal %d"
+msgstr "zisťujem atribúty %s"
+
+#: src/env.c:725 src/env.c:765
+#, fuzzy
+msgid "failed to get signal process mask"
+msgstr "nepodarilo sa nastaviť novú rolu %s"
+
+#: src/env.c:754
+#, fuzzy
+msgid "failed to set signal process mask"
+msgstr "nepodarilo sa nastaviť novú rolu %s"
+
+#: src/env.c:857
 #, fuzzy, c-format
 msgid "invalid option -- '%c'"
 msgstr "neplatná voľba -- %c"
 
-#: src/env.c:574 src/env.c:658
+#: src/env.c:858 src/env.c:949
 #, c-format
 msgid "use -[v]S to pass options in shebang lines"
 msgstr ""
 
-#: src/env.c:607
+#: src/env.c:891
 #, fuzzy, c-format
 msgid "cannot set %s"
 msgstr "nie je možné stat() %s"
 
-#: src/env.c:617
+#: src/env.c:901
 #, c-format
 msgid "cannot specify --null (-0) with command"
 msgstr ""
 
-#: src/env.c:623
+#: src/env.c:907
 #, c-format
 msgid "must specify command with --chdir (-C)"
 msgstr ""
 
-#: src/env.c:641
+#: src/env.c:932
 #, fuzzy, c-format
 msgid "cannot change directory to %s"
 msgstr "nie je možné zmeniť koreňový adresár na %s"
@@ -4179,7 +4311,7 @@ msgid "input line is too long"
 msgstr "vstupný riadok je príliš dlhý"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/expr.c:151 src/ln.c:42 src/mv.c:42 src/tee.c:36
+#: src/expr.c:151 src/ln.c:51 src/mv.c:42 src/tee.c:36
 msgid "Mike Parker"
 msgstr "Mike Parker"
 
@@ -4312,11 +4444,11 @@ msgstr "%s: očakával sa unárny operátor"
 msgid "non-integer argument"
 msgstr "nečíselný argument"
 
-#: src/expr.c:933 src/truncate.c:289
+#: src/expr.c:933 src/truncate.c:278
 msgid "division by zero"
 msgstr "delenie nulou"
 
-#: src/expr.c:1027 src/sort.c:2113
+#: src/expr.c:1027 src/sort.c:2119
 #, c-format
 msgid "set LC_ALL='C' to work around the problem"
 msgstr "nastavením LC_ALL='C' obídete tento problém"
@@ -4345,7 +4477,7 @@ msgstr ""
 msgid "%s is not a valid positive integer"
 msgstr "%s nie je platné kladné celé číslo"
 
-#: src/factor.c:2549 src/od.c:1691 src/od.c:1772
+#: src/factor.c:2549 src/od.c:1697 src/od.c:1778
 #, c-format
 msgid "%s is too large"
 msgstr "%s je príliš veľa"
@@ -4451,7 +4583,7 @@ msgid ""
 "  -w, --width=WIDTH   use WIDTH columns instead of 80\n"
 msgstr ""
 
-#: src/fold.c:284 src/pr.c:840
+#: src/fold.c:284 src/pr.c:841
 #, fuzzy
 msgid "invalid number of columns"
 msgstr "neplatný počet stĺpcov: %s"
@@ -4473,12 +4605,12 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/group-list.c:68 src/id.c:414
+#: src/group-list.c:68 src/id.c:401
 #, fuzzy, c-format
 msgid "failed to get groups for user %s"
 msgstr "zmena skupiny %s na %s zlyhala\n"
 
-#: src/group-list.c:73 src/id.c:417
+#: src/group-list.c:73 src/id.c:404
 #, fuzzy, c-format
 msgid "failed to get groups for the current process"
 msgstr "zmena skupiny %s na %s zlyhala\n"
@@ -4500,22 +4632,22 @@ msgid ""
 "the current process (which may differ if the groups database has changed).\n"
 msgstr ""
 
-#: src/groups.c:106 src/id.c:277
+#: src/groups.c:106 src/id.c:289
 #, fuzzy
 msgid "cannot get real UID"
 msgstr "nie je možné nastaviť ID používateľa"
 
-#: src/groups.c:111 src/id.c:285
+#: src/groups.c:111 src/id.c:297
 #, fuzzy
 msgid "cannot get effective GID"
 msgstr "súbor sa nedá rozdeliť viacerými spôsobmi"
 
-#: src/groups.c:116 src/id.c:290
+#: src/groups.c:116 src/id.c:302
 #, fuzzy
 msgid "cannot get real GID"
 msgstr "nie je možné nastaviť ID používateľa"
 
-#: src/groups.c:130 src/id.c:249
+#: src/groups.c:130 src/id.c:255
 #, fuzzy, c-format
 msgid "%s: no such user"
 msgstr "%s: Používateľ neexistuje"
@@ -4557,6 +4689,7 @@ msgid ""
 "NUM may have a multiplier suffix:\n"
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 msgstr ""
 "\n"
 "Po BLOKOV a BAJTOV môže byť uvedená jedna z nasledovných prípon:\n"
@@ -4566,41 +4699,41 @@ msgstr ""
 "Každý symbol KONV môže byť:\n"
 "\n"
 
-#: src/head.c:159
+#: src/head.c:160
 #, c-format
 msgid "%s: file has shrunk too much"
 msgstr ""
 
-#: src/head.c:231 src/tail.c:484
+#: src/head.c:232 src/tail.c:507
 #, c-format
 msgid "%s: cannot seek to offset %s"
 msgstr "%s: nie je možné presunúť sa na pozíciu %s"
 
-#: src/head.c:232 src/tail.c:488
+#: src/head.c:233 src/tail.c:511
 #, fuzzy, c-format
 msgid "%s: cannot seek to relative offset %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/head.c:274
+#: src/head.c:275
 #, c-format
 msgid "%s: number of bytes is too large"
 msgstr "%s: počet bajtov je príliš veľký"
 
-#: src/head.c:912 src/split.c:1367 src/split.c:1534 src/tail.c:2181
+#: src/head.c:913 src/split.c:1368 src/split.c:1535 src/tail.c:2205
 msgid "invalid number of lines"
 msgstr "chybný počet riadkov"
 
-#: src/head.c:913 src/head.c:1077 src/split.c:1359 src/split.c:1375
-#: src/tail.c:2182
+#: src/head.c:914 src/head.c:1078 src/split.c:1360 src/split.c:1376
+#: src/tail.c:2206
 msgid "invalid number of bytes"
 msgstr "chybný počet bajtov"
 
-#: src/head.c:1003 src/head.c:1065
+#: src/head.c:1004 src/head.c:1066
 #, c-format
 msgid "invalid trailing option -- %c"
 msgstr "chybná posledná voľba -- %c"
 
-#: src/hostid.c:47
+#: src/hostid.c:41
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [OPTION]\n"
@@ -4615,7 +4748,7 @@ msgstr ""
 "  --version   vypísať informáciu o verzii a skončiť\n"
 "\n"
 
-#: src/hostname.c:62
+#: src/hostname.c:56
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [NAME]\n"
@@ -4630,16 +4763,16 @@ msgstr ""
 "  --help      vypísať túto pomoc a skončiť\n"
 "  --version   vypísať informáciu o verzii a skončiť\n"
 
-#: src/hostname.c:100
+#: src/hostname.c:93
 #, fuzzy, c-format
 msgid "cannot set name to %s"
 msgstr "ioctl na `%s' nie je možné vykonať"
 
-#: src/hostname.c:104
+#: src/hostname.c:97
 msgid "cannot set hostname; this system lacks the functionality"
 msgstr "nie je možné nastaviť názov; tento systém to neumožňuje"
 
-#: src/hostname.c:112
+#: src/hostname.c:105
 msgid "cannot determine hostname"
 msgstr "nie je možné zistiť názov systému"
 
@@ -4648,19 +4781,19 @@ msgstr "nie je možné zistiť názov systému"
 msgid "Arnold Robbins"
 msgstr "Arnold Robbins"
 
-#: src/id.c:85
-#, fuzzy, c-format
-msgid "Usage: %s [OPTION]... [USER]\n"
+#: src/id.c:96 src/pinky.c:489
+#, c-format
+msgid "Usage: %s [OPTION]... [USER]...\n"
 msgstr "Použitie: %s [PREPÍNAČ]... [SÚBOR]...\n"
 
-#: src/id.c:86
+#: src/id.c:97
 msgid ""
-"Print user and group information for the specified USER,\n"
+"Print user and group information for each specified USER,\n"
 "or (when USER omitted) for the current user.\n"
 "\n"
 msgstr ""
 
-#: src/id.c:91
+#: src/id.c:102
 #, fuzzy
 msgid ""
 "  -a             ignore, for compatibility with other versions\n"
@@ -4684,78 +4817,78 @@ msgstr ""
 "      --help      vypísať túto pomoc a skončiť\n"
 "      --version   vypísať informáciu o verzii a skončiť\n"
 
-#: src/id.c:104
+#: src/id.c:115
 msgid ""
 "\n"
 "Without any OPTION, print some useful set of identified information.\n"
 msgstr ""
 
-#: src/id.c:152
+#: src/id.c:153
 msgid "--context (-Z) works only on an SELinux/SMACK-enabled kernel"
 msgstr ""
 
-#: src/id.c:157
+#: src/id.c:158
 msgid "--context (-Z) works only on an SELinux-enabled kernel"
 msgstr ""
 
-#: src/id.c:196
+#: src/id.c:192
 msgid "cannot print security context when user specified"
 msgstr ""
 
-#: src/id.c:199
+#: src/id.c:195
 #, fuzzy
 msgid "cannot print \"only\" of more than one choice"
 msgstr "súbor sa nedá rozdeliť viacerými spôsobmi"
 
-#: src/id.c:208
+#: src/id.c:204
 msgid "cannot print only names or real IDs in default format"
 msgstr "v implicitnom formáte nie je možné vypísať iba mená alebo reálne ID"
 
-#: src/id.c:212
+#: src/id.c:208
 #, fuzzy
 msgid "option --zero not permitted in default format"
 msgstr "v implicitnom formáte nie je možné vypísať iba mená alebo reálne ID"
 
-#: src/id.c:228
+#: src/id.c:224
 #, fuzzy
 msgid "can't get process context"
 msgstr "nie je možné zistiť typ procesora"
 
-#: src/id.c:268
+#: src/id.c:280
 #, fuzzy
 msgid "cannot get effective UID"
 msgstr "súbor sa nedá rozdeliť viacerými spôsobmi"
 
-#: src/id.c:357
+#: src/id.c:344
 #, fuzzy, c-format
 msgid "cannot find name for user ID %s"
 msgstr "nie je možné zistiť meno pre ID používateľa %u\n"
 
-#: src/id.c:375
+#: src/id.c:362
 #, fuzzy, c-format
 msgid "uid=%s"
 msgstr "uid=%lu"
 
-#: src/id.c:380
+#: src/id.c:367
 #, fuzzy, c-format
 msgid " gid=%s"
 msgstr " gid=%lu"
 
-#: src/id.c:387
+#: src/id.c:374
 #, fuzzy, c-format
 msgid " euid=%s"
 msgstr " euid=%lu"
 
-#: src/id.c:395
+#: src/id.c:382
 #, fuzzy, c-format
 msgid " egid=%s"
 msgstr " egid=%lu"
 
-#: src/id.c:423
+#: src/id.c:410
 msgid " groups="
 msgstr " skupiny="
 
-#: src/id.c:439
+#: src/id.c:426
 #, fuzzy, c-format
 msgid " context=%s"
 msgstr "neplatný kontexxt: %s"
@@ -4790,7 +4923,7 @@ msgstr "nie je možné zmeniť práva %s"
 msgid "cannot set timestamps for %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/install.c:556 src/split.c:522 src/timeout.c:506
+#: src/install.c:556 src/split.c:523 src/timeout.c:506
 #, fuzzy, c-format
 msgid "fork system call failed"
 msgstr "veľkosť bloku"
@@ -4889,7 +5022,7 @@ msgid ""
 "                            SELinux or SMACK security context to CTX\n"
 msgstr ""
 
-#: src/install.c:711 src/unlink.c:92
+#: src/install.c:711 src/unlink.c:85
 #, c-format
 msgid "cannot unlink %s"
 msgstr "nie je možné odpojiť (unlink) %s"
@@ -4912,7 +5045,7 @@ msgid "target directory not allowed when installing a directory"
 msgstr ""
 "formátovací reťazec nemôže byť použitý, pokiaľ je požadovaná rovnaká šírka"
 
-#: src/install.c:1002 src/mkdir.c:284 src/stdbuf.c:351
+#: src/install.c:1002 src/mkdir.c:284 src/stdbuf.c:352
 #, fuzzy, c-format
 msgid "invalid mode %s"
 msgstr "chybné číslo položky: `%s'"
@@ -4940,7 +5073,7 @@ msgid ""
 msgstr ""
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/join.c:41 src/sort.c:66
+#: src/join.c:41 src/sort.c:67
 msgid "Mike Haertel"
 msgstr "Mike Haertel"
 
@@ -4990,7 +5123,7 @@ msgstr ""
 "      --help      vypíše tuto nápovedu a skončí\n"
 "      --version   vypíše označenie verzie a skončí\n"
 
-#: src/join.c:227 src/shuf.c:83 src/sort.c:512 src/uniq.c:206
+#: src/join.c:227 src/shuf.c:83 src/sort.c:500 src/uniq.c:201
 msgid "  -z, --zero-terminated     line delimiter is NUL, not newline\n"
 msgstr ""
 
@@ -5018,40 +5151,40 @@ msgstr ""
 msgid "%s:%<PRIuMAX>: is not sorted: %.*s"
 msgstr ""
 
-#: src/join.c:849 src/join.c:1047
+#: src/join.c:848 src/join.c:1046
 #, fuzzy, c-format
 msgid "invalid field number: %s"
 msgstr "chybné číslo položky: `%s'"
 
-#: src/join.c:870 src/join.c:879
+#: src/join.c:869 src/join.c:878
 #, fuzzy, c-format
 msgid "invalid field specifier: %s"
 msgstr "chybne zadaná položka: `%s'"
 
-#: src/join.c:886
+#: src/join.c:885
 #, fuzzy, c-format
 msgid "invalid file number in field spec: %s"
 msgstr "chybné číslo súboru v popise položky: `%s'"
 
-#: src/join.c:930
+#: src/join.c:929
 #, c-format
 msgid "incompatible join fields %lu, %lu"
 msgstr ""
 
-#: src/join.c:1058
+#: src/join.c:1057
 msgid "conflicting empty-field replacement strings"
 msgstr ""
 
-#: src/join.c:1110 src/sort.c:4534
+#: src/join.c:1109 src/sort.c:4535
 #, fuzzy, c-format
 msgid "multi-character tab %s"
 msgstr "viacznakový tabulátor `%s'"
 
-#: src/join.c:1114 src/sort.c:4539
+#: src/join.c:1113 src/sort.c:4540
 msgid "incompatible tabs"
 msgstr "nekompatibilné tabulátory"
 
-#: src/join.c:1187
+#: src/join.c:1186
 msgid "both files cannot be standard input"
 msgstr "obidva súbory nemôžu byť štandardným vstupom"
 
@@ -5132,27 +5265,27 @@ msgstr "nie je možné kombinovať signál s voľbou -l alebo -t"
 msgid "no process ID specified"
 msgstr "nebol zadaný ID procesu"
 
-#: src/libstdbuf.c:112
-#, c-format
-msgid "failed to allocate a %<PRIuMAX> byte stdio buffer\n"
-msgstr ""
-
-#: src/libstdbuf.c:119
+#: src/libstdbuf.c:108
 #, fuzzy, c-format
 msgid "invalid buffering mode %s for %s\n"
 msgstr "neplatný argument %s pre %s"
 
-#: src/libstdbuf.c:127
+#: src/libstdbuf.c:120
+#, c-format
+msgid "failed to allocate a %<PRIuMAX> byte stdio buffer\n"
+msgstr ""
+
+#: src/libstdbuf.c:130
 #, c-format
 msgid "could not set buffering of %s to mode %s\n"
 msgstr ""
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/link.c:37 src/unlink.c:37 src/who.c:52
+#: src/link.c:36 src/unlink.c:36 src/who.c:52
 msgid "Michael Stone"
 msgstr "Michael Stone"
 
-#: src/link.c:51
+#: src/link.c:45
 #, c-format
 msgid ""
 "Usage: %s FILE1 FILE2\n"
@@ -5161,58 +5294,58 @@ msgstr ""
 "Použitie: %s SÚBOR1 SÚBOR2\n"
 " alebo:   %s VOĽBA\n"
 
-#: src/link.c:54
+#: src/link.c:48
 msgid ""
 "Call the link function to create a link named FILE2 to an existing FILE1.\n"
 "\n"
 msgstr ""
 
-#: src/link.c:96
+#: src/link.c:89
 #, c-format
 msgid "cannot create link %s to %s"
 msgstr "nie je možné vytvoriť odkaz z %s na %s"
 
-#: src/ln.c:207
+#: src/ln.c:213
 #, c-format
 msgid "%s: hard link not allowed for directory"
 msgstr "%s: na adresár nie je povolený pevný odkaz"
 
-#: src/ln.c:272
+#: src/ln.c:238
 #, c-format
 msgid "%s: cannot overwrite directory"
 msgstr "%s: nie je možné prepísať adresár"
 
-#: src/ln.c:277
+#: src/ln.c:285
 #, c-format
 msgid "%s: replace %s? "
 msgstr "%s: prepísať %s? "
 
-#: src/ln.c:349
+#: src/ln.c:380
 #, fuzzy, c-format
 msgid "failed to create symbolic link %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/ln.c:350
+#: src/ln.c:381
 #, fuzzy, c-format
 msgid "failed to create symbolic link %s -> %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/ln.c:352
+#: src/ln.c:383
 #, fuzzy, c-format
 msgid "failed to create hard link to %.0s%s"
 msgstr "vytvára sa pevný odkaz na %.0s%s"
 
-#: src/ln.c:355
+#: src/ln.c:386
 #, fuzzy, c-format
 msgid "failed to create hard link %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/ln.c:356
+#: src/ln.c:387
 #, fuzzy, c-format
 msgid "failed to create hard link %s => %s"
 msgstr "nie je možné vytvoriť adresár %s"
 
-#: src/ln.c:378
+#: src/ln.c:409
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [OPTION]... [-T] TARGET LINK_NAME\n"
@@ -5224,7 +5357,7 @@ msgstr ""
 "  alebo:  %s [VOĽBA]... ZAČIATOK KONIEC\n"
 "  alebo:  %s [VOĽBA]... ZAČIATOK KROK LAST\n"
 
-#: src/ln.c:385
+#: src/ln.c:416
 msgid ""
 "In the 1st form, create a link to TARGET with the name LINK_NAME.\n"
 "In the 2nd form, create a link to TARGET in the current directory.\n"
@@ -5236,7 +5369,7 @@ msgid ""
 "interpreted in relation to its parent directory.\n"
 msgstr ""
 
-#: src/ln.c:398
+#: src/ln.c:429
 msgid ""
 "      --backup[=CONTROL]      make a backup of each existing destination "
 "file\n"
@@ -5249,7 +5382,7 @@ msgid ""
 "  -f, --force                 remove existing destination files\n"
 msgstr ""
 
-#: src/ln.c:406
+#: src/ln.c:437
 msgid ""
 "  -i, --interactive           prompt whether to remove destinations\n"
 "  -L, --logical               dereference TARGETs that are symbolic links\n"
@@ -5261,7 +5394,7 @@ msgid ""
 "  -s, --symbolic              make symbolic links instead of hard links\n"
 msgstr ""
 
-#: src/ln.c:415
+#: src/ln.c:446
 msgid ""
 "  -S, --suffix=SUFFIX         override the usual backup suffix\n"
 "  -t, --target-directory=DIRECTORY  specify the DIRECTORY in which to "
@@ -5271,7 +5404,7 @@ msgid ""
 "  -v, --verbose               print name of each linked file\n"
 msgstr ""
 
-#: src/ln.c:425
+#: src/ln.c:456
 #, c-format
 msgid ""
 "\n"
@@ -5279,33 +5412,38 @@ msgid ""
 "behavior when a TARGET is a symbolic link, defaulting to %s.\n"
 msgstr ""
 
-#: src/ln.c:542
-#, fuzzy
-msgid "cannot combine --target-directory and --no-target-directory"
-msgstr "Nie je možné kombinovať --target-directory a --no-target-directory"
-
-#: src/ln.c:574
+#: src/ln.c:572
 #, fuzzy
 msgid "cannot do --relative without --symbolic"
 msgstr "nie je možné vytvoriť adresár %s"
 
+#: src/ln.c:584
+#, fuzzy
+msgid "cannot combine --target-directory and --no-target-directory"
+msgstr "Nie je možné kombinovať --target-directory a --no-target-directory"
+
+#: src/ln.c:632
+#, fuzzy, c-format
+msgid "target %s"
+msgstr "argument %s je naviac"
+
 #. This is a proper name. See the gettext manual, section Names.
-#: src/logname.c:31
+#: src/logname.c:30
 msgid "FIXME: unknown"
 msgstr "FIXME: neznámy"
 
-#: src/logname.c:45
+#: src/logname.c:39
 #, c-format
 msgid "Usage: %s [OPTION]\n"
 msgstr "Použitie: %s [VOĽBA]\n"
 
-#: src/logname.c:46
+#: src/logname.c:40
 msgid ""
 "Print the name of the current user.\n"
 "\n"
 msgstr ""
 
-#: src/logname.c:85
+#: src/logname.c:78
 msgid "no login name"
 msgstr "žiadne prihlasovacie meno"
 
@@ -5314,7 +5452,7 @@ msgstr "žiadne prihlasovacie meno"
 #. Note %b is handled specially by ls and aligned correctly.
 #. Note also that specifying a width as in %5b is erroneous as strftime
 #. will count bytes rather than characters in multibyte locales.
-#: src/ls.c:770
+#: src/ls.c:777
 msgid "%b %e  %Y"
 msgstr "%b %e  %Y"
 
@@ -5323,102 +5461,102 @@ msgstr "%b %e  %Y"
 #. Note %b is handled specially by ls and aligned correctly.
 #. Note also that specifying a width as in %5b is erroneous as strftime
 #. will count bytes rather than characters in multibyte locales.
-#: src/ls.c:783
+#: src/ls.c:790
 msgid "%b %e %H:%M"
 msgstr "%b %e %H:%M"
 
-#: src/ls.c:1751
+#: src/ls.c:1930
 #, c-format
 msgid "ignoring invalid width in environment variable COLUMNS: %s"
 msgstr "ignorujem chybnú šírku v premennej prostredia COLUMNS: %s"
 
-#: src/ls.c:1779
+#: src/ls.c:1955
 #, c-format
 msgid "ignoring invalid tab size in environment variable TABSIZE: %s"
 msgstr ""
 "ignorujem chybný rozostup tabulátorov v premennej prostredia TABSIZE: %s"
 
-#: src/ls.c:1898
+#: src/ls.c:2074
 #, fuzzy
 msgid "invalid line width"
 msgstr "neplatná šírka riadka: %s"
 
-#: src/ls.c:1966
+#: src/ls.c:2142
 #, fuzzy
 msgid "invalid tab size"
 msgstr "neplatná veľkosť tabulátora: %s"
 
-#: src/ls.c:2199
+#: src/ls.c:2376
 #, c-format
 msgid "invalid time style format %s"
 msgstr "neplatný formát času: %s"
 
-#: src/ls.c:2223
+#: src/ls.c:2400
 #, fuzzy
 msgid "Valid arguments are:\n"
 msgstr "Platné argumenty sú:"
 
-#: src/ls.c:2227
+#: src/ls.c:2404
 msgid "  - +FORMAT (e.g., +%H:%M) for a 'date'-style format\n"
 msgstr ""
 
-#: src/ls.c:2601
+#: src/ls.c:2778
 #, c-format
 msgid "unrecognized prefix: %s"
 msgstr "neznáma predpona: %s"
 
-#: src/ls.c:2631
+#: src/ls.c:2808
 #, c-format
 msgid "unparsable value for LS_COLORS environment variable"
 msgstr "nezrozumiteľná hodnota v premennej prostredia LS_COLORS"
 
-#: src/ls.c:2661 src/stat.c:1038
+#: src/ls.c:2838 src/stat.c:1046
 #, c-format
 msgid "ignoring invalid value of environment variable QUOTING_STYLE: %s"
 msgstr "ignoruje sa neplatná hodnota premennej prostredia QUOTING_STYLE: %s"
 
-#: src/ls.c:2727 src/pwd.c:164
+#: src/ls.c:2905 src/pwd.c:164
 #, c-format
 msgid "cannot open directory %s"
 msgstr "nie je možné otvoriť adresár %s"
 
-#: src/ls.c:2742
+#: src/ls.c:2920
 #, c-format
 msgid "cannot determine device and inode of %s"
 msgstr "nie je možné určiť zariadenie a inode pre %s"
 
-#: src/ls.c:2751
+#: src/ls.c:2929
 #, c-format
 msgid "%s: not listing already-listed directory"
 msgstr "%s: nevypisuje sa už vypísaný adresár"
 
-#: src/ls.c:2776 src/ls.c:3195 src/selinux.c:127 src/selinux.c:300
+#: src/ls.c:2954 src/ls.c:3390 src/selinux.c:127 src/selinux.c:300
 #, fuzzy, c-format
 msgid "error canonicalizing %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/ls.c:2838 src/pwd.c:232
+#: src/ls.c:3017 src/ls.c:3032 src/pwd.c:232
 #, c-format
 msgid "reading directory %s"
 msgstr "číta sa adresár %s"
 
-#: src/ls.c:2853
+#: src/ls.c:3048
 #, c-format
 msgid "closing directory %s"
 msgstr "zatvíra sa adresár %s"
 
-#: src/ls.c:3572
+#: src/ls.c:3765
 #, c-format
 msgid "cannot compare file names %s and %s"
 msgstr "nie je možné porovnať názvy súborov %s a %s"
 
-#: src/ls.c:5132
+#: src/ls.c:5343
 msgid ""
 "List information about the FILEs (the current directory by default).\n"
 "Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n"
 msgstr ""
 
-#: src/ls.c:5139
+#: src/ls.c:5350
 msgid ""
 "  -a, --all                  do not ignore entries starting with .\n"
 "  -A, --almost-all           do not list implied . and ..\n"
@@ -5427,7 +5565,7 @@ msgid ""
 "characters\n"
 msgstr ""
 
-#: src/ls.c:5145
+#: src/ls.c:5356
 msgid ""
 "      --block-size=SIZE      with -l, scale sizes by SIZE when printing "
 "them;\n"
@@ -5435,7 +5573,7 @@ msgid ""
 "below\n"
 msgstr ""
 
-#: src/ls.c:5149
+#: src/ls.c:5360
 msgid ""
 "  -B, --ignore-backups       do not list implied entries ending with ~\n"
 "  -c                         with -lt: sort by, and show, ctime (time of "
@@ -5445,7 +5583,7 @@ msgid ""
 "                               otherwise: sort by ctime, newest first\n"
 msgstr ""
 
-#: src/ls.c:5156
+#: src/ls.c:5367
 msgid ""
 "  -C                         list entries by columns\n"
 "      --color[=WHEN]         colorize the output; WHEN can be "
@@ -5457,7 +5595,7 @@ msgid ""
 "  -D, --dired                generate output designed for Emacs' dired mode\n"
 msgstr ""
 
-#: src/ls.c:5165
+#: src/ls.c:5376
 msgid ""
 "  -f                         do not sort, enable -aU, disable -ls --color\n"
 "  -F, --classify             append indicator (one of */=>@|) to entries\n"
@@ -5467,11 +5605,11 @@ msgid ""
 "      --full-time            like -l --time-style=full-iso\n"
 msgstr ""
 
-#: src/ls.c:5173
+#: src/ls.c:5384
 msgid "  -g                         like -l, but do not list owner\n"
 msgstr ""
 
-#: src/ls.c:5176
+#: src/ls.c:5387
 msgid ""
 "      --group-directories-first\n"
 "                             group directories before files;\n"
@@ -5480,19 +5618,19 @@ msgid ""
 "                               use of --sort=none (-U) disables grouping\n"
 msgstr ""
 
-#: src/ls.c:5182
+#: src/ls.c:5393
 msgid ""
 "  -G, --no-group             in a long listing, don't print group names\n"
 msgstr ""
 
-#: src/ls.c:5185
+#: src/ls.c:5396
 msgid ""
 "  -h, --human-readable       with -l and -s, print sizes like 1K 234M 2G "
 "etc.\n"
 "      --si                   likewise, but use powers of 1000 not 1024\n"
 msgstr ""
 
-#: src/ls.c:5189
+#: src/ls.c:5400
 msgid ""
 "  -H, --dereference-command-line\n"
 "                             follow symbolic links listed on the command "
@@ -5505,13 +5643,13 @@ msgid ""
 "                               (overridden by -a or -A)\n"
 msgstr ""
 
-#: src/ls.c:5199
+#: src/ls.c:5410
 msgid ""
 "      --hyperlink[=WHEN]     hyperlink file names; WHEN can be 'always'\n"
 "                               (default if omitted), 'auto', or 'never'\n"
 msgstr ""
 
-#: src/ls.c:5203
+#: src/ls.c:5414
 msgid ""
 "      --indicator-style=WORD  append indicator with style WORD to entry "
 "names:\n"
@@ -5522,13 +5660,13 @@ msgid ""
 "PATTERN\n"
 msgstr ""
 
-#: src/ls.c:5212
+#: src/ls.c:5423
 msgid ""
 "  -k, --kibibytes            default to 1024-byte blocks for disk usage;\n"
 "                               used only with -s and per directory totals\n"
 msgstr ""
 
-#: src/ls.c:5216
+#: src/ls.c:5427
 msgid ""
 "  -l                         use a long listing format\n"
 "  -L, --dereference          when showing file information for a symbolic\n"
@@ -5538,7 +5676,7 @@ msgid ""
 "entries\n"
 msgstr ""
 
-#: src/ls.c:5224
+#: src/ls.c:5435
 msgid ""
 "  -n, --numeric-uid-gid      like -l, but list numeric user and group IDs\n"
 "  -N, --literal              print entry names without quoting\n"
@@ -5547,7 +5685,7 @@ msgid ""
 "                             append / indicator to directories\n"
 msgstr ""
 
-#: src/ls.c:5231
+#: src/ls.c:5442
 #, fuzzy
 msgid ""
 "  -q, --hide-control-chars   print ? instead of nongraphic characters\n"
@@ -5594,7 +5732,7 @@ msgstr ""
 "  -R, --recursive            vypísať adresáre rekurzívne\n"
 "  -s, --size                 vypísať veľkosť každého súboru v blokoch\n"
 
-#: src/ls.c:5242
+#: src/ls.c:5453
 #, fuzzy
 msgid ""
 "  -r, --reverse              reverse order while sorting\n"
@@ -5603,33 +5741,34 @@ msgid ""
 "blocks\n"
 msgstr "  -R, --recursive            vypíše adresáre rekurzívne\n"
 
-#: src/ls.c:5247
+#: src/ls.c:5458
 msgid ""
 "  -S                         sort by file size, largest first\n"
 "      --sort=WORD            sort by WORD instead of name: none (-U), size (-"
 "S),\n"
 "                               time (-t), version (-v), extension (-X)\n"
-"      --time=WORD            with -l, show time as WORD instead of default\n"
-"                               modification time: atime or access or use (-"
-"u);\n"
-"                               ctime or status (-c); also use specified "
-"time\n"
-"                               as sort key if --sort=time (newest first)\n"
+"      --time=WORD            change the default of using modification "
+"times;\n"
+"                               access time (-u): atime, access, use;\n"
+"                               change time (-c): ctime, status;\n"
+"                               birth time: birth, creation;\n"
+"                             with -l, WORD determines which time to show;\n"
+"                             with --sort=time, sort by WORD (newest first)\n"
 msgstr ""
 
-#: src/ls.c:5258
+#: src/ls.c:5470
 msgid ""
 "      --time-style=TIME_STYLE  time/date format with -l; see TIME_STYLE "
 "below\n"
 msgstr ""
 
-#: src/ls.c:5261
+#: src/ls.c:5473
 msgid ""
-"  -t                         sort by modification time, newest first\n"
+"  -t                         sort by time, newest first; see --time\n"
 "  -T, --tabsize=COLS         assume tab stops at each COLS instead of 8\n"
 msgstr ""
 
-#: src/ls.c:5265
+#: src/ls.c:5477
 msgid ""
 "  -u                         with -lt: sort by, and show, access time;\n"
 "                               with -l: show access time and sort by name;\n"
@@ -5638,7 +5777,7 @@ msgid ""
 "  -v                         natural sort of (version) numbers within text\n"
 msgstr ""
 
-#: src/ls.c:5272
+#: src/ls.c:5484
 msgid ""
 "  -w, --width=COLS           set output width to COLS.  0 means no limit\n"
 "  -x                         list entries by lines instead of by columns\n"
@@ -5648,7 +5787,7 @@ msgid ""
 "-b\n"
 msgstr ""
 
-#: src/ls.c:5283
+#: src/ls.c:5495
 msgid ""
 "\n"
 "The TIME_STYLE argument can be full-iso, long-iso, iso, locale, or +FORMAT.\n"
@@ -5660,7 +5799,7 @@ msgid ""
 "Also the TIME_STYLE environment variable sets the default style to use.\n"
 msgstr ""
 
-#: src/ls.c:5291
+#: src/ls.c:5503
 msgid ""
 "\n"
 "Using color to distinguish file types is disabled both by default and\n"
@@ -5669,7 +5808,7 @@ msgid ""
 "variable can change the settings.  Use the dircolors command to set it.\n"
 msgstr ""
 
-#: src/ls.c:5298
+#: src/ls.c:5510
 msgid ""
 "\n"
 "Exit status:\n"
@@ -5684,7 +5823,7 @@ msgid "Samuel Neves"
 msgstr ""
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/md5sum.c:111 src/seq.c:43
+#: src/md5sum.c:111 src/seq.c:48
 msgid "Ulrich Drepper"
 msgstr "Ulrich Drepper"
 
@@ -5778,6 +5917,9 @@ msgid ""
 "line with checksum, a space, a character indicating input mode ('*' for "
 "binary,\n"
 "' ' for text or where binary is insignificant), and name for each FILE.\n"
+"\n"
+"Note: There is no difference between binary mode and text mode on GNU "
+"systems.\n"
 msgstr ""
 
 #: src/md5sum.c:697
@@ -5903,7 +6045,7 @@ msgstr "prepínač --status má význam iba pri overovaní kontrolných súčtov
 msgid "the --strict option is meaningful only when verifying checksums"
 msgstr "prepínač --status má význam iba pri overovaní kontrolných súčtov"
 
-#: src/mkdir.c:59 src/rmdir.c:163
+#: src/mkdir.c:59 src/rmdir.c:164
 #, c-format
 msgid "Usage: %s [OPTION]... DIRECTORY...\n"
 msgstr "Použitie: %s [VOĽBA... ADRESÁR...\n"
@@ -6114,7 +6256,7 @@ msgstr "príliš veľa šablón"
 msgid "with --suffix, template %s must end in X"
 msgstr ""
 
-#: src/mktemp.c:256 src/split.c:1344
+#: src/mktemp.c:256 src/split.c:1345
 #, c-format
 msgid "invalid suffix %s, contains directory separator"
 msgstr ""
@@ -6307,51 +6449,51 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/nl.c:284
+#: src/nl.c:281
 msgid "line number overflow"
 msgstr "pretečenie počtu riadkov"
 
-#: src/nl.c:488
+#: src/nl.c:484
 #, c-format
 msgid "invalid header numbering style: %s"
 msgstr "neplatný štýl číslovania hlavičky: %s"
 
-#: src/nl.c:496
+#: src/nl.c:492
 #, c-format
 msgid "invalid body numbering style: %s"
 msgstr "neplatný štýl číslovania tela: %s"
 
-#: src/nl.c:504
+#: src/nl.c:500
 #, c-format
 msgid "invalid footer numbering style: %s"
 msgstr "neplatný štýl číslovania pätičky: %s"
 
-#: src/nl.c:511
+#: src/nl.c:507
 #, fuzzy
 msgid "invalid starting line number"
 msgstr "neplatné počiatočné číslo riadka: %s"
 
-#: src/nl.c:516
+#: src/nl.c:512
 #, fuzzy
 msgid "invalid line number increment"
 msgstr "neplatná hodnota prírastku čísla riadka: %s"
 
-#: src/nl.c:523
+#: src/nl.c:519
 #, fuzzy
 msgid "invalid line number of blank lines"
 msgstr "neplatný počet prázdnych riadkov: %s"
 
-#: src/nl.c:530
+#: src/nl.c:526
 #, fuzzy
 msgid "invalid line number field width"
 msgstr "neplatná šírka poľa čísla riadku: %s"
 
-#: src/nl.c:541
+#: src/nl.c:537
 #, c-format
 msgid "invalid line numbering format: %s"
 msgstr "neplatný formát číslovania riadkov: %s"
 
-#: src/nohup.c:56
+#: src/nohup.c:50
 #, c-format
 msgid ""
 "Usage: %s COMMAND [ARG]...\n"
@@ -6360,13 +6502,13 @@ msgstr ""
 "Použitie: %s PRÍKAZ [ARG]...\n"
 " alebo:   %s VOĽBA\n"
 
-#: src/nohup.c:62
+#: src/nohup.c:56
 msgid ""
 "Run COMMAND, ignoring hangup signals.\n"
 "\n"
 msgstr ""
 
-#: src/nohup.c:68
+#: src/nohup.c:62
 #, c-format
 msgid ""
 "\n"
@@ -6377,37 +6519,37 @@ msgid ""
 "To save output to FILE, use '%s COMMAND > FILE'.\n"
 msgstr ""
 
-#: src/nohup.c:130
+#: src/nohup.c:123
 #, fuzzy, c-format
 msgid "failed to render standard input unusable"
 msgstr "obidva súbory nemôžu byť štandardným vstupom"
 
-#: src/nohup.c:132
+#: src/nohup.c:125
 #, c-format
 msgid "ignoring input"
 msgstr "ignoruje sa vstup"
 
-#: src/nohup.c:176
+#: src/nohup.c:169
 #, c-format
 msgid "ignoring input and appending output to %s"
 msgstr ""
 
-#: src/nohup.c:177
+#: src/nohup.c:170
 #, c-format
 msgid "appending output to %s"
 msgstr "pridáva sa výstup k %s"
 
-#: src/nohup.c:195
+#: src/nohup.c:188
 #, c-format
 msgid "ignoring input and redirecting stderr to stdout"
 msgstr ""
 
-#: src/nohup.c:196
+#: src/nohup.c:189
 #, c-format
 msgid "redirecting stderr to stdout"
 msgstr ""
 
-#: src/nohup.c:200
+#: src/nohup.c:193
 #, c-format
 msgid "failed to redirect standard error"
 msgstr ""
@@ -6417,7 +6559,7 @@ msgstr ""
 msgid "Giuseppe Scrivano"
 msgstr ""
 
-#: src/nproc.c:57 src/pwd.c:57 src/tty.c:65 src/uname.c:121 src/whoami.c:50
+#: src/nproc.c:57 src/pwd.c:57 src/tty.c:65 src/uname.c:121 src/whoami.c:44
 #, c-format
 msgid "Usage: %s [OPTION]...\n"
 msgstr "Použitie: %s [VOĽBA]...\n"
@@ -6669,7 +6811,7 @@ msgid ""
 "  $ ls -lh | %s --header --field 5 --from=iec --format %%10f\n"
 msgstr ""
 
-#: src/numfmt.c:1059 src/seq.c:240
+#: src/numfmt.c:1059 src/seq.c:248
 #, fuzzy, c-format
 msgid "format %s has no %% directive"
 msgstr "cieľ %s nie je adresárom"
@@ -6684,7 +6826,7 @@ msgstr "neplatná šírka vo formáte"
 msgid "--format padding overriding --padding"
 msgstr ""
 
-#: src/numfmt.c:1110 src/seq.c:257
+#: src/numfmt.c:1110 src/seq.c:265
 #, c-format
 msgid "format %s ends in %%"
 msgstr ""
@@ -6699,7 +6841,7 @@ msgstr "chybný typ reťazca `%s'"
 msgid "invalid format %s, directive must be %%[0]['][-][N][.][N]f"
 msgstr ""
 
-#: src/numfmt.c:1140 src/seq.c:264
+#: src/numfmt.c:1140 src/seq.c:272
 #, c-format
 msgid "format %s has too many %% directives"
 msgstr ""
@@ -6751,7 +6893,7 @@ msgstr "neplatný dátum %s"
 msgid "--grouping cannot be combined with --format"
 msgstr "Operandy súboru nie je možné kombinovať s --print-database (-p)."
 
-#: src/numfmt.c:1577 src/sort.c:4685
+#: src/numfmt.c:1577 src/sort.c:4686
 #, fuzzy, c-format
 msgid "failed to set locale"
 msgstr "nepodarilo sa nastaviť novú rolu %s"
@@ -6786,7 +6928,7 @@ msgstr "chyba pri čítaní %s"
 msgid "failed to convert some of the input numbers"
 msgstr "obidva súbory nemôžu byť štandardným vstupom"
 
-#: src/od.c:322
+#: src/od.c:323
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... [FILE]...\n"
@@ -6799,7 +6941,7 @@ msgstr ""
 "  alebo:  %s --traditional [VOĽBA]... [SÚBOR] [[+]POSUN[.][b] [+][NÁVESTIE]"
 "[.][b]]\n"
 
-#: src/od.c:328
+#: src/od.c:329
 msgid ""
 "\n"
 "Write an unambiguous representation, octal bytes by default,\n"
@@ -6807,7 +6949,7 @@ msgid ""
 "concatenate them in the listed order to form the input.\n"
 msgstr ""
 
-#: src/od.c:336
+#: src/od.c:337
 msgid ""
 "\n"
 "If first and second call formats both apply, the second format is assumed\n"
@@ -6818,7 +6960,7 @@ msgid ""
 "suffixes may be . for octal and b for multiply by 512.\n"
 msgstr ""
 
-#: src/od.c:348
+#: src/od.c:349
 msgid ""
 "  -A, --address-radix=RADIX   output format for file offsets; RADIX is one\n"
 "                                of [doxn], for Decimal, Octal, Hex or None\n"
@@ -6827,7 +6969,7 @@ msgid ""
 "  -j, --skip-bytes=BYTES      skip BYTES input bytes first\n"
 msgstr ""
 
-#: src/od.c:354
+#: src/od.c:355
 msgid ""
 "  -N, --read-bytes=BYTES      limit dump to BYTES input bytes\n"
 "  -S BYTES, --strings[=BYTES]  output strings of at least BYTES graphic "
@@ -6840,7 +6982,7 @@ msgid ""
 "      --traditional           accept arguments in third form above\n"
 msgstr ""
 
-#: src/od.c:367
+#: src/od.c:368
 msgid ""
 "\n"
 "\n"
@@ -6851,7 +6993,7 @@ msgid ""
 "  -d   same as -t u2, select unsigned decimal 2-byte units\n"
 msgstr ""
 
-#: src/od.c:376
+#: src/od.c:377
 msgid ""
 "  -f   same as -t fF, select floats\n"
 "  -i   same as -t dI, select decimal ints\n"
@@ -6861,7 +7003,7 @@ msgid ""
 "  -x   same as -t x2, select hexadecimal 2-byte units\n"
 msgstr ""
 
-#: src/od.c:384
+#: src/od.c:385
 msgid ""
 "\n"
 "\n"
@@ -6870,7 +7012,7 @@ msgid ""
 "  c          printable character or backslash escape\n"
 msgstr ""
 
-#: src/od.c:391
+#: src/od.c:392
 msgid ""
 "  d[SIZE]    signed decimal, SIZE bytes per integer\n"
 "  f[SIZE]    floating point, SIZE bytes per float\n"
@@ -6879,7 +7021,7 @@ msgid ""
 "  x[SIZE]    hexadecimal, SIZE bytes per integer\n"
 msgstr ""
 
-#: src/od.c:398
+#: src/od.c:399
 msgid ""
 "\n"
 "SIZE is a number.  For TYPE in [doux], SIZE may also be C for\n"
@@ -6888,14 +7030,14 @@ msgid ""
 "for sizeof(double) or L for sizeof(long double).\n"
 msgstr ""
 
-#: src/od.c:405
+#: src/od.c:406
 msgid ""
 "\n"
 "Adding a z suffix to any type displays printable characters at the end of\n"
 "each output line.\n"
 msgstr ""
 
-#: src/od.c:410
+#: src/od.c:411
 #, fuzzy
 msgid ""
 "\n"
@@ -6907,6 +7049,7 @@ msgid ""
 "  MB   1000*1000\n"
 "  M    1024*1024\n"
 "and so on for G, T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 msgstr ""
 "\n"
 "Po BLOKOV a BAJTOV môže byť uvedená jedna z nasledovných prípon:\n"
@@ -6916,12 +7059,12 @@ msgstr ""
 "Každý symbol KONV môže byť:\n"
 "\n"
 
-#: src/od.c:683 src/od.c:803
+#: src/od.c:685 src/od.c:805
 #, c-format
 msgid "invalid type string %s"
 msgstr "neplatný reťazec typu %s"
 
-#: src/od.c:693
+#: src/od.c:695
 #, c-format
 msgid ""
 "invalid type string %s;\n"
@@ -6930,7 +7073,7 @@ msgstr ""
 "neplatný reťazec typu %s;\n"
 "tento systém neposkytuje %lu-bajtové celé čísla"
 
-#: src/od.c:814
+#: src/od.c:816
 #, c-format
 msgid ""
 "invalid type string %s;\n"
@@ -6940,43 +7083,38 @@ msgstr ""
 "tento systém neposkytuje %lu-bajtové čísla s plávajúcou desatinnou\n"
 "čiarkou"
 
-#: src/od.c:872
+#: src/od.c:874
 #, fuzzy, c-format
 msgid "invalid character '%c' in type string %s"
 msgstr "neplatný znak „%c“ v reťazci typu „%s“"
 
-#: src/od.c:1104
+#: src/od.c:1110
 msgid "cannot skip past end of combined input"
 msgstr "nemožno preskočiť koniec kombinovaného vstupu"
 
-#: src/od.c:1654
+#: src/od.c:1660
 #, fuzzy, c-format
 msgid "invalid output address radix '%c'; it must be one character from [doxn]"
 msgstr ""
 "chybný základ výstupnej adresy `%c'; musí to byť jeden zo znakov [doxn]"
 
-#: src/od.c:1792
+#: src/od.c:1798
 msgid "no type may be specified when dumping strings"
 msgstr "pri vypisovaní reťazcov nemožno zadať typ"
 
-#: src/od.c:1867
+#: src/od.c:1873
 #, fuzzy
 msgid "compatibility mode supports at most one file"
 msgstr "V kompatibilnom režime je podporovaný najviac jeden súbor."
 
-#: src/od.c:1888
+#: src/od.c:1894
 msgid "skip-bytes + read-bytes is too large"
 msgstr ""
 
-#: src/od.c:1931
+#: src/od.c:1937
 #, c-format
 msgid "warning: invalid width %lu; using %d instead"
 msgstr "upozornenie: chybná šírka %lu; namiesto nej sa použije %d"
-
-#: src/operand2sig.c:88
-#, c-format
-msgid "%s: invalid signal"
-msgstr "%s: neplatný signál"
 
 #: src/paste.c:222
 msgid "standard input is closed"
@@ -7039,12 +7177,12 @@ msgid "limit %lu exceeded by length %lu of file name component %s"
 msgstr "obmedzenie dĺžky %lu prekročené o %lu v zložke názvu súboru %s"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pinky.c:37 src/uptime.c:46 src/users.c:36 src/who.c:50
+#: src/pinky.c:37 src/uptime.c:45 src/users.c:35 src/who.c:50
 msgid "Joseph Arceneaux"
 msgstr "Joseph Arceneaux"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pinky.c:39 src/uptime.c:48
+#: src/pinky.c:39 src/uptime.c:47
 msgid "Kaveh Ghazi"
 msgstr "Kaveh Ghazi"
 
@@ -7118,11 +7256,6 @@ msgstr "Kedy"
 msgid "Where"
 msgstr "Kde  "
 
-#: src/pinky.c:489
-#, c-format
-msgid "Usage: %s [OPTION]... [USER]...\n"
-msgstr "Použitie: %s [PREPÍNAČ]... [SÚBOR]...\n"
-
 #: src/pinky.c:490
 msgid ""
 "\n"
@@ -7158,95 +7291,95 @@ msgstr ""
 "aspoň jedno"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pr.c:331
+#: src/pr.c:332
 msgid "Pete TerMaat"
 msgstr "Pete TerMaat"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pr.c:332
+#: src/pr.c:333
 msgid "Roland Huebner"
 msgstr "Roland Huebner"
 
-#: src/pr.c:777
+#: src/pr.c:778
 #, fuzzy
 msgid "integer overflow"
 msgstr "pretečenie počtu riadkov"
 
-#: src/pr.c:916
+#: src/pr.c:917
 #, fuzzy
 msgid "'--pages=FIRST_PAGE[:LAST_PAGE]' missing argument"
 msgstr "`--pages=PRVÁ_STRÁNKA[:POSLEDNÁ_STRÁNKA]' chýbajúci parameter"
 
-#: src/pr.c:918
+#: src/pr.c:919
 #, fuzzy, c-format
 msgid "invalid page range %s"
 msgstr "chybný rozsah stránok %s"
 
-#: src/pr.c:978
+#: src/pr.c:979
 #, fuzzy
 msgid "'-l PAGE_LENGTH' invalid number of lines"
 msgstr "„-l DĹŽKA_STRÁNKY“ neplatný počet riadkov: %s"
 
-#: src/pr.c:993
+#: src/pr.c:994
 #, fuzzy
 msgid "'-N NUMBER' invalid starting line number"
 msgstr "„-N ČÍSLO“ chybné číslo počiatočného riadka: %s"
 
-#: src/pr.c:997
+#: src/pr.c:998
 #, fuzzy
 msgid "'-o MARGIN' invalid line offset"
 msgstr "„-o OKRAJ“ chybný posun riadka: %s"
 
-#: src/pr.c:1034
+#: src/pr.c:1035
 #, fuzzy
 msgid "'-w PAGE_WIDTH' invalid number of characters"
 msgstr "„-w ŠÍRKA_STRÁNKY“ neplatný počet znakov: %s"
 
-#: src/pr.c:1043
+#: src/pr.c:1044
 #, fuzzy
 msgid "'-W PAGE_WIDTH' invalid number of characters"
 msgstr "„-W ŠÍRKA_STRÁNKY“ neplatný počet znakov: %s"
 
-#: src/pr.c:1072
+#: src/pr.c:1073
 #, fuzzy
 msgid "cannot specify number of columns when printing in parallel"
 msgstr "Pri výpise vedľa seba, nie je možné zadať počet stĺpcov."
 
 # wzdluz? - rzm
-#: src/pr.c:1076
+#: src/pr.c:1077
 #, fuzzy
 msgid "cannot specify both printing across and printing in parallel"
 msgstr "Nie je možné zadať výpis súborov po sebe a vedľa seba."
 
-#: src/pr.c:1179
+#: src/pr.c:1180
 #, fuzzy, c-format
 msgid "'-%c' extra characters or invalid number in the argument: %s"
 msgstr "„-%c“ nadbytočné znaky alebo neplatné číslo v argumente: %s"
 
-#: src/pr.c:1281
+#: src/pr.c:1282
 msgid "page width too narrow"
 msgstr "šírka stránky je príliš malá"
 
-#: src/pr.c:2337
+#: src/pr.c:2338
 #, c-format
 msgid "starting page number %<PRIuMAX> exceeds page count %<PRIuMAX>"
 msgstr ""
 
-#: src/pr.c:2364
+#: src/pr.c:2365
 #, fuzzy
 msgid "page number overflow"
 msgstr "Pretečenie čísla strany"
 
-#: src/pr.c:2369
+#: src/pr.c:2370
 #, c-format
 msgid "Page %<PRIuMAX>"
 msgstr ""
 
-#: src/pr.c:2741
+#: src/pr.c:2742
 msgid "Paginate or columnate FILE(s) for printing.\n"
 msgstr ""
 
-#: src/pr.c:2748
+#: src/pr.c:2749
 msgid ""
 "  +FIRST_PAGE[:LAST_PAGE], --pages=FIRST_PAGE[:LAST_PAGE]\n"
 "                    begin [stop] printing with page FIRST_[LAST_]PAGE\n"
@@ -7256,7 +7389,7 @@ msgid ""
 "                    columns on each page\n"
 msgstr ""
 
-#: src/pr.c:2756
+#: src/pr.c:2757
 msgid ""
 "  -a, --across      print columns across rather than down, used together\n"
 "                    with -COLUMN\n"
@@ -7266,7 +7399,7 @@ msgid ""
 "                    double space the output\n"
 msgstr ""
 
-#: src/pr.c:2764
+#: src/pr.c:2765
 msgid ""
 "  -D, --date-format=FORMAT\n"
 "                    use FORMAT for the header date\n"
@@ -7278,7 +7411,7 @@ msgid ""
 "                    and trailer without -F)\n"
 msgstr ""
 
-#: src/pr.c:2774
+#: src/pr.c:2775
 msgid ""
 "  -h, --header=HEADER\n"
 "                    use a centered HEADER instead of filename in page "
@@ -7291,7 +7424,7 @@ msgid ""
 "                    alignment, --sep-string[=STRING] sets separators\n"
 msgstr ""
 
-#: src/pr.c:2783
+#: src/pr.c:2784
 #, fuzzy
 msgid ""
 "  -l, --length=PAGE_LENGTH\n"
@@ -7311,13 +7444,13 @@ msgstr ""
 "      --help      vypíše tuto nápovedu a skončí\n"
 "      --version   vypíše označenie verzie a skončí\n"
 
-#: src/pr.c:2789
+#: src/pr.c:2790
 msgid ""
 "  -m, --merge       print all files in parallel, one in each column,\n"
 "                    truncate lines, but join lines of full length with -J\n"
 msgstr ""
 
-#: src/pr.c:2793
+#: src/pr.c:2794
 msgid ""
 "  -n[SEP[DIGITS]], --number-lines[=SEP[DIGITS]]\n"
 "                    number lines, use DIGITS (5) digits, then SEP (TAB),\n"
@@ -7327,7 +7460,7 @@ msgid ""
 "                    page printed (see +FIRST_PAGE)\n"
 msgstr ""
 
-#: src/pr.c:2801
+#: src/pr.c:2802
 msgid ""
 "  -o, --indent=MARGIN\n"
 "                    offset each line with MARGIN (zero) spaces, do not\n"
@@ -7336,7 +7469,7 @@ msgid ""
 "                    omit warning when a file cannot be opened\n"
 msgstr ""
 
-#: src/pr.c:2808
+#: src/pr.c:2809
 msgid ""
 "  -s[CHAR], --separator[=CHAR]\n"
 "                    separate columns by a single character, default for "
@@ -7347,7 +7480,7 @@ msgid ""
 "                    options (-COLUMN|-a -COLUMN|-m) except -w is set\n"
 msgstr ""
 
-#: src/pr.c:2816
+#: src/pr.c:2817
 msgid ""
 "  -S[STRING], --sep-string[=STRING]\n"
 "                    separate columns by STRING,\n"
@@ -7356,13 +7489,13 @@ msgid ""
 "options\n"
 msgstr ""
 
-#: src/pr.c:2822
+#: src/pr.c:2823
 msgid ""
 "  -t, --omit-header  omit page headers and trailers;\n"
 "                     implied if PAGE_LENGTH <= 10\n"
 msgstr ""
 
-#: src/pr.c:2826
+#: src/pr.c:2827
 msgid ""
 "  -T, --omit-pagination\n"
 "                    omit page headers and trailers, eliminate any "
@@ -7376,7 +7509,7 @@ msgid ""
 "(72)\n"
 msgstr ""
 
-#: src/pr.c:2836
+#: src/pr.c:2837
 #, fuzzy
 msgid ""
 "  -W, --page-width=PAGE_WIDTH\n"
@@ -7630,7 +7763,7 @@ msgstr "ignurujú sa argumenty, ktoré nie sú voľbami"
 msgid "Dmitry V. Levin"
 msgstr "Dmitry V. Levin"
 
-#: src/readlink.c:62 src/realpath.c:71 src/shred.c:170 src/stat.c:1497
+#: src/readlink.c:62 src/realpath.c:71 src/shred.c:170 src/stat.c:1691
 #: src/touch.c:213
 #, c-format
 msgid "Usage: %s [OPTION]... FILE...\n"
@@ -7862,17 +7995,17 @@ msgstr[0] "%s: odstrániť všetky argumenty? "
 msgstr[1] "%s: odstrániť všetky argumenty? "
 msgstr[2] "%s: odstrániť všetky argumenty? "
 
-#: src/rmdir.c:133 src/rmdir.c:232
+#: src/rmdir.c:133 src/rmdir.c:233
 #, c-format
 msgid "removing directory, %s"
 msgstr "odstraňuje sa adresár, %s"
 
-#: src/rmdir.c:147
+#: src/rmdir.c:148
 #, c-format
 msgid "failed to remove directory %s"
 msgstr "nepodarilo sa odstrániť adresár %s"
 
-#: src/rmdir.c:164
+#: src/rmdir.c:165
 msgid ""
 "Remove the DIRECTORY(ies), if they are empty.\n"
 "\n"
@@ -7881,7 +8014,7 @@ msgid ""
 "                    is non-empty\n"
 msgstr ""
 
-#: src/rmdir.c:171
+#: src/rmdir.c:172
 #, fuzzy
 msgid ""
 "  -p, --parents   remove DIRECTORY and its ancestors; e.g., 'rmdir -p a/b/c' "
@@ -7894,7 +8027,7 @@ msgstr ""
 "a“.\n"
 "      --verbose   vypísať správu pre každý spracovaný adresár\n"
 
-#: src/rmdir.c:241
+#: src/rmdir.c:243
 #, c-format
 msgid "failed to remove %s"
 msgstr "nepodarilo sa odstrániť %s"
@@ -7987,7 +8120,7 @@ msgstr "nepodarilo sa nastaviť novú rolu %s"
 msgid "unable to set security context %s"
 msgstr "nie je možné nastaviť bezpečnostný kontext %s"
 
-#: src/seq.c:72
+#: src/seq.c:80
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... LAST\n"
@@ -7998,18 +8131,18 @@ msgstr ""
 "  alebo:  %s [VOĽBA]... PRVÝ POSLEDNÝ\n"
 "  alebo:  %s [VOĽBA]... PRVÝ KROK POSLEDNÝ\n"
 
-#: src/seq.c:77
+#: src/seq.c:85
 msgid "Print numbers from FIRST to LAST, in steps of INCREMENT.\n"
 msgstr ""
 
-#: src/seq.c:83
+#: src/seq.c:91
 msgid ""
 "  -f, --format=FORMAT      use printf style floating-point FORMAT\n"
 "  -s, --separator=STRING   use STRING to separate numbers (default: \\n)\n"
 "  -w, --equal-width        equalize width by padding with leading zeroes\n"
 msgstr ""
 
-#: src/seq.c:90
+#: src/seq.c:98
 #, fuzzy
 msgid ""
 "\n"
@@ -8027,36 +8160,36 @@ msgstr ""
 "Pokiaľ je zadaný, FORMÁT musí obsahovať práve jeden z výstupných\n"
 "printf-formátov pre čísla v pohyblivej rádovej čiarke %%e, %%f alebo %%g.\n"
 
-#: src/seq.c:101
+#: src/seq.c:109
 msgid ""
 "FORMAT must be suitable for printing one argument of type 'double';\n"
 "it defaults to %.PRECf if FIRST, INCREMENT, and LAST are all fixed point\n"
 "decimal numbers with maximum precision PREC, and to %g otherwise.\n"
 msgstr ""
 
-#: src/seq.c:147
+#: src/seq.c:155
 #, c-format
 msgid "invalid floating point argument: %s"
 msgstr "neplatný argument s plávajúcou desatinnou čiarkou: %s"
 
-#: src/seq.c:153
+#: src/seq.c:161
 #, fuzzy, c-format
 msgid "invalid %s argument: %s"
 msgstr "chybný argument %s pre `%s'"
 
-#: src/seq.c:260
+#: src/seq.c:268
 #, fuzzy, c-format
 msgid "format %s has unknown %%%c directive"
 msgstr "%s je neznámy typ souboru"
 
-#: src/seq.c:628
+#: src/seq.c:648
 #, c-format
 msgid "format string may not be specified when printing equal width strings"
 msgstr ""
 "keď sa tlačia reťazce s rovnakou šírkou, formátovací reťazec nemusí byť "
 "zadaný"
 
-#: src/seq.c:665
+#: src/seq.c:693
 #, fuzzy, c-format
 msgid "invalid Zero increment value: %s"
 msgstr "neplatná hodnota prírastku čísla riadka: %s"
@@ -8174,170 +8307,128 @@ msgstr ""
 
 #: src/shred.c:210
 msgid ""
-"CAUTION: Note that shred relies on a very important assumption:\n"
-"that the file system overwrites data in place.  This is the traditional\n"
-"way to do things, but many modern file system designs do not satisfy this\n"
-"assumption.  The following are examples of file systems on which shred is\n"
-"not effective, or is not guaranteed to be effective in all file system "
-"modes:\n"
-"\n"
+"CAUTION: shred assumes the file system and hardware overwrite data in "
+"place.\n"
+"Although this is common, many platforms operate otherwise.  Also, backups\n"
+"and mirrors may contain unremovable copies that will let a shredded file\n"
+"be recovered later.  See the GNU coreutils manual for details.\n"
 msgstr ""
 
-#: src/shred.c:218
-msgid ""
-"* log-structured or journaled file systems, such as those supplied with\n"
-"AIX and Solaris (and JFS, ReiserFS, XFS, Ext3, etc.)\n"
-"\n"
-"* file systems that write redundant data and carry on even if some writes\n"
-"fail, such as RAID-based file systems\n"
-"\n"
-"* file systems that make snapshots, such as Network Appliance's NFS server\n"
-"\n"
-msgstr ""
-
-#: src/shred.c:228
-msgid ""
-"* file systems that cache in temporary locations, such as NFS\n"
-"version 3 clients\n"
-"\n"
-"* compressed file systems\n"
-"\n"
-msgstr ""
-
-#: src/shred.c:235
-msgid ""
-"In the case of ext3 file systems, the above disclaimer applies\n"
-"(and shred is thus of limited effectiveness) only in data=journal mode,\n"
-"which journals file data in addition to just metadata.  In both the\n"
-"data=ordered (default) and data=writeback modes, shred works as usual.\n"
-"Ext3 journaling modes can be changed by adding the data=something option\n"
-"to the mount options for a particular file system in the /etc/fstab file,\n"
-"as documented in the mount man page (man mount).\n"
-"\n"
-msgstr ""
-
-#: src/shred.c:245
-msgid ""
-"In addition, file system backups and remote mirrors may contain copies\n"
-"of the file that cannot be removed, and that will allow a shredded file\n"
-"to be recovered later.\n"
-msgstr ""
-
-#: src/shred.c:344
+#: src/shred.c:310
 #, c-format
 msgid "%s: fdatasync failed"
 msgstr "%s: fdatasync zlyhalo"
 
-#: src/shred.c:355
+#: src/shred.c:321
 #, c-format
 msgid "%s: fsync failed"
 msgstr "%s: fsync zlyhal"
 
-#: src/shred.c:472
+#: src/shred.c:438
 #, c-format
 msgid "%s: cannot rewind"
 msgstr "%s: nie je možné presunúť sa na začiatok súboru"
 
-#: src/shred.c:492
+#: src/shred.c:458
 #, c-format
 msgid "%s: pass %lu/%lu (%s)..."
 msgstr "%s: prechod %lu/%lu (%s)..."
 
-#: src/shred.c:543
+#: src/shred.c:509
 #, c-format
 msgid "%s: error writing at offset %s"
 msgstr "%s: chyba pri zápise na ofset %s"
 
-#: src/shred.c:564
+#: src/shred.c:530
 #, c-format
 msgid "%s: lseek failed"
 msgstr "%s: lseek zlyhal"
 
-#: src/shred.c:576
+#: src/shred.c:542
 #, c-format
 msgid "%s: file too large"
 msgstr "%s: súbor je príliš veľký"
 
-#: src/shred.c:600
+#: src/shred.c:566
 #, c-format
 msgid "%s: pass %lu/%lu (%s)...%s"
 msgstr "%s: prechod %lu/%lu (%s)...%s"
 
-#: src/shred.c:616
+#: src/shred.c:582
 #, c-format
 msgid "%s: pass %lu/%lu (%s)...%s/%s %d%%"
 msgstr "%s: prechod %lu/%lu (%s)...%s/%s %d%%"
 
-#: src/shred.c:874
+#: src/shred.c:840
 #, c-format
 msgid "%s: fstat failed"
 msgstr "%s: fstat zlyhal"
 
-#: src/shred.c:885
+#: src/shred.c:851
 #, c-format
 msgid "%s: invalid file type"
 msgstr "%s: neplatný typ súboru"
 
-#: src/shred.c:890
+#: src/shred.c:856
 #, c-format
 msgid "%s: file has negative size"
 msgstr "%s: súbor má zápornú dĺžku"
 
-#: src/shred.c:984 src/sort.c:967 src/split.c:474
+#: src/shred.c:952 src/sort.c:972 src/split.c:475
 #, c-format
 msgid "%s: error truncating"
 msgstr "%s: chyba pri skracovaní"
 
-#: src/shred.c:1003
+#: src/shred.c:971
 #, c-format
 msgid "%s: fcntl failed"
 msgstr "%s: fcntl zlyhalo"
 
-#: src/shred.c:1008
+#: src/shred.c:976
 #, c-format
 msgid "%s: cannot shred append-only file descriptor"
 msgstr "%s: nie je možné skartovať deskriptor určený iba pre pridávanie"
 
-#: src/shred.c:1091
+#: src/shred.c:1059
 #, c-format
 msgid "%s: removing"
 msgstr "%s: maže sa"
 
-#: src/shred.c:1116
+#: src/shred.c:1084
 #, c-format
 msgid "%s: renamed to %s"
 msgstr "%s: premenovaný na %s"
 
-#: src/shred.c:1125
+#: src/shred.c:1093
 #, c-format
 msgid "%s: failed to remove"
 msgstr "%s: nepodarilo sa odstrániť"
 
-#: src/shred.c:1129
+#: src/shred.c:1097
 #, c-format
 msgid "%s: removed"
 msgstr "%s: zmazaný"
 
-#: src/shred.c:1136 src/shred.c:1179
+#: src/shred.c:1104 src/shred.c:1147
 #, c-format
 msgid "%s: failed to close"
 msgstr "%s: nepodarilo sa zatvoriť"
 
-#: src/shred.c:1172
+#: src/shred.c:1140
 #, c-format
 msgid "%s: failed to open for writing"
 msgstr "%s: nepodarilo sa otvoriť na zápis"
 
-#: src/shred.c:1235
+#: src/shred.c:1203
 #, fuzzy
 msgid "invalid number of passes"
 msgstr "%s: neplatný počet prechodov"
 
-#: src/shred.c:1240 src/shuf.c:462 src/sort.c:4507
+#: src/shred.c:1208 src/shuf.c:462 src/sort.c:4508
 msgid "multiple random sources specified"
 msgstr "boli uvedené viaceré náhodné zdroje"
 
-#: src/shred.c:1254
+#: src/shred.c:1222
 #, fuzzy
 msgid "invalid file size"
 msgstr "%s: neplatná veľkosť súboru"
@@ -8387,7 +8478,7 @@ msgstr "neplatný rozash vstupu %s"
 msgid "invalid line count: %s"
 msgstr "naplatný počet riadkov %s"
 
-#: src/shuf.c:456 src/sort.c:4501
+#: src/shuf.c:456 src/sort.c:4502
 msgid "multiple output files specified"
 msgstr "uvedených viacero výstupných súborov"
 
@@ -8396,20 +8487,18 @@ msgstr "uvedených viacero výstupných súborov"
 msgid "cannot combine -e and -i options"
 msgstr "nie je možné kombinovať voľby -e a -i"
 
-#: src/shuf.c:570
+#: src/shuf.c:575
 msgid "no lines to repeat"
 msgstr ""
 
-#: src/sleep.c:50
+#: src/sleep.c:44
 #, fuzzy, c-format
 msgid ""
 "Usage: %s NUMBER[SUFFIX]...\n"
 "  or:  %s OPTION\n"
 "Pause for NUMBER seconds.  SUFFIX may be 's' for seconds (the default),\n"
-"'m' for minutes, 'h' for hours or 'd' for days.  Unlike most "
-"implementations\n"
-"that require NUMBER be an integer, here NUMBER may be an arbitrary floating\n"
-"point number.  Given two or more arguments, pause for the amount of time\n"
+"'m' for minutes, 'h' for hours or 'd' for days.  NUMBER need not be an\n"
+"integer.  Given two or more arguments, pause for the amount of time\n"
 "specified by the sum of their values.\n"
 "\n"
 msgstr ""
@@ -8423,26 +8512,26 @@ msgstr ""
 "  --help      vypísať túto pomoc a skončiť\n"
 "  --version   vypísať informáciu o verzii a skončiť\n"
 
-#: src/sleep.c:140 src/timeout.c:332
+#: src/sleep.c:132 src/timeout.c:332
 #, fuzzy, c-format
 msgid "invalid time interval %s"
 msgstr "chybné číslo položky: `%s'"
 
-#: src/sleep.c:151 src/tail.c:1287
+#: src/sleep.c:143 src/tail.c:1311
 msgid "cannot read realtime clock"
 msgstr "nie je možné prečítať hodiny reálneho času"
 
-#: src/sort.c:432
+#: src/sort.c:420
 msgid "Write sorted concatenation of all FILE(s) to standard output.\n"
 msgstr ""
 
-#: src/sort.c:439
+#: src/sort.c:427
 msgid ""
 "Ordering options:\n"
 "\n"
 msgstr ""
 
-#: src/sort.c:443
+#: src/sort.c:431
 #, fuzzy
 msgid ""
 "  -b, --ignore-leading-blanks  ignore leading blanks\n"
@@ -8464,19 +8553,19 @@ msgstr ""
 "  -n, --numeric-sort           porovná podľa reťazcovej veľkosti čísiel\n"
 "  -r, --reverse                obrátený výsledok porovnávania\n"
 
-#: src/sort.c:449
+#: src/sort.c:437
 msgid ""
 "  -g, --general-numeric-sort  compare according to general numerical value\n"
 "  -i, --ignore-nonprinting    consider only printable characters\n"
 "  -M, --month-sort            compare (unknown) < 'JAN' < ... < 'DEC'\n"
 msgstr ""
 
-#: src/sort.c:454
+#: src/sort.c:442
 msgid ""
 "  -h, --human-numeric-sort    compare human readable numbers (e.g., 2K 1G)\n"
 msgstr ""
 
-#: src/sort.c:457
+#: src/sort.c:445
 msgid ""
 "  -n, --numeric-sort          compare according to string numerical value\n"
 "  -R, --random-sort           shuffle, but group identical keys.  See "
@@ -8485,7 +8574,7 @@ msgid ""
 "  -r, --reverse               reverse the result of comparisons\n"
 msgstr ""
 
-#: src/sort.c:463
+#: src/sort.c:451
 msgid ""
 "      --sort=WORD             sort according to WORD:\n"
 "                                general-numeric -g, human-numeric -h, month -"
@@ -8495,19 +8584,19 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/sort.c:471
+#: src/sort.c:459
 msgid ""
 "Other options:\n"
 "\n"
 msgstr ""
 
-#: src/sort.c:475
+#: src/sort.c:463
 msgid ""
 "      --batch-size=NMERGE   merge at most NMERGE inputs at once;\n"
 "                            for more use temp files\n"
 msgstr ""
 
-#: src/sort.c:479
+#: src/sort.c:467
 msgid ""
 "  -c, --check, --check=diagnose-first  check for sorted input; do not sort\n"
 "  -C, --check=quiet, --check=silent  like -c, but do not report first bad "
@@ -8516,7 +8605,7 @@ msgid ""
 "                              decompress them with PROG -d\n"
 msgstr ""
 
-#: src/sort.c:486
+#: src/sort.c:474
 msgid ""
 "      --debug               annotate the part of the line used to sort,\n"
 "                              and warn about questionable usage to stderr\n"
@@ -8525,13 +8614,13 @@ msgid ""
 "                            If F is - then read names from standard input\n"
 msgstr ""
 
-#: src/sort.c:493
+#: src/sort.c:481
 msgid ""
 "  -k, --key=KEYDEF          sort via a key; KEYDEF gives location and type\n"
 "  -m, --merge               merge already sorted files; do not sort\n"
 msgstr ""
 
-#: src/sort.c:497
+#: src/sort.c:485
 msgid ""
 "  -o, --output=FILE         write result to FILE instead of standard output\n"
 "  -s, --stable              stabilize sort by disabling last-resort "
@@ -8539,7 +8628,7 @@ msgid ""
 "  -S, --buffer-size=SIZE    use SIZE for main memory buffer\n"
 msgstr ""
 
-#: src/sort.c:503
+#: src/sort.c:491
 #, c-format
 msgid ""
 "  -t, --field-separator=SEP  use SEP instead of non-blank to blank "
@@ -8554,7 +8643,7 @@ msgid ""
 "run\n"
 msgstr ""
 
-#: src/sort.c:517
+#: src/sort.c:505
 #, fuzzy
 msgid ""
 "\n"
@@ -8585,7 +8674,7 @@ msgstr ""
 "\n"
 "VEĽKOSŤ môže byť nasledovaná nasledovnými príponami násobkov:\n"
 
-#: src/sort.c:530
+#: src/sort.c:518
 msgid ""
 "% 1% of memory, b 1, K 1024 (default), and so on for M, G, T, P, E, Z, Y.\n"
 "\n"
@@ -8595,116 +8684,116 @@ msgid ""
 "native byte values.\n"
 msgstr ""
 
-#: src/sort.c:728
+#: src/sort.c:716
 #, c-format
 msgid "waiting for %s [-d]"
 msgstr "4ak8 sa na %s [-d]"
 
-#: src/sort.c:733
+#: src/sort.c:721
 #, c-format
 msgid "%s [-d] terminated abnormally"
 msgstr ""
 
-#: src/sort.c:888
+#: src/sort.c:876
 #, fuzzy, c-format
 msgid "cannot create temporary file in %s"
 msgstr "nie je možné vytvoriť dočasný súbor %s"
 
-#: src/sort.c:985 src/sort.c:2094 src/sort.c:3131 src/sort.c:3779
-#: src/sort.c:3870 src/sort.c:3873
+#: src/sort.c:991 src/sort.c:2100 src/sort.c:3137 src/sort.c:3780
+#: src/sort.c:3871 src/sort.c:3874
 msgid "open failed"
 msgstr "zlyhalo otvorenie"
 
-#: src/sort.c:1005
+#: src/sort.c:1011
 msgid "fflush failed"
 msgstr "fflush zlyhalo"
 
-#: src/sort.c:1010 src/sort.c:2097 src/sort.c:4776
+#: src/sort.c:1016 src/sort.c:2103 src/sort.c:4778
 msgid "close failed"
 msgstr "zlyhalo zatvorenie súboru"
 
-#: src/sort.c:1149
+#: src/sort.c:1155
 msgid "couldn't create temporary file"
 msgstr "nebolo možné vytvoriť dočasný súbor"
 
-#: src/sort.c:1188
+#: src/sort.c:1194
 #, c-format
 msgid "couldn't create process for %s -d"
 msgstr "nie je možné vytvoriť proces pre %s -d"
 
-#: src/sort.c:1261
+#: src/sort.c:1267
 #, c-format
 msgid "warning: cannot remove: %s"
 msgstr "upozornenie: nie je možné odstrániť: %s"
 
-#: src/sort.c:1347
+#: src/sort.c:1353
 #, fuzzy, c-format
 msgid "invalid --%s argument %s"
 msgstr "chybný argument %s pre `%s'"
 
-#: src/sort.c:1350
+#: src/sort.c:1356
 #, fuzzy, c-format
 msgid "minimum --%s argument is %s"
 msgstr "neplatný %s%s argument „%s“"
 
-#: src/sort.c:1365
+#: src/sort.c:1371
 #, fuzzy, c-format
 msgid "--%s argument %s too large"
 msgstr "%s%s argument „%s“ je príliš veľký"
 
-#: src/sort.c:1368
+#: src/sort.c:1374
 #, c-format
 msgid "maximum --%s argument with current rlimit is %s"
 msgstr ""
 
-#: src/sort.c:1450
+#: src/sort.c:1456
 msgid "number in parallel must be nonzero"
 msgstr ""
 
-#: src/sort.c:1533
+#: src/sort.c:1539
 msgid "stat failed"
 msgstr "zlyhal stat"
 
-#: src/sort.c:1795
+#: src/sort.c:1801
 msgid "read failed"
 msgstr "zlyhalo čítanie"
 
-#: src/sort.c:2112
+#: src/sort.c:2118
 #, c-format
 msgid "string transformation failed"
 msgstr "transformácia reťazca sa nepodarila"
 
-#: src/sort.c:2115
+#: src/sort.c:2121
 #, c-format
 msgid "the untransformed string was %s"
 msgstr "netransformovaný reťazec bol %s"
 
-#: src/sort.c:2278
+#: src/sort.c:2284
 #, c-format
 msgid "^ no match for key\n"
 msgstr ""
 
-#: src/sort.c:2450
+#: src/sort.c:2456
 #, c-format
 msgid "obsolescent key %s used; consider %s instead"
 msgstr ""
 
-#: src/sort.c:2457
+#: src/sort.c:2463
 #, c-format
 msgid "key %lu has zero width and will be ignored"
 msgstr ""
 
-#: src/sort.c:2466
+#: src/sort.c:2472
 #, c-format
 msgid "leading blanks are significant in key %lu; consider also specifying 'b'"
 msgstr ""
 
-#: src/sort.c:2479
+#: src/sort.c:2485
 #, c-format
 msgid "key %lu is numeric and spans multiple fields"
 msgstr ""
 
-#: src/sort.c:2511
+#: src/sort.c:2517
 #, fuzzy, c-format
 msgid "option '-%s' is ignored"
 msgid_plural "options '-%s' are ignored"
@@ -8712,109 +8801,109 @@ msgstr[0] "%s: prepínač `-W %s' nie je jednoznačný\n"
 msgstr[1] "%s: prepínač `-W %s' nie je jednoznačný\n"
 msgstr[2] "%s: prepínač `-W %s' nie je jednoznačný\n"
 
-#: src/sort.c:2517
+#: src/sort.c:2523
 #, c-format
 msgid "option '-r' only applies to last-resort comparison"
 msgstr ""
 
-#: src/sort.c:2791 src/sort.c:2800
+#: src/sort.c:2797 src/sort.c:2806
 msgid "write failed"
 msgstr "chyba pri zápise"
 
-#: src/sort.c:2843
+#: src/sort.c:2849
 #, c-format
 msgid "%s: %s:%s: disorder: "
 msgstr "%s: %s:%s: nezotriediteľné: "
 
-#: src/sort.c:2846
+#: src/sort.c:2852
 msgid "standard error"
 msgstr "štandardná chyba"
 
-#: src/sort.c:3763
+#: src/sort.c:3764
 #, fuzzy
 msgid "cannot read"
 msgstr "nie je možné spustiť %s"
 
-#: src/sort.c:4042
+#: src/sort.c:4043
 #, fuzzy, c-format
 msgid "%s: invalid field specification %s"
 msgstr "%s: chybne zadaná položka `%s'"
 
-#: src/sort.c:4052
+#: src/sort.c:4053
 #, c-format
 msgid "options '-%s' are incompatible"
 msgstr ""
 
-#: src/sort.c:4102
+#: src/sort.c:4103
 #, fuzzy, c-format
 msgid "%s: invalid count at start of %s"
 msgstr "%s: chybný počet na začiatku `%s'"
 
-#: src/sort.c:4361
+#: src/sort.c:4362
 #, fuzzy
 msgid "invalid number after '-'"
 msgstr "chybné číslo za `-'"
 
-#: src/sort.c:4368 src/sort.c:4454 src/sort.c:4482
+#: src/sort.c:4369 src/sort.c:4455 src/sort.c:4483
 #, fuzzy
 msgid "invalid number after '.'"
 msgstr "chybné číslo za `.'"
 
-#: src/sort.c:4381 src/sort.c:4487
+#: src/sort.c:4382 src/sort.c:4488
 msgid "stray character in field spec"
 msgstr "neočakávaný znak v špecifikácii položky"
 
-#: src/sort.c:4428
+#: src/sort.c:4429
 #, fuzzy
 msgid "multiple compress programs specified"
 msgstr "\\%c: neprípustná sekvencia"
 
-#: src/sort.c:4445
+#: src/sort.c:4446
 msgid "invalid number at field start"
 msgstr "chybné číslo na začiatku položky"
 
-#: src/sort.c:4449 src/sort.c:4477
+#: src/sort.c:4450 src/sort.c:4478
 msgid "field number is zero"
 msgstr "číslo položky je nula"
 
-#: src/sort.c:4458
+#: src/sort.c:4459
 msgid "character offset is zero"
 msgstr "pozícia znaku je nula"
 
-#: src/sort.c:4473
+#: src/sort.c:4474
 #, fuzzy
 msgid "invalid number after ','"
 msgstr "chybné číslo za `,'"
 
-#: src/sort.c:4523
+#: src/sort.c:4524
 msgid "empty tab"
 msgstr "prázdna záložka"
 
-#: src/sort.c:4606 src/wc.c:763
+#: src/sort.c:4607 src/wc.c:784
 #, fuzzy, c-format
 msgid "cannot read file names from %s"
 msgstr "nie je možné vytvoriť odkaz %s"
 
-#: src/sort.c:4628
+#: src/sort.c:4629
 #, fuzzy, c-format
 msgid "%s:%lu: invalid zero-length file name"
 msgstr "neplatná skupina"
 
-#: src/sort.c:4634
+#: src/sort.c:4635
 #, fuzzy, c-format
 msgid "no input from %s"
 msgstr "vytváram súbor `%s'\n"
 
-#: src/sort.c:4687
+#: src/sort.c:4688
 #, c-format
-msgid "using %s sorting rules"
+msgid "text ordering performed using %s sorting rules"
 msgstr ""
 
-#: src/sort.c:4690
-msgid "using simple byte comparison"
+#: src/sort.c:4692
+msgid "text ordering performed using simple byte comparison"
 msgstr ""
 
-#: src/sort.c:4722
+#: src/sort.c:4724
 #, fuzzy, c-format
 msgid "extra operand %s not allowed with -%c"
 msgstr "nadbytočný operand `%s' nie je povolený, pokiaľ je použité -c"
@@ -8891,183 +8980,188 @@ msgstr "vytvára sa súbor %s\n"
 msgid "%s would overwrite input; aborting"
 msgstr ""
 
-#: src/split.c:487
+#: src/split.c:488
 #, fuzzy
 msgid "failed to set FILE environment variable"
 msgstr "nepodarilo sa nastaviť novú rolu %s"
 
-#: src/split.c:489
+#: src/split.c:490
 #, c-format
 msgid "executing with FILE=%s\n"
 msgstr ""
 
-#: src/split.c:491
+#: src/split.c:492
 #, fuzzy
 msgid "failed to create pipe"
 msgstr "nepodarilo sa odstrániť %s"
 
-#: src/split.c:505
+#: src/split.c:506
 #, fuzzy
 msgid "closing prior pipe"
 msgstr "zatvíra sa adresár %s"
 
-#: src/split.c:507
+#: src/split.c:508
 #, fuzzy
 msgid "closing output pipe"
 msgstr "zatváram výstupný súbor %s"
 
-#: src/split.c:511
+#: src/split.c:512
 #, fuzzy
 msgid "moving input pipe"
 msgstr "vytváram súbor `%s'\n"
 
-#: src/split.c:513
+#: src/split.c:514
 #, fuzzy
 msgid "closing input pipe"
 msgstr "vytváram súbor `%s'\n"
 
-#: src/split.c:518
+#: src/split.c:519
 #, fuzzy, c-format
 msgid "failed to run command: \"%s -c %s\""
 msgstr "nepodarilo sa zmeniť bezpečnostný kontext %s na %s"
 
-#: src/split.c:524
+#: src/split.c:525
 #, fuzzy
 msgid "failed to close input pipe"
 msgstr "nie je možné zatvoriť adresár %s"
 
-#: src/split.c:560
+#: src/split.c:561
 #, fuzzy
 msgid "waiting for child process"
 msgstr "chyba pri zápise %s"
 
-#: src/split.c:570
+#: src/split.c:571
 #, c-format
 msgid "with FILE=%s, signal %s from command: %s"
 msgstr ""
 
-#: src/split.c:578
+#: src/split.c:579
 #, c-format
 msgid "with FILE=%s, exit %d from command: %s"
 msgstr ""
 
-#: src/split.c:585
+#: src/split.c:586
 #, c-format
 msgid "unknown status from command (0x%X)"
 msgstr ""
 
-#: src/split.c:1273
+#: src/split.c:1274
 #, c-format
 msgid "cannot split in more than one way"
 msgstr "súbor sa nedá rozdeliť viacerými spôsobmi"
 
-#: src/split.c:1285 src/split.c:1400 src/split.c:1601
+#: src/split.c:1286 src/split.c:1401 src/split.c:1602
 #, fuzzy
 msgid "invalid number of chunks"
 msgstr "%s: neplatný počet sekúnd"
 
-#: src/split.c:1290
+#: src/split.c:1291
 #, fuzzy
 msgid "invalid chunk number"
 msgstr "%s: chybné číslo"
 
-#: src/split.c:1337
+#: src/split.c:1338
 #, fuzzy
 msgid "invalid suffix length"
 msgstr "%s: neplatná dĺžka prípony"
 
-#: src/split.c:1411
+#: src/split.c:1412
 msgid "empty record separator"
 msgstr ""
 
-#: src/split.c:1422
+#: src/split.c:1423
 #, fuzzy, c-format
 msgid "multi-character separator %s"
 msgstr "viacznakový tabulátor `%s'"
 
-#: src/split.c:1430
+#: src/split.c:1431
 #, fuzzy
 msgid "multiple separator characters specified"
 msgstr "boli uvedené viaceré náhodné zdroje"
 
-#: src/split.c:1461
+#: src/split.c:1462
 #, c-format
 msgid "line count option -%s%c... is too large"
 msgstr "voľba počtu riadkov -%s%c... je príliš veľká"
 
-#: src/split.c:1478
+#: src/split.c:1479
 #, fuzzy, c-format
 msgid "%s: invalid start value for numerical suffix"
 msgstr "neplatné počiatočné číslo riadka: %s"
 
-#: src/split.c:1479
+#: src/split.c:1480
 #, fuzzy, c-format
 msgid "%s: invalid start value for hexadecimal suffix"
 msgstr "neplatné počiatočné číslo riadka: %s"
 
-#: src/split.c:1503
+#: src/split.c:1504
 #, fuzzy
 msgid "invalid IO block size"
 msgstr "%s: neplatná veľkosť súboru"
 
-#: src/split.c:1521
+#: src/split.c:1522
 #, c-format
 msgid "--filter does not process a chunk extracted to stdout"
 msgstr ""
 
-#: src/split.c:1561
+#: src/split.c:1562
 #, c-format
 msgid "numerical suffix start value is too large for the suffix length"
 msgstr ""
 
-#: src/split.c:1593
+#: src/split.c:1594
 #, fuzzy, c-format
 msgid "%s: cannot determine file size"
 msgstr "nie je možné zistiť názov systému"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/stat.c:190
+#: src/stat.c:197
 msgid "Michael Meskes"
 msgstr "Michael Meskes"
 
-#: src/stat.c:949
+#: src/stat.c:989
 #, fuzzy, c-format
 msgid "failed to canonicalize %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/stat.c:1217
+#: src/stat.c:1092
 #, fuzzy, c-format
 msgid "warning: unrecognized escape '\\%c'"
 msgstr "upozornenie: nerozpoznaná úniková klauzula „\\%c“"
 
-#: src/stat.c:1272
+#: src/stat.c:1153
 #, c-format
 msgid "%s: invalid directive"
 msgstr "%s: neplatná direktíva"
 
-#: src/stat.c:1319
+#: src/stat.c:1200
 #, c-format
 msgid "warning: backslash at end of format"
 msgstr "upozornenie: spätná lomka na konci reťazca"
 
-#: src/stat.c:1350
+#: src/stat.c:1231
 #, c-format
 msgid "using %s to denote standard input does not work in file system mode"
 msgstr ""
 
-#: src/stat.c:1357
+#: src/stat.c:1238
 #, c-format
 msgid "cannot read file system information for %s"
 msgstr "nie je možné načítať systémové informácie %s"
 
-#: src/stat.c:1378
+#: src/stat.c:1362 src/stat.c:1429
 #, fuzzy, c-format
 msgid "cannot stat standard input"
 msgstr "zatvára sa štandardný vstup"
 
+#: src/stat.c:1364
+#, fuzzy, c-format
+msgid "cannot statx %s"
+msgstr "nie je možné stat() %s"
+
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' with --file-system, and NOT from printf.
-#: src/stat.c:1414
+#: src/stat.c:1608
 msgid ""
 "  File: \"%n\"\n"
 "    ID: %-8i Namelen: %-7l Type: %T\n"
@@ -9078,7 +9172,7 @@ msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1435
+#: src/stat.c:1629
 msgid ""
 "  File: %N\n"
 "  Size: %-10s\tBlocks: %-10b IO Block: %-6o %F\n"
@@ -9086,30 +9180,30 @@ msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1445
+#: src/stat.c:1639
 msgid "Device: %Dh/%dd\tInode: %-10i  Links: %-5h Device type: %t,%T\n"
 msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1453
+#: src/stat.c:1647
 msgid "Device: %Dh/%dd\tInode: %-10i  Links: %h\n"
 msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1462
+#: src/stat.c:1656
 msgid "Access: (%04a/%10.10A)  Uid: (%5u/%8U)   Gid: (%5g/%8G)\n"
 msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1472
+#: src/stat.c:1666
 #, fuzzy, c-format
 msgid "Context: %C\n"
 msgstr "neplatný kontexxt: %s"
 
-#: src/stat.c:1480
+#: src/stat.c:1674
 msgid ""
 "Access: %x\n"
 "Modify: %y\n"
@@ -9117,17 +9211,23 @@ msgid ""
 " Birth: %w\n"
 msgstr ""
 
-#: src/stat.c:1498
+#: src/stat.c:1692
 msgid "Display file or file system status.\n"
 msgstr ""
 
-#: src/stat.c:1504
+#: src/stat.c:1698
 msgid ""
 "  -L, --dereference     follow links\n"
 "  -f, --file-system     display file system status instead of file status\n"
 msgstr ""
 
-#: src/stat.c:1508
+#: src/stat.c:1702
+msgid ""
+"      --cached=MODE     specify how to use cached attributes;\n"
+"                          useful on remote file systems. See MODE below\n"
+msgstr ""
+
+#: src/stat.c:1706
 msgid ""
 "  -c  --format=FORMAT   use the specified FORMAT instead of the default;\n"
 "                          output a newline after each use of FORMAT\n"
@@ -9137,19 +9237,28 @@ msgid ""
 "  -t, --terse           print the information in terse form\n"
 msgstr ""
 
-#: src/stat.c:1519
+#: src/stat.c:1717
+msgid ""
+"\n"
+"The --cached MODE argument can be; always, never, or default.\n"
+"`always` will use cached attributes if available, while\n"
+"`never` will try to synchronize with the latest attributes, and\n"
+"`default` will leave it up to the underlying file system.\n"
+msgstr ""
+
+#: src/stat.c:1724
 msgid ""
 "\n"
 "The valid format sequences for files (without --file-system):\n"
 "\n"
-"  %a   access rights in octal (note '#' and '0' printf flags)\n"
-"  %A   access rights in human readable form\n"
+"  %a   permission bits in octal (note '#' and '0' printf flags)\n"
+"  %A   permission bits and file type in human readable form\n"
 "  %b   number of blocks allocated (see %B)\n"
 "  %B   the size in bytes of each block reported by %b\n"
 "  %C   SELinux security context string\n"
 msgstr ""
 
-#: src/stat.c:1528
+#: src/stat.c:1733
 msgid ""
 "  %d   device number in decimal\n"
 "  %D   device number in hex\n"
@@ -9159,7 +9268,7 @@ msgid ""
 "  %G   group name of owner\n"
 msgstr ""
 
-#: src/stat.c:1536
+#: src/stat.c:1741
 msgid ""
 "  %h   number of hard links\n"
 "  %i   inode number\n"
@@ -9172,7 +9281,7 @@ msgid ""
 "  %T   minor device type in hex, for character/block device special files\n"
 msgstr ""
 
-#: src/stat.c:1547
+#: src/stat.c:1752
 msgid ""
 "  %u   user ID of owner\n"
 "  %U   user name of owner\n"
@@ -9187,7 +9296,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/stat.c:1561
+#: src/stat.c:1766
 msgid ""
 "Valid format sequences for file systems:\n"
 "\n"
@@ -9198,7 +9307,7 @@ msgid ""
 "  %f   free blocks in file system\n"
 msgstr ""
 
-#: src/stat.c:1570
+#: src/stat.c:1775
 msgid ""
 "  %i   file system ID in hex\n"
 "  %l   maximum length of filenames\n"
@@ -9209,7 +9318,7 @@ msgid ""
 "  %T   file system type in human readable form\n"
 msgstr ""
 
-#: src/stat.c:1580
+#: src/stat.c:1785
 #, c-format
 msgid ""
 "\n"
@@ -9217,7 +9326,7 @@ msgid ""
 "    %s"
 msgstr ""
 
-#: src/stat.c:1591
+#: src/stat.c:1796
 #, c-format
 msgid ""
 "--terse --file-system is equivalent to the following FORMAT:\n"
@@ -9260,6 +9369,7 @@ msgid ""
 "\n"
 "Otherwise MODE is a number which may be followed by one of the following:\n"
 "KB 1000, K 1024, MB 1000*1000, M 1024*1024, and so on for G, T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 "In this case the corresponding stream will be fully buffered with the "
 "buffer\n"
 "size set to MODE bytes.\n"
@@ -9269,7 +9379,7 @@ msgstr ""
 "nasledovných:\n"
 "kB 1000, K 1024, MB 1000*1000, M 1024*1024 atď pre G, T, P, E, Z, Y.\n"
 
-#: src/stdbuf.c:117
+#: src/stdbuf.c:118
 msgid ""
 "\n"
 "NOTE: If COMMAND adjusts the buffering of its standard streams ('tee' does\n"
@@ -9278,22 +9388,22 @@ msgid ""
 "and are thus unaffected by 'stdbuf' settings.\n"
 msgstr ""
 
-#: src/stdbuf.c:242
+#: src/stdbuf.c:243
 #, fuzzy, c-format
 msgid "failed to find %s"
 msgstr "nepodarilo sa otvoriť %s"
 
-#: src/stdbuf.c:266 src/stdbuf.c:299
+#: src/stdbuf.c:267 src/stdbuf.c:300
 #, fuzzy, c-format
 msgid "failed to update the environment with %s"
 msgstr "nie je možné nastaviť bezpečnostný kontext %s na %s"
 
-#: src/stdbuf.c:345
+#: src/stdbuf.c:346
 #, c-format
 msgid "line buffering stdin is meaningless"
 msgstr ""
 
-#: src/stdbuf.c:376
+#: src/stdbuf.c:377
 #, fuzzy, c-format
 msgid "you must specify a buffering mode option"
 msgstr "nie je možné nastaviť bezpečnostný kontext %s na %s"
@@ -9896,30 +10006,30 @@ msgstr ""
 msgid "  -f, --file-system      sync the file systems that contain the files\n"
 msgstr ""
 
-#: src/sync.c:114
+#: src/sync.c:115
 #, fuzzy, c-format
 msgid "error opening %s"
 msgstr "chyba pri čítaní %s"
 
-#: src/sync.c:124
+#: src/sync.c:126
 #, fuzzy, c-format
 msgid "couldn't reset non-blocking mode %s"
 msgstr "%s: nie je možné opustiť neblokovací režim"
 
-#: src/sync.c:155
+#: src/sync.c:157
 #, fuzzy, c-format
 msgid "error syncing %s"
 msgstr "chyba pri čítaní %s"
 
-#: src/sync.c:213
+#: src/sync.c:215
 msgid "cannot specify both --data and --file-system"
 msgstr ""
 
-#: src/sync.c:217
+#: src/sync.c:219
 msgid "--data needs at least one argument"
 msgstr ""
 
-#: src/system.h:344
+#: src/system.h:347
 #, c-format
 msgid ""
 "\n"
@@ -9928,15 +10038,15 @@ msgid ""
 "for details about the options it supports.\n"
 msgstr ""
 
-#: src/system.h:350
+#: src/system.h:353
 msgid "      --help     display this help and exit\n"
 msgstr "      --help     zobrazí tohto pomocníka a skončí\n"
 
-#: src/system.h:352
+#: src/system.h:355
 msgid "      --version  output version information and exit\n"
 msgstr "      --version  vypíše informácie o verzii a skončí\n"
 
-#: src/system.h:580
+#: src/system.h:583
 msgid ""
 "\n"
 "With no FILE, or when FILE is -, read standard input.\n"
@@ -9944,7 +10054,7 @@ msgstr ""
 "\n"
 "Bez SÚBORu alebo keď SÚBOR je - číta zo štand. vstupu.\n"
 
-#: src/system.h:587
+#: src/system.h:590
 #, fuzzy
 msgid ""
 "\n"
@@ -9953,15 +10063,16 @@ msgstr ""
 "Povinné argumenty dlhých tvarov volieb sú taktiež povinné pre krátke tvary "
 "volieb.\n"
 
-#: src/system.h:595
+#: src/system.h:598
 msgid ""
 "\n"
 "The SIZE argument is an integer and optional unit (example: 10K is "
 "10*1024).\n"
 "Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 msgstr ""
 
-#: src/system.h:604
+#: src/system.h:608
 #, c-format
 msgid ""
 "\n"
@@ -9970,7 +10081,7 @@ msgid ""
 "Otherwise, units default to 1024 bytes (or 512 if POSIXLY_CORRECT is set).\n"
 msgstr ""
 
-#: src/system.h:614
+#: src/system.h:618
 #, fuzzy
 msgid ""
 "\n"
@@ -9993,7 +10104,7 @@ msgstr ""
 "                  existujú, inak tvoriť jednoduché\n"
 "  simple, never   vždy tvoriť jednoduché záložné kópie súborov \n"
 
-#: src/system.h:621
+#: src/system.h:625
 msgid ""
 "  none, off       never make backups (even if --backup is given)\n"
 "  numbered, t     make numbered backups\n"
@@ -10007,7 +10118,7 @@ msgstr ""
 "                  existujú, inak tvoriť jednoduché\n"
 "  simple, never   vždy tvoriť jednoduché záložné kópie súborov \n"
 
-#: src/system.h:651
+#: src/system.h:655
 #, fuzzy, c-format
 msgid ""
 "\n"
@@ -10018,27 +10129,26 @@ msgstr "Domovská stránka %s: <%s>\n"
 #. <https://translationproject.org/team/LANG_CODE.html> to form one of
 #. the URLs at https://translationproject.org/team/.  Otherwise, replace
 #. the entire URL with your translation team's email address.
-#: src/system.h:662
-#, c-format
-msgid "Report %s translation bugs to <https://translationproject.org/team/>\n"
+#: src/system.h:666
+msgid "Report any translation bugs to <https://translationproject.org/team/>\n"
 msgstr ""
 
-#: src/system.h:665
+#: src/system.h:669
 #, c-format
-msgid "Full documentation at: <%s%s>\n"
+msgid "Full documentation <%s%s>\n"
 msgstr ""
 
-#: src/system.h:667
+#: src/system.h:671
 #, c-format
 msgid "or available locally via: info '(coreutils) %s%s'\n"
 msgstr ""
 
-#: src/system.h:678
+#: src/system.h:682
 #, fuzzy, c-format
 msgid "Try '%s --help' for more information.\n"
 msgstr "Viac informácií získate príkazom `%s --help'.\n"
 
-#: src/system.h:722
+#: src/system.h:726
 #, c-format
 msgid ""
 "WARNING: Circular directory structure.\n"
@@ -10113,11 +10223,11 @@ msgid "separator cannot be empty"
 msgstr "oddeľovač nemôže byť prázdny"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/tail.c:74
+#: src/tail.c:78
 msgid "Ian Lance Taylor"
 msgstr "Ian Lance Taylor"
 
-#: src/tail.c:265
+#: src/tail.c:269
 #, fuzzy, c-format
 msgid ""
 "Print the last %d lines of each FILE to standard output.\n"
@@ -10129,13 +10239,13 @@ msgstr ""
 "súboru. Ak SÚBOR nebude zadaný alebo bude -, načíta sa štandardný vstup.\n"
 "\n"
 
-#: src/tail.c:273
+#: src/tail.c:277
 msgid ""
 "  -c, --bytes=[+]NUM       output the last NUM bytes; or use -c +NUM to\n"
 "                             output starting with byte NUM of each file\n"
 msgstr ""
 
-#: src/tail.c:277
+#: src/tail.c:281
 msgid ""
 "  -f, --follow[={name|descriptor}]\n"
 "                           output appended data as the file grows;\n"
@@ -10143,7 +10253,7 @@ msgid ""
 "  -F                       same as --follow=name --retry\n"
 msgstr ""
 
-#: src/tail.c:283
+#: src/tail.c:287
 #, c-format
 msgid ""
 "  -n, --lines=[+]NUM       output the last NUM lines, instead of the last "
@@ -10158,14 +10268,14 @@ msgid ""
 "                             with inotify, this option is rarely useful\n"
 msgstr ""
 
-#: src/tail.c:296
+#: src/tail.c:300
 msgid ""
 "      --pid=PID            with -f, terminate after process ID, PID dies\n"
 "  -q, --quiet, --silent    never output headers giving file names\n"
 "      --retry              keep trying to open a file if it is inaccessible\n"
 msgstr ""
 
-#: src/tail.c:301
+#: src/tail.c:305
 msgid ""
 "  -s, --sleep-interval=N   with -f, sleep for approximately N seconds\n"
 "                             (default 1.0) between iterations;\n"
@@ -10174,13 +10284,14 @@ msgid ""
 "  -v, --verbose            always output headers giving file names\n"
 msgstr ""
 
-#: src/tail.c:313
+#: src/tail.c:317
 #, fuzzy
 msgid ""
 "\n"
 "NUM may have a multiplier suffix:\n"
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 "\n"
 msgstr ""
 "\n"
@@ -10191,7 +10302,7 @@ msgstr ""
 "Každý symbol KONV môže byť:\n"
 "\n"
 
-#: src/tail.c:320
+#: src/tail.c:325
 msgid ""
 "With --follow (-f), tail defaults to following the file descriptor, which\n"
 "means that even if a tail'ed file is renamed, tail will continue to track\n"
@@ -10201,173 +10312,173 @@ msgid ""
 "named file in a way that accommodates renaming, removal and creation.\n"
 msgstr ""
 
-#: src/tail.c:393
+#: src/tail.c:416
 #, c-format
 msgid "closing %s (fd=%d)"
 msgstr "zatvára sa %s (fd=%d)"
 
-#: src/tail.c:492
+#: src/tail.c:515
 #, c-format
 msgid "%s: cannot seek to end-relative offset %s"
 msgstr ""
 
-#: src/tail.c:927
+#: src/tail.c:951
 #, c-format
 msgid "cannot determine location of %s. reverting to polling"
 msgstr ""
 
-#: src/tail.c:983
+#: src/tail.c:1007
 #, fuzzy, c-format
 msgid "%s has been replaced with an untailable symbolic link"
 msgstr "súbor `%s' bol nahradený iným, neumožňujúcim sledovanie jeho konca."
 
-#: src/tail.c:998
+#: src/tail.c:1022
 #, fuzzy, c-format
 msgid "%s has become inaccessible"
 msgstr "`%s' sa stal nedostupným"
 
-#: src/tail.c:1016
+#: src/tail.c:1040
 #, fuzzy, c-format
 msgid "%s has been replaced with an untailable file%s"
 msgstr "súbor `%s' bol nahradený iným, neumožňujúcim sledovanie jeho konca."
 
-#: src/tail.c:1018 src/tail.c:2024
+#: src/tail.c:1042 src/tail.c:2048
 msgid "; giving up on this name"
 msgstr ""
 
-#: src/tail.c:1024
+#: src/tail.c:1048
 #, fuzzy, c-format
 msgid "%s has been replaced with an untailable remote file"
 msgstr "súbor `%s' bol nahradený iným, neumožňujúcim sledovanie jeho konca."
 
-#: src/tail.c:1045
+#: src/tail.c:1069
 #, fuzzy, c-format
 msgid "%s has become accessible"
 msgstr "`%s' sa stal dostupným"
 
-#: src/tail.c:1057
+#: src/tail.c:1081
 #, fuzzy, c-format
 msgid "%s has appeared;  following new file"
 msgstr "súbor %s sa objavil. Sledovanie konca súboru pokračuje."
 
-#: src/tail.c:1067
+#: src/tail.c:1091
 #, fuzzy, c-format
 msgid "%s has been replaced;  following new file"
 msgstr ""
 "súbor %s bol nahradený iným. Sledovanie konca súboru\n"
 "pokračuje."
 
-#: src/tail.c:1182
+#: src/tail.c:1206
 #, fuzzy, c-format
 msgid "%s: cannot change nonblocking mode"
 msgstr "%s: nie je možné opustiť neblokovací režim"
 
-#: src/tail.c:1228 src/tail.c:1403
+#: src/tail.c:1252 src/tail.c:1427
 #, c-format
 msgid "%s: file truncated"
 msgstr "%s: súbor bol skrátený"
 
-#: src/tail.c:1262 src/tail.c:1604
+#: src/tail.c:1286 src/tail.c:1628
 #, c-format
 msgid "no files remaining"
 msgstr "už nezostávajú žiadne súbory"
 
-#: src/tail.c:1498
+#: src/tail.c:1522
 #, fuzzy, c-format
 msgid "cannot watch parent directory of %s"
 msgstr "nie je možné stat() aktuálny adresár (%s)"
 
-#: src/tail.c:1501 src/tail.c:1518 src/tail.c:1728
+#: src/tail.c:1525 src/tail.c:1542 src/tail.c:1752
 #, fuzzy, c-format
 msgid "inotify resources exhausted"
 msgstr "vyčerpaná pamäť"
 
-#: src/tail.c:1522 src/tail.c:1736
+#: src/tail.c:1546 src/tail.c:1760
 #, fuzzy, c-format
 msgid "cannot watch %s"
 msgstr "nie je možné vykonať touch %s"
 
-#: src/tail.c:1571
+#: src/tail.c:1595
 #, fuzzy, c-format
 msgid "%s was replaced"
 msgstr "%s: prepísať %s? "
 
-#: src/tail.c:1643
+#: src/tail.c:1667
 #, fuzzy
 msgid "error waiting for inotify and output events"
 msgstr "chyba pri čítaní %s"
 
-#: src/tail.c:1671
+#: src/tail.c:1695
 #, fuzzy
 msgid "error reading inotify event"
 msgstr "chyba pri čítaní %s"
 
-#: src/tail.c:1690
+#: src/tail.c:1714
 #, c-format
 msgid "directory containing watched file was removed"
 msgstr ""
 
-#: src/tail.c:2022
+#: src/tail.c:2046
 #, fuzzy, c-format
 msgid "%s: cannot follow end of this type of file%s"
 msgstr ""
 "%s: nie je možné sledovať koniec tohoto typu súboru; zanechávam tento názov"
 
-#: src/tail.c:2203
+#: src/tail.c:2227
 #, fuzzy
 msgid "invalid maximum number of unchanged stats between opens"
 msgstr ""
 "%s: neplatné číslo maximálneho počtu nezmenených výsledkov funkcie stat\n"
 "medzi otvoreniami"
 
-#: src/tail.c:2211
+#: src/tail.c:2235
 #, fuzzy
 msgid "invalid PID"
 msgstr "%s: chybné PID"
 
-#: src/tail.c:2227
+#: src/tail.c:2251
 #, fuzzy, c-format
 msgid "invalid number of seconds: %s"
 msgstr "neplatný počet stĺpcov: %s"
 
-#: src/tail.c:2246
+#: src/tail.c:2270
 #, c-format
 msgid "option used in invalid context -- %c"
 msgstr ""
 
-#: src/tail.c:2258
+#: src/tail.c:2282
 #, fuzzy, c-format
 msgid "warning: --retry ignored; --retry is useful only when following"
 msgstr ""
 "upozornenie: PID bol ignorovaný; --pid=PID je užitočné iba pri nasledovaní"
 
-#: src/tail.c:2262
+#: src/tail.c:2286
 #, c-format
 msgid "warning: --retry only effective for the initial open"
 msgstr ""
 
-#: src/tail.c:2267
+#: src/tail.c:2291
 #, c-format
 msgid "warning: PID ignored; --pid=PID is useful only when following"
 msgstr ""
 "upozornenie: PID bol ignorovaný; --pid=PID je užitočné iba pri nasledovaní"
 
-#: src/tail.c:2270
+#: src/tail.c:2294
 #, c-format
 msgid "warning: --pid=PID is not supported on this system"
 msgstr "upozornenie: --pid=PID nie je na tomto systéme podporované"
 
-#: src/tail.c:2376
+#: src/tail.c:2400
 #, fuzzy, c-format
 msgid "cannot follow %s by name"
 msgstr "nie je možné vytvoriť dočasný súbor"
 
-#: src/tail.c:2391
+#: src/tail.c:2415
 #, c-format
 msgid "warning: following standard input indefinitely is ineffective"
 msgstr ""
 
-#: src/tail.c:2488
+#: src/tail.c:2512
 #, c-format
 msgid "inotify cannot be used, reverting to polling"
 msgstr ""
@@ -10407,54 +10518,54 @@ msgid ""
 "writing to non pipe outputs.\n"
 msgstr ""
 
-#: src/test.c:127
+#: src/test.c:126
 #, fuzzy, c-format
 msgid "missing argument after %s"
 msgstr "nejednoznačný argument %s pre `%s'"
 
-#: src/test.c:163
+#: src/test.c:162
 #, c-format
 msgid "invalid integer %s"
 msgstr "neplatné celé číslo %s"
 
-#: src/test.c:245
+#: src/test.c:244
 #, fuzzy, c-format
 msgid "%s expected"
 msgstr "očakávaný znak „)”"
 
-#: src/test.c:248
+#: src/test.c:247
 #, fuzzy, c-format
 msgid "%s expected, found %s"
 msgstr "očakávaný znak „)”, nájdený %s"
 
-#: src/test.c:265 src/test.c:623
-#, c-format
-msgid "%s: unary operator expected"
-msgstr "%s: očakával sa unárny operátor"
-
-#: src/test.c:334
+#: src/test.c:328
 msgid "-nt does not accept -l"
 msgstr "-nt neakceptuje -l"
 
-#: src/test.c:347
+#: src/test.c:341
 msgid "-ef does not accept -l"
 msgstr "-ef neakceptuje -l"
 
-#: src/test.c:363
+#: src/test.c:357
 msgid "-ot does not accept -l"
 msgstr "-ot neakceptuje -l"
 
-#: src/test.c:372
+#: src/test.c:366
 #, fuzzy, c-format
 msgid "%s: unknown binary operator"
 msgstr "neznámy binárny operátor"
 
-#: src/test.c:651
+#: src/test.c:396
+#, c-format
+msgid "%s: unary operator expected"
+msgstr "%s: očakával sa unárny operátor"
+
+#: src/test.c:632
 #, c-format
 msgid "%s: binary operator expected"
 msgstr "%s: očakával sa binárny operátor"
 
-#: src/test.c:709
+#: src/test.c:690
 #, fuzzy
 msgid ""
 "Usage: test EXPRESSION\n"
@@ -10466,13 +10577,13 @@ msgstr ""
 "Použitie: %s [SÚBOR]...\n"
 " alebo:   %s [VOĽBA]\n"
 
-#: src/test.c:716
+#: src/test.c:697
 msgid ""
 "Exit with the status determined by EXPRESSION.\n"
 "\n"
 msgstr ""
 
-#: src/test.c:722
+#: src/test.c:703
 #, fuzzy
 msgid ""
 "\n"
@@ -10484,7 +10595,7 @@ msgstr ""
 "  --help      vypíše túto nápovedu a skončí\n"
 "  --version   vypíše označenie verzie a skončí\n"
 
-#: src/test.c:727
+#: src/test.c:708
 msgid ""
 "\n"
 "  ( EXPRESSION )               EXPRESSION is true\n"
@@ -10493,7 +10604,7 @@ msgid ""
 "  EXPRESSION1 -o EXPRESSION2   either EXPRESSION1 or EXPRESSION2 is true\n"
 msgstr ""
 
-#: src/test.c:734
+#: src/test.c:715
 msgid ""
 "\n"
 "  -n STRING            the length of STRING is nonzero\n"
@@ -10503,7 +10614,7 @@ msgid ""
 "  STRING1 != STRING2   the strings are not equal\n"
 msgstr ""
 
-#: src/test.c:742
+#: src/test.c:723
 #, fuzzy
 msgid ""
 "\n"
@@ -10532,7 +10643,7 @@ msgstr ""
 "  CELÉČÍSLO1 -lt CELÉČÍSLO2   CELÉČÍSLO1 je menšie ako CELÉČÍSLO2\n"
 "  CELÉČÍSLO1 -ne CELÉČÍSLO2   CELÉČÍSLO1 sa nerovná CELÉČÍSLO2\n"
 
-#: src/test.c:751
+#: src/test.c:732
 msgid ""
 "\n"
 "  FILE1 -ef FILE2   FILE1 and FILE2 have the same device and inode numbers\n"
@@ -10540,7 +10651,7 @@ msgid ""
 "  FILE1 -ot FILE2   FILE1 is older than FILE2\n"
 msgstr ""
 
-#: src/test.c:757
+#: src/test.c:738
 msgid ""
 "\n"
 "  -b FILE     FILE exists and is block special\n"
@@ -10549,7 +10660,7 @@ msgid ""
 "  -e FILE     FILE exists\n"
 msgstr ""
 
-#: src/test.c:764
+#: src/test.c:745
 msgid ""
 "  -f FILE     FILE exists and is a regular file\n"
 "  -g FILE     FILE exists and is set-group-ID\n"
@@ -10558,16 +10669,17 @@ msgid ""
 "  -k FILE     FILE exists and has its sticky bit set\n"
 msgstr ""
 
-#: src/test.c:771
+#: src/test.c:752
 msgid ""
 "  -L FILE     FILE exists and is a symbolic link (same as -h)\n"
+"  -N FILE     FILE exists and has been modified since it was last read\n"
 "  -O FILE     FILE exists and is owned by the effective user ID\n"
 "  -p FILE     FILE exists and is a named pipe\n"
 "  -r FILE     FILE exists and read permission is granted\n"
 "  -s FILE     FILE exists and has a size greater than zero\n"
 msgstr ""
 
-#: src/test.c:778
+#: src/test.c:760
 msgid ""
 "  -S FILE     FILE exists and is a socket\n"
 "  -t FD       file descriptor FD is opened on a terminal\n"
@@ -10576,7 +10688,7 @@ msgid ""
 "  -x FILE     FILE exists and execute (or search) permission is granted\n"
 msgstr ""
 
-#: src/test.c:785
+#: src/test.c:767
 #, fuzzy
 msgid ""
 "\n"
@@ -10590,40 +10702,40 @@ msgstr ""
 "lomítkami. CELÉČÍSLO môže byť tiež -l REŤAZEC, čo sa vyhodnotí na\n"
 "dĺžku REŤAZCA.\n"
 
-#: src/test.c:791
+#: src/test.c:773
 msgid ""
 "\n"
 "NOTE: Binary -a and -o are inherently ambiguous.  Use 'test EXPR1 && test\n"
 "EXPR2' or 'test EXPR1 || test EXPR2' instead.\n"
 msgstr ""
 
-#: src/test.c:796
+#: src/test.c:778
 msgid ""
 "\n"
 "NOTE: [ honors the --help and --version options, but test does not.\n"
 "test treats each of those as it treats any other nonempty STRING.\n"
 msgstr ""
 
-#: src/test.c:801
+#: src/test.c:783
 msgid "test and/or ["
 msgstr "test a/alebo ["
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/test.c:813
+#: src/test.c:795
 msgid "Kevin Braunsdorf"
 msgstr "Kevin Braunsdorf"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/test.c:814
+#: src/test.c:796
 msgid "Matthew Bradburn"
 msgstr "Matthew Bradburn"
 
-#: src/test.c:868
+#: src/test.c:850
 #, fuzzy, c-format
 msgid "missing %s"
 msgstr "chýba „]”"
 
-#: src/test.c:882
+#: src/test.c:864
 #, c-format
 msgid "extra argument %s"
 msgstr "argument %s je naviac"
@@ -11041,7 +11153,7 @@ msgid ""
 "A FILE argument that does not exist is created.\n"
 "\n"
 "If a FILE is larger than the specified size, the extra data is lost.\n"
-"If a FILE is shorter, it is extended and the extended part (hole)\n"
+"If a FILE is shorter, it is extended and the sparse extended part (hole)\n"
 "reads as zero bytes.\n"
 msgstr ""
 
@@ -11069,72 +11181,67 @@ msgid ""
 "'/' round down to multiple of, '%' round up to multiple of.\n"
 msgstr ""
 
-#: src/truncate.c:123
+#: src/truncate.c:124
 #, c-format
-msgid "overflow in %<PRIdMAX> * %<PRIdMAX> byte blocks for file %s"
+msgid "overflow in %<PRIdMAX> * %<PRIdPTR> byte blocks for file %s"
 msgstr ""
 
-#: src/truncate.c:147
+#: src/truncate.c:145
 #, fuzzy, c-format
 msgid "%s has unusable, apparently negative size"
 msgstr "%s: súbor má zápornú dĺžku"
 
-#: src/truncate.c:157 src/truncate.c:359
+#: src/truncate.c:155 src/truncate.c:348
 #, fuzzy, c-format
 msgid "cannot get the size of %s"
 msgstr "súbor sa nedá rozdeliť viacerými spôsobmi"
 
 #: src/truncate.c:179
 #, fuzzy, c-format
-msgid "overflow rounding up size of file %s"
-msgstr "pretečenie pozície pri čítaní súboru %s"
-
-#: src/truncate.c:189
-#, fuzzy, c-format
 msgid "overflow extending size of file %s"
 msgstr "pretečenie pozície pri čítaní súboru %s"
 
-#: src/truncate.c:204
+#: src/truncate.c:193
 #, fuzzy, c-format
 msgid "failed to truncate %s at %<PRIdMAX> bytes"
 msgstr "presúvam sa za %s bajtov vo výstupnom súbore %s"
 
-#: src/truncate.c:277
+#: src/truncate.c:266
 #, fuzzy, c-format
 msgid "multiple relative modifiers specified"
 msgstr "boli uvedené viaceré cieľové adresáre"
 
-#: src/truncate.c:286
+#: src/truncate.c:275
 #, fuzzy
 msgid "Invalid number"
 msgstr "neplatné číslo %s"
 
-#: src/truncate.c:308
+#: src/truncate.c:297
 #, fuzzy, c-format
 msgid "you must specify either %s or %s"
 msgstr "nie je možné nastaviť bezpečnostný kontext %s na %s"
 
-#: src/truncate.c:315
+#: src/truncate.c:304
 #, fuzzy, c-format
 msgid "you must specify a relative %s with %s"
 msgstr "nie je možné nastaviť bezpečnostný kontext %s na %s"
 
-#: src/truncate.c:322
+#: src/truncate.c:311
 #, c-format
 msgid "%s was specified but %s was not"
 msgstr ""
 
-#: src/truncate.c:379
+#: src/truncate.c:368
 #, c-format
 msgid "cannot open %s for writing"
 msgstr "nie je možné otvoriť %s na čítanie"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/tsort.c:41
+#: src/tsort.c:40
 msgid "Mark Kettenis"
 msgstr "Mark Kettenis"
 
-#: src/tsort.c:88
+#: src/tsort.c:82
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [OPTION] [FILE]\n"
@@ -11146,17 +11253,17 @@ msgstr ""
 "  Pokiaľ nie je SÚBOR zadaný, načíta sa štandardný vstup.\n"
 "\n"
 
-#: src/tsort.c:95 src/uptime.c:218
+#: src/tsort.c:89 src/uptime.c:213
 #, c-format
 msgid "\n"
 msgstr ""
 
-#: src/tsort.c:481
+#: src/tsort.c:475
 #, c-format
 msgid "%s: input contains an odd number of tokens"
 msgstr "%s: vstup obsahuje nepárny počet tokenov"
 
-#: src/tsort.c:527
+#: src/tsort.c:521
 #, c-format
 msgid "%s: input contains a loop:"
 msgstr "%s: vstup obsahuje cyklus:"
@@ -11231,12 +11338,12 @@ msgstr ""
 msgid "tab stop value is too large"
 msgstr "hodnota tabulátora je príliš veľká"
 
-#: src/uniq.c:171
+#: src/uniq.c:166
 #, c-format
 msgid "Usage: %s [OPTION]... [INPUT [OUTPUT]]\n"
 msgstr "Použitie: %s [PREPÍNAČ]... [VSTUP [VÝSTUP]]\n"
 
-#: src/uniq.c:175
+#: src/uniq.c:170
 msgid ""
 "Filter adjacent matching lines from INPUT (or standard input),\n"
 "writing to OUTPUT (or standard output).\n"
@@ -11244,13 +11351,13 @@ msgid ""
 "With no options, matching lines are merged to the first occurrence.\n"
 msgstr ""
 
-#: src/uniq.c:184
+#: src/uniq.c:179
 msgid ""
 "  -c, --count           prefix lines by the number of occurrences\n"
 "  -d, --repeated        only print duplicate lines, one for each group\n"
 msgstr ""
 
-#: src/uniq.c:188
+#: src/uniq.c:183
 msgid ""
 "  -D                    print all duplicate lines\n"
 "      --all-repeated[=METHOD]  like -D, but allow separating groups\n"
@@ -11258,78 +11365,77 @@ msgid ""
 "                                 METHOD={none(default),prepend,separate}\n"
 msgstr ""
 
-#: src/uniq.c:194
+#: src/uniq.c:189
 msgid "  -f, --skip-fields=N   avoid comparing the first N fields\n"
 msgstr ""
 
-#: src/uniq.c:197
+#: src/uniq.c:192
 msgid ""
 "      --group[=METHOD]  show all items, separating groups with an empty "
 "line;\n"
 "                          METHOD={separate(default),prepend,append,both}\n"
 msgstr ""
 
-#: src/uniq.c:201
+#: src/uniq.c:196
 msgid ""
 "  -i, --ignore-case     ignore differences in case when comparing\n"
 "  -s, --skip-chars=N    avoid comparing the first N characters\n"
 "  -u, --unique          only print unique lines\n"
 msgstr ""
 
-#: src/uniq.c:209
+#: src/uniq.c:204
 msgid "  -w, --check-chars=N   compare no more than N characters in lines\n"
 msgstr ""
 
-#: src/uniq.c:214
+#: src/uniq.c:209
 msgid ""
 "\n"
 "A field is a run of blanks (usually spaces and/or TABs), then non-blank\n"
 "characters.  Fields are skipped before chars.\n"
 msgstr ""
 
-#: src/uniq.c:219
+#: src/uniq.c:214
 msgid ""
 "\n"
 "Note: 'uniq' does not detect repeated lines unless they are adjacent.\n"
 "You may want to sort the input first, or use 'sort -u' without 'uniq'.\n"
-"Also, comparisons honor the rules specified by 'LC_COLLATE'.\n"
 msgstr ""
 
-#: src/uniq.c:437
+#: src/uniq.c:425
 msgid "too many repeated lines"
 msgstr "príliš veľa zopakovaných riadkov"
 
-#: src/uniq.c:613
+#: src/uniq.c:600
 msgid "invalid number of fields to skip"
 msgstr "chybný počet polí na preskočenie"
 
 # bytes to skip? we were talking about chars? - rzm
-#: src/uniq.c:622
+#: src/uniq.c:609
 msgid "invalid number of bytes to skip"
 msgstr "chybný počet znakov na preskočenie"
 
-#: src/uniq.c:632
+#: src/uniq.c:619
 msgid "invalid number of bytes to compare"
 msgstr "chybný počet znakov na porovnanie"
 
-#: src/uniq.c:654
+#: src/uniq.c:641
 #, c-format
 msgid "--group is mutually exclusive with -c/-d/-D/-u"
 msgstr ""
 
-#: src/uniq.c:661
+#: src/uniq.c:648
 #, fuzzy, c-format
 msgid "grouping and printing repeat counts is meaningless"
 msgstr ""
 "výpis všetkých opakujúcich sa riadkov a počítadla opakovania nemá zmysel"
 
-#: src/uniq.c:668
+#: src/uniq.c:655
 #, c-format
 msgid "printing all duplicated lines and repeat counts is meaningless"
 msgstr ""
 "výpis všetkých opakujúcich sa riadkov a počítadla opakovania nemá zmysel"
 
-#: src/unlink.c:51
+#: src/unlink.c:45
 #, c-format
 msgid ""
 "Usage: %s FILE\n"
@@ -11338,33 +11444,33 @@ msgstr ""
 "Použitie: %s SÚBOR\n"
 " alebo:   %s VOĽBA\n"
 
-#: src/unlink.c:54
+#: src/unlink.c:48
 msgid ""
 "Call the unlink function to remove the specified FILE.\n"
 "\n"
 msgstr ""
 
-#: src/uptime.c:131
+#: src/uptime.c:126
 msgid "couldn't get boot time"
 msgstr "nie je možné zistiť čas zavedenia systému"
 
 #. TRANSLATORS: This prints the current clock time.
-#: src/uptime.c:142
+#: src/uptime.c:137
 #, fuzzy
 msgid " %H:%M:%S  "
 msgstr "%b %e %H:%M %Y"
 
-#: src/uptime.c:144
+#: src/uptime.c:139
 #, c-format
 msgid " ??:????  "
 msgstr ""
 
-#: src/uptime.c:146
+#: src/uptime.c:141
 #, c-format
 msgid "up ???? days ??:??,  "
 msgstr ""
 
-#: src/uptime.c:150
+#: src/uptime.c:145
 #, c-format
 msgid "up %ld day %2d:%02d,  "
 msgid_plural "up %ld days %2d:%02d,  "
@@ -11372,12 +11478,12 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
-#: src/uptime.c:155
+#: src/uptime.c:150
 #, fuzzy, c-format
 msgid "up  %2d:%02d,  "
 msgstr " %2d:%02d%s  beží "
 
-#: src/uptime.c:157
+#: src/uptime.c:152
 #, c-format
 msgid "%lu user"
 msgid_plural "%lu users"
@@ -11385,12 +11491,12 @@ msgstr[0] "%lu používateľ"
 msgstr[1] "%lu používatelia"
 msgstr[2] "%lu používateľov"
 
-#: src/uptime.c:167
+#: src/uptime.c:162
 #, c-format
 msgid ",  load average: %.2f"
 msgstr ",  priemerná záťaž: %.2f"
 
-#: src/uptime.c:205
+#: src/uptime.c:200
 #, fuzzy, c-format
 msgid ""
 "Print the current time, the length of time the system has been up,\n"
@@ -11403,14 +11509,14 @@ msgstr ""
 "Pokiaľ nie je zadaný SÚBOR, použiť %s. %s ako SÚBOR je obvyklý.\n"
 "\n"
 
-#: src/uptime.c:214
+#: src/uptime.c:209
 #, c-format
 msgid ""
 "  Processes in\n"
 "an uninterruptible sleep state also contribute to the load average.\n"
 msgstr ""
 
-#: src/uptime.c:220
+#: src/uptime.c:215
 #, fuzzy, c-format
 msgid ""
 "If FILE is not specified, use %s.  %s as FILE is common.\n"
@@ -11420,7 +11526,7 @@ msgstr ""
 "Pokiaľ nie je zadaný SÚBOR, použiť %s. %s ako SÚBOR je obvyklý.\n"
 "\n"
 
-#: src/users.c:112
+#: src/users.c:106
 #, c-format
 msgid ""
 "Output who is currently logged in according to FILE.\n"
@@ -11431,14 +11537,14 @@ msgstr ""
 "Pokiaľ nie je zadaný SÚBOR, použiť %s. %s ako SÚBOR je obvyklý.\n"
 "\n"
 
-#: src/wc.c:120
+#: src/wc.c:123
 msgid ""
 "Print newline, word, and byte counts for each FILE, and a total line if\n"
 "more than one FILE is specified.  A word is a non-zero-length sequence of\n"
 "characters delimited by white space.\n"
 msgstr ""
 
-#: src/wc.c:128
+#: src/wc.c:131
 #, fuzzy
 msgid ""
 "\n"
@@ -11456,7 +11562,7 @@ msgstr ""
 "  -m, --chars            vypíše počet znakov\n"
 "  -l, --lines            vypíše počet riadkov\n"
 
-#: src/wc.c:136
+#: src/wc.c:139
 #, fuzzy
 msgid ""
 "      --files0-from=F    read input from the files specified by\n"
@@ -11601,7 +11707,7 @@ msgstr ""
 "Pokiaľ nie je zadaný SÚBOR, použiť %s. %s ako SÚBOR je obvyklý.\n"
 "\n"
 
-#: src/whoami.c:51
+#: src/whoami.c:45
 msgid ""
 "Print the user name associated with the current effective user ID.\n"
 "Same as id -un.\n"
@@ -11611,12 +11717,12 @@ msgstr ""
 "Rovnaké ako id -un.\n"
 "\n"
 
-#: src/whoami.c:93
+#: src/whoami.c:86
 #, fuzzy, c-format
 msgid "cannot find name for user ID %lu"
 msgstr "nie je možné zistiť meno pre ID používateľa %u\n"
 
-#: src/yes.c:47
+#: src/yes.c:41
 #, c-format
 msgid ""
 "Usage: %s [STRING]...\n"
@@ -11625,11 +11731,38 @@ msgstr ""
 "Použitie: %s [SÚBOR]...\n"
 " alebo:   %s [VOĽBA]\n"
 
-#: src/yes.c:53
+#: src/yes.c:47
 msgid ""
 "Repeatedly output a line with all specified STRING(s), or 'y'.\n"
 "\n"
 msgstr ""
+
+#, fuzzy
+#~ msgid "%s home page: <https://www.gnu.org/software/%s/>\n"
+#~ msgstr "Domovská stránka %s: <http://www.gnu.org/software/%s/>\n"
+
+#, fuzzy
+#~ msgid "overflow rounding up size of file %s"
+#~ msgstr "pretečenie pozície pri čítaní súboru %s"
+
+#, fuzzy
+#~ msgid ""
+#~ "\n"
+#~ "NUM may have a multiplier suffix:\n"
+#~ "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
+#~ "GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+#~ msgstr ""
+#~ "\n"
+#~ "Po BLOKOV a BAJTOV môže byť uvedená jedna z nasledovných prípon:\n"
+#~ "xM M, c 1, w 2, b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
+#~ "GB 1000*1000*1000, G 1024*1024*1024 atď pre T, P, E, Z, Y.\n"
+#~ "\n"
+#~ "Každý symbol KONV môže byť:\n"
+#~ "\n"
+
+#, fuzzy
+#~ msgid "Usage: %s [OPTION]... [USER]\n"
+#~ msgstr "Použitie: %s [PREPÍNAČ]... [SÚBOR]...\n"
 
 #~ msgid ""
 #~ "Usage: %s [OPTION]... [-T] TARGET LINK_NAME   (1st form)\n"

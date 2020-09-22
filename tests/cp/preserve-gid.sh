@@ -1,7 +1,7 @@
 #!/bin/sh
 # Verify that cp -p preserves GID when it is possible.
 
-# Copyright (C) 2007-2018 Free Software Foundation, Inc.
+# Copyright (C) 2007-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -110,7 +110,14 @@ cleanup_() { rm -rf "$tmp_path"; }
 # is not readable by our nameless IDs.
 test -d /tmp && TMPDIR=/tmp
 tmp_path=$(mktemp -d) || fail_ "failed to create temporary directory"
-cp "$abs_path_dir_/cp" "$tmp_path"
+if test -x "$abs_path_dir_/coreutils" &&
+   { test -L "$abs_path_dir_/cp" ||
+     test $(wc -l < "$abs_path_dir_/cp") = 1; } then
+  # if configured with --enable-single-binary we need to use the single binary
+  cp "$abs_path_dir_/coreutils" "$tmp_path/cp" || framework_failure_
+else
+  cp "$abs_path_dir_/cp" "$tmp_path"
+fi
 chmod -R a+rx "$tmp_path"
 
 t1() {

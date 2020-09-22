@@ -1,5 +1,5 @@
 /* Reformat numbers like 11505426432 to the more human-readable 11G
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1081,7 +1081,7 @@ parse_format_string (char const *fmt)
 
   errno = 0;
   pad = strtol (fmt + i, &endptr, 10);
-  if (errno == ERANGE)
+  if (errno == ERANGE || pad < -LONG_MAX)
     die (EXIT_FAILURE, 0,
          _("invalid format %s (width overflow)"), quote (fmt));
 

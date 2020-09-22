@@ -1,6 +1,6 @@
 /* Detect the number of processors.
 
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@
 # include <sys/param.h>
 #endif
 
-#if HAVE_SYS_SYSCTL_H
+#if HAVE_SYS_SYSCTL_H && ! defined __GLIBC__
 # include <sys/sysctl.h>
 #endif
 
@@ -216,8 +216,9 @@ num_processors_ignoring_omp (enum nproc_query query)
      Note! On Linux systems with glibc, the first and second number come from
      the /sys and /proc file systems (see
      glibc/sysdeps/unix/sysv/linux/getsysstats.c).
-     In some situations these file systems are not mounted, and the sysconf
-     call returns 1, which does not reflect the reality.  */
+     In some situations these file systems are not mounted, and the sysconf call
+     returns 1 or 2 (<https://sourceware.org/bugzilla/show_bug.cgi?id=21542>),
+     which does not reflect the reality.  */
 
   if (query == NPROC_CURRENT)
     {
@@ -249,13 +250,13 @@ num_processors_ignoring_omp (enum nproc_query query)
         /* On Linux systems with glibc, this information comes from the /sys and
            /proc file systems (see glibc/sysdeps/unix/sysv/linux/getsysstats.c).
            In some situations these file systems are not mounted, and the
-           sysconf call returns 1.  But we wish to guarantee that
+           sysconf call returns 1 or 2.  But we wish to guarantee that
            num_processors (NPROC_ALL) >= num_processors (NPROC_CURRENT).  */
-        if (nprocs == 1)
+        if (nprocs == 1 || nprocs == 2)
           {
             unsigned long nprocs_current = num_processors_via_affinity_mask ();
 
-            if (nprocs_current > 0)
+            if (/* nprocs_current > 0 && */ nprocs_current > nprocs)
               nprocs = nprocs_current;
           }
 # endif
@@ -294,7 +295,7 @@ num_processors_ignoring_omp (enum nproc_query query)
        MP_NAPROCS yields the number of processors available to unprivileged
        processes.  */
     int nprocs =
-      sysmp (query == NPROC_CURRENT && getpid () != 0
+      sysmp (query == NPROC_CURRENT && getuid () != 0
              ? MP_NAPROCS
              : MP_NPROCS);
     if (nprocs > 0)
@@ -305,7 +306,7 @@ num_processors_ignoring_omp (enum nproc_query query)
   /* Finally, as fallback, use the APIs that don't distinguish between
      NPROC_CURRENT and NPROC_ALL.  */
 
-#if HAVE_SYSCTL && defined HW_NCPU
+#if HAVE_SYSCTL && ! defined __GLIBC__ && defined HW_NCPU
   { /* This works on Mac OS X, FreeBSD, NetBSD, OpenBSD.  */
     int nprocs;
     size_t len = sizeof (nprocs);

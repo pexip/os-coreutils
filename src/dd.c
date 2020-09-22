@@ -1,5 +1,5 @@
 /* dd -- convert a file while copying it.
-   Copyright (C) 1985-2018 Free Software Foundation, Inc.
+   Copyright (C) 1985-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 
 #include <sys/types.h>
 #include <signal.h>
-#include <getopt.h>
 
 #include "system.h"
 #include "close-stream.h"
@@ -45,11 +44,6 @@
   proper_name ("Paul Rubin"), \
   proper_name ("David MacKenzie"), \
   proper_name ("Stuart Kemp")
-
-static struct option const long_options[] =
-{
-  {NULL, 0, NULL, 0}
-};
 
 /* Use SA_NOCLDSTOP as a proxy for whether the sigaction machinery is
    present.  */
@@ -535,7 +529,7 @@ maybe_close_stdout (void)
     _exit (EXIT_FAILURE);
 }
 
-/* Like error() but handle any pending newline.  */
+/* Like the 'error' function but handle any pending newline.  */
 
 static void _GL_ATTRIBUTE_FORMAT ((__printf__, 3, 4))
 nl_error (int status, int errnum, const char *fmt, ...)
@@ -592,8 +586,9 @@ Copy a file, converting and formatting according to the operands.\n\
       fputs (_("\
 \n\
 N and BYTES may be followed by the following multiplicative suffixes:\n\
-c =1, w =2, b =512, kB =1000, K =1024, MB =1000*1000, M =1024*1024, xM =M,\n\
-GB =1000*1000*1000, G =1024*1024*1024, and so on for T, P, E, Z, Y.\n\
+c=1, w=2, b=512, kB=1000, K=1024, MB=1000*1000, M=1024*1024, xM=M,\n\
+GB=1000*1000*1000, G=1024*1024*1024, and so on for T, P, E, Z, Y.\n\
+Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n\
 \n\
 Each CONV symbol may be:\n\
 \n\
@@ -606,7 +601,7 @@ Each CONV symbol may be:\n\
   unblock   replace trailing spaces in cbs-size records with newline\n\
   lcase     change upper case to lower case\n\
   ucase     change lower case to upper case\n\
-  sparse    try to seek rather than write the output for NUL input blocks\n\
+  sparse    try to seek rather than write all-NUL output blocks\n\
   swab      swap every pair of input bytes\n\
   sync      pad every input block with NULs to ibs-size; when used\n\
             with block or unblock, pad with spaces rather than NULs\n\
@@ -919,8 +914,8 @@ install_signal_handlers (void)
     {
       act.sa_handler = siginfo_handler;
       /* Note we don't use SA_RESTART here and instead
-         handle EINTR explicitly in iftruncate() etc.
-         to avoid blocking on noncommitted read()/write() calls.  */
+         handle EINTR explicitly in iftruncate etc.
+         to avoid blocking on noncommitted read/write calls.  */
       act.sa_flags = 0;
       sigaction (SIGINFO, &act, NULL);
     }
@@ -947,16 +942,33 @@ install_signal_handlers (void)
 #endif
 }
 
+/* Close FD.  Return 0 if successful, -1 (setting errno) otherwise.
+   If close fails with errno == EINTR, POSIX says the file descriptor
+   is in an unspecified state, so keep trying to close FD but do not
+   consider EBADF to be an error.  Do not process signals.  This all
+   differs somewhat from functions like ifdatasync and ifsync.  */
+static int
+iclose (int fd)
+{
+  if (close (fd) != 0)
+    do
+      if (errno != EINTR)
+        return -1;
+    while (close (fd) != 0 && errno != EBADF);
+
+  return 0;
+}
+
 static void
 cleanup (void)
 {
-  if (close (STDIN_FILENO) < 0)
+  if (iclose (STDIN_FILENO) != 0)
     die (EXIT_FAILURE, errno, _("closing input file %s"), quoteaf (input_file));
 
   /* Don't remove this call to close, even though close_stdout
      closes standard output.  This close is necessary when cleanup
-     is called as part of a signal handler.  */
-  if (close (STDOUT_FILENO) < 0)
+     is called as a consequence of signal handling.  */
+  if (iclose (STDOUT_FILENO) != 0)
     die (EXIT_FAILURE, errno,
          _("closing output file %s"), quoteaf (output_file));
 }
@@ -997,9 +1009,10 @@ process_signals (void)
 static void
 finish_up (void)
 {
+  /* Process signals first, so that cleanup is called at most once.  */
+  process_signals ();
   cleanup ();
   print_stats ();
-  process_signals ();
 }
 
 static void ATTRIBUTE_NORETURN
@@ -1197,7 +1210,7 @@ iwrite (int fd, char const *buf, size_t size)
       /* Since we have just turned off O_DIRECT for the final write,
          we try to preserve some of its semantics.  */
 
-      /* Call invalidate_cache() to setup the appropriate offsets
+      /* Call invalidate_cache to setup the appropriate offsets
          for subsequent calls.  */
       o_nocache_eof = true;
       invalidate_cache (STDOUT_FILENO, 0);
@@ -1206,7 +1219,7 @@ iwrite (int fd, char const *buf, size_t size)
          to disk as quickly as possible.  */
       conversions_mask |= C_FSYNC;
 
-      /* After the subsequent fsync() we'll call invalidate_cache()
+      /* After the subsequent fsync we'll call invalidate_cache
          to attempt to clear all data from the page cache.  */
     }
 
@@ -1276,7 +1289,24 @@ write_output (void)
   oc = 0;
 }
 
-/* Restart on EINTR from fd_reopen().  */
+/* Restart on EINTR from fdatasync.  */
+
+static int
+ifdatasync (int fd)
+{
+  int ret;
+
+  do
+    {
+      process_signals ();
+      ret = fdatasync (fd);
+    }
+  while (ret < 0 && errno == EINTR);
+
+  return ret;
+}
+
+/* Restart on EINTR from fd_reopen.  */
 
 static int
 ifd_reopen (int desired_fd, char const *file, int flag, mode_t mode)
@@ -1293,7 +1323,41 @@ ifd_reopen (int desired_fd, char const *file, int flag, mode_t mode)
   return ret;
 }
 
-/* Restart on EINTR from ftruncate().  */
+/* Restart on EINTR from fstat.  */
+
+static int
+ifstat (int fd, struct stat *st)
+{
+  int ret;
+
+  do
+    {
+      process_signals ();
+      ret = fstat (fd, st);
+    }
+  while (ret < 0 && errno == EINTR);
+
+  return ret;
+}
+
+/* Restart on EINTR from fsync.  */
+
+static int
+ifsync (int fd)
+{
+  int ret;
+
+  do
+    {
+      process_signals ();
+      ret = fsync (fd);
+    }
+  while (ret < 0 && errno == EINTR);
+
+  return ret;
+}
+
+/* Restart on EINTR from ftruncate.  */
 
 static int
 iftruncate (int fd, off_t length)
@@ -1785,7 +1849,7 @@ skip (int fdesc, char const *file, uintmax_t records, size_t blocksize,
       if (fdesc == STDIN_FILENO)
         {
            struct stat st;
-           if (fstat (STDIN_FILENO, &st) != 0)
+           if (ifstat (STDIN_FILENO, &st) != 0)
              die (EXIT_FAILURE, errno, _("cannot fstat %s"), quoteaf (file));
            if (usable_st_size (&st) && st.st_size < input_offset + offset)
              {
@@ -2041,7 +2105,7 @@ set_fd_flags (int fd, int add_flags, char const *name)
               /* NEW_FLAGS contains at least one file creation flag that
                  requires some checking of the open file descriptor.  */
               struct stat st;
-              if (fstat (fd, &st) != 0)
+              if (ifstat (fd, &st) != 0)
                 ok = false;
               else if ((new_flags & O_DIRECTORY) && ! S_ISDIR (st.st_mode))
                 {
@@ -2332,7 +2396,7 @@ dd_copy (void)
   if (final_op_was_seek)
     {
       struct stat stdout_stat;
-      if (fstat (STDOUT_FILENO, &stdout_stat) != 0)
+      if (ifstat (STDOUT_FILENO, &stdout_stat) != 0)
         {
           error (0, errno, _("cannot fstat %s"), quoteaf (output_file));
           return EXIT_FAILURE;
@@ -2354,7 +2418,7 @@ dd_copy (void)
         }
     }
 
-  if ((conversions_mask & C_FDATASYNC) && fdatasync (STDOUT_FILENO) != 0)
+  if ((conversions_mask & C_FDATASYNC) && ifdatasync (STDOUT_FILENO) != 0)
     {
       if (errno != ENOSYS && errno != EINVAL)
         {
@@ -2364,13 +2428,11 @@ dd_copy (void)
       conversions_mask |= C_FSYNC;
     }
 
-  if (conversions_mask & C_FSYNC)
-    while (fsync (STDOUT_FILENO) != 0)
-      if (errno != EINTR)
-        {
-          error (0, errno, _("fsync failed for %s"), quoteaf (output_file));
-          return EXIT_FAILURE;
-        }
+  if ((conversions_mask & C_FSYNC) && ifsync (STDOUT_FILENO) != 0)
+    {
+      error (0, errno, _("fsync failed for %s"), quoteaf (output_file));
+      return EXIT_FAILURE;
+    }
 
   return exit_status;
 }
@@ -2395,12 +2457,9 @@ main (int argc, char **argv)
 
   page_size = getpagesize ();
 
-  parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE, Version,
-                      usage, AUTHORS, (char const *) NULL);
+  parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE, Version,
+                                   true, usage, AUTHORS, (char const *) NULL);
   close_stdout_required = false;
-
-  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
-    usage (EXIT_FAILURE);
 
   /* Initialize translation table to identity translation. */
   for (i = 0; i < 256; i++)
@@ -2473,7 +2532,7 @@ main (int argc, char **argv)
                  fails on /dev/fd0.  */
               int ftruncate_errno = errno;
               struct stat stdout_stat;
-              if (fstat (STDOUT_FILENO, &stdout_stat) != 0)
+              if (ifstat (STDOUT_FILENO, &stdout_stat) != 0)
                 die (EXIT_FAILURE, errno, _("cannot fstat %s"),
                      quoteaf (output_file));
               if (S_ISREG (stdout_stat.st_mode)

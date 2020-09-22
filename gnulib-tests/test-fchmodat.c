@@ -1,5 +1,5 @@
 /* Test changing the protections of a file relative to an open directory.
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,9 +22,13 @@
 SIGNATURE_CHECK (fchmodat, int, (int, const char *, mode_t, int));
 
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "macros.h"
+
+#define BASE "test-fchmodat."
 
 int
 main (void)
@@ -40,6 +44,20 @@ main (void)
     errno = 0;
     ASSERT (fchmodat (99, "foo", 0600, 0) == -1);
     ASSERT (errno == EBADF);
+  }
+
+  /* Test that fchmodat works on non-symlinks, when given
+     the AT_SYMLINK_NOFOLLOW flag.  */
+  {
+    struct stat statbuf;
+    unlink (BASE "file");
+    ASSERT (close (creat (BASE "file", 0600)) == 0);
+    ASSERT (fchmodat (AT_FDCWD, BASE "file", 0400, AT_SYMLINK_NOFOLLOW) == 0);
+    ASSERT (stat (BASE "file", &statbuf) >= 0);
+    ASSERT ((statbuf.st_mode & 0700) == 0400);
+    /* Clean up.  */
+    ASSERT (chmod (BASE "file", 0600) == 0);
+    ASSERT (unlink (BASE "file") == 0);
   }
 
   return 0;

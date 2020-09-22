@@ -1,5 +1,5 @@
 /* Yielding the processor to other threads and processes.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,27 @@
 
 /* ========================================================================= */
 
+#if USE_ISOC_THREADS || USE_ISOC_AND_POSIX_THREADS
+
+/* Use the ISO C threads library.  */
+
+# include <threads.h>
+
+# ifdef __cplusplus
+extern "C" {
+# endif
+
+# define gl_thread_yield() \
+    thrd_yield ()
+
+# ifdef __cplusplus
+}
+# endif
+
+#endif
+
+/* ========================================================================= */
+
 #if USE_POSIX_THREADS
 
 /* Use the POSIX threads library.  */
@@ -37,48 +58,6 @@ extern "C" {
 
 # define gl_thread_yield() \
     sched_yield ()
-
-# ifdef __cplusplus
-}
-# endif
-
-#endif
-
-/* ========================================================================= */
-
-#if USE_PTH_THREADS
-
-/* Use the GNU Pth threads library.  */
-
-# include <pth.h>
-
-# ifdef __cplusplus
-extern "C" {
-# endif
-
-# define gl_thread_yield() \
-    pth_yield (NULL)
-
-# ifdef __cplusplus
-}
-# endif
-
-#endif
-
-/* ========================================================================= */
-
-#if USE_SOLARIS_THREADS
-
-/* Use the old Solaris threads library.  */
-
-# include <thread.h>
-
-# ifdef __cplusplus
-extern "C" {
-# endif
-
-# define gl_thread_yield() \
-    thr_yield ()
 
 # ifdef __cplusplus
 }
@@ -108,7 +87,7 @@ extern "C" {
 
 /* ========================================================================= */
 
-#if !(USE_POSIX_THREADS || USE_PTH_THREADS || USE_SOLARIS_THREADS || USE_WINDOWS_THREADS)
+#if !(USE_ISOC_THREADS || USE_POSIX_THREADS || USE_ISOC_AND_POSIX_THREADS || USE_WINDOWS_THREADS)
 
 /* Provide dummy implementation if threads are not supported.  */
 

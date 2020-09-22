@@ -1,3 +1,35 @@
+coreutils (8.32-4) unstable; urgency=low
+
+  * Fix FTBFS on ARM64. (Closes: #966449)
+    - d/p/restore-ls-behavior-8.31.patch: Upstream patch to restore
+      coreutils ls' 8.31 behavior on removed directories, which is
+      necessary to prevent using SYS_getdents that doesn't exist on
+      ARM64.
+
+ -- Michael Stone <mstone@debian.org>  Tue, 22 Sep 2020 08:17:17 -0400
+
+coreutils (8.32-3) unstable; urgency=low
+
+  * build with libgmp now that apt pulls it in anyway (Closes: #64527)
+
+ -- Michael Stone <mstone@debian.org>  Mon, 20 Jul 2020 14:09:06 -0400
+
+coreutils (8.32-2) unstable; urgency=low
+
+  * undo "remove LC_TIME symlinks" as this causes problems with date
+    display in some circumstances (Closes: #963513)
+
+ -- Michael Stone <mstone@debian.org>  Tue, 23 Jun 2020 08:24:55 -0400
+
+coreutils (8.32-1) unstable; urgency=low
+
+  * New upstream version (Closes: #959995)
+    - adds basenc command
+  * Update to dh 12
+  * Standards version 4.5.0 (no changes)
+
+ -- Michael Stone <mstone@debian.org>  Mon, 22 Jun 2020 14:39:28 -0400
+
 coreutils (8.30-3) unstable; urgency=medium
 
   * Fix renameat2 patch (Closes: #923420)

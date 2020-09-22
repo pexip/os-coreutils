@@ -1,5 +1,5 @@
-# gethrxtime.m4 serial 12
-dnl Copyright (C) 2005-2006, 2008-2018 Free Software Foundation, Inc.
+# gethrxtime.m4 serial 13
+dnl Copyright (C) 2005-2006, 2008-2020 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -62,6 +62,5 @@ AC_DEFUN([gl_ARITHMETIC_HRTIME_T],
 # Prerequisites of lib/xtime.h.
 AC_DEFUN([gl_XTIME],
 [
-  AC_REQUIRE([AC_TYPE_LONG_LONG_INT])
   :
 ])

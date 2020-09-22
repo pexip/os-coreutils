@@ -1,7 +1,7 @@
-# serial 9
+# serial 10
 # See if we need to provide linkat replacement.
 
-dnl Copyright (C) 2009-2018 Free Software Foundation, Inc.
+dnl Copyright (C) 2009-2020 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -102,8 +102,8 @@ AC_DEFUN([gl_FUNC_LINKAT],
             linux-* | linux) gl_cv_func_linkat_slash="guessing yes";;
                              # Guess yes on glibc systems.
             *-gnu* | gnu*)   gl_cv_func_linkat_slash="guessing yes";;
-                             # If we don't know, assume the worst.
-            *)               gl_cv_func_linkat_slash="guessing no";;
+                             # If we don't know, obey --enable-cross-guesses.
+            *)               gl_cv_func_linkat_slash="$gl_cross_guess_normal";;
           esac
          ])
        rm -rf conftest.a conftest.b conftest.c conftest.d conftest.e conftest.s])

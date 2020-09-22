@@ -1,6 +1,6 @@
 /* Set operations for device-inode pairs stored in a space-efficient manner.
 
-   Copyright 2009-2018 Free Software Foundation, Inc.
+   Copyright 2009-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -136,7 +136,8 @@ void
 di_set_free (struct di_set *dis)
 {
   hash_free (dis->dev_map);
-  free (dis->ino_map);
+  if (dis->ino_map)
+    ino_map_free (dis->ino_map);
   free (dis->probe);
   free (dis);
 }

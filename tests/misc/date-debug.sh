@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test 'date --debug' option.
 
-# Copyright (C) 2016-2018 Free Software Foundation, Inc.
+# Copyright (C) 2016-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ date: input timezone: TZ="America/Edmonton" in date string
 date: using specified time as starting value: '02:30:00'
 date: error: invalid date/time value:
 date:     user provided time: '(Y-M-D) 2006-04-02 02:30:00'
-date:        normalized time: '(Y-M-D) 2006-04-02 03:30:00'
+date:        normalized time: '(Y-M-D) 2006-04-02 XX:XX:XX'
 date:                                             --
 date:      possible reasons:
 date:        non-existing due to daylight-saving time;
@@ -81,7 +81,14 @@ date: invalid date 'TZ="America/Edmonton" 2006-04-02 02:30:00'
 EOF
 
 # date should return 1 (error) for invalid date
-returns_ 1 date --debug -d "$in2" >out2 2>&1 || fail=1
+returns_ 1 date --debug -d "$in2" >out2-t 2>&1 || fail=1
+
+# The output line of "normalized time" can differ between systems
+# (e.g. glibc vs musl) and should not be checked.
+# See: https://lists.gnu.org/archive/html/coreutils/2019-05/msg00039.html
+sed '/normalized time:/s/ [0-9][0-9]:[0-9][0-9]:[0-9][0-9]/ XX:XX:XX/' \
+    out2-t > out2 || framework_failure_
+
 compare exp2 out2 || fail=1
 
 ##

@@ -1,5 +1,5 @@
 /* Test of file timestamp modification functions.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ enum {
 /* Skip ctime tests on native Windows, since it is either a copy of
    mtime or birth time (depending on the file system), rather than a
    properly tracked change time.  See
-   <https://msdn.microsoft.com/en-us/library/14h5k7ff(VS.80).aspx>.  */
+   <https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions>.  */
 #  define check_ctime 0
 # else
 #  define check_ctime 1
