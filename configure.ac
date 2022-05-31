@@ -1,7 +1,7 @@
 # -*- autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,8 +35,7 @@ AC_CONFIG_SRCDIR([src/ls.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([lib/config.h:lib/config.hin])
 
-AM_INIT_AUTOMAKE([1.11.2 no-dist-gzip dist-xz color-tests parallel-tests
-                  subdir-objects])
+AM_INIT_AUTOMAKE([1.11.2 dist-xz color-tests parallel-tests subdir-objects])
 AM_SILENT_RULES([yes]) # make --enable-silent-rules the default.
 
 dnl POSIXCHECK is worthwhile for maintainers, but adds several seconds
@@ -60,6 +59,7 @@ AC_PROG_GCC_TRADITIONAL
 AC_PROG_RANLIB
 AC_PROG_LN_S
 gl_EARLY
+gl_SET_CRYPTO_CHECK_DEFAULT([auto-gpl-compat])
 gl_INIT
 coreutils_MACROS
 
@@ -128,14 +128,11 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wunreachable-code"       # Too many warnings for now
   nw="$nw -Wpadded"                 # Our structs are not padded
   nw="$nw -Wredundant-decls"        # openat.h declares e.g., mkdirat
-  nw="$nw -Wlogical-op"             # Too many warnings until GCC 4.8.0
   nw="$nw -Wformat-nonliteral"      # who.c and pinky.c strftime uses
-  nw="$nw -Wvla"                    # warnings in gettext.h
   nw="$nw -Wnested-externs"         # use of XARGMATCH/verify_function__
   nw="$nw -Wswitch-enum"            # Too many warnings for now
   nw="$nw -Wswitch-default"         # Too many warnings for now
   nw="$nw -Wstack-protector"        # not worth working around
-  nw="$nw -Wtype-limits"            # False alarms for portable code
   nw="$nw -Wformat-overflow=2"      # False alarms due to GCC bug 80776
   nw="$nw -Wformat-truncation=2"    # False alarm in ls.c, probably related
   # things I might fix soon:
@@ -144,6 +141,8 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wunsafe-loop-optimizations" # a few src/*.c
   nw="$nw -Winline"                 # system.h's readdir_ignoring_dot_and_dotdot
   nw="$nw -Wsuggest-attribute=format" # warns about copy.c and factor.c
+  nw="$nw -Wvector-operation-performance" # warns about randperm.c
+
 
   # Using -Wstrict-overflow is a pain, but the alternative is worse.
   # For an example, see the code that provoked this report:
@@ -156,14 +155,8 @@ if test "$gl_gcc_warnings" = yes; then
     gl_WARN_ADD([$w])
   done
   gl_WARN_ADD([-Wno-sign-compare])     # Too many warnings for now
-  gl_WARN_ADD([-Wno-type-limits])      # False alarms for portable code
   gl_WARN_ADD([-Wno-unused-parameter]) # Too many warnings for now
   gl_WARN_ADD([-Wno-format-nonliteral])
-
-  # Enable this warning only with gcc-4.8 and newer.  Before that
-  # bounds checking as done in truncate.c was incorrectly flagged.
-  # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43772
-  gl_GCC_VERSION_IFELSE([4], [8], [gl_WARN_ADD([-Wlogical-op])])
 
   # clang is unduly picky about some things.
   AC_CACHE_CHECK([whether the compiler is clang], [utils_cv_clang],
@@ -208,6 +201,11 @@ if test "$gl_gcc_warnings" = yes; then
   # FIXME: it may be easy to remove this, since it affects only one file:
   # the snprintf call at ftoastr.c:132.
   nw="$nw -Wdouble-promotion"
+
+  # FIXME: remove this line when gcc improves
+  # FP in careadlinkat.c w/gcc 10.0.1 20200205
+  gl_WARN_ADD([-Wno-return-local-addr])
+
   gl_MANYWARN_COMPLEMENT([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
   AC_SUBST([GNULIB_WARN_CFLAGS])
 
@@ -318,6 +316,9 @@ if test $ac_cv_func_getattrat = yes; then
   AC_SUBST([LIB_NVPAIR])
 fi
 
+# glibc >= 2.28 and linux kernel >= 4.11
+AC_CHECK_FUNCS([statx])
+
 # SCO-ODT-3.0 is reported to need -los to link programs using initgroups
 AC_CHECK_FUNCS([initgroups])
 if test $ac_cv_func_initgroups = no; then
@@ -350,6 +351,15 @@ case $utils_cv_func_setpriority,$ac_cv_func_nice in
 *yes*)
   gl_ADD_PROG([optional_bin_progs], [nice])
 esac
+
+if test "$cross_compiling" = yes || test -c /dev/stdin <.; then
+  AC_DEFINE([DEV_FD_MIGHT_BE_CHR], [1],
+    [Define to 1 if /dev/std{in,out,err} and /dev/fd/N, if they exist, might be
+     character-special devices whose minor device number is the file
+     descriptor number, such as on Solaris.  Leave undefined if they are
+     definitely the actual files.  This determination should be done after any
+     symbolic links are followed.])
+fi
 
 AC_DEFUN([coreutils_DUMMY_1],
 [
@@ -474,6 +484,8 @@ fi
 # Build stdbuf only if supported
 ac_save_CFLAGS=$CFLAGS
 ac_save_LDFLAGS=$LDFLAGS
+cu_save_c_werror_flag=$ac_c_werror_flag
+AC_LANG_WERROR
 # Detect warnings about ignored "constructor" attributes.
 gl_WARN_ADD([-Werror], [CFLAGS])
 gl_WARN_ADD([-errwarn], [CFLAGS])
@@ -502,18 +514,7 @@ if test "$stdbuf_supported" = "yes" && test -z "$EXEEXT"; then
 fi
 CFLAGS=$ac_save_CFLAGS
 LDFLAGS=$ac_save_LDFLAGS
-
-# Detect when using xlc to determine whether to use -qinclude=
-AC_CACHE_CHECK([whether the system supports xlc include], [utils_cv_xlc],
-  [AC_COMPILE_IFELSE(
-     [AC_LANG_PROGRAM([[
-          #ifndef __xlc__
-            #error "not xlc"
-          #endif
-        ]])],
-     [utils_cv_xlc=yes],
-     [utils_cv_xlc=no])])
-AM_CONDITIONAL([USE_XLC_INCLUDE], [test "$utils_cv_xlc" = yes])
+ac_c_werror_flag=$cu_save_c_werror_flag
 
 ############################################################################
 

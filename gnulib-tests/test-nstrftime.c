@@ -1,5 +1,5 @@
 /* Test that nstrftime works as required.
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ static struct posixtm_test const T[] =
   {
     { 1300000000, 0,            "%F", "2011-03-13" },
     { 0,          10,           "%T.%N", "00:00:00.000000010" },
+    { 56,         123456789,    "%T.%12N", "00:00:56.123456789000" },
     { 0,          0,            NULL, NULL }
   };
 

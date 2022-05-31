@@ -1,5 +1,5 @@
 /* Test userspec.c
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -170,10 +170,12 @@ main (void)
           fail = 1;
         }
 
-      if (!diag && !T[i].result)
+      if (!T[i].result)
         continue;
 
-      printf ("%s diagnostic mismatch (-: expected uid,gid; +:actual)\n"
+      /* Expected a non-NULL result diagnostic, yet got NULL.  */
+      diag = "NULL";
+      printf ("%s diagnostic mismatch (-: expected diagnostic; +:actual)\n"
               "-%s\n+%s\n", T[i].in, T[i].result, diag);
       fail = 1;
     }

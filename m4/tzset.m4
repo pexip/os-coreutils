@@ -1,6 +1,6 @@
-# serial 11
+# serial 13
 
-# Copyright (C) 2003, 2007, 2009-2018 Free Software Foundation, Inc.
+# Copyright (C) 2003, 2007, 2009-2020 Free Software Foundation, Inc.
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -70,10 +70,12 @@ main ()
        [case "$host_os" in
                          # Guess all is fine on glibc systems.
           *-gnu* | gnu*) gl_cv_func_tzset_clobber="guessing no" ;;
+                         # Guess all is fine on musl systems.
+          *-musl*)       gl_cv_func_tzset_clobber="guessing no" ;;
                          # Guess no on native Windows.
           mingw*)        gl_cv_func_tzset_clobber="guessing no" ;;
-                         # If we don't know, assume the worst.
-          *)             gl_cv_func_tzset_clobber="guessing yes" ;;
+                         # If we don't know, obey --enable-cross-guesses.
+          *)             gl_cv_func_tzset_clobber="$gl_cross_guess_inverted" ;;
         esac
        ])
     ])

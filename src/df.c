@@ -1,5 +1,5 @@
 /* df - summarize free disk space
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@
 #include <sys/types.h>
 #include <getopt.h>
 #include <assert.h>
+#include <c-ctype.h>
+#include <wchar.h>
+#include <wctype.h>
 
 #include "system.h"
 #include "canonicalize.h"
@@ -36,6 +39,7 @@
 #include "quote.h"
 #include "find-mount-point.h"
 #include "hash.h"
+#include "xstrtol-error.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "df"
@@ -275,18 +279,65 @@ static struct option const long_options[] =
    Since only control characters are currently considered,
    this should work in all encodings.  */
 
-static char*
-hide_problematic_chars (char *cell)
+static void
+replace_control_chars (char *cell)
 {
   char *p = cell;
   while (*p)
     {
-      if (iscntrl (to_uchar (*p)))
+      if (c_iscntrl (to_uchar (*p)))
         *p = '?';
       p++;
     }
-  return cell;
 }
+
+/* Replace problematic chars with '?'.  */
+
+static void
+replace_invalid_chars (char *cell)
+{
+  char *srcend = cell + strlen (cell);
+  char *dst = cell;
+  mbstate_t mbstate = { 0, };
+  size_t n;
+
+  for (char *src = cell; src != srcend; src += n)
+    {
+      wchar_t wc;
+      size_t srcbytes = srcend - src;
+      n = mbrtowc (&wc, src, srcbytes, &mbstate);
+      bool ok = n <= srcbytes;
+
+      if (ok)
+        ok = !iswcntrl (wc);
+      else
+        n = 1;
+
+      if (ok)
+        {
+          memmove (dst, src, n);
+          dst += n;
+        }
+      else
+        {
+          *dst++ = '?';
+          memset (&mbstate, 0, sizeof mbstate);
+        }
+    }
+
+  *dst = '\0';
+}
+
+static void
+replace_problematic_chars (char *cell)
+{
+  static int tty_out = -1;
+  if (tty_out < 0)
+    tty_out = isatty (STDOUT_FILENO);
+
+  (tty_out ? replace_invalid_chars : replace_control_chars) (cell) ;
+}
+
 
 /* Dynamically allocate a row of pointers in TABLE, which
    can then be accessed with standard 2D array notation.  */
@@ -569,11 +620,12 @@ get_header (void)
       if (!cell)
         xalloc_die ();
 
-      hide_problematic_chars (cell);
+      replace_problematic_chars (cell);
 
       table[nrows - 1][col] = cell;
 
-      columns[col]->width = MAX (columns[col]->width, mbswidth (cell, 0));
+      size_t cell_width = mbswidth (cell, 0);
+      columns[col]->width = MAX (columns[col]->width, cell_width);
     }
 }
 
@@ -1182,8 +1234,9 @@ get_dev (char const *disk, char const *mount_point, char const* file,
       if (!cell)
         assert (!"empty cell");
 
-      hide_problematic_chars (cell);
-      columns[col]->width = MAX (columns[col]->width, mbswidth (cell, 0));
+      replace_problematic_chars (cell);
+      size_t cell_width = mbswidth (cell, 0);
+      columns[col]->width = MAX (columns[col]->width, cell_width);
       table[nrows - 1][col] = cell;
     }
   free (dev_name);

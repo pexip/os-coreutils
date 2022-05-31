@@ -1,6 +1,6 @@
 #! /bin/sh
 # Test suite for exclude.
-# Copyright (C) 2009-2018 Free Software Foundation, Inc.
+# Copyright (C) 2009-2020 Free Software Foundation, Inc.
 # This file is part of the GNUlib Library.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ baz: 0
 bar/qux: 0
 EOT
 
-test-exclude in -- foo 'foo*' bar foobar baz bar/qux > out || exit $?
+${CHECKER} test-exclude in -- foo 'foo*' bar foobar baz bar/qux > out || exit $?
 
 # Find out how to remove carriage returns from output. Solaris /usr/ucb/tr
 # does not understand '\r'.

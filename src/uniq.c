@@ -1,5 +1,5 @@
 /* uniq -- remove duplicate lines from a sorted file
-   Copyright (C) 1986-2018 Free Software Foundation, Inc.
+   Copyright (C) 1986-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,10 +27,8 @@
 #include "die.h"
 #include "error.h"
 #include "fadvise.h"
-#include "hard-locale.h"
 #include "posixver.h"
 #include "stdio--.h"
-#include "xmemcoll.h"
 #include "xstrtol.h"
 #include "memcasecmp.h"
 #include "quote.h"
@@ -51,9 +49,6 @@
       (B) = _tmp;				\
     }						\
   while (0)
-
-/* True if the LC_COLLATE locale is hard.  */
-static bool hard_LC_COLLATE;
 
 /* Number of fields to skip on each line when doing comparisons. */
 static size_t skip_fields;
@@ -220,7 +215,6 @@ characters.  Fields are skipped before chars.\n\
 \n\
 Note: 'uniq' does not detect repeated lines unless they are adjacent.\n\
 You may want to sort the input first, or use 'sort -u' without 'uniq'.\n\
-Also, comparisons honor the rules specified by 'LC_COLLATE'.\n\
 "), stdout);
       emit_ancillary_info (PROGRAM_NAME);
     }
@@ -240,10 +234,9 @@ strict_posix2 (void)
 static size_t
 size_opt (char const *opt, char const *msgid)
 {
-  unsigned long int size;
-  verify (SIZE_MAX <= ULONG_MAX);
+  uintmax_t size;
 
-  switch (xstrtoul (opt, NULL, 10, &size, ""))
+  switch (xstrtoumax (opt, NULL, 10, &size, ""))
     {
     case LONGINT_OK:
     case LONGINT_OVERFLOW:
@@ -294,12 +287,7 @@ different (char *old, char *new, size_t oldlen, size_t newlen)
     newlen = check_chars;
 
   if (ignore_case)
-    {
-      /* FIXME: This should invoke strcoll somehow.  */
-      return oldlen != newlen || memcasecmp (old, new, oldlen);
-    }
-  else if (hard_LC_COLLATE)
-    return xmemcoll (old, oldlen, new, newlen) != 0;
+    return oldlen != newlen || memcasecmp (old, new, oldlen);
   else
     return oldlen != newlen || memcmp (old, new, oldlen);
 }
@@ -502,7 +490,6 @@ main (int argc, char **argv)
   setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
-  hard_LC_COLLATE = hard_locale (LC_COLLATE);
 
   atexit (close_stdout);
 
@@ -539,10 +526,10 @@ main (int argc, char **argv)
         {
         case 1:
           {
-            unsigned long int size;
+            uintmax_t size;
             if (optarg[0] == '+'
                 && ! strict_posix2 ()
-                && xstrtoul (optarg, NULL, 10, &size, "") == LONGINT_OK
+                && xstrtoumax (optarg, NULL, 10, &size, "") == LONGINT_OK
                 && size <= SIZE_MAX)
               skip_chars = size;
             else if (nfiles == 2)

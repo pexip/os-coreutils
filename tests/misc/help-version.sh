@@ -2,7 +2,7 @@
 # Make sure all of these programs work properly
 # when invoked with --help or --version.
 
-# Copyright (C) 2000-2018 Free Software Foundation, Inc.
+# Copyright (C) 2000-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -184,6 +184,7 @@ defid_setup () { args=t; }
 basename_setup () { args=$tmp_in; }
 dirname_setup () { args=$tmp_in; }
 expr_setup () { args=foo; }
+basenc_setup () { args=--version; }
 
 # Punt, in case GNU 'id' hasn't been installed yet.
 groups_setup () { args=--version; }

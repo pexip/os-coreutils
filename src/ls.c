@@ -1,5 +1,5 @@
 /* 'dir', 'vdir' and 'ls' directory listing programs for GNU.
-   Copyright (C) 1985-2018 Free Software Foundation, Inc.
+   Copyright (C) 1985-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,6 +47,10 @@
 #ifdef WINSIZE_IN_PTEM
 # include <sys/stream.h>
 # include <sys/ptem.h>
+#endif
+
+#ifdef __linux__
+# include <sys/syscall.h>
 #endif
 
 #include <stdio.h>
@@ -108,12 +112,14 @@
 #include "strftime.h"
 #include "xdectoint.h"
 #include "xstrtol.h"
+#include "xstrtol-error.h"
 #include "areadlink.h"
 #include "mbsalign.h"
 #include "dircolors.h"
 #include "xgethostname.h"
 #include "c-ctype.h"
 #include "canonicalize.h"
+#include "statx.h"
 
 /* Include <sys/capability.h> last to avoid a clash of <sys/types.h>
    include guards with some premature versions of libcap.
@@ -458,6 +464,7 @@ enum time_type
     time_mtime,			/* default */
     time_ctime,			/* -c */
     time_atime,			/* -u */
+    time_btime,                 /* birth time */
     time_numtypes		/* the number of elements of this enum */
   };
 
@@ -640,9 +647,9 @@ static struct color_ext_type *color_ext_list = NULL;
 static char *color_buf;
 
 /* True means to check for orphaned symbolic link, for displaying
-   colors.  */
+   colors, or to group symlink to directories with other dirs.  */
 
-static bool check_symlink_color;
+static bool check_symlink_mode;
 
 /* True means mention the inode number of each file.  -i  */
 
@@ -910,11 +917,16 @@ ARGMATCH_VERIFY (sort_args, sort_types);
 
 static char const *const time_args[] =
 {
-  "atime", "access", "use", "ctime", "status", NULL
+  "atime", "access", "use",
+  "ctime", "status",
+  "birth", "creation",
+  NULL
 };
 static enum time_type const time_types[] =
 {
-  time_atime, time_atime, time_atime, time_ctime, time_ctime
+  time_atime, time_atime, time_atime,
+  time_ctime, time_ctime,
+  time_btime, time_btime,
 };
 ARGMATCH_VERIFY (time_args, time_types);
 
@@ -1063,6 +1075,169 @@ dired_dump_obstack (const char *prefix, struct obstack *os)
     }
 }
 
+/* Return the platform birthtime member of the stat structure,
+   or fallback to the mtime member, which we have populated
+   from the statx structure or reset to an invalid timestamp
+   where birth time is not supported.  */
+static struct timespec
+get_stat_btime (struct stat const *st)
+{
+  struct timespec btimespec;
+
+#if HAVE_STATX && defined STATX_INO
+  btimespec = get_stat_mtime (st);
+#else
+  btimespec = get_stat_birthtime (st);
+#endif
+
+  return btimespec;
+}
+
+#if HAVE_STATX && defined STATX_INO
+static unsigned int _GL_ATTRIBUTE_PURE
+time_type_to_statx (void)
+{
+  switch (time_type)
+    {
+    case time_ctime:
+      return STATX_CTIME;
+    case time_mtime:
+      return STATX_MTIME;
+    case time_atime:
+      return STATX_ATIME;
+    case time_btime:
+      return STATX_BTIME;
+    default:
+      abort ();
+    }
+    return 0;
+}
+
+static unsigned int _GL_ATTRIBUTE_PURE
+calc_req_mask (void)
+{
+  unsigned int mask = STATX_MODE;
+
+  if (print_inode)
+    mask |= STATX_INO;
+
+  if (print_block_size)
+    mask |= STATX_BLOCKS;
+
+  if (format == long_format) {
+    mask |= STATX_NLINK | STATX_SIZE | time_type_to_statx ();
+    if (print_owner || print_author)
+      mask |= STATX_UID;
+    if (print_group)
+      mask |= STATX_GID;
+  }
+
+  switch (sort_type)
+    {
+    case sort_none:
+    case sort_name:
+    case sort_version:
+    case sort_extension:
+      break;
+    case sort_time:
+      mask |= time_type_to_statx ();
+      break;
+    case sort_size:
+      mask |= STATX_SIZE;
+      break;
+    default:
+      abort ();
+    }
+
+  return mask;
+}
+
+static int
+do_statx (int fd, const char *name, struct stat *st, int flags,
+          unsigned int mask)
+{
+  struct statx stx;
+  bool want_btime = mask & STATX_BTIME;
+  int ret = statx (fd, name, flags, mask, &stx);
+  if (ret >= 0)
+    {
+      statx_to_stat (&stx, st);
+      /* Since we only need one timestamp type,
+         store birth time in st_mtim.  */
+      if (want_btime)
+        {
+          if (stx.stx_mask & STATX_BTIME)
+            st->st_mtim = statx_timestamp_to_timespec (stx.stx_btime);
+          else
+            st->st_mtim.tv_sec = st->st_mtim.tv_nsec = -1;
+        }
+    }
+
+  return ret;
+}
+
+static inline int
+do_stat (const char *name, struct stat *st)
+{
+  return do_statx (AT_FDCWD, name, st, 0, calc_req_mask ());
+}
+
+static inline int
+do_lstat (const char *name, struct stat *st)
+{
+  return do_statx (AT_FDCWD, name, st, AT_SYMLINK_NOFOLLOW, calc_req_mask ());
+}
+
+static inline int
+stat_for_mode (const char *name, struct stat *st)
+{
+  return do_statx (AT_FDCWD, name, st, 0, STATX_MODE);
+}
+
+/* dev+ino should be static, so no need to sync with backing store */
+static inline int
+stat_for_ino (const char *name, struct stat *st)
+{
+  return do_statx (AT_FDCWD, name, st, 0, STATX_INO);
+}
+
+static inline int
+fstat_for_ino (int fd, struct stat *st)
+{
+  return do_statx (fd, "", st, AT_EMPTY_PATH, STATX_INO);
+}
+#else
+static inline int
+do_stat (const char *name, struct stat *st)
+{
+  return stat (name, st);
+}
+
+static inline int
+do_lstat (const char *name, struct stat *st)
+{
+  return lstat (name, st);
+}
+
+static inline int
+stat_for_mode (const char *name, struct stat *st)
+{
+  return stat (name, st);
+}
+
+static inline int
+stat_for_ino (const char *name, struct stat *st)
+{
+  return stat (name, st);
+}
+
+static inline int
+fstat_for_ino (int fd, struct stat *st)
+{
+  return fstat (fd, st);
+}
+#endif
+
 /* Return the address of the first plain %b spec in FMT, or NULL if
    there is no such spec.  %5b etc. do not match, so that user
    widths/flags are honored.  */
@@ -1131,8 +1306,10 @@ abmon_init (char abmon[12][ABFORMAT_SIZE])
           char const *abbr = nl_langinfo (ABMON_1 + i);
           if (strchr (abbr, '%'))
             return false;
+          mbs_align_t alignment = isdigit (to_uchar (*abbr))
+                                  ? MBS_ALIGN_RIGHT : MBS_ALIGN_LEFT;
           size_t req = mbsalign (abbr, abmon[i], ABFORMAT_SIZE,
-                                 &width, MBS_ALIGN_LEFT, 0);
+                                 &width, alignment, 0);
           if (! (req < ABFORMAT_SIZE))
             return false;
           required_mon_width = MAX (required_mon_width, width);
@@ -1477,13 +1654,15 @@ main (int argc, char **argv)
 
   /* Test print_with_color again, because the call to parse_ls_color
      may have just reset it -- e.g., if LS_COLORS is invalid.  */
-  if (print_with_color)
+  if (directories_first)
+    check_symlink_mode = true;
+  else if (print_with_color)
     {
       /* Avoid following symbolic links when possible.  */
       if (is_colored (C_ORPHAN)
           || (is_colored (C_EXEC) && color_symlink_as_referent)
           || (is_colored (C_MISSING) && format == long_format))
-        check_symlink_color = true;
+        check_symlink_mode = true;
     }
 
   if (dereference == DEREF_UNDEFINED)
@@ -1767,18 +1946,15 @@ decode_switches (int argc, char **argv)
     tabsize = 8;
     if (p)
       {
-        unsigned long int tmp_ulong;
-        if (xstrtoul (p, NULL, 0, &tmp_ulong, NULL) == LONGINT_OK
-            && tmp_ulong <= SIZE_MAX)
-          {
-            tabsize = tmp_ulong;
-          }
+        uintmax_t tmp;
+        if (xstrtoumax (p, NULL, 0, &tmp, "") == LONGINT_OK
+            && tmp <= SIZE_MAX)
+          tabsize = tmp;
         else
-          {
-            error (0, 0,
-             _("ignoring invalid tab size in environment variable TABSIZE: %s"),
-                   quote (p));
-          }
+          error (0, 0,
+                 _("ignoring invalid tab size in environment variable TABSIZE:"
+                   " %s"),
+                 quote (p));
       }
   }
 
@@ -2165,7 +2341,8 @@ decode_switches (int argc, char **argv)
      -lu means show atime and sort by name, -lut means show atime and sort
      by atime.  */
 
-  if ((time_type == time_ctime || time_type == time_atime)
+  if ((time_type == time_ctime || time_type == time_atime
+       || time_type == time_btime)
       && !sort_type_specified && format != long_format)
     {
       sort_type = sort_time;
@@ -2719,6 +2896,7 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
   struct dirent *next;
   uintmax_t total_blocks = 0;
   static bool first = true;
+  bool found_any_entries = false;
 
   errno = 0;
   dirp = opendir (name);
@@ -2733,10 +2911,10 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
       struct stat dir_stat;
       int fd = dirfd (dirp);
 
-      /* If dirfd failed, endure the overhead of using stat.  */
+      /* If dirfd failed, endure the overhead of stat'ing by path  */
       if ((0 <= fd
-           ? fstat (fd, &dir_stat)
-           : stat (name, &dir_stat)) < 0)
+           ? fstat_for_ino (fd, &dir_stat)
+           : stat_for_ino (name, &dir_stat)) < 0)
         {
           file_failure (command_line_arg,
                         _("cannot determine device and inode of %s"), name);
@@ -2794,6 +2972,7 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
       next = readdir (dirp);
       if (next)
         {
+          found_any_entries = true;
           if (! file_ignored (next->d_name))
             {
               enum filetype type = unknown;
@@ -2839,6 +3018,22 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
           if (errno != EOVERFLOW)
             break;
         }
+#ifdef __linux__
+      else if (! found_any_entries)
+        {
+          /* If readdir finds no directory entries at all, not even "." or
+             "..", then double check that the directory exists.  */
+          if (syscall (SYS_getdents, dirfd (dirp), NULL, 0) == -1
+              && errno != EINVAL)
+            {
+              /* We exclude EINVAL as that pertains to buffer handling,
+                 and we've passed NULL as the buffer for simplicity.
+                 ENOENT is returned if appropriate before buffer handling.  */
+              file_failure (command_line_arg, _("reading directory %s"), name);
+            }
+          break;
+        }
+#endif
       else
         break;
 
@@ -3149,7 +3344,7 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
       || ((print_inode || format_needs_type)
           && (type == symbolic_link || type == unknown)
           && (dereference == DEREF_ALWAYS
-              || color_symlink_as_referent || check_symlink_color))
+              || color_symlink_as_referent || check_symlink_mode))
       /* Command line dereferences are already taken care of by the above
          assertion that the inode number is not yet known.  */
       || (print_inode && inode == NOT_AN_INODE_NUMBER)
@@ -3198,7 +3393,7 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
       switch (dereference)
         {
         case DEREF_ALWAYS:
-          err = stat (full_name, &f->stat);
+          err = do_stat (full_name, &f->stat);
           do_deref = true;
           break;
 
@@ -3207,7 +3402,7 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
           if (command_line_arg)
             {
               bool need_lstat;
-              err = stat (full_name, &f->stat);
+              err = do_stat (full_name, &f->stat);
               do_deref = true;
 
               if (dereference == DEREF_COMMAND_LINE_ARGUMENTS)
@@ -3227,7 +3422,7 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
           FALLTHROUGH;
 
         default: /* DEREF_NEVER */
-          err = lstat (full_name, &f->stat);
+          err = do_lstat (full_name, &f->stat);
           do_deref = false;
           break;
         }
@@ -3300,7 +3495,7 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
         }
 
       if (S_ISLNK (f->stat.st_mode)
-          && (format == long_format || check_symlink_color))
+          && (format == long_format || check_symlink_mode))
         {
           struct stat linkstats;
 
@@ -3315,21 +3510,11 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
           /* Avoid following symbolic links when possible, ie, when
              they won't be traced and when no indicator is needed.  */
           if (linkname
-              && (file_type <= indicator_style || check_symlink_color)
-              && stat (linkname, &linkstats) == 0)
+              && (file_type <= indicator_style || check_symlink_mode)
+              && stat_for_mode (linkname, &linkstats) == 0)
             {
               f->linkok = true;
-
-              /* Symbolic links to directories that are mentioned on the
-                 command line are automatically traced if not being
-                 listed as files.  */
-              if (!command_line_arg || format == long_format
-                  || !S_ISDIR (linkstats.st_mode))
-                {
-                  /* Get the linked-to file's mode for the filetype indicator
-                     in long listings.  */
-                  f->linkmode = linkstats.st_mode;
-                }
+              f->linkmode = linkstats.st_mode;
             }
           free (linkname);
         }
@@ -3441,6 +3626,14 @@ static bool
 is_directory (const struct fileinfo *f)
 {
   return f->filetype == directory || f->filetype == arg_directory;
+}
+
+/* Return true if F refers to a (symlinked) directory.  */
+static bool
+is_linked_directory (const struct fileinfo *f)
+{
+  return f->filetype == directory || f->filetype == arg_directory
+         || S_ISDIR (f->linkmode);
 }
 
 /* Put the name of the file that FILENAME is a symbolic link to
@@ -3588,8 +3781,8 @@ typedef int (*qsortFunc)(V a, V b);
 #define DIRFIRST_CHECK(a, b)						\
   do									\
     {									\
-      bool a_is_dir = is_directory ((struct fileinfo const *) a);	\
-      bool b_is_dir = is_directory ((struct fileinfo const *) b);	\
+      bool a_is_dir = is_linked_directory ((struct fileinfo const *) a);\
+      bool b_is_dir = is_linked_directory ((struct fileinfo const *) b);\
       if (a_is_dir && !b_is_dir)					\
         return -1;         /* a goes before b */			\
       if (!a_is_dir && b_is_dir)					\
@@ -3655,6 +3848,15 @@ cmp_atime (struct fileinfo const *a, struct fileinfo const *b,
 }
 
 static inline int
+cmp_btime (struct fileinfo const *a, struct fileinfo const *b,
+           int (*cmp) (char const *, char const *))
+{
+  int diff = timespec_cmp (get_stat_btime (&b->stat),
+                           get_stat_btime (&a->stat));
+  return diff ? diff : cmp (a->name, b->name);
+}
+
+static inline int
 cmp_size (struct fileinfo const *a, struct fileinfo const *b,
           int (*cmp) (char const *, char const *))
 {
@@ -3685,6 +3887,7 @@ cmp_extension (struct fileinfo const *a, struct fileinfo const *b,
 DEFINE_SORT_FUNCTIONS (ctime, cmp_ctime)
 DEFINE_SORT_FUNCTIONS (mtime, cmp_mtime)
 DEFINE_SORT_FUNCTIONS (atime, cmp_atime)
+DEFINE_SORT_FUNCTIONS (btime, cmp_btime)
 DEFINE_SORT_FUNCTIONS (size, cmp_size)
 DEFINE_SORT_FUNCTIONS (name, cmp_name)
 DEFINE_SORT_FUNCTIONS (extension, cmp_extension)
@@ -3761,7 +3964,8 @@ static qsortFunc const sort_functions[][2][2][2] =
     /* last are time sort functions */
     LIST_SORTFUNCTION_VARIANTS (mtime),
     LIST_SORTFUNCTION_VARIANTS (ctime),
-    LIST_SORTFUNCTION_VARIANTS (atime)
+    LIST_SORTFUNCTION_VARIANTS (atime),
+    LIST_SORTFUNCTION_VARIANTS (btime)
   };
 
 /* The number of sort keys is calculated as the sum of
@@ -4031,6 +4235,7 @@ print_long_format (const struct fileinfo *f)
   char *p;
   struct timespec when_timespec;
   struct tm when_local;
+  bool btime_ok = true;
 
   /* Compute the mode string, except remove the trailing space if no
      file in this directory has an ACL or security context.  */
@@ -4059,6 +4264,11 @@ print_long_format (const struct fileinfo *f)
       break;
     case time_atime:
       when_timespec = get_stat_atime (&f->stat);
+      break;
+    case time_btime:
+      when_timespec = get_stat_btime (&f->stat);
+      if (when_timespec.tv_sec == -1 && when_timespec.tv_nsec == -1)
+        btime_ok = false;
       break;
     default:
       abort ();
@@ -4160,7 +4370,8 @@ print_long_format (const struct fileinfo *f)
   s = 0;
   *p = '\1';
 
-  if (f->stat_ok && localtime_rz (localtz, &when_timespec.tv_sec, &when_local))
+  if (f->stat_ok && btime_ok
+      && localtime_rz (localtz, &when_timespec.tv_sec, &when_local))
     {
       struct timespec six_months_ago;
       bool recent;
@@ -4201,7 +4412,7 @@ print_long_format (const struct fileinfo *f)
          print it as a huge integer number of seconds.  */
       char hbuf[INT_BUFSIZE_BOUND (intmax_t)];
       sprintf (p, "%*s ", long_time_expected_width (),
-               (! f->stat_ok
+               (! f->stat_ok || ! btime_ok
                 ? "?"
                 : timetostr (when_timespec.tv_sec, hbuf)));
       /* FIXME: (maybe) We discarded when_timespec.tv_nsec. */
@@ -5249,17 +5460,18 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
       --sort=WORD            sort by WORD instead of name: none (-U), size (-S)\
 ,\n\
                                time (-t), version (-v), extension (-X)\n\
-      --time=WORD            with -l, show time as WORD instead of default\n\
-                               modification time: atime or access or use (-u);\
-\n\
-                               ctime or status (-c); also use specified time\n\
-                               as sort key if --sort=time (newest first)\n\
+      --time=WORD            change the default of using modification times;\n\
+                               access time (-u): atime, access, use;\n\
+                               change time (-c): ctime, status;\n\
+                               birth time: birth, creation;\n\
+                             with -l, WORD determines which time to show;\n\
+                             with --sort=time, sort by WORD (newest first)\n\
 "), stdout);
       fputs (_("\
       --time-style=TIME_STYLE  time/date format with -l; see TIME_STYLE below\n\
 "), stdout);
       fputs (_("\
-  -t                         sort by modification time, newest first\n\
+  -t                         sort by time, newest first; see --time\n\
   -T, --tabsize=COLS         assume tab stops at each COLS instead of 8\n\
 "), stdout);
       fputs (_("\

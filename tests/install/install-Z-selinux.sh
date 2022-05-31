@@ -2,7 +2,7 @@
 # test 'install -Z -D' and 'install -Z -d'
 # based on tests/mkdir/restorecon.sh
 
-# Copyright (C) 2013-2018 Free Software Foundation, Inc.
+# Copyright (C) 2013-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ require_selinux_
 mkdir subdir || framework_failure_
 ctx='root:object_r:tmp_t'
 mls_enabled_ && ctx="$ctx:s0"
-chcon "$ctx" subdir || skip "Failed to set context: $ctx"
+chcon "$ctx" subdir || skip_ "Failed to set context: $ctx"
 cd subdir
 
 # Since in a tmp_t dir, dirs can be created as user_tmp_t ...

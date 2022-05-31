@@ -1,5 +1,5 @@
 /* timeout -- run a command with bounded time
-   Copyright (C) 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2008-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@
 #include <sys/wait.h>
 
 #include "system.h"
-#include "c-strtod.h"
+#include "cl-strtod.h"
 #include "xstrtod.h"
 #include "sig2str.h"
 #include "operand2sig.h"
@@ -316,12 +316,12 @@ apply_time_suffix (double *x, char suffix_char)
 }
 
 static double
-parse_duration (const char* str)
+parse_duration (const char *str)
 {
   double duration;
   const char *ep;
 
-  if (! (xstrtod (str, &ep, &duration, c_strtod) || errno == ERANGE)
+  if (! (xstrtod (str, &ep, &duration, cl_strtod) || errno == ERANGE)
       /* Nonnegative interval.  */
       || ! (0 <= duration)
       /* No extra chars after the number and an optional s,m,h,d char.  */

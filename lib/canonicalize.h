@@ -1,5 +1,5 @@
 /* Return the canonical absolute name of a given file.
-   Copyright (C) 1996-2007, 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2007, 2009-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@
 #include <stdlib.h> /* for canonicalize_file_name */
 
 #define CAN_MODE_MASK (CAN_EXISTING | CAN_ALL_BUT_LAST | CAN_MISSING)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum canonicalize_mode_t
   {
@@ -44,5 +48,9 @@ typedef enum canonicalize_mode_t canonicalize_mode_t;
    Whether components must exist or not depends on canonicalize mode.
    The result is malloc'd.  */
 char *canonicalize_filename_mode (const char *, canonicalize_mode_t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !CANONICALIZE_H_ */

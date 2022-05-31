@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: coreutils 8.21\n"
 "Report-Msgid-Bugs-To: bug-coreutils@gnu.org\n"
-"POT-Creation-Date: 2018-07-01 17:59-0700\n"
+"POT-Creation-Date: 2020-03-05 13:28+0000\n"
 "PO-Revision-Date: 2013-05-16 08:45+0700\n"
 "Last-Translator: Arif E. Nugroho <arif_endro@yahoo.com>\n"
 "Language-Team: Indonesian <translation-team-id@lists.sourceforge.net>\n"
@@ -18,17 +18,17 @@ msgstr ""
 "X-Bugs: Report translation errors to the Language-Team address.\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: lib/argmatch.c:134
+#: lib/argmatch.c:132
 #, c-format
 msgid "invalid argument %s for %s"
 msgstr "argumen %s tidak valid untuk %s"
 
-#: lib/argmatch.c:135
+#: lib/argmatch.c:133
 #, c-format
 msgid "ambiguous argument %s for %s"
 msgstr "argumen %s ambigu untuk %s"
 
-#: lib/argmatch.c:154
+#: lib/argmatch.c:152 lib/argmatch.h:223
 msgid "Valid arguments are:"
 msgstr "Argumen yang valid adalah:"
 
@@ -36,18 +36,19 @@ msgstr "Argumen yang valid adalah:"
 msgid "error closing file"
 msgstr "error menutup berkas"
 
-#: lib/closeout.c:122 src/base64.c:139 src/base64.c:151 src/base64.c:157
-#: src/base64.c:198 src/base64.c:255 src/cat.c:187 src/cat.c:203 src/cat.c:287
-#: src/cksum.c:251 src/expand.c:150 src/expand.c:175 src/factor.c:2387
-#: src/mktemp.c:339 src/od.c:968 src/paste.c:163 src/seq.c:287 src/shuf.c:590
-#: src/split.c:935 src/split.c:1189 src/split.c:1194 src/tail.c:1267
-#: src/tail.c:1421 src/tail.c:2483 src/tr.c:1587 src/tr.c:1813 src/tr.c:1905
-#: src/unexpand.c:234 src/unexpand.c:250
+#: lib/closeout.c:122 src/basenc.c:945 src/basenc.c:957 src/basenc.c:963
+#: src/basenc.c:1006 src/basenc.c:1071 src/cat.c:187 src/cat.c:203
+#: src/cat.c:287 src/cksum.c:245 src/expand.c:150 src/expand.c:175
+#: src/factor.c:2387 src/mktemp.c:339 src/od.c:970 src/paste.c:163
+#: src/seq.c:295 src/shuf.c:595 src/split.c:936 src/split.c:1190
+#: src/split.c:1195 src/tail.c:1291 src/tail.c:1445 src/tail.c:2507
+#: src/tr.c:1587 src/tr.c:1813 src/tr.c:1905 src/unexpand.c:234
+#: src/unexpand.c:250
 #, c-format
 msgid "write error"
 msgstr "error menulis"
 
-#: lib/copy-acl.c:54 src/copy.c:1393 src/copy.c:2908
+#: lib/copy-acl.c:54 src/copy.c:1427 src/copy.c:2945
 #, c-format
 msgid "preserving permissions for %s"
 msgstr "menyimpan permission untuk %s"
@@ -268,12 +269,19 @@ msgstr "%s: pilihan tidak valid -- '%c'\n"
 msgid "%s: option requires an argument -- '%c'\n"
 msgstr "%s: pilihan membutuhkan sebuah argumen -- '%c'\n"
 
-#: lib/mkdir-p.c:179 src/install.c:512
+#: lib/mkdir-p.c:162 src/copy.c:1927 src/copy.c:1999 src/copy.c:2571
+#: src/copy.c:2932 src/find-mount-point.c:84 src/install.c:702
+#: src/realpath.c:146 src/stat.c:1440 src/truncate.c:327
+#, c-format
+msgid "cannot stat %s"
+msgstr "tidak dapat memperoleh statistik %s"
+
+#: lib/mkdir-p.c:190 src/install.c:512
 #, c-format
 msgid "cannot change permissions of %s"
 msgstr "tidak dapat merubah ijin dari %s"
 
-#: lib/mkdir-p.c:189 src/copy.c:2523 src/install.c:740 src/install.c:753
+#: lib/mkdir-p.c:200 src/copy.c:2560 src/install.c:740 src/install.c:753
 #, c-format
 msgid "cannot create directory %s"
 msgstr "tidak dapat membuat direktori %s"
@@ -328,8 +336,8 @@ msgstr "'"
 msgid "%s: end of file"
 msgstr "%s: akhir dari berkas"
 
-#: lib/randread.c:128 src/du.c:1073 src/md5sum.c:803 src/od.c:952 src/tac.c:251
-#: src/tac.c:357 src/tac.c:515 src/tac.c:596 src/wc.c:803
+#: lib/randread.c:128 src/du.c:1074 src/md5sum.c:803 src/od.c:954 src/tac.c:251
+#: src/tac.c:357 src/tac.c:515 src/tac.c:596 src/wc.c:824
 #, c-format
 msgid "%s: read error"
 msgstr "%s: error membaca"
@@ -403,7 +411,7 @@ msgstr "Ekspresi regular terlalu besar"
 msgid "Unmatched ) or \\)"
 msgstr "Tidak cocok ) atau \\)"
 
-#: lib/regcomp.c:689
+#: lib/regcomp.c:676
 msgid "No previous regular expression"
 msgstr "Tidak ada ekspresi regular sebelumnya"
 
@@ -443,7 +451,7 @@ msgstr "^[yY]"
 msgid "^[nN]"
 msgstr "^[tT]"
 
-#: lib/set-acl.c:46 src/copy.c:2546 src/cp.c:514
+#: lib/set-acl.c:46 src/copy.c:2583 src/cp.c:514
 #, c-format
 msgid "setting permissions for %s"
 msgstr "menset ijin untuk %s"
@@ -633,12 +641,12 @@ msgstr "spesifikasi tidak valid"
 msgid "unable to display error message"
 msgstr "tidak dapat menampilkan pesan kesalahan"
 
-#: lib/version-etc.c:74
+#: lib/version-etc.c:73
 #, c-format
 msgid "Packaged by %s (%s)\n"
 msgstr "Dipaket oleh %s (%s)\n"
 
-#: lib/version-etc.c:77
+#: lib/version-etc.c:76
 #, c-format
 msgid "Packaged by %s\n"
 msgstr "Dipaket oleh %s\n"
@@ -646,19 +654,17 @@ msgstr "Dipaket oleh %s\n"
 #. TRANSLATORS: Translate "(C)" to the copyright symbol
 #. (C-in-a-circle), if this symbol is available in the user's
 #. locale.  Otherwise, do not translate "(C)"; leave it as-is.
-#: lib/version-etc.c:84
+#: lib/version-etc.c:83
 msgid "(C)"
 msgstr "(C)"
 
-#: lib/version-etc.c:86
-#, fuzzy
+#. TRANSLATORS: The %s placeholder is the web address of the GPL license.
+#: lib/version-etc.c:88
+#, fuzzy, c-format
 msgid ""
-"\n"
-"License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl."
-"html>.\n"
+"License GPLv3+: GNU GPL version 3 or later <%s>.\n"
 "This is free software: you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"
-"\n"
 msgstr ""
 "\n"
 "Lisensi GPLv3+; GNU GPL versi 3 atau selanjutnya <http://gnu.org/licenses/"
@@ -669,19 +675,19 @@ msgstr ""
 "\n"
 
 #. TRANSLATORS: %s denotes an author name.
-#: lib/version-etc.c:102
+#: lib/version-etc.c:105
 #, c-format
 msgid "Written by %s.\n"
 msgstr "Ditulis oleh %s.\n"
 
 #. TRANSLATORS: Each %s denotes an author name.
-#: lib/version-etc.c:106
+#: lib/version-etc.c:109
 #, c-format
 msgid "Written by %s and %s.\n"
 msgstr "Ditulis oleh %s dan %s.\n"
 
 #. TRANSLATORS: Each %s denotes an author name.
-#: lib/version-etc.c:110
+#: lib/version-etc.c:113
 #, c-format
 msgid "Written by %s, %s, and %s.\n"
 msgstr "Ditulis oleh %s, %s, dan %s.\n"
@@ -689,7 +695,7 @@ msgstr "Ditulis oleh %s, %s, dan %s.\n"
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:117
+#: lib/version-etc.c:120
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -701,7 +707,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:124
+#: lib/version-etc.c:127
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -713,7 +719,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:131
+#: lib/version-etc.c:134
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -725,7 +731,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:139
+#: lib/version-etc.c:142
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -737,7 +743,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:147
+#: lib/version-etc.c:150
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -751,7 +757,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:156
+#: lib/version-etc.c:159
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -765,7 +771,7 @@ msgstr ""
 #. TRANSLATORS: Each %s denotes an author name.
 #. You can use line breaks, estimating that each author name occupies
 #. ca. 16 screen columns and that a screen line has ca. 80 columns.
-#: lib/version-etc.c:167
+#: lib/version-etc.c:170
 #, c-format
 msgid ""
 "Written by %s, %s, %s,\n"
@@ -780,33 +786,26 @@ msgstr ""
 #. for this package.  Please add _another line_ saying
 #. "Report translation bugs to <...>\n" with the address for translation
 #. bugs (typically your translation team's web or email address).
-#: lib/version-etc.c:245
-#, c-format
-msgid ""
-"\n"
-"Report bugs to: %s\n"
+#: lib/version-etc.c:249
+#, fuzzy, c-format
+msgid "Report bugs to: %s\n"
 msgstr ""
 "\n"
 "Laporkan bugs ke: %s\n"
 
-#: lib/version-etc.c:247
+#: lib/version-etc.c:251
 #, c-format
 msgid "Report %s bugs to: %s\n"
 msgstr "Laporkan %s bugs ke: %s\n"
 
-#: lib/version-etc.c:251
+#: lib/version-etc.c:255 lib/version-etc.c:257
 #, c-format
 msgid "%s home page: <%s>\n"
 msgstr "%s halaman rumah: <%s>\n"
 
-#: lib/version-etc.c:253
+#: lib/version-etc.c:260
 #, fuzzy, c-format
-msgid "%s home page: <https://www.gnu.org/software/%s/>\n"
-msgstr "%s halaman rumah: <http://www.gnu.org/software/%s/>\n"
-
-#: lib/version-etc.c:256
-#, fuzzy
-msgid "General help using GNU software: <https://www.gnu.org/gethelp/>\n"
+msgid "General help using GNU software: <%s>\n"
 msgstr "Bantuan umum menggunakan aplikasi GNU: <http://www.gnu.org/gethelp/>\n"
 
 #: lib/xbinary-io.c:37
@@ -850,92 +849,16 @@ msgid "%s%s argument '%s' too large"
 msgstr "%s%s argumen `%s' terlalu besar"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/base64.c:36
-msgid "Simon Josefsson"
-msgstr "Simon Josefsson"
-
-#: src/base64.c:65
-#, fuzzy, c-format
-msgid ""
-"Usage: %s [OPTION]... [FILE]\n"
-"Base%d encode or decode FILE, or standard input, to standard output.\n"
-msgstr ""
-"Penggunaan: %s [PILIHAN] [BERKAS]\n"
-"Base64 enkode atau dekode BERKAS, atau masukan standar, ke keluaran "
-"standar.\n"
-"\n"
-
-#: src/base64.c:73
-msgid ""
-"  -d, --decode          decode data\n"
-"  -i, --ignore-garbage  when decoding, ignore non-alphabet characters\n"
-"  -w, --wrap=COLS       wrap encoded lines after COLS character (default "
-"76).\n"
-"                          Use 0 to disable line wrapping\n"
-"\n"
-msgstr ""
-
-#: src/base64.c:82
-#, fuzzy, c-format
-msgid ""
-"\n"
-"The data are encoded as described for the %s alphabet in RFC 4648.\n"
-"When decoding, the input may contain newlines in addition to the bytes of\n"
-"the formal %s alphabet.  Use --ignore-garbage to attempt to recover\n"
-"from any other non-alphabet bytes in the encoded stream.\n"
-msgstr ""
-"\n"
-"Data yang dienkode seperti yang dijelaskan untuk base64 alphabet dalam RFC "
-"3548.\n"
-"Ketika mendekode, masukan mungkin berisi baris baru sebagai tambahan ke "
-"bytes dari\n"
-"alphabet format dari base64. Gunakan --ignore-garbage untuk mencoba untuk "
-"merekover\n"
-"dari karakter bukan alphabet bytes dalam stream yang dienkode.\n"
-
-#: src/base64.c:201 src/base64.c:239 src/csplit.c:277 src/csplit.c:1468
-#: src/join.c:465 src/shuf.c:233 src/shuf.c:279 src/shuf.c:554
-#: src/tac-pipe.c:76 src/tee.c:263 src/tr.c:1611
-#, c-format
-msgid "read error"
-msgstr "error baca"
-
-#: src/base64.c:258
-msgid "invalid input"
-msgstr "masukan tidak valid"
-
-#: src/base64.c:295
-#, fuzzy
-msgid "invalid wrap size"
-msgstr "ukuran wrap tidak valid: %s"
-
-#: src/base64.c:313 src/basename.c:176 src/comm.c:489 src/cp.c:621
-#: src/date.c:470 src/dircolors.c:449 src/du.c:1018 src/hostid.c:79
-#: src/hostname.c:118 src/id.c:190 src/install.c:985 src/join.c:970
-#: src/link.c:91 src/ln.c:551 src/logname.c:77 src/mknod.c:182 src/mv.c:451
-#: src/nproc.c:115 src/od.c:1865 src/ptx.c:2082 src/seq.c:619 src/shuf.c:491
-#: src/sort.c:4595 src/split.c:1553 src/tr.c:1768 src/tsort.c:566 src/tty.c:113
-#: src/uname.c:252 src/uniq.c:533 src/uniq.c:550 src/unlink.c:87
-#: src/uptime.c:258 src/users.c:152 src/wc.c:737 src/who.c:831 src/whoami.c:85
-#, c-format
-msgid "extra operand %s"
-msgstr "extra operand %s"
-
-#: src/base64.c:344 src/cat.c:764
-msgid "closing standard input"
-msgstr "menutup masukan standar"
-
-#. This is a proper name. See the gettext manual, section Names.
 #: src/basename.c:29 src/chgrp.c:38 src/chmod.c:39 src/chown.c:37 src/comm.c:39
-#: src/cp.c:48 src/csplit.c:45 src/cut.c:46 src/date.c:40 src/dd.c:46
-#: src/df.c:45 src/dirname.c:32 src/du.c:54 src/env.c:36 src/expand.c:49
+#: src/cp.c:48 src/csplit.c:45 src/cut.c:46 src/date.c:40 src/dd.c:45
+#: src/df.c:49 src/dirname.c:32 src/du.c:55 src/env.c:39 src/expand.c:49
 #: src/fold.c:36 src/groups.c:36 src/head.c:47 src/id.c:42 src/install.c:51
-#: src/ln.c:43 src/ls.c:131 src/mkdir.c:39 src/mkfifo.c:36 src/mknod.c:37
+#: src/ln.c:52 src/ls.c:137 src/mkdir.c:39 src/mkfifo.c:36 src/mknod.c:37
 #: src/mv.c:43 src/nice.c:40 src/nl.c:42 src/paste.c:53 src/pathchk.c:32
 #: src/pinky.c:38 src/printenv.c:44 src/printf.c:68 src/rm.c:41 src/rmdir.c:37
-#: src/stty.c:68 src/sum.c:39 src/tac.c:58 src/tail.c:73 src/tee.c:38
-#: src/touch.c:45 src/tty.c:44 src/uname.c:61 src/unexpand.c:50 src/uniq.c:43
-#: src/uptime.c:47 src/users.c:37 src/wc.c:51 src/who.c:51 src/yes.c:33
+#: src/stty.c:68 src/sum.c:39 src/tac.c:58 src/tail.c:77 src/tee.c:38
+#: src/touch.c:45 src/tty.c:44 src/uname.c:61 src/unexpand.c:50 src/uniq.c:41
+#: src/uptime.c:46 src/users.c:36 src/wc.c:51 src/who.c:51 src/yes.c:32
 msgid "David MacKenzie"
 msgstr "David MacKenzie"
 
@@ -975,32 +898,190 @@ msgid ""
 "  %s -a any/str1 any/str2   -> \"str1\" followed by \"str2\"\n"
 msgstr ""
 
-#: src/basename.c:170 src/chcon.c:536 src/chgrp.c:279 src/chmod.c:529
-#: src/chown.c:280 src/chroot.c:278 src/comm.c:481 src/csplit.c:1402
-#: src/dirname.c:116 src/expr.c:454 src/join.c:1160 src/link.c:83
-#: src/mkdir.c:252 src/mkfifo.c:130 src/mknod.c:171 src/nohup.c:114
+#: src/basename.c:170 src/chcon.c:537 src/chgrp.c:279 src/chmod.c:529
+#: src/chown.c:280 src/chroot.c:279 src/comm.c:481 src/csplit.c:1402
+#: src/dirname.c:116 src/expr.c:454 src/join.c:1159 src/link.c:76
+#: src/mkdir.c:252 src/mkfifo.c:130 src/mknod.c:171 src/nohup.c:107
 #: src/pathchk.c:147 src/printf.c:693 src/readlink.c:145 src/realpath.c:237
-#: src/rm.c:338 src/rmdir.c:222 src/seq.c:613 src/sleep.c:124 src/stat.c:1663
-#: src/stdbuf.c:370 src/tr.c:1753 src/unlink.c:81
+#: src/rm.c:338 src/rmdir.c:223 src/seq.c:633 src/sleep.c:116 src/stat.c:1885
+#: src/stdbuf.c:371 src/tr.c:1753 src/unlink.c:74
 #, c-format
 msgid "missing operand"
 msgstr "operand hilang"
 
+#: src/basename.c:176 src/basenc.c:1225 src/comm.c:489 src/cp.c:621
+#: src/date.c:471 src/dircolors.c:449 src/du.c:1019 src/hostid.c:72
+#: src/hostname.c:111 src/install.c:985 src/join.c:969 src/link.c:84
+#: src/ln.c:593 src/logname.c:70 src/mknod.c:182 src/mv.c:451 src/nproc.c:115
+#: src/od.c:1871 src/ptx.c:2082 src/seq.c:639 src/shuf.c:491 src/sort.c:4596
+#: src/split.c:1554 src/tr.c:1768 src/tsort.c:559 src/tty.c:113 src/uname.c:252
+#: src/uniq.c:520 src/uniq.c:537 src/unlink.c:80 src/uptime.c:252
+#: src/users.c:145 src/wc.c:758 src/who.c:831 src/whoami.c:78
+#, c-format
+msgid "extra operand %s"
+msgstr "extra operand %s"
+
 #. This is a proper name. See the gettext manual, section Names.
-#: src/cat.c:48 src/cp.c:47 src/df.c:44 src/du.c:53 src/factor.c:129
+#: src/basenc.c:37 src/basenc.c:40
+msgid "Simon Josefsson"
+msgstr "Simon Josefsson"
+
+#. This is a proper name. See the gettext manual, section Names.
+#: src/basenc.c:38 src/env.c:40 src/numfmt.c:43
+msgid "Assaf Gordon"
+msgstr ""
+
+#: src/basenc.c:101 src/dircolors.c:99 src/uptime.c:199 src/users.c:105
+#, c-format
+msgid "Usage: %s [OPTION]... [FILE]\n"
+msgstr "Penggunaan: %s [PILIHAN]... [BERKAS]\n"
+
+#: src/basenc.c:106
+#, fuzzy
+msgid "basenc encode or decode FILE, or standard input, to standard output.\n"
+msgstr ""
+"Penggunaan: %s [PILIHAN] [BERKAS]\n"
+"Base64 enkode atau dekode BERKAS, atau masukan standar, ke keluaran "
+"standar.\n"
+"\n"
+
+#: src/basenc.c:110
+#, fuzzy, c-format
+msgid "Base%d encode or decode FILE, or standard input, to standard output.\n"
+msgstr ""
+"Penggunaan: %s [PILIHAN] [BERKAS]\n"
+"Base64 enkode atau dekode BERKAS, atau masukan standar, ke keluaran "
+"standar.\n"
+"\n"
+
+#: src/basenc.c:118
+msgid "      --base64          same as 'base64' program (RFC4648 section 4)\n"
+msgstr ""
+
+#: src/basenc.c:121
+msgid "      --base64url       file- and url-safe base64 (RFC4648 section 5)\n"
+msgstr ""
+
+#: src/basenc.c:124
+msgid "      --base32          same as 'base32' program (RFC4648 section 6)\n"
+msgstr ""
+
+#: src/basenc.c:127
+msgid ""
+"      --base32hex       extended hex alphabet base32 (RFC4648 section 7)\n"
+msgstr ""
+
+#: src/basenc.c:130
+msgid "      --base16          hex encoding (RFC4648 section 8)\n"
+msgstr ""
+
+#: src/basenc.c:133
+msgid ""
+"      --base2msbf       bit string with most significant bit (msb) first\n"
+msgstr ""
+
+#: src/basenc.c:136
+msgid ""
+"      --base2lsbf       bit string with least significant bit (lsb) first\n"
+msgstr ""
+
+#: src/basenc.c:140
+msgid ""
+"  -d, --decode          decode data\n"
+"  -i, --ignore-garbage  when decoding, ignore non-alphabet characters\n"
+"  -w, --wrap=COLS       wrap encoded lines after COLS character (default "
+"76).\n"
+"                          Use 0 to disable line wrapping\n"
+"\n"
+msgstr ""
+
+#: src/basenc.c:148
+msgid ""
+"      --z85             ascii85-like encoding (ZeroMQ spec:32/Z85);\n"
+"                        when encoding, input length must be a multiple of "
+"4;\n"
+"                        when decoding, input length must be a multiple of 5\n"
+msgstr ""
+
+#: src/basenc.c:157
+#, fuzzy
+msgid ""
+"\n"
+"When decoding, the input may contain newlines in addition to the bytes of\n"
+"the formal alphabet.  Use --ignore-garbage to attempt to recover\n"
+"from any other non-alphabet bytes in the encoded stream.\n"
+msgstr ""
+"\n"
+"Data yang dienkode seperti yang dijelaskan untuk base64 alphabet dalam RFC "
+"3548.\n"
+"Ketika mendekode, masukan mungkin berisi baris baru sebagai tambahan ke "
+"bytes dari\n"
+"alphabet format dari base64. Gunakan --ignore-garbage untuk mencoba untuk "
+"merekover\n"
+"dari karakter bukan alphabet bytes dalam stream yang dienkode.\n"
+
+#: src/basenc.c:164
+#, fuzzy, c-format
+msgid ""
+"\n"
+"The data are encoded as described for the %s alphabet in RFC 4648.\n"
+"When decoding, the input may contain newlines in addition to the bytes of\n"
+"the formal %s alphabet.  Use --ignore-garbage to attempt to recover\n"
+"from any other non-alphabet bytes in the encoded stream.\n"
+msgstr ""
+"\n"
+"Data yang dienkode seperti yang dijelaskan untuk base64 alphabet dalam RFC "
+"3548.\n"
+"Ketika mendekode, masukan mungkin berisi baris baru sebagai tambahan ke "
+"bytes dari\n"
+"alphabet format dari base64. Gunakan --ignore-garbage untuk mencoba untuk "
+"merekover\n"
+"dari karakter bukan alphabet bytes dalam stream yang dienkode.\n"
+
+#: src/basenc.c:619
+msgid "invalid input (length must be multiple of 4 characters)"
+msgstr ""
+
+#: src/basenc.c:1009 src/basenc.c:1055 src/csplit.c:277 src/csplit.c:1468
+#: src/join.c:465 src/shuf.c:233 src/shuf.c:279 src/shuf.c:559
+#: src/tac-pipe.c:76 src/tee.c:263 src/tr.c:1611
+#, c-format
+msgid "read error"
+msgstr "error baca"
+
+#: src/basenc.c:1074
+msgid "invalid input"
+msgstr "masukan tidak valid"
+
+#: src/basenc.c:1121
+#, fuzzy
+msgid "invalid wrap size"
+msgstr "ukuran wrap tidak valid: %s"
+
+#: src/basenc.c:1218
+#, fuzzy, c-format
+msgid "missing encoding type"
+msgstr "hilang operand setelah %s"
+
+#: src/basenc.c:1256 src/cat.c:764
+msgid "closing standard input"
+msgstr "menutup masukan standar"
+
+#. This is a proper name. See the gettext manual, section Names.
+#: src/cat.c:48 src/cp.c:47 src/df.c:48 src/du.c:54 src/factor.c:129
 #: src/split.c:49
 msgid "Torbjorn Granlund"
 msgstr "Torbjorn Granlund"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/cat.c:49 src/comm.c:38 src/ls.c:130 src/rm.c:42 src/split.c:50
-#: src/tee.c:37 src/uniq.c:42
+#: src/cat.c:49 src/comm.c:38 src/ls.c:136 src/rm.c:42 src/split.c:50
+#: src/tee.c:37 src/uniq.c:40
 msgid "Richard M. Stallman"
 msgstr "Richard M. Stallman"
 
-#: src/cat.c:88 src/df.c:1458 src/expand.c:69 src/fold.c:66 src/head.c:110
-#: src/ls.c:5131 src/nl.c:176 src/paste.c:436 src/pr.c:2736 src/rm.c:133
-#: src/sum.c:59 src/tac.c:132 src/tail.c:261 src/tee.c:87 src/unexpand.c:78
+#: src/cat.c:88 src/df.c:1511 src/expand.c:69 src/fold.c:66 src/head.c:110
+#: src/ls.c:5342 src/nl.c:176 src/paste.c:436 src/pr.c:2737 src/rm.c:133
+#: src/sum.c:59 src/tac.c:132 src/tail.c:265 src/tee.c:87 src/unexpand.c:78
 #, c-format
 msgid "Usage: %s [OPTION]... [FILE]...\n"
 msgstr "Penggunaan: %s [PILIHAN]... [BERKAS]...\n"
@@ -1063,8 +1144,8 @@ msgstr ""
 msgid "cannot do ioctl on %s"
 msgstr "tidak dapat melakukan ioctl di %s"
 
-#: src/cat.c:638 src/dd.c:2433 src/sort.c:417 src/tail.c:2420 src/tee.c:207
-#: src/yes.c:131
+#: src/cat.c:638 src/dd.c:2492 src/sort.c:405 src/tail.c:2444 src/tee.c:207
+#: src/yes.c:128
 #, c-format
 msgid "standard output"
 msgstr "keluaran standar"
@@ -1075,74 +1156,74 @@ msgid "%s: input file is output file"
 msgstr "%s: berkas masukan adalah berkas keluaran"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/chcon.c:36 src/runcon.c:57
+#: src/chcon.c:37 src/runcon.c:57
 msgid "Russell Coker"
 msgstr "Russel Coker"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/chcon.c:37 src/chgrp.c:39 src/chmod.c:40 src/chown.c:38 src/cp.c:49
-#: src/cut.c:47 src/dirname.c:33 src/du.c:56 src/head.c:48 src/hostid.c:33
-#: src/hostname.c:34 src/mktemp.c:36 src/mv.c:44 src/nohup.c:35 src/od.c:39
-#: src/pathchk.c:33 src/pwd.c:32 src/rm.c:43 src/sleep.c:35 src/sync.c:33
-#: src/tail.c:75 src/tr.c:38 src/true.c:33
+#: src/chcon.c:38 src/chgrp.c:39 src/chmod.c:40 src/chown.c:38 src/cp.c:49
+#: src/cut.c:47 src/dirname.c:33 src/du.c:57 src/head.c:48 src/hostid.c:32
+#: src/hostname.c:33 src/mktemp.c:36 src/mv.c:44 src/nohup.c:34 src/od.c:40
+#: src/pathchk.c:33 src/pwd.c:32 src/rm.c:43 src/sleep.c:34 src/sync.c:33
+#: src/tail.c:79 src/tr.c:38 src/true.c:33
 msgid "Jim Meyering"
 msgstr "Jim Meyering"
 
-#: src/chcon.c:100 src/runcon.c:202 src/runcon.c:233
+#: src/chcon.c:101 src/runcon.c:202 src/runcon.c:233
 #, c-format
 msgid "failed to create security context: %s"
 msgstr "gagal untuk membuat konteks keamanan: %s"
 
-#: src/chcon.c:112
+#: src/chcon.c:113
 #, c-format
 msgid "failed to set %s security context component to %s"
 msgstr "gagal menset %s kontek keamanan komponen ke %s"
 
-#: src/chcon.c:156 src/chcon.c:547 src/copy.c:924 src/runcon.c:216
-#: src/stat.c:793
+#: src/chcon.c:157 src/chcon.c:548 src/copy.c:958 src/runcon.c:216
+#: src/stat.c:833
 #, c-format
 msgid "failed to get security context of %s"
 msgstr "gagal untuk memperoleh konteks keamanan dari %s"
 
-#: src/chcon.c:166
+#: src/chcon.c:167
 #, c-format
 msgid "can't apply partial context to unlabeled file %s"
 msgstr "tidak dapat mengapply konteks pecahan ke berkas yang tidak bernama %s"
 
-#: src/chcon.c:190
+#: src/chcon.c:191
 #, c-format
 msgid "failed to change context of %s to %s"
 msgstr "gagal untuk mengubah konteks dari %s ke %s"
 
-#: src/chcon.c:255 src/chmod.c:218 src/chown-core.c:324 src/copy.c:725
-#: src/du.c:532 src/ls.c:3241
+#: src/chcon.c:256 src/chmod.c:218 src/chown-core.c:324 src/copy.c:759
+#: src/du.c:533 src/ls.c:3436
 #, c-format
 msgid "cannot access %s"
 msgstr "tidak dapat mengakses %s"
 
-#: src/chcon.c:266 src/chmod.c:231 src/chown-core.c:337 src/du.c:512
+#: src/chcon.c:267 src/chmod.c:231 src/chown-core.c:337 src/du.c:513
 #, c-format
 msgid "cannot read directory %s"
 msgstr "tidak dapat membaca direktori %s"
 
-#: src/chcon.c:293
+#: src/chcon.c:294
 #, c-format
 msgid "changing security context of %s\n"
 msgstr "mengubah konteks keamanan dari %s\n"
 
-#: src/chcon.c:327 src/chmod.c:349 src/chown-core.c:538 src/remove.c:601
+#: src/chcon.c:328 src/chmod.c:349 src/chown-core.c:538 src/remove.c:601
 #: src/selinux.c:323
 #, c-format
 msgid "fts_read failed"
 msgstr "fts_read gagal"
 
-#: src/chcon.c:338 src/chmod.c:360 src/chown-core.c:550 src/du.c:713
+#: src/chcon.c:339 src/chmod.c:360 src/chown-core.c:550 src/du.c:714
 #: src/remove.c:615 src/selinux.c:334
 #, c-format
 msgid "fts_close failed"
 msgstr "fts_close gagal"
 
-#: src/chcon.c:352
+#: src/chcon.c:353
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... CONTEXT FILE...\n"
@@ -1154,7 +1235,7 @@ msgstr ""
 "BERKAS...\n"
 "  atau:     %s [PILIHAN]... --reference=RFILE BERKAS...\n"
 
-#: src/chcon.c:358
+#: src/chcon.c:359
 #, fuzzy
 msgid ""
 "Change the SELinux security context of each FILE to CONTEXT.\n"
@@ -1167,7 +1248,7 @@ msgstr ""
 "  -h, --no-dereference   mempengaruhi sambungan simbolik daripada referensi "
 "ke berkas apapun\n"
 
-#: src/chcon.c:365 src/chgrp.c:125 src/chown.c:95
+#: src/chcon.c:366 src/chgrp.c:125 src/chown.c:95
 msgid ""
 "      --dereference      affect the referent of each symbolic link (this is\n"
 "                         the default), rather than the symbolic link itself\n"
@@ -1175,7 +1256,7 @@ msgid ""
 "file\n"
 msgstr ""
 
-#: src/chcon.c:370
+#: src/chcon.c:371
 #, fuzzy
 msgid ""
 "  -u, --user=USER        set user USER in the target security context\n"
@@ -1188,7 +1269,7 @@ msgstr ""
 "  -t, --type=TYPE        set type TIPE dalam target konteks keamanan\n"
 "  -l, --range=RANGE      set range RANGE dalam target konteks keamanan\n"
 
-#: src/chcon.c:376 src/chgrp.c:134 src/chmod.c:390 src/chown.c:111
+#: src/chcon.c:377 src/chgrp.c:134 src/chmod.c:390 src/chown.c:111
 #, fuzzy
 msgid ""
 "      --no-preserve-root  do not treat '/' specially (the default)\n"
@@ -1197,7 +1278,7 @@ msgstr ""
 "      --no-preserve-root jangan perlakukan `/' spesial (default)\n"
 "      --preserve-root    gagal beroperasi secara rekursif di `/'\n"
 
-#: src/chcon.c:380
+#: src/chcon.c:381
 #, fuzzy
 msgid ""
 "      --reference=RFILE  use RFILE's security context rather than "
@@ -1211,15 +1292,15 @@ msgstr ""
 "  -v, --verbose          mengeluarkan sebuah diagnosa untuk setiap berkas "
 "yang diproses\n"
 
-#: src/chcon.c:384 src/chgrp.c:142 src/chown.c:119
+#: src/chcon.c:385 src/chgrp.c:142 src/chown.c:119
 msgid "  -R, --recursive        operate on files and directories recursively\n"
 msgstr ""
 
-#: src/chcon.c:387
+#: src/chcon.c:388
 msgid "  -v, --verbose          output a diagnostic for every file processed\n"
 msgstr ""
 
-#: src/chcon.c:390 src/chgrp.c:145 src/chown.c:122
+#: src/chcon.c:391 src/chgrp.c:145 src/chown.c:122
 #, fuzzy
 msgid ""
 "\n"
@@ -1248,32 +1329,32 @@ msgstr ""
 "  -P                     jangan menelusuri link simbolik apapun (default)\n"
 "\n"
 
-#: src/chcon.c:517 src/chgrp.c:266 src/chown.c:267
+#: src/chcon.c:518 src/chgrp.c:266 src/chown.c:267
 msgid "-R --dereference requires either -H or -L"
 msgstr "-R --dereference membutuhkan baik -H atau -L"
 
-#: src/chcon.c:523
+#: src/chcon.c:524
 msgid "-R -h requires -P"
 msgstr "-R -h membutuhkan -P"
 
-#: src/chcon.c:538 src/chgrp.c:281 src/chmod.c:531 src/chown.c:282
-#: src/comm.c:483 src/csplit.c:1404 src/join.c:1162 src/link.c:85
+#: src/chcon.c:539 src/chgrp.c:281 src/chmod.c:531 src/chown.c:282
+#: src/comm.c:483 src/csplit.c:1404 src/join.c:1161 src/link.c:78
 #: src/mknod.c:173 src/tr.c:1756
 #, c-format
 msgid "missing operand after %s"
 msgstr "hilang operand setelah %s"
 
-#: src/chcon.c:561 src/runcon.c:250
+#: src/chcon.c:563 src/runcon.c:250
 #, c-format
 msgid "invalid context: %s"
 msgstr "konteks tidak valid: %s"
 
-#: src/chcon.c:567
+#: src/chcon.c:569
 #, c-format
 msgid "conflicting security context specifiers given"
 msgstr "konteks keamanan konflik dengan spesifikasi yang diberikan"
 
-#: src/chcon.c:576 src/chgrp.c:289 src/chgrp.c:307 src/chmod.c:539
+#: src/chcon.c:578 src/chgrp.c:289 src/chgrp.c:307 src/chmod.c:539
 #: src/chmod.c:558 src/chown.c:290 src/chown.c:319 src/cp.c:422 src/cp.c:489
 #: src/mv.c:99 src/pwd.c:276 src/rm.c:348 src/touch.c:348
 #, c-format
@@ -1582,17 +1663,17 @@ msgstr ""
 msgid "Roland McGrath"
 msgstr "Roland McGrath"
 
-#: src/chroot.c:138 src/install.c:608
+#: src/chroot.c:139 src/install.c:608
 #, c-format
 msgid "invalid group %s"
 msgstr "grup tidak valid %s"
 
-#: src/chroot.c:153
+#: src/chroot.c:154
 #, c-format
 msgid "invalid group list %s"
 msgstr "daftar grup tidak valid %s"
 
-#: src/chroot.c:186
+#: src/chroot.c:187
 #, c-format
 msgid ""
 "Usage: %s [OPTION] NEWROOT [COMMAND [ARG]...]\n"
@@ -1601,7 +1682,7 @@ msgstr ""
 "Penggunaan: %s [PILIHAN] NEWROOT [PERINTAH [ARG]...]\n"
 "  atau:     %s PILIHAN\n"
 
-#: src/chroot.c:191
+#: src/chroot.c:192
 msgid ""
 "Run COMMAND with root directory set to NEWROOT.\n"
 "\n"
@@ -1609,7 +1690,7 @@ msgstr ""
 "Jalankan PERINTAH dengan direktori root set ke NEWROOT.\n"
 "\n"
 
-#: src/chroot.c:196
+#: src/chroot.c:197
 #, fuzzy
 msgid "  --groups=G_LIST        specify supplementary groups as g1,g2,..,gN\n"
 msgstr ""
@@ -1617,7 +1698,7 @@ msgstr ""
 "yang digunakan\n"
 "  --groups=G_LIST          spesifikasikan grup tambahan sebagai g1,g2,..,gN\n"
 
-#: src/chroot.c:199
+#: src/chroot.c:200
 #, fuzzy
 msgid "  --userspec=USER:GROUP  specify user and group (ID or name) to use\n"
 msgstr ""
@@ -1625,12 +1706,12 @@ msgstr ""
 "yang digunakan\n"
 "  --groups=G_LIST          spesifikasikan grup tambahan sebagai g1,g2,..,gN\n"
 
-#: src/chroot.c:202
+#: src/chroot.c:203
 #, c-format
 msgid "  --skip-chdir           do not change working directory to %s\n"
 msgstr ""
 
-#: src/chroot.c:208
+#: src/chroot.c:209
 #, fuzzy
 msgid ""
 "\n"
@@ -1640,44 +1721,44 @@ msgstr ""
 "Jika tidak ada perintah yang diberikan, jalankan ``${SHELL} -i'' (default: /"
 "bin/sh).\n"
 
-#: src/chroot.c:287
+#: src/chroot.c:288
 #, c-format
 msgid "option --skip-chdir only permitted if NEWROOT is old %s"
 msgstr ""
 
-#: src/chroot.c:330
+#: src/chroot.c:331
 #, c-format
 msgid "cannot change root directory to %s"
 msgstr "tidak dapat mengubah direktori root ke %s"
 
-#: src/chroot.c:334
+#: src/chroot.c:335
 msgid "cannot chdir to root directory"
 msgstr "tidak dapat chdir ke direktori root"
 
-#: src/chroot.c:376
+#: src/chroot.c:377
 #, c-format
 msgid "no group specified for unknown uid: %d"
 msgstr ""
 
-#: src/chroot.c:401
+#: src/chroot.c:402
 #, fuzzy
 msgid "failed to get supplemental groups"
 msgstr "gagal untuk menset grup tambahan"
 
-#: src/chroot.c:413
+#: src/chroot.c:414
 #, fuzzy
 msgid "failed to set supplemental groups"
 msgstr "gagal untuk menset grup tambahan"
 
-#: src/chroot.c:419
+#: src/chroot.c:420
 msgid "failed to set group-ID"
 msgstr "gagal untuk menset ID grup"
 
-#: src/chroot.c:422
+#: src/chroot.c:423
 msgid "failed to set user-ID"
 msgstr "gagal untuk menset ID pengguna"
 
-#: src/chroot.c:428 src/nohup.c:229 src/stdbuf.c:391 src/timeout.c:519
+#: src/chroot.c:429 src/nohup.c:222 src/stdbuf.c:392 src/timeout.c:519
 #, c-format
 msgid "failed to run command %s"
 msgstr "gagal menjalankan perintah %s"
@@ -1687,12 +1768,12 @@ msgstr "gagal menjalankan perintah %s"
 msgid "Q. Frank Xia"
 msgstr "Q. Frank Xia"
 
-#: src/cksum.c:216
+#: src/cksum.c:210
 #, c-format
 msgid "%s: file too long"
 msgstr "%s: berkas terlalu panjang"
 
-#: src/cksum.c:263
+#: src/cksum.c:257
 #, c-format
 msgid ""
 "Usage: %s [FILE]...\n"
@@ -1701,7 +1782,7 @@ msgstr ""
 "Penggunaan: %s [BERKAS]...\n"
 "  atau:     %s [PILIHAN]...\n"
 
-#: src/cksum.c:268
+#: src/cksum.c:262
 msgid ""
 "Print CRC checksum and byte counts of each FILE.\n"
 "\n"
@@ -1773,7 +1854,7 @@ msgid "  --total           output a summary\n"
 msgstr ""
 
 #: src/comm.c:147 src/cut.c:178 src/head.c:134 src/numfmt.c:945 src/paste.c:452
-#: src/tail.c:308
+#: src/tail.c:312
 #, fuzzy
 msgid "  -z, --zero-terminated    line delimiter is NUL, not newline\n"
 msgstr ""
@@ -1808,7 +1889,7 @@ msgstr ""
 msgid "file %d is not in sorted order"
 msgstr "berkas %d ada dalam keadaan tidak terurut"
 
-#: src/comm.c:402 src/du.c:1136 src/ls.c:2872 src/wc.c:864
+#: src/comm.c:402 src/du.c:1137 src/ls.c:3067 src/wc.c:885
 msgid "total"
 msgstr "total"
 
@@ -1817,330 +1898,328 @@ msgstr "total"
 msgid "multiple output delimiters specified"
 msgstr "banyak pembatas dispesifikasikan"
 
-#: src/copy.c:194 src/copy.c:465
+#: src/comm.c:496 src/join.c:1195
+#, fuzzy
+msgid "input is not in sorted order"
+msgstr "berkas %d ada dalam keadaan tidak terurut"
+
+#: src/copy.c:230 src/copy.c:499
 #, c-format
 msgid "cannot lseek %s"
 msgstr "tidak dapat lseek %s"
 
-#: src/copy.c:204 src/copy.c:571
+#: src/copy.c:240 src/copy.c:605
 #, fuzzy, c-format
 msgid "error deallocating %s"
 msgstr "error membaca %s"
 
-#: src/copy.c:242 src/dd.c:1864 src/dd.c:2200 src/du.c:1133 src/head.c:156
-#: src/head.c:307 src/head.c:389 src/head.c:585 src/head.c:667 src/head.c:736
-#: src/head.c:786 src/head.c:809 src/tail.c:441 src/tail.c:534 src/tail.c:583
-#: src/tail.c:676 src/tail.c:804 src/tail.c:852 src/tail.c:889 src/tail.c:2013
-#: src/tail.c:2046 src/uniq.c:473
+#: src/copy.c:278 src/dd.c:1928 src/dd.c:2264 src/du.c:1134 src/head.c:157
+#: src/head.c:308 src/head.c:390 src/head.c:586 src/head.c:668 src/head.c:737
+#: src/head.c:787 src/head.c:810 src/tail.c:464 src/tail.c:557 src/tail.c:606
+#: src/tail.c:699 src/tail.c:827 src/tail.c:875 src/tail.c:912 src/tail.c:2037
+#: src/tail.c:2070 src/uniq.c:461
 #, c-format
 msgid "error reading %s"
 msgstr "error membaca %s"
 
-#: src/copy.c:275 src/dd.c:2263 src/dd.c:2325 src/head.c:184 src/tail.c:415
+#: src/copy.c:311 src/dd.c:2327 src/dd.c:2389 src/head.c:185 src/tail.c:438
 #, c-format
 msgid "error writing %s"
 msgstr "error menulis %s"
 
-#: src/copy.c:306
+#: src/copy.c:340
 #, fuzzy, c-format
 msgid "overflow reading %s"
 msgstr "error membaca %s"
 
-#: src/copy.c:419
+#: src/copy.c:453
 #, fuzzy, c-format
 msgid "%s: failed to get extents info"
 msgstr "gagal memperolek konteks sekarang"
 
-#: src/copy.c:491
+#: src/copy.c:525
 #, fuzzy, c-format
 msgid "%s: write failed"
 msgstr "tulis gagal"
 
-#: src/copy.c:564 src/copy.c:1308
+#: src/copy.c:598 src/copy.c:1342
 #, fuzzy, c-format
 msgid "failed to extend %s"
 msgstr "gagal untuk membuka %s"
 
-#: src/copy.c:806
+#: src/copy.c:840
 #, c-format
 msgid "clearing permissions for %s"
 msgstr "menghapus ijin untuk %s"
 
-#: src/copy.c:841 src/copy.c:2754 src/cp.c:318
+#: src/copy.c:875 src/copy.c:2791 src/cp.c:318
 #, c-format
 msgid "failed to preserve ownership for %s"
 msgstr "gagal untuk menjaga kepemilikan untuk %s"
 
-#: src/copy.c:867
+#: src/copy.c:901
 #, c-format
 msgid "failed to lookup file %s"
 msgstr "gagal untuk menlookup berkas %s"
 
-#: src/copy.c:872
+#: src/copy.c:906
 #, c-format
 msgid "failed to preserve authorship for %s"
 msgstr "gagal untuk menjaga kepengarangan untuk %s"
 
-#: src/copy.c:909 src/cp.c:1205 src/install.c:961 src/mkdir.c:269
+#: src/copy.c:943 src/cp.c:1205 src/install.c:961 src/mkdir.c:269
 #: src/mkfifo.c:144 src/mknod.c:200
 #, c-format
 msgid "failed to set default file creation context to %s"
 msgstr "gagal untuk menset default berkas pembuatan konteks ke %s"
 
-#: src/copy.c:939
+#: src/copy.c:973
 #, fuzzy, c-format
 msgid "failed to set default file creation context for %s"
 msgstr "gagal untuk menset default berkas pembuatan konteks ke %s"
 
-#: src/copy.c:965
+#: src/copy.c:999
 #, fuzzy, c-format
 msgid "failed to set the security context of %s"
 msgstr "gagal untuk menset konteks keamanan dari %s ke %s"
 
-#: src/copy.c:1038 src/csplit.c:655 src/du.c:1025 src/fmt.c:439 src/head.c:888
-#: src/split.c:1569 src/tail.c:1987 src/wc.c:749
+#: src/copy.c:1072 src/csplit.c:655 src/du.c:1026 src/fmt.c:439 src/head.c:889
+#: src/split.c:1570 src/tail.c:2011 src/wc.c:770
 #, c-format
 msgid "cannot open %s for reading"
 msgstr "tidak dapat membuka %s untuk dibaca"
 
-#: src/copy.c:1044 src/copy.c:1197 src/dd.c:1789 src/dd.c:2337 src/dd.c:2477
-#: src/head.c:847 src/tail.c:1827 src/tail.c:1890 src/truncate.c:114
+#: src/copy.c:1078 src/copy.c:1231 src/dd.c:1853 src/dd.c:2401 src/dd.c:2536
+#: src/head.c:848 src/tail.c:1851 src/tail.c:1914 src/truncate.c:114
 #, c-format
 msgid "cannot fstat %s"
 msgstr "tidak dapat fstat %s"
 
-#: src/copy.c:1054
+#: src/copy.c:1088
 #, c-format
 msgid "skipping file %s, as it was replaced while being copied"
 msgstr "melewati berkas %s, seperti ini ditimpa ketika sedang disalin"
 
-#: src/copy.c:1094 src/copy.c:2184 src/remove.c:263 src/remove.c:280
+#: src/copy.c:1128 src/copy.c:2221 src/remove.c:263 src/remove.c:280
 #: src/remove.c:406 src/remove.c:432
 #, c-format
 msgid "cannot remove %s"
 msgstr "tidak dapat menghapus %s"
 
-#: src/copy.c:1099 src/copy.c:1796 src/copy.c:2189 src/remove.c:376
+#: src/copy.c:1133 src/copy.c:1830 src/copy.c:2226 src/remove.c:376
 #, c-format
 msgid "removed %s\n"
 msgstr "menghapus %s\n"
 
-#: src/copy.c:1151
+#: src/copy.c:1185
 #, c-format
 msgid "not writing through dangling symlink %s"
 msgstr "tidak menulis melalui dangling symlink %s"
 
-#: src/copy.c:1189
+#: src/copy.c:1223
 #, c-format
 msgid "cannot create regular file %s"
 msgstr "tidak dapat membuat berkas regular %s"
 
-#: src/copy.c:1210
+#: src/copy.c:1244
 #, fuzzy, c-format
 msgid "failed to clone %s from %s"
 msgstr "gagal untuk menutup %s"
 
-#: src/copy.c:1323 src/copy.c:2829
+#: src/copy.c:1357 src/copy.c:2866
 #, c-format
 msgid "preserving times for %s"
 msgstr "menjaga waktu untuk %s"
 
-#: src/copy.c:1403 src/copy.c:1409 src/head.c:896 src/sync.c:162
-#: src/touch.c:173 src/truncate.c:392
+#: src/copy.c:1437 src/copy.c:1443 src/head.c:897 src/sync.c:164
+#: src/touch.c:173 src/truncate.c:381
 #, fuzzy, c-format
 msgid "failed to close %s"
 msgstr "gagal untuk menutup %s"
 
-#: src/copy.c:1685
+#: src/copy.c:1719
 #, fuzzy, c-format
 msgid "%s: replace %s, overriding mode %04lo (%s)? "
 msgstr "%s: mencoba untuk menulis %s, mengoveride mode %04lo (%s)? "
 
-#: src/copy.c:1686
+#: src/copy.c:1720
 #, c-format
 msgid "%s: unwritable %s (mode %04lo, %s); try anyway? "
 msgstr ""
 
-#: src/copy.c:1693
+#: src/copy.c:1727
 #, c-format
 msgid "%s: overwrite %s? "
 msgstr "%s: menimpa %s? "
 
-#: src/copy.c:1763
+#: src/copy.c:1797
 #, c-format
 msgid " (backup: %s)"
 msgstr " (backup: %s)"
 
-#: src/copy.c:1773
+#: src/copy.c:1807
 msgid "failed to restore the default file creation context"
 msgstr "gagal merestore ke default berkas konteks pembuatan"
 
-#: src/copy.c:1791
+#: src/copy.c:1825
 #, c-format
 msgid "cannot create hard link %s to %s"
 msgstr "tidak dapat membuah link keras %s ke %s"
 
-#: src/copy.c:1891 src/copy.c:1963 src/copy.c:2534 src/copy.c:2895
-#: src/find-mount-point.c:84 src/install.c:702 src/realpath.c:146
-#: src/stat.c:1389 src/truncate.c:338
-#, c-format
-msgid "cannot stat %s"
-msgstr "tidak dapat memperoleh statistik %s"
-
-#: src/copy.c:1900
+#: src/copy.c:1936
 #, fuzzy, c-format
 msgid "-r not specified; omitting directory %s"
 msgstr "mengabaikan direktori %s"
 
-#: src/copy.c:1901
+#: src/copy.c:1937
 #, c-format
 msgid "omitting directory %s"
 msgstr "mengabaikan direktori %s"
 
-#: src/copy.c:1924
+#: src/copy.c:1960
 #, c-format
 msgid "warning: source file %s specified more than once"
 msgstr "peringatan: berkas sumber %s dispesifikasikan lebih dari sekali"
 
-#: src/copy.c:1979 src/ln.c:263
+#: src/copy.c:2015 src/ln.c:275
 #, c-format
 msgid "%s and %s are the same file"
 msgstr "%s dan %s adalah berkas yang sama"
 
-#: src/copy.c:2069
+#: src/copy.c:2105
 #, c-format
 msgid "cannot overwrite non-directory %s with directory %s"
 msgstr "tidak dapat menimpa bukan-direktori %s dengan direktori %s"
 
-#: src/copy.c:2087 src/ln.c:231
+#: src/copy.c:2123 src/ln.c:246
 #, c-format
 msgid "will not overwrite just-created %s with %s"
 msgstr "tidak akan menimpa baru dibuat %s dengan %s"
 
-#: src/copy.c:2105
+#: src/copy.c:2141
 #, c-format
 msgid "cannot overwrite directory %s with non-directory"
 msgstr "tidak dapat menimpa direktori %s dengan bukan-direktori"
 
-#: src/copy.c:2119
+#: src/copy.c:2155
 #, c-format
 msgid "cannot move directory onto non-directory: %s -> %s"
 msgstr "tidak dapat memindahkan direktori ke bukan-direktori: %s -> %s"
 
-#: src/copy.c:2146
+#: src/copy.c:2182
 #, fuzzy, c-format
 msgid "backing up %s might destroy source;  %s not moved"
 msgstr "backing up %s akan menghancurkan sumber; %s tidak dipindah"
 
-#: src/copy.c:2147
+#: src/copy.c:2183
 #, fuzzy, c-format
 msgid "backing up %s might destroy source;  %s not copied"
 msgstr "backing up %s akan menghancurkan sumber; %s tidak disalin"
 
-#: src/copy.c:2168 src/ln.c:293
+#: src/copy.c:2205 src/ln.c:305
 #, c-format
 msgid "cannot backup %s"
 msgstr "tidak dapat membackup %s"
 
-#: src/copy.c:2223
+#: src/copy.c:2260
 #, c-format
 msgid "will not copy %s through just-created symlink %s"
 msgstr "tidak akan disalin %s melalui baru-dibuat symlink %s"
 
-#: src/copy.c:2303
+#: src/copy.c:2340
 #, c-format
 msgid "cannot copy a directory, %s, into itself, %s"
 msgstr "tidak dapat menyalin sebuah direktori, %s, kedalam diri sendiri, %s"
 
-#: src/copy.c:2311
+#: src/copy.c:2348
 #, fuzzy, c-format
 msgid "warning: source directory %s specified more than once"
 msgstr "peringatan: berkas sumber %s dispesifikasikan lebih dari sekali"
 
-#: src/copy.c:2337
+#: src/copy.c:2374
 #, c-format
 msgid "will not create hard link %s to directory %s"
 msgstr "tidak akan membuah link keras %s ke direktori %s"
 
-#: src/copy.c:2361
+#: src/copy.c:2398
 #, fuzzy, c-format
 msgid "renamed "
 msgstr "berkas aneh"
 
-#: src/copy.c:2399
+#: src/copy.c:2436
 #, c-format
 msgid "cannot move %s to a subdirectory of itself, %s"
 msgstr ""
 "tidak dapat memindahkan %s ke sebuah subdirektori dari direktori itu "
 "sendiri, %s"
 
-#: src/copy.c:2442
+#: src/copy.c:2479
 #, c-format
 msgid "cannot move %s to %s"
 msgstr "tidak dapat memindahkan %s ke %s"
 
-#: src/copy.c:2458
+#: src/copy.c:2495
 #, c-format
 msgid "inter-device move failed: %s to %s; unable to remove target"
 msgstr "inter-device pindah gagal; %s ke %s; tidak dapat menghapus target"
 
-#: src/copy.c:2466
+#: src/copy.c:2503
 #, c-format
 msgid "copied "
 msgstr ""
 
-#: src/copy.c:2503
+#: src/copy.c:2540
 #, c-format
 msgid "cannot copy cyclic symbolic link %s"
 msgstr "tidak dapat menyalin cyclic link simbolik %s"
 
-#: src/copy.c:2565
+#: src/copy.c:2602
 #, fuzzy, c-format
 msgid "created directory %s\n"
 msgstr "direktori %s dibuat"
 
-#: src/copy.c:2628
+#: src/copy.c:2665
 #, c-format
 msgid "%s: can make relative symbolic links only in current directory"
 msgstr ""
 "%s: dapat membuat relative link simbolik hanya dalam direktori sekarang"
 
-#: src/copy.c:2637
+#: src/copy.c:2675
 #, c-format
 msgid "cannot create symbolic link %s to %s"
 msgstr "tidak dapat membuat link simbolik %s ke %s"
 
-#: src/copy.c:2691 src/mkfifo.c:170
+#: src/copy.c:2729 src/mkfifo.c:170
 #, c-format
 msgid "cannot create fifo %s"
 msgstr "tidak dapat membuat fifo %s"
 
-#: src/copy.c:2700
+#: src/copy.c:2738
 #, c-format
 msgid "cannot create special file %s"
 msgstr "tidak dapat membuah berkas spesial %s"
 
-#: src/copy.c:2711 src/ls.c:3455 src/stat.c:1071
+#: src/copy.c:2749 src/ls.c:3648 src/stat.c:1477
 #, c-format
 msgid "cannot read symbolic link %s"
 msgstr "tidak dapat membaca link simbolik %s"
 
-#: src/copy.c:2738
+#: src/copy.c:2775
 #, c-format
 msgid "cannot create symbolic link %s"
 msgstr "tidak dapat membuat link simbolik %s"
 
-#: src/copy.c:2770
+#: src/copy.c:2807
 #, c-format
 msgid "%s has unknown file type"
 msgstr "%s memiliki tipe berkas tidak diketahui"
 
-#: src/copy.c:2935 src/ln.c:362
+#: src/copy.c:2972 src/ln.c:393
 #, c-format
 msgid "cannot un-backup %s"
 msgstr "tidak dapat un-backup %s"
 
-#: src/copy.c:2939
+#: src/copy.c:2976
 #, c-format
 msgid "%s -> %s (unbackup)\n"
 msgstr "%s -> %s (unbackup)\n"
@@ -2418,19 +2497,19 @@ msgstr "tidak dapat membuat direktori %s"
 msgid "%s exists but is not a directory"
 msgstr "%s ada tetapi bukan sebuah direktori"
 
-#: src/cp.c:585 src/cp.c:1087 src/install.c:407 src/install.c:942 src/ln.c:134
-#: src/ln.c:198 src/ln.c:219 src/ln.c:503 src/mv.c:160 src/mv.c:393
+#: src/cp.c:585 src/cp.c:1087 src/install.c:407 src/install.c:942 src/ln.c:204
+#: src/ln.c:231 src/ln.c:536 src/mv.c:160 src/mv.c:393
 #, fuzzy, c-format
 msgid "failed to access %s"
 msgstr "gagal untuk menutup %s"
 
-#: src/cp.c:606 src/install.c:970 src/ln.c:534 src/mv.c:436 src/shred.c:1283
-#: src/touch.c:430 src/truncate.c:329
+#: src/cp.c:606 src/install.c:970 src/ln.c:567 src/mv.c:436 src/shred.c:1251
+#: src/touch.c:430 src/truncate.c:318
 #, c-format
 msgid "missing file operand"
 msgstr "operand berkas hilang"
 
-#: src/cp.c:608 src/install.c:972 src/ln.c:548 src/mv.c:438
+#: src/cp.c:608 src/install.c:972 src/ln.c:590 src/mv.c:438
 #, c-format
 msgid "missing destination file operand after %s"
 msgstr "berkas tujuan operand hilang setelah %s"
@@ -2442,8 +2521,7 @@ msgstr ""
 "directory (-T)"
 
 #: src/cp.c:635 src/cp.c:1090 src/install.c:409 src/install.c:945
-#: src/install.c:994 src/ln.c:136 src/ln.c:506 src/ln.c:562 src/mv.c:396
-#: src/mv.c:468
+#: src/install.c:994 src/ln.c:539 src/mv.c:396 src/mv.c:468
 #, c-format
 msgid "target %s is not a directory"
 msgstr "target %s bukan sebuah direktori"
@@ -2453,7 +2531,7 @@ msgstr "target %s bukan sebuah direktori"
 msgid "with --parents, the destination must be a directory"
 msgstr "dengan --parents, tujuan harus berupa sebuah direktori"
 
-#: src/cp.c:1082 src/install.c:882 src/ln.c:498 src/mv.c:388
+#: src/cp.c:1082 src/install.c:882 src/ln.c:531 src/mv.c:388
 msgid "multiple target directories specified"
 msgstr "multiple target direktori dispesifikasikan"
 
@@ -2477,7 +2555,7 @@ msgstr "pilihan --backup dan --no-clobber adalah mutually ekslusif"
 msgid "--reflink can be used only with --sparse=auto"
 msgstr "--reflink hanya dapat digunakan dengan --sparse=auto"
 
-#: src/cp.c:1166 src/install.c:950 src/ln.c:567 src/mv.c:483
+#: src/cp.c:1166 src/install.c:950 src/ln.c:637 src/mv.c:483
 msgid "backup type"
 msgstr "tipe backup"
 
@@ -2496,7 +2574,7 @@ msgid "cannot preserve extended attributes, cp is built without xattr support"
 msgstr "tidak dapat menjaga atribut ekstensi, cp dibuat tanpa dukungan xattr"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/csplit.c:44 src/dd.c:47
+#: src/csplit.c:44 src/dd.c:46
 msgid "Stuart Kemp"
 msgstr "Stuart Kemp"
 
@@ -2524,7 +2602,7 @@ msgstr " repetisi di %s\n"
 msgid "%s: %s: match not found"
 msgstr "%s: %s: cocok tidak ditemukan"
 
-#: src/csplit.c:838 src/csplit.c:878 src/nl.c:361 src/tac.c:286
+#: src/csplit.c:838 src/csplit.c:878 src/nl.c:357 src/tac.c:286
 #, c-format
 msgid "error in regular expression search"
 msgstr "error dalam pencarian ekspresi regular"
@@ -2608,7 +2686,7 @@ msgstr "terlalu banyak %% spesifikasi konversi dalam akhiran"
 msgid "missing %% conversion specification in suffix"
 msgstr "hilang %% spesifikasi konversi di akhiran"
 
-#: src/csplit.c:1375 src/dd.c:1499 src/nproc.c:105 src/tail.c:2140
+#: src/csplit.c:1375 src/dd.c:1563 src/nproc.c:105 src/tail.c:2164
 #, fuzzy
 msgid "invalid number"
 msgstr "nomor %s tidak valid"
@@ -2930,8 +3008,9 @@ msgstr ""
 "  %e   hari dari bulan, spasi dipadded; sama seperti %_d\n"
 
 #: src/date.c:196
+#, fuzzy
 msgid ""
-"  %F   full date; same as %Y-%m-%d\n"
+"  %F   full date; like %+4Y-%m-%d\n"
 "  %g   last two digits of year of ISO week number (see %G)\n"
 "  %G   year of ISO week number (see %V); normally useful only with %V\n"
 msgstr ""
@@ -3052,6 +3131,7 @@ msgid ""
 "  -  (hyphen) do not pad the field\n"
 "  _  (underscore) pad with spaces\n"
 "  0  (zero) pad with zeros\n"
+"  +  pad with zeros, and put '+' before future years with >4 digits\n"
 "  ^  use upper case if possible\n"
 "  #  use opposite case if possible\n"
 msgstr ""
@@ -3063,7 +3143,7 @@ msgstr ""
 "  ^  gunakan huruf besar jika mungkin\n"
 "  #  gunakan kasus sebalik jika mungkin\n"
 
-#: src/date.c:259
+#: src/date.c:260
 msgid ""
 "\n"
 "After any flags comes an optional field width, as a decimal number;\n"
@@ -3078,7 +3158,7 @@ msgstr ""
 "E untuk menggunakan locale's alternatif representasi jika tersedia, atau\n"
 "0 untuk menggunakan locale's alternatif simbol numerik jika tersedia.\n"
 
-#: src/date.c:266
+#: src/date.c:267
 msgid ""
 "\n"
 "Examples:\n"
@@ -3092,35 +3172,35 @@ msgid ""
 "  $ date --date='TZ=\"America/Los_Angeles\" 09:00 next Fri'\n"
 msgstr ""
 
-#: src/date.c:300 src/dd.c:2416 src/head.c:880 src/md5sum.c:672
-#: src/md5sum.c:1107 src/od.c:913 src/od.c:1978 src/pr.c:1148 src/pr.c:1347
-#: src/pr.c:1470 src/stty.c:1368 src/tac.c:574 src/tail.c:364 src/tee.c:174
-#: src/tr.c:1911 src/tsort.c:541 src/wc.c:205
+#: src/date.c:301 src/dd.c:2475 src/head.c:881 src/md5sum.c:672
+#: src/md5sum.c:1107 src/od.c:915 src/od.c:1984 src/pr.c:1149 src/pr.c:1348
+#: src/pr.c:1471 src/stty.c:1368 src/tac.c:574 src/tail.c:387 src/tee.c:174
+#: src/tr.c:1911 src/tsort.c:535 src/wc.c:223
 msgid "standard input"
 msgstr "standar masukan"
 
-#: src/date.c:329 src/date.c:557
+#: src/date.c:330 src/date.c:558
 #, c-format
 msgid "invalid date %s"
 msgstr "tanggal tidak valid %s"
 
-#: src/date.c:443 src/date.c:477
+#: src/date.c:444 src/date.c:478
 msgid "multiple output formats specified"
 msgstr "multiple format keluaran dispesifikasikan"
 
-#: src/date.c:455
+#: src/date.c:456
 #, c-format
 msgid "the options to specify dates for printing are mutually exclusive"
 msgstr ""
 "Pilihan untuk menspesifikasikan tanggal untuk pencetakan adalah mutually "
 "exclusive"
 
-#: src/date.c:462
+#: src/date.c:463
 #, c-format
 msgid "the options to print and set the time may not be used together"
 msgstr "Pilihan untuk mencetak dan menset waktu mungkin bisa digunakan bersama"
 
-#: src/date.c:483
+#: src/date.c:484
 #, fuzzy, c-format
 msgid ""
 "the argument %s lacks a leading '+';\n"
@@ -3131,23 +3211,23 @@ msgstr ""
 "ketika menggunakan sebuah pilihan untuk menspesifikasikan tanggal, argumen\n"
 "bukan pilihan apapun harus dalam sebuah format string yang diawali dengan `+'"
 
-#: src/date.c:565
+#: src/date.c:566
 #, c-format
 msgid "cannot set date"
 msgstr "tidak dapat menset tanggal"
 
-#: src/date.c:599 src/du.c:388
+#: src/date.c:600 src/du.c:389
 #, c-format
 msgid "time %s is out of range"
 msgstr "jam %s adalah diluar jangkauan"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/dd.c:45 src/factor.c:128 src/rm.c:40 src/tail.c:72 src/touch.c:42
+#: src/dd.c:44 src/factor.c:128 src/rm.c:40 src/tail.c:76 src/touch.c:42
 #: src/wc.c:50
 msgid "Paul Rubin"
 msgstr "Paul Rubin"
 
-#: src/dd.c:564
+#: src/dd.c:558
 #, c-format
 msgid ""
 "Usage: %s [OPERAND]...\n"
@@ -3156,7 +3236,7 @@ msgstr ""
 "Penggunaan: %s [OPERAND]...\n"
 "  atau:     %s PILIHAN\n"
 
-#: src/dd.c:569
+#: src/dd.c:563
 #, fuzzy
 msgid ""
 "Copy a file, converting and formatting according to the operands.\n"
@@ -3179,7 +3259,7 @@ msgstr ""
 "  count=BLOCKS    salin hanya BLOK input blok\n"
 "  ibs=BYTES       baca BYTES byte dalam satu waktu\n"
 
-#: src/dd.c:579
+#: src/dd.c:573
 #, fuzzy
 msgid ""
 "  if=FILE         read from FILE instead of stdin\n"
@@ -3203,13 +3283,14 @@ msgstr ""
 "  skip=BLOK       lewati BLOK sebesar ibs blok di awal dari masukan\n"
 "  status=noxfer   tekan statistik transfer\n"
 
-#: src/dd.c:592
+#: src/dd.c:586
 #, fuzzy
 msgid ""
 "\n"
 "N and BYTES may be followed by the following multiplicative suffixes:\n"
-"c =1, w =2, b =512, kB =1000, K =1024, MB =1000*1000, M =1024*1024, xM =M,\n"
-"GB =1000*1000*1000, G =1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"c=1, w=2, b=512, kB=1000, K=1024, MB=1000*1000, M=1024*1024, xM=M,\n"
+"GB=1000*1000*1000, G=1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 "\n"
 "Each CONV symbol may be:\n"
 "\n"
@@ -3222,7 +3303,7 @@ msgstr ""
 "Setiap simbol CONV bisa berupa:\n"
 "\n"
 
-#: src/dd.c:601
+#: src/dd.c:596
 #, fuzzy
 msgid ""
 "  ascii     from EBCDIC to ASCII\n"
@@ -3232,7 +3313,7 @@ msgid ""
 "  unblock   replace trailing spaces in cbs-size records with newline\n"
 "  lcase     change upper case to lower case\n"
 "  ucase     change lower case to upper case\n"
-"  sparse    try to seek rather than write the output for NUL input blocks\n"
+"  sparse    try to seek rather than write all-NUL output blocks\n"
 "  swab      swap every pair of input bytes\n"
 "  sync      pad every input block with NULs to ibs-size; when used\n"
 "            with block or unblock, pad with spaces rather than NULs\n"
@@ -3250,7 +3331,7 @@ msgstr ""
 "digunakan\n"
 "            dengan blok atau unblok, pad dengan spasi daripada dengan NUL\n"
 
-#: src/dd.c:614
+#: src/dd.c:609
 msgid ""
 "  excl      fail if the output file already exists\n"
 "  nocreat   do not create the output file\n"
@@ -3266,7 +3347,7 @@ msgstr ""
 "  fdatasync secara fisik tulis berkas keluaran data sebelum selesai\n"
 "  fsync     sama seperti, tetapi juga tulis metadata\n"
 
-#: src/dd.c:622
+#: src/dd.c:617
 msgid ""
 "\n"
 "Each FLAG symbol may be:\n"
@@ -3280,75 +3361,75 @@ msgstr ""
 "  append    mode append (berguna hanya untuk keluaran; conv=notrunc "
 "disarankan)\n"
 
-#: src/dd.c:629
+#: src/dd.c:624
 msgid "  cio       use concurrent I/O for data\n"
 msgstr "  cio       gunakan I/O bersamaan untuk data\n"
 
-#: src/dd.c:631
+#: src/dd.c:626
 msgid "  direct    use direct I/O for data\n"
 msgstr "  direct    gunakan I/O langsung untuk data\n"
 
-#: src/dd.c:633
+#: src/dd.c:628
 msgid "  directory  fail unless a directory\n"
 msgstr "  direktori  gagal kecuali sebuah direktori\n"
 
-#: src/dd.c:635
+#: src/dd.c:630
 msgid "  dsync     use synchronized I/O for data\n"
 msgstr "  dsync     gunakan I/O tersinkron untuk data\n"
 
-#: src/dd.c:637
+#: src/dd.c:632
 msgid "  sync      likewise, but also for metadata\n"
 msgstr "  sync      sama seperti itu, tetapi juga untuk metadata\n"
 
-#: src/dd.c:638
+#: src/dd.c:633
 msgid "  fullblock  accumulate full blocks of input (iflag only)\n"
 msgstr "  fullblock  akumulasikan blok penuh dari masukan (hanya iflag)\n"
 
-#: src/dd.c:641
+#: src/dd.c:636
 msgid "  nonblock  use non-blocking I/O\n"
 msgstr "  nonblock  gunakan I/O non-blok\n"
 
-#: src/dd.c:643
+#: src/dd.c:638
 msgid "  noatime   do not update access time\n"
 msgstr "  noatime   jangan perbaharui waktu akses\n"
 
-#: src/dd.c:646
+#: src/dd.c:641
 msgid "  nocache   Request to drop cache.  See also oflag=sync\n"
 msgstr ""
 
-#: src/dd.c:650
+#: src/dd.c:645
 msgid "  noctty    do not assign controlling terminal from file\n"
 msgstr "  noctty    jangan assign pengontrol terminal dari berkas\n"
 
-#: src/dd.c:653
+#: src/dd.c:648
 msgid "  nofollow  do not follow symlinks\n"
 msgstr "  nofollow  jangan ikuti symlinks\n"
 
-#: src/dd.c:655
+#: src/dd.c:650
 msgid "  nolinks   fail if multiply-linked\n"
 msgstr "  nolinks   gagal jika multiply-linked\n"
 
-#: src/dd.c:657
+#: src/dd.c:652
 msgid "  binary    use binary I/O for data\n"
 msgstr "  binary    gunakan binary I/O untuk data\n"
 
-#: src/dd.c:659
+#: src/dd.c:654
 msgid "  text      use text I/O for data\n"
 msgstr "  text      gunakan teks I/O untuk data\n"
 
-#: src/dd.c:661
+#: src/dd.c:656
 msgid "  count_bytes  treat 'count=N' as a byte count (iflag only)\n"
 msgstr ""
 
-#: src/dd.c:664
+#: src/dd.c:659
 msgid "  skip_bytes  treat 'skip=N' as a byte count (iflag only)\n"
 msgstr ""
 
-#: src/dd.c:667
+#: src/dd.c:662
 msgid "  seek_bytes  treat 'seek=N' as a byte count (oflag only)\n"
 msgstr ""
 
-#: src/dd.c:671
+#: src/dd.c:666
 #, c-format
 msgid ""
 "\n"
@@ -3359,39 +3440,39 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dd.c:707
+#: src/dd.c:702
 #, c-format
 msgid "memory exhausted by input buffer of size %<PRIuMAX> bytes (%s)"
 msgstr ""
 
-#: src/dd.c:735
+#: src/dd.c:730
 #, c-format
 msgid "memory exhausted by output buffer of size %<PRIuMAX> bytes (%s)"
 msgstr ""
 
-#: src/dd.c:803 src/du.c:400
+#: src/dd.c:798 src/du.c:401
 #, fuzzy
 msgid "Infinity"
 msgstr "Tak terhingga B"
 
-#: src/dd.c:822
+#: src/dd.c:817
 #, fuzzy, c-format
 msgid "%<PRIuMAX> byte copied, %s, %s"
 msgid_plural "%<PRIuMAX> bytes copied, %s, %s"
 msgstr[0] "%<PRIuMAX> byte (%s) tersalin"
 msgstr[1] "%<PRIuMAX> byte (%s) tersalin"
 
-#: src/dd.c:828
+#: src/dd.c:823
 #, fuzzy, c-format
 msgid "%<PRIuMAX> bytes (%s) copied, %s, %s"
 msgstr "%<PRIuMAX> byte (%s) tersalin"
 
-#: src/dd.c:831
+#: src/dd.c:826
 #, fuzzy, c-format
 msgid "%<PRIuMAX> bytes (%s, %s) copied, %s, %s"
 msgstr "%<PRIuMAX> byte (%s) tersalin"
 
-#: src/dd.c:863
+#: src/dd.c:858
 #, c-format
 msgid ""
 "%<PRIuMAX>+%<PRIuMAX> records in\n"
@@ -3400,82 +3481,82 @@ msgstr ""
 "%<PRIuMAX>+%<PRIuMAX> catatan masuk\n"
 "%<PRIuMAX>+%<PRIuMAX> catatan keluar\n"
 
-#: src/dd.c:869
+#: src/dd.c:864
 #, c-format
 msgid "%<PRIuMAX> truncated record\n"
 msgid_plural "%<PRIuMAX> truncated records\n"
 msgstr[0] "%<PRIuMAX> rekaman terpotong\n"
 msgstr[1] "%<PRIuMAX> rekaman terpotong\n"
 
-#: src/dd.c:954
+#: src/dd.c:966
 #, c-format
 msgid "closing input file %s"
 msgstr "menutup berkas masukan %s"
 
-#: src/dd.c:961
+#: src/dd.c:973
 #, c-format
 msgid "closing output file %s"
 msgstr "menutup berkas keluaran %s"
 
-#: src/dd.c:1194
+#: src/dd.c:1207
 #, c-format
 msgid "failed to turn off O_DIRECT: %s"
 msgstr "gagal untuk mematikan O_DIRECT: %s"
 
-#: src/dd.c:1269 src/dd.c:2138
+#: src/dd.c:1282 src/dd.c:2202
 #, c-format
 msgid "writing to %s"
 msgstr "menulis ke %s"
 
-#: src/dd.c:1388
+#: src/dd.c:1452
 #, c-format
 msgid "warning: %s is a zero multiplier; use %s if that is intended"
 msgstr ""
 
-#: src/dd.c:1426 src/dd.c:1487
+#: src/dd.c:1490 src/dd.c:1551
 #, c-format
 msgid "unrecognized operand %s"
 msgstr "operand %s tidak dikenal"
 
-#: src/dd.c:1438
+#: src/dd.c:1502
 msgid "invalid conversion"
 msgstr "konversi tidak valid"
 
-#: src/dd.c:1441 src/dd.c:1530
+#: src/dd.c:1505 src/dd.c:1594
 msgid "invalid input flag"
 msgstr "masukan flag tidak valid"
 
-#: src/dd.c:1444 src/dd.c:1524 src/dd.c:1536
+#: src/dd.c:1508 src/dd.c:1588 src/dd.c:1600
 msgid "invalid output flag"
 msgstr "keluaran flag tidak valid"
 
-#: src/dd.c:1447
+#: src/dd.c:1511
 #, fuzzy
 msgid "invalid status level"
 msgstr "statu flag tidak valid"
 
-#: src/dd.c:1582
+#: src/dd.c:1646
 msgid "cannot combine any two of {ascii,ebcdic,ibm}"
 msgstr "tidak dapat mengkombinasikan dua dari {ascii, ebcdic, ibm}"
 
-#: src/dd.c:1584
+#: src/dd.c:1648
 msgid "cannot combine block and unblock"
 msgstr "tidak dapat mengkombinasikan blok dan unblok"
 
-#: src/dd.c:1586
+#: src/dd.c:1650
 msgid "cannot combine lcase and ucase"
 msgstr "tidak dapat mengkombinasikan huruf kecil dan huruf besar"
 
-#: src/dd.c:1588
+#: src/dd.c:1652
 msgid "cannot combine excl and nocreat"
 msgstr "tidak dapat mengkombinasikan excl dan nocreat"
 
-#: src/dd.c:1591
+#: src/dd.c:1655
 #, fuzzy
 msgid "cannot combine direct and nocache"
 msgstr "tidak dapat mengkombinasikan excl dan nocreat"
 
-#: src/dd.c:1748
+#: src/dd.c:1812
 #, c-format
 msgid ""
 "warning: working around lseek kernel bug for file (%s)\n"
@@ -3484,62 +3565,62 @@ msgstr ""
 "peringatan: bekerja dalam lseek kernel bug untuk berkas (%s)\n"
 "  dari mt type=0x%00lx -- lihat <sys/mtio.h> untuk daftar dari type"
 
-#: src/dd.c:1836
+#: src/dd.c:1900
 #, c-format
 msgid "%s: cannot skip"
 msgstr "%s: tidak dapat melewati"
 
-#: src/dd.c:1838 src/dd.c:1869 src/dd.c:1930
+#: src/dd.c:1902 src/dd.c:1933 src/dd.c:1994
 #, c-format
 msgid "%s: cannot seek"
 msgstr "%s: tidak dapat mencari"
 
-#: src/dd.c:1910
+#: src/dd.c:1974
 #, c-format
 msgid "offset overflow while reading file %s"
 msgstr "offset overflow ketika membaca berkas %s"
 
-#: src/dd.c:1922
+#: src/dd.c:1986
 #, c-format
 msgid "warning: invalid file offset after failed read"
 msgstr "peringatan: berkas ofset tidak valid setelah gagal baca"
 
-#: src/dd.c:1926
+#: src/dd.c:1990
 #, c-format
 msgid "cannot work around kernel bug after all"
 msgstr "tidak dapat bekerja dalam kernel bug ternyata"
 
-#: src/dd.c:2065
+#: src/dd.c:2129
 #, c-format
 msgid "setting flags for %s"
 msgstr "menset flag untuk %s"
 
-#: src/dd.c:2119
+#: src/dd.c:2183
 #, c-format
 msgid "%s: cannot skip to specified offset"
 msgstr "%s: tidak dapat melewati ofset yang dispesifikasikan"
 
-#: src/dd.c:2348
+#: src/dd.c:2412
 #, fuzzy, c-format
 msgid "failed to truncate to %<PRIdMAX> bytes in output file %s"
 msgstr "gagal untuk memotong %<PRIuMAX> byte dalam berkas keluaran %s"
 
-#: src/dd.c:2361
+#: src/dd.c:2425
 #, c-format
 msgid "fdatasync failed for %s"
 msgstr "fdatasync gagal untuk %s"
 
-#: src/dd.c:2371
+#: src/dd.c:2433
 #, c-format
 msgid "fsync failed for %s"
 msgstr "fsync gagal untuk %s"
 
-#: src/dd.c:2422 src/dd.c:2452 src/nohup.c:164 src/nohup.c:166
+#: src/dd.c:2481 src/dd.c:2511 src/nohup.c:157 src/nohup.c:159
 #, c-format
 msgid "failed to open %s"
 msgstr "gagal untuk membuka %s"
 
-#: src/dd.c:2462
+#: src/dd.c:2521
 #, c-format
 msgid ""
 "offset too large: cannot truncate to a length of seek=%<PRIuMAX> (%lu-byte) "
@@ -3548,105 +3629,105 @@ msgstr ""
 "ofset terlalu besar: tidak dapat memotong ke panjang dari seek=%<PRIuMAX> "
 "(%lu-byte) blok"
 
-#: src/dd.c:2483
+#: src/dd.c:2542
 #, c-format
 msgid "failed to truncate to %<PRIuMAX> bytes in output file %s"
 msgstr "gagal untuk memotong %<PRIuMAX> byte dalam berkas keluaran %s"
 
-#: src/dd.c:2500 src/dd.c:2506
+#: src/dd.c:2559 src/dd.c:2565
 #, fuzzy, c-format
 msgid "failed to discard cache for: %s"
 msgstr "gagal untuk chdir ke %s"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/df.c:46 src/du.c:55 src/expr.c:153 src/kill.c:34 src/pathchk.c:31
-#: src/shuf.c:41 src/sleep.c:36 src/sort.c:67
+#: src/df.c:50 src/du.c:56 src/expr.c:153 src/kill.c:34 src/pathchk.c:31
+#: src/shuf.c:41 src/sleep.c:35 src/sort.c:68
 msgid "Paul Eggert"
 msgstr "Paul Eggert"
 
-#: src/df.c:178
+#: src/df.c:182
 msgid "Filesystem"
 msgstr "Sistem Berkas"
 
-#: src/df.c:181
+#: src/df.c:185
 msgid "Type"
 msgstr "Tipe"
 
-#: src/df.c:184 src/df.c:551
+#: src/df.c:188 src/df.c:602
 msgid "blocks"
 msgstr "blok"
 
-#: src/df.c:187
+#: src/df.c:191
 msgid "Used"
 msgstr "Isi"
 
-#: src/df.c:190
+#: src/df.c:194
 msgid "Available"
 msgstr "Sisa"
 
-#: src/df.c:193
+#: src/df.c:197
 msgid "Use%"
 msgstr "Isi%"
 
-#: src/df.c:196
+#: src/df.c:200
 msgid "Inodes"
 msgstr "Inode"
 
-#: src/df.c:199
+#: src/df.c:203
 msgid "IUsed"
 msgstr "IIsi"
 
-#: src/df.c:202
+#: src/df.c:206
 msgid "IFree"
 msgstr "Ibebas"
 
-#: src/df.c:205
+#: src/df.c:209
 msgid "IUse%"
 msgstr "IIsi%"
 
-#: src/df.c:208
+#: src/df.c:212
 msgid "Mounted on"
 msgstr "Dipasang di"
 
-#: src/df.c:211
+#: src/df.c:215
 msgid "File"
 msgstr ""
 
-#: src/df.c:391
+#: src/df.c:442
 #, fuzzy, c-format
 msgid "option --output: field %s unknown"
 msgstr "peringatan: berkas sumber %s dispesifikasikan lebih dari sekali"
 
-#: src/df.c:398
+#: src/df.c:449
 #, fuzzy, c-format
 msgid "option --output: field %s used more than once"
 msgstr "peringatan: berkas sumber %s dispesifikasikan lebih dari sekali"
 
-#: src/df.c:419 src/df.c:458
+#: src/df.c:470 src/df.c:509
 msgid "Size"
 msgstr "Besar"
 
-#: src/df.c:423 src/df.c:460
+#: src/df.c:474 src/df.c:511
 msgid "Avail"
 msgstr "Sisa"
 
-#: src/df.c:483
+#: src/df.c:534
 msgid "Capacity"
 msgstr "Kapasita"
 
 #. TRANSLATORS: this is the "1K-blocks" header in "df" output.
 #. TRANSLATORS: this is the "1024-blocks" header in "df -P".
-#: src/df.c:554 src/df.c:563
+#: src/df.c:605 src/df.c:614
 #, c-format
 msgid "%s-%s"
 msgstr ""
 
-#: src/df.c:1290
+#: src/df.c:1343
 #, c-format
 msgid "cannot access %s: over-mounted by another device"
 msgstr ""
 
-#: src/df.c:1459
+#: src/df.c:1512
 #, fuzzy
 msgid ""
 "Show information about the file system on which each FILE resides,\n"
@@ -3658,7 +3739,7 @@ msgstr ""
 
 #. TRANSLATORS: The thousands and decimal separators are best
 #. adjusted to an appropriate default for your locale.
-#: src/df.c:1468
+#: src/df.c:1521
 #, fuzzy
 msgid ""
 "  -a, --all             include pseudo, duplicate, inaccessible file "
@@ -3676,7 +3757,7 @@ msgstr ""
 "  -H, --si              sama seperti itu, tetapi menggunakan kelipatan dari "
 "1000 bukan 1024\n"
 
-#: src/df.c:1476
+#: src/df.c:1529
 msgid ""
 "  -i, --inodes          list inode information instead of block usage\n"
 "  -k                    like --block-size=1K\n"
@@ -3690,7 +3771,7 @@ msgstr ""
 "      --no-sync         jangan menjalankan sync sebelum memperoleh informasi "
 "penggunaan (default)\n"
 
-#: src/df.c:1483
+#: src/df.c:1536
 #, fuzzy
 msgid ""
 "      --output[=FIELD_LIST]  use the output format defined by FIELD_LIST,\n"
@@ -3708,7 +3789,7 @@ msgstr ""
 "tipe TIPE\n"
 "  -v                    (diabaikan)\n"
 
-#: src/df.c:1489
+#: src/df.c:1542
 #, fuzzy
 msgid ""
 "      --total           elide all entries insignificant to available space,\n"
@@ -3717,7 +3798,7 @@ msgstr ""
 "      --verbose           tampilkan sebuah diagnosa tepat sebelum setiap\n"
 "                            berkas keluaran dibuka\n"
 
-#: src/df.c:1493
+#: src/df.c:1546
 #, fuzzy
 msgid ""
 "  -t, --type=TYPE       limit listing to file systems of type TYPE\n"
@@ -3734,7 +3815,7 @@ msgstr ""
 "tipe TIPE\n"
 "  -v                    (diabaikan)\n"
 
-#: src/df.c:1503
+#: src/df.c:1556
 msgid ""
 "\n"
 "FIELD_LIST is a comma-separated list of columns to be included.  Valid\n"
@@ -3742,25 +3823,25 @@ msgid ""
 "'size', 'used', 'avail', 'pcent', 'file' and 'target' (see info page).\n"
 msgstr ""
 
-#: src/df.c:1540
+#: src/df.c:1593
 #, fuzzy, c-format
 msgid "options %s and %s are mutually exclusive"
 msgstr "pilihan --compare (C) dan --strip adalah mutually exclusive"
 
-#: src/df.c:1690
+#: src/df.c:1743
 #, c-format
 msgid "file system type %s both selected and excluded"
 msgstr "sistem berkas tipe %s keduanyan dipilih dan diexclude"
 
-#: src/df.c:1749
+#: src/df.c:1802
 msgid "Warning: "
 msgstr "Peringatan: "
 
-#: src/df.c:1751 src/stat.c:904
+#: src/df.c:1804 src/stat.c:944
 msgid "cannot read table of mounted file systems"
 msgstr "tidak dapat membaca tabel dari sistem berkas yang terpasang"
 
-#: src/df.c:1788
+#: src/df.c:1841
 msgid "no file systems processed"
 msgstr "tidak ada sistem berkas yang diproses"
 
@@ -3768,11 +3849,6 @@ msgstr "tidak ada sistem berkas yang diproses"
 #: src/dircolors.c:37
 msgid "H. Peter Anvin"
 msgstr "H. Peter Anvin"
-
-#: src/dircolors.c:99 src/uptime.c:204 src/users.c:111
-#, c-format
-msgid "Usage: %s [OPTION]... [FILE]\n"
-msgstr "Penggunaan: %s [PILIHAN]... [BERKAS]\n"
 
 #: src/dircolors.c:100
 msgid ""
@@ -3874,7 +3950,7 @@ msgid ""
 "  %s stdio.h            -> \".\"\n"
 msgstr ""
 
-#: src/du.c:284 src/sort.c:427 src/wc.c:115
+#: src/du.c:285 src/sort.c:415 src/wc.c:118
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... [FILE]...\n"
@@ -3883,7 +3959,7 @@ msgstr ""
 "Penggunaan: %s [PILIHAN]... [BERKAS]...\n"
 "  atau:     %s [PILIHAN]... --files0-from=F\n"
 
-#: src/du.c:288
+#: src/du.c:289
 #, fuzzy
 msgid ""
 "Summarize disk usage of the set of FILEs, recursively for directories.\n"
@@ -3892,7 +3968,7 @@ msgstr ""
 "direktori.\n"
 "\n"
 
-#: src/du.c:294
+#: src/du.c:295
 #, fuzzy
 msgid ""
 "  -0, --null            end each output line with NUL, not newline\n"
@@ -3913,7 +3989,7 @@ msgstr ""
 "berkas, internal\n"
 "                        fragmentasi, blok tidak langsung, dan seperti itu\n"
 
-#: src/du.c:303
+#: src/du.c:304
 #, fuzzy
 msgid ""
 "  -B, --block-size=SIZE  scale sizes by SIZE before printing them; e.g.,\n"
@@ -3940,7 +4016,7 @@ msgstr ""
 "                        argumen baris; --max-depth=0 sama seperti dalam\n"
 "                        --summarize\n"
 
-#: src/du.c:316
+#: src/du.c:317
 #, fuzzy
 msgid ""
 "      --files0-from=F   summarize disk usage of the\n"
@@ -3960,7 +4036,7 @@ msgstr ""
 "      --si              seperti -h, tetapi menggunakan kelipatan 1000 bukan "
 "1024\n"
 
-#: src/du.c:325
+#: src/du.c:326
 #, fuzzy
 msgid ""
 "  -k                    like --block-size=1K\n"
@@ -3972,7 +4048,7 @@ msgstr ""
 "  -l, --count-links     hitung ukuran beberapa kali jika hard linked\n"
 "  -m                    seperti --block-size=1M\n"
 
-#: src/du.c:331
+#: src/du.c:332
 #, fuzzy
 msgid ""
 "  -P, --no-dereference  don't follow any symbolic links (this is the "
@@ -3989,7 +4065,7 @@ msgstr ""
 "  -S, --separate-dirs   jangan memasukan ukuran dari subdirektori\n"
 "  -s, --summarize       tampilkan hanya sebuah total dari setiap argumen\n"
 
-#: src/du.c:337
+#: src/du.c:338
 #, fuzzy
 msgid ""
 "  -t, --threshold=SIZE  exclude entries smaller than SIZE if positive,\n"
@@ -4013,74 +4089,74 @@ msgstr ""
 "                        full-iso, long-iso, iso, +FORMAT\n"
 "                        FORMAT diinterpretasikan seperti `date'\n"
 
-#: src/du.c:348
+#: src/du.c:349
 msgid ""
 "  -X, --exclude-from=FILE  exclude files that match any pattern in FILE\n"
 "      --exclude=PATTERN    exclude files that match PATTERN\n"
 "  -x, --one-file-system    skip directories on different file systems\n"
 msgstr ""
 
-#: src/du.c:695
+#: src/du.c:696
 #, fuzzy, c-format
 msgid "fts_read failed: %s"
 msgstr "fts_read gagal"
 
-#: src/du.c:819
+#: src/du.c:820
 #, c-format
 msgid "invalid maximum depth %s"
 msgstr "kedalaman maksimal %s tidak valid"
 
-#: src/du.c:848
+#: src/du.c:849
 #, fuzzy
 msgid "invalid --threshold argument '-0'"
 msgstr "argumen --%s tidak valid %s"
 
-#: src/du.c:931
+#: src/du.c:932
 #, c-format
 msgid "cannot both summarize and show all entries"
 msgstr "tidak dapat meringkas dan menampilkan seluruh masukan bersamaan"
 
-#: src/du.c:938
+#: src/du.c:939
 #, c-format
 msgid "warning: summarizing is the same as using --max-depth=0"
 msgstr "peringatan: meringkas adalah sama dengan menggunakan --max-depth=0"
 
-#: src/du.c:944
+#: src/du.c:945
 #, c-format
 msgid "warning: summarizing conflicts with --max-depth=%lu"
 msgstr "peringatan: meringkas konflik dengan --max-depth=%lu"
 
-#: src/du.c:955
+#: src/du.c:956
 #, c-format
 msgid "warning: options --apparent-size and -b are ineffective with --inodes"
 msgstr ""
 
-#: src/du.c:1020 src/sort.c:4597 src/wc.c:739
+#: src/du.c:1021 src/sort.c:4598 src/wc.c:760
 msgid "file operands cannot be combined with --files0-from"
 msgstr "berkas operand tidak dapat dikombinasikan dengan --files0-from."
 
-#: src/du.c:1087 src/sort.c:4618 src/wc.c:817
+#: src/du.c:1088 src/sort.c:4619 src/wc.c:838
 #, c-format
 msgid "when reading file names from stdin, no file name of %s allowed"
 msgstr ""
 "ketika membaca nama berkas dari stdin, tidak ada nama berkas dari %s "
 "dibolehkan"
 
-#: src/du.c:1104 src/du.c:1112 src/wc.c:830 src/wc.c:838
+#: src/du.c:1105 src/du.c:1113 src/wc.c:851 src/wc.c:859
 msgid "invalid zero-length file name"
 msgstr "nama berkas panjang-nol tidak valid"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/echo.c:26
+#: src/echo.c:27
 msgid "Brian Fox"
 msgstr "Brian Fox"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/echo.c:27
+#: src/echo.c:28
 msgid "Chet Ramey"
 msgstr "Chet Ramey"
 
-#: src/echo.c:41
+#: src/echo.c:42
 #, c-format
 msgid ""
 "Usage: %s [SHORT-OPTION]... [STRING]...\n"
@@ -4089,7 +4165,7 @@ msgstr ""
 "Penggunaan: %s [PILIHAN-PENDEK]... [STRING]...\n"
 "  atau:     %s PILIHAN-PANJANG\n"
 
-#: src/echo.c:45
+#: src/echo.c:46
 msgid ""
 "Echo the STRING(s) to standard output.\n"
 "\n"
@@ -4099,7 +4175,7 @@ msgstr ""
 "\n"
 " -n              jangan mengeluarkan akhiran baris baru\n"
 
-#: src/echo.c:51
+#: src/echo.c:52
 msgid ""
 "  -e             enable interpretation of backslash escapes (default)\n"
 "  -E             disable interpretation of backslash escapes\n"
@@ -4107,7 +4183,7 @@ msgstr ""
 "  -e             aktifkan interpretasi dari backslash escape (default)\n"
 "  -E             non-aktifkan interpretasi dari escape backslash\n"
 
-#: src/echo.c:54
+#: src/echo.c:55
 msgid ""
 "  -e             enable interpretation of backslash escapes\n"
 "  -E             disable interpretation of backslash escapes (default)\n"
@@ -4115,7 +4191,7 @@ msgstr ""
 "  -e             aktifkan interpretasi dari backslash escape\n"
 "  -E             non-aktifkan interpretasi dari escape backslash (default)\n"
 
-#: src/echo.c:60
+#: src/echo.c:61
 msgid ""
 "\n"
 "If -e is in effect, the following sequences are recognized:\n"
@@ -4125,7 +4201,7 @@ msgstr ""
 "Jika -e memiliki efek, urutan berikut akan dikenali:\n"
 "\n"
 
-#: src/echo.c:65 src/printf.c:110
+#: src/echo.c:66 src/printf.c:110
 msgid ""
 "  \\\\      backslash\n"
 "  \\a      alert (BEL)\n"
@@ -4149,7 +4225,7 @@ msgstr ""
 "  \\t      horizontal tab\n"
 "  \\v      vertikal tab\n"
 
-#: src/echo.c:77
+#: src/echo.c:78
 msgid ""
 "  \\0NNN   byte with octal value NNN (1 to 3 digits)\n"
 "  \\xHH    byte with hexadecimal value HH (1 to 2 digits)\n"
@@ -4158,25 +4234,20 @@ msgstr ""
 "  \\xHH    byte dengan nilai heksadesimal HH (1 sampai 2 digit)\n"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/env.c:35 src/printenv.c:45 src/whoami.c:36
+#: src/env.c:38 src/printenv.c:45 src/whoami.c:35
 msgid "Richard Mlynarik"
 msgstr "Richard Mlynarik"
 
-#. This is a proper name. See the gettext manual, section Names.
-#: src/env.c:37 src/numfmt.c:43
-msgid "Assaf Gordon"
-msgstr ""
-
-#: src/env.c:73
+#: src/env.c:112
 #, c-format
 msgid "Usage: %s [OPTION]... [-] [NAME=VALUE]... [COMMAND [ARG]...]\n"
 msgstr "Penggunaan: %s [PILIHAN]... [-] [NAMA=NILAI]... [PERINTAH [ARG]...]\n"
 
-#: src/env.c:76
+#: src/env.c:115
 msgid "Set each NAME to VALUE in the environment and run COMMAND.\n"
 msgstr ""
 
-#: src/env.c:82
+#: src/env.c:121
 #, fuzzy
 msgid ""
 "  -i, --ignore-environment  start with an empty environment\n"
@@ -4190,18 +4261,44 @@ msgstr ""
 "baris baru\n"
 "  -u, --unset=NAMA           hapus variabel dari environment\n"
 
-#: src/env.c:87
+#: src/env.c:126
 msgid "  -C, --chdir=DIR      change working directory to DIR\n"
 msgstr ""
 
-#: src/env.c:90
+#: src/env.c:129
 msgid ""
 "  -S, --split-string=S  process and split S into separate arguments;\n"
 "                        used to pass multiple arguments on shebang lines\n"
-"  -v, --debug          print verbose information for each processing step\n"
 msgstr ""
 
-#: src/env.c:97
+#: src/env.c:133
+msgid ""
+"      --block-signal[=SIG]    block delivery of SIG signal(s) to COMMAND\n"
+msgstr ""
+
+#: src/env.c:136
+msgid ""
+"      --default-signal[=SIG]  reset handling of SIG signal(s) to the "
+"default\n"
+msgstr ""
+
+#: src/env.c:139
+msgid ""
+"      --ignore-signal[=SIG]   set handling of SIG signals(s) to do nothing\n"
+msgstr ""
+
+#: src/env.c:142
+msgid ""
+"      --list-signal-handling  list non default signal handling to stderr\n"
+msgstr ""
+
+#: src/env.c:145
+#, fuzzy
+msgid ""
+"  -v, --debug          print verbose information for each processing step\n"
+msgstr "  -l, --login       menampilkan proses sistem login\n"
+
+#: src/env.c:150
 msgid ""
 "\n"
 "A mere - implies -i.  If no COMMAND, print the resulting environment.\n"
@@ -4210,62 +4307,102 @@ msgstr ""
 "Hanya - mengindikasikan -i. Jika tidak ada PERINTAH, menampilkan environment "
 "yang dihasilkan.\n"
 
-#: src/env.c:122
+#: src/env.c:154
+#, fuzzy
+msgid ""
+"\n"
+"SIG may be a signal name like 'PIPE', or a signal number like '13'.\n"
+"Without SIG, all known signals are included.  Multiple signals can be\n"
+"comma-separated.\n"
+msgstr ""
+"\n"
+"SINYAL mungkin sebuah nama sinyal seperti `HUP', atau sebuah nomor sinyal. "
+"seperti `1',\n"
+"atau sebuah status keluaran dari sebuah proses diakhiri oleh sebuah sinyal.\n"
+"PID adalah sebuah integer; Jika negatif ini diidentifikasikan sebuah proses "
+"grup.\n"
+
+#: src/env.c:181
 #, c-format
 msgid "cannot unset %s"
 msgstr "tidak dapat unset %s"
 
-#: src/env.c:256
+#: src/env.c:315
 msgid "'\\c' must not appear in double-quoted -S string"
 msgstr ""
 
-#: src/env.c:260
+#: src/env.c:319
 #, fuzzy
 msgid "invalid backslash at end of string in -S"
 msgstr ""
 "peringatan: sebuah backslash tidak diescape di akhir dari string tidak "
 "portabel"
 
-#: src/env.c:263
+#: src/env.c:322
 #, c-format
 msgid "invalid sequence '\\%c' in -S"
 msgstr ""
 
-#: src/env.c:277
+#: src/env.c:336
 #, c-format
 msgid "only ${VARNAME} expansion is supported, error at: %s"
 msgstr ""
 
-#: src/env.c:288
+#: src/env.c:347
 msgid "no terminating quote in -S string"
 msgstr ""
 
-#: src/env.c:573
+#: src/env.c:613 src/env.c:702 src/operand2sig.c:88
+#, c-format
+msgid "%s: invalid signal"
+msgstr "%s: sinyal tidak valid"
+
+#: src/env.c:645
+#, fuzzy, c-format
+msgid "failed to get signal action for signal %d"
+msgstr "gagal memperoleh grup untuk user %s"
+
+#: src/env.c:653
+#, fuzzy, c-format
+msgid "failed to set signal action for signal %d"
+msgstr "gagal untuk menset default berkas pembuatan konteks ke %s"
+
+#: src/env.c:725 src/env.c:765
+#, fuzzy
+msgid "failed to get signal process mask"
+msgstr "gagal untuk menset peran baru %s"
+
+#: src/env.c:754
+#, fuzzy
+msgid "failed to set signal process mask"
+msgstr "gagal untuk menset peran baru %s"
+
+#: src/env.c:857
 #, fuzzy, c-format
 msgid "invalid option -- '%c'"
 msgstr "pilihan tidak valid -- %c"
 
-#: src/env.c:574 src/env.c:658
+#: src/env.c:858 src/env.c:949
 #, c-format
 msgid "use -[v]S to pass options in shebang lines"
 msgstr ""
 
-#: src/env.c:607
+#: src/env.c:891
 #, c-format
 msgid "cannot set %s"
 msgstr "tidak dapat menset %s"
 
-#: src/env.c:617
+#: src/env.c:901
 #, c-format
 msgid "cannot specify --null (-0) with command"
 msgstr "tidak dapat menspesifikasikan --null (-0) dengan perintah"
 
-#: src/env.c:623
+#: src/env.c:907
 #, c-format
 msgid "must specify command with --chdir (-C)"
 msgstr ""
 
-#: src/env.c:641
+#: src/env.c:932
 #, fuzzy, c-format
 msgid "cannot change directory to %s"
 msgstr "tidak dapat mengubah direktori root ke %s"
@@ -4355,7 +4492,7 @@ msgid "input line is too long"
 msgstr "baris masukan terlalu panjang"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/expr.c:151 src/ln.c:42 src/mv.c:42 src/tee.c:36
+#: src/expr.c:151 src/ln.c:51 src/mv.c:42 src/tee.c:36
 msgid "Mike Parker"
 msgstr "Mike Parker"
 
@@ -4530,11 +4667,11 @@ msgstr "%s: operator unary diharapkan"
 msgid "non-integer argument"
 msgstr "argumen tidak numeric"
 
-#: src/expr.c:933 src/truncate.c:289
+#: src/expr.c:933 src/truncate.c:278
 msgid "division by zero"
 msgstr "pembagian dengan nol"
 
-#: src/expr.c:1027 src/sort.c:2113
+#: src/expr.c:1027 src/sort.c:2119
 #, c-format
 msgid "set LC_ALL='C' to work around the problem"
 msgstr "set LC_ALL='C' untuk memperbaiki masalah"
@@ -4563,7 +4700,7 @@ msgstr ""
 msgid "%s is not a valid positive integer"
 msgstr "%s bukan sebuah valid positif integer"
 
-#: src/factor.c:2549 src/od.c:1691 src/od.c:1772
+#: src/factor.c:2549 src/od.c:1697 src/od.c:1778
 #, c-format
 msgid "%s is too large"
 msgstr "%s terlalu besar"
@@ -4684,7 +4821,7 @@ msgstr ""
 "  -s, --spaces        break di spaces\n"
 "  -w, --width=WIDTH   gunakan WIDTH kolom daripada 80\n"
 
-#: src/fold.c:284 src/pr.c:840
+#: src/fold.c:284 src/pr.c:841
 #, fuzzy
 msgid "invalid number of columns"
 msgstr "jumlah dari kolom tidak valid: %s"
@@ -4709,12 +4846,12 @@ msgstr ""
 "untuk shell scripts.\n"
 "\n"
 
-#: src/group-list.c:68 src/id.c:414
+#: src/group-list.c:68 src/id.c:401
 #, c-format
 msgid "failed to get groups for user %s"
 msgstr "gagal memperoleh grup untuk user %s"
 
-#: src/group-list.c:73 src/id.c:417
+#: src/group-list.c:73 src/id.c:404
 #, c-format
 msgid "failed to get groups for the current process"
 msgstr "gagal memperoleh grup untuk proses sekarang"
@@ -4739,22 +4876,22 @@ msgstr ""
 "NAMA pengguna yang dispesifikasikan,\n"
 "proses sekarang (yang berbeda jika database grup telah berubah).\n"
 
-#: src/groups.c:106 src/id.c:277
+#: src/groups.c:106 src/id.c:289
 #, fuzzy
 msgid "cannot get real UID"
 msgstr "tidak dapat menset id pengguna"
 
-#: src/groups.c:111 src/id.c:285
+#: src/groups.c:111 src/id.c:297
 #, fuzzy
 msgid "cannot get effective GID"
 msgstr "tidak dapat dereferensi %s"
 
-#: src/groups.c:116 src/id.c:290
+#: src/groups.c:116 src/id.c:302
 #, fuzzy
 msgid "cannot get real GID"
 msgstr "tidak dapat menset id pengguna"
 
-#: src/groups.c:130 src/id.c:249
+#: src/groups.c:130 src/id.c:255
 #, fuzzy, c-format
 msgid "%s: no such user"
 msgstr "%s: Tidak ada pengguna seperti itu"
@@ -4807,47 +4944,48 @@ msgid ""
 "NUM may have a multiplier suffix:\n"
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 msgstr ""
 "\n"
 "K mungkin memiliki sebuah akhiran pengali:\n"
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, dan seterusnya untuk T, P, E, Z, Y.\n"
 
-#: src/head.c:159
+#: src/head.c:160
 #, c-format
 msgid "%s: file has shrunk too much"
 msgstr "%s: berkas telah mengecil terlalu banyak"
 
-#: src/head.c:231 src/tail.c:484
+#: src/head.c:232 src/tail.c:507
 #, c-format
 msgid "%s: cannot seek to offset %s"
 msgstr "%s: tidak dapat mencari ofset %s"
 
-#: src/head.c:232 src/tail.c:488
+#: src/head.c:233 src/tail.c:511
 #, c-format
 msgid "%s: cannot seek to relative offset %s"
 msgstr "%s: tidak dapat mencari ofset relatif %s"
 
-#: src/head.c:274
+#: src/head.c:275
 #, c-format
 msgid "%s: number of bytes is too large"
 msgstr "%s: jumlah dari byte terlalu besar"
 
-#: src/head.c:912 src/split.c:1367 src/split.c:1534 src/tail.c:2181
+#: src/head.c:913 src/split.c:1368 src/split.c:1535 src/tail.c:2205
 msgid "invalid number of lines"
 msgstr "jumlah dari baris tidak valid"
 
-#: src/head.c:913 src/head.c:1077 src/split.c:1359 src/split.c:1375
-#: src/tail.c:2182
+#: src/head.c:914 src/head.c:1078 src/split.c:1360 src/split.c:1376
+#: src/tail.c:2206
 msgid "invalid number of bytes"
 msgstr "jumlah dari byte tidak valid"
 
-#: src/head.c:1003 src/head.c:1065
+#: src/head.c:1004 src/head.c:1066
 #, c-format
 msgid "invalid trailing option -- %c"
 msgstr "akhiran pilihan tidak valid -- %c"
 
-#: src/hostid.c:47
+#: src/hostid.c:41
 #, c-format
 msgid ""
 "Usage: %s [OPTION]\n"
@@ -4859,7 +4997,7 @@ msgstr ""
 "sekarang.\n"
 "\n"
 
-#: src/hostname.c:62
+#: src/hostname.c:56
 #, c-format
 msgid ""
 "Usage: %s [NAME]\n"
@@ -4872,16 +5010,16 @@ msgstr ""
 "Menampilkan atau menset nama host dari sistem sekarang.\n"
 "\n"
 
-#: src/hostname.c:100
+#: src/hostname.c:93
 #, c-format
 msgid "cannot set name to %s"
 msgstr "tidak dapat menset nama ke %s"
 
-#: src/hostname.c:104
+#: src/hostname.c:97
 msgid "cannot set hostname; this system lacks the functionality"
 msgstr "tidak dapat menset nama host; sistem ini kurang fungsionalitas"
 
-#: src/hostname.c:112
+#: src/hostname.c:105
 msgid "cannot determine hostname"
 msgstr "tidak dapat menentukan nama host"
 
@@ -4890,19 +5028,19 @@ msgstr "tidak dapat menentukan nama host"
 msgid "Arnold Robbins"
 msgstr "Arnold Robbins"
 
-#: src/id.c:85
-#, fuzzy, c-format
-msgid "Usage: %s [OPTION]... [USER]\n"
+#: src/id.c:96 src/pinky.c:489
+#, c-format
+msgid "Usage: %s [OPTION]... [USER]...\n"
 msgstr "Penggunaan: %s [PILIHAN]... [PENGGUNA]...\n"
 
-#: src/id.c:86
+#: src/id.c:97
 msgid ""
-"Print user and group information for the specified USER,\n"
+"Print user and group information for each specified USER,\n"
 "or (when USER omitted) for the current user.\n"
 "\n"
 msgstr ""
 
-#: src/id.c:91
+#: src/id.c:102
 #, fuzzy
 msgid ""
 "  -a             ignore, for compatibility with other versions\n"
@@ -4927,7 +5065,7 @@ msgstr ""
 "  -r, --real      tampilkan real ID daripada efektif ID, dengan -ugG\n"
 "  -u, --user      tampilkan hanya efektif ID pengguna\n"
 
-#: src/id.c:104
+#: src/id.c:115
 msgid ""
 "\n"
 "Without any OPTION, print some useful set of identified information.\n"
@@ -4935,72 +5073,72 @@ msgstr ""
 "\n"
 "Tanpa PILIHAN apapun, menampilkan beberapa informasi identifikasi berguna.\n"
 
-#: src/id.c:152
+#: src/id.c:153
 #, fuzzy
 msgid "--context (-Z) works only on an SELinux/SMACK-enabled kernel"
 msgstr "--context (-Z) hanya bekerja di kernel dengan SELinux-aktif"
 
-#: src/id.c:157
+#: src/id.c:158
 msgid "--context (-Z) works only on an SELinux-enabled kernel"
 msgstr "--context (-Z) hanya bekerja di kernel dengan SELinux-aktif"
 
-#: src/id.c:196
+#: src/id.c:192
 msgid "cannot print security context when user specified"
 msgstr ""
 "tidak dapat menampilkan konteks keamanan ketika pengguna dispesifikasikan"
 
-#: src/id.c:199
+#: src/id.c:195
 msgid "cannot print \"only\" of more than one choice"
 msgstr "tidak dapat menampilkan \"only\" lebih dari satu pilihan"
 
-#: src/id.c:208
+#: src/id.c:204
 msgid "cannot print only names or real IDs in default format"
 msgstr "tidak dapat menampilkan hanya nama atau ril ID dalam format default"
 
-#: src/id.c:212
+#: src/id.c:208
 #, fuzzy
 msgid "option --zero not permitted in default format"
 msgstr "tidak dapat menampilkan hanya nama atau ril ID dalam format default"
 
-#: src/id.c:228
+#: src/id.c:224
 msgid "can't get process context"
 msgstr "tidak dapat memperoleh konteks proses"
 
-#: src/id.c:268
+#: src/id.c:280
 #, fuzzy
 msgid "cannot get effective UID"
 msgstr "tidak dapat dereferensi %s"
 
-#: src/id.c:357
+#: src/id.c:344
 #, fuzzy, c-format
 msgid "cannot find name for user ID %s"
 msgstr "tidak dapat menemukan nama untuk pengguna ID %lu"
 
-#: src/id.c:375
+#: src/id.c:362
 #, fuzzy, c-format
 msgid "uid=%s"
 msgstr "uid=%lu"
 
-#: src/id.c:380
+#: src/id.c:367
 #, fuzzy, c-format
 msgid " gid=%s"
 msgstr " gid=%lu"
 
-#: src/id.c:387
+#: src/id.c:374
 #, fuzzy, c-format
 msgid " euid=%s"
 msgstr " euid=%lu"
 
-#: src/id.c:395
+#: src/id.c:382
 #, fuzzy, c-format
 msgid " egid=%s"
 msgstr " egid=%lu"
 
-#: src/id.c:423
+#: src/id.c:410
 msgid " groups="
 msgstr " groups="
 
-#: src/id.c:439
+#: src/id.c:426
 #, c-format
 msgid " context=%s"
 msgstr " konteks=%s"
@@ -5035,7 +5173,7 @@ msgstr "tidak dapat mengubah kepemilikan dari %s"
 msgid "cannot set timestamps for %s"
 msgstr "tidak dapat menset time stamps untuk %s"
 
-#: src/install.c:556 src/split.c:522 src/timeout.c:506
+#: src/install.c:556 src/split.c:523 src/timeout.c:506
 #, c-format
 msgid "fork system call failed"
 msgstr "fork system call gagal"
@@ -5175,7 +5313,7 @@ msgid ""
 "                            SELinux or SMACK security context to CTX\n"
 msgstr ""
 
-#: src/install.c:711 src/unlink.c:92
+#: src/install.c:711 src/unlink.c:85
 #, c-format
 msgid "cannot unlink %s"
 msgstr "tidak dapat unlink %s"
@@ -5195,7 +5333,7 @@ msgstr "pilihan strip tidak boleh digunakan ketika memasang sebuah direktori"
 msgid "target directory not allowed when installing a directory"
 msgstr "direktori tujuan tidak memperbolehkan ketika memasang sebuah direktori"
 
-#: src/install.c:1002 src/mkdir.c:284 src/stdbuf.c:351
+#: src/install.c:1002 src/mkdir.c:284 src/stdbuf.c:352
 #, c-format
 msgid "invalid mode %s"
 msgstr "mode tidak valid %s"
@@ -5228,7 +5366,7 @@ msgstr ""
 "dengan bit tanpa-ijin"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/join.c:41 src/sort.c:66
+#: src/join.c:41 src/sort.c:67
 msgid "Mike Haertel"
 msgstr "Mike Haertel"
 
@@ -5291,7 +5429,7 @@ msgstr ""
 "                    jika seluruh masukan baris dapat dipasangkan\n"
 "  --nocheck-order   jangan periksa masukan adalah diurutkan secara benar\n"
 
-#: src/join.c:227 src/shuf.c:83 src/sort.c:512 src/uniq.c:206
+#: src/join.c:227 src/shuf.c:83 src/sort.c:500 src/uniq.c:201
 #, fuzzy
 msgid "  -z, --zero-terminated     line delimiter is NUL, not newline\n"
 msgstr ""
@@ -5341,40 +5479,40 @@ msgstr ""
 msgid "%s:%<PRIuMAX>: is not sorted: %.*s"
 msgstr ""
 
-#: src/join.c:849 src/join.c:1047
+#: src/join.c:848 src/join.c:1046
 #, c-format
 msgid "invalid field number: %s"
 msgstr "nomor field tidak valid: %s"
 
-#: src/join.c:870 src/join.c:879
+#: src/join.c:869 src/join.c:878
 #, c-format
 msgid "invalid field specifier: %s"
 msgstr "spesifikasi field tidak valid: %s"
 
-#: src/join.c:886
+#: src/join.c:885
 #, c-format
 msgid "invalid file number in field spec: %s"
 msgstr "nomor berkas tidak valid dalam field spec: %s"
 
-#: src/join.c:930
+#: src/join.c:929
 #, c-format
 msgid "incompatible join fields %lu, %lu"
 msgstr "join field tidak kompatible %lu, %lu"
 
-#: src/join.c:1058
+#: src/join.c:1057
 msgid "conflicting empty-field replacement strings"
 msgstr "konflik penggantian string empty-field"
 
-#: src/join.c:1110 src/sort.c:4534
+#: src/join.c:1109 src/sort.c:4535
 #, c-format
 msgid "multi-character tab %s"
 msgstr "multi-character tab %s"
 
-#: src/join.c:1114 src/sort.c:4539
+#: src/join.c:1113 src/sort.c:4540
 msgid "incompatible tabs"
 msgstr "incompatible tabs"
 
-#: src/join.c:1187
+#: src/join.c:1186
 msgid "both files cannot be standard input"
 msgstr "kedua berkas tidak dapat berupa standar masukan"
 
@@ -5454,27 +5592,27 @@ msgstr "tidak dapat mengkombinasikan sinyal dengan -l atau -t"
 msgid "no process ID specified"
 msgstr "tidak ada proses ID dispesifikasikan"
 
-#: src/libstdbuf.c:112
-#, c-format
-msgid "failed to allocate a %<PRIuMAX> byte stdio buffer\n"
-msgstr "gagal untuk mengalokasikan sebuah %<PRIuMAX> byte penyangga stdio\n"
-
-#: src/libstdbuf.c:119
+#: src/libstdbuf.c:108
 #, c-format
 msgid "invalid buffering mode %s for %s\n"
 msgstr "mode penyangga %s tidak valid untuk %s\n"
 
-#: src/libstdbuf.c:127
+#: src/libstdbuf.c:120
+#, c-format
+msgid "failed to allocate a %<PRIuMAX> byte stdio buffer\n"
+msgstr "gagal untuk mengalokasikan sebuah %<PRIuMAX> byte penyangga stdio\n"
+
+#: src/libstdbuf.c:130
 #, c-format
 msgid "could not set buffering of %s to mode %s\n"
 msgstr "tidak dapat menset penyangga dari %s untuk mode %s\n"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/link.c:37 src/unlink.c:37 src/who.c:52
+#: src/link.c:36 src/unlink.c:36 src/who.c:52
 msgid "Michael Stone"
 msgstr "Michael Stone"
 
-#: src/link.c:51
+#: src/link.c:45
 #, c-format
 msgid ""
 "Usage: %s FILE1 FILE2\n"
@@ -5483,7 +5621,7 @@ msgstr ""
 "Penggunaan: %s BERKAS1 BERKAS2\n"
 "  atau:     %s PILIHAN\n"
 
-#: src/link.c:54
+#: src/link.c:48
 msgid ""
 "Call the link function to create a link named FILE2 to an existing FILE1.\n"
 "\n"
@@ -5492,52 +5630,52 @@ msgstr ""
 "BERKAS1 yang telah ada.\n"
 "\n"
 
-#: src/link.c:96
+#: src/link.c:89
 #, c-format
 msgid "cannot create link %s to %s"
 msgstr "tidak dapat membuat link %s ke %s"
 
-#: src/ln.c:207
+#: src/ln.c:213
 #, c-format
 msgid "%s: hard link not allowed for directory"
 msgstr "%s: link keras tidak diijinkan untuk direktori"
 
-#: src/ln.c:272
+#: src/ln.c:238
 #, c-format
 msgid "%s: cannot overwrite directory"
 msgstr "%s: tidak dapat overwrite direktori"
 
-#: src/ln.c:277
+#: src/ln.c:285
 #, c-format
 msgid "%s: replace %s? "
 msgstr "%s: menimpa %s? "
 
-#: src/ln.c:349
+#: src/ln.c:380
 #, fuzzy, c-format
 msgid "failed to create symbolic link %s"
 msgstr "tidak dapat membuat link simbolik %s"
 
-#: src/ln.c:350
+#: src/ln.c:381
 #, fuzzy, c-format
 msgid "failed to create symbolic link %s -> %s"
 msgstr "tidak dapat membuat link simbolik %s ke %s"
 
-#: src/ln.c:352
+#: src/ln.c:383
 #, fuzzy, c-format
 msgid "failed to create hard link to %.0s%s"
 msgstr "membuat link keras ke %.0s%s"
 
-#: src/ln.c:355
+#: src/ln.c:386
 #, fuzzy, c-format
 msgid "failed to create hard link %s"
 msgstr "tidak dapat membuah link keras %s ke %s"
 
-#: src/ln.c:356
+#: src/ln.c:387
 #, fuzzy, c-format
 msgid "failed to create hard link %s => %s"
 msgstr "tidak dapat membuah link keras %s ke %s"
 
-#: src/ln.c:378
+#: src/ln.c:409
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [OPTION]... [-T] TARGET LINK_NAME\n"
@@ -5550,7 +5688,7 @@ msgstr ""
 "  atau:     %s [PILIHAN]... TARGET... DIREKTORI   (bentuk ketiga)\n"
 "  atau:     %s [PILIHAN]... -t DIREKTORI TARGET...(bentuk keempat)\n"
 
-#: src/ln.c:385
+#: src/ln.c:416
 #, fuzzy
 msgid ""
 "In the 1st form, create a link to TARGET with the name LINK_NAME.\n"
@@ -5570,7 +5708,7 @@ msgstr ""
 "Ketika membuat link keras, setiap TARGET harus ada. Link simbolik\n"
 "diinterpretasikan dalam hubungan dengan direktori atasnya.\n"
 
-#: src/ln.c:398
+#: src/ln.c:429
 msgid ""
 "      --backup[=CONTROL]      make a backup of each existing destination "
 "file\n"
@@ -5593,7 +5731,7 @@ msgstr ""
 "                              pembatasan sistem, bahkan untuk superuser)\n"
 "  -f, --force                 hapus berkas tujuan yang sudah ada\n"
 
-#: src/ln.c:406
+#: src/ln.c:437
 #, fuzzy
 msgid ""
 "  -i, --interactive           prompt whether to remove destinations\n"
@@ -5616,7 +5754,7 @@ msgstr ""
 "sambungan simbolik\n"
 "  -s, --symbolic              buat link simbolik daripada link keras\n"
 
-#: src/ln.c:415
+#: src/ln.c:446
 #, fuzzy
 msgid ""
 "  -S, --suffix=SUFFIX         override the usual backup suffix\n"
@@ -5635,7 +5773,7 @@ msgstr ""
 "  -v, --verbose               menampilkan nama dari setiap berkas yang "
 "terhubung\n"
 
-#: src/ln.c:425
+#: src/ln.c:456
 #, fuzzy, c-format
 msgid ""
 "\n"
@@ -5646,27 +5784,32 @@ msgstr ""
 "dispesifikasikan mengontrol\n"
 "perilaku ketika sumber adalah sebuah link simbolik, baku ke %s.\n"
 
-#: src/ln.c:542
-msgid "cannot combine --target-directory and --no-target-directory"
-msgstr ""
-"tidak dapat mengkombinasikan --target-directory dan --no-target-directory"
-
-#: src/ln.c:574
+#: src/ln.c:572
 #, fuzzy
 msgid "cannot do --relative without --symbolic"
 msgstr "tidak dapat membuat link simbolik %s"
 
+#: src/ln.c:584
+msgid "cannot combine --target-directory and --no-target-directory"
+msgstr ""
+"tidak dapat mengkombinasikan --target-directory dan --no-target-directory"
+
+#: src/ln.c:632
+#, fuzzy, c-format
+msgid "target %s"
+msgstr "kelebihan argumen %s"
+
 #. This is a proper name. See the gettext manual, section Names.
-#: src/logname.c:31
+#: src/logname.c:30
 msgid "FIXME: unknown"
 msgstr "BETULKAN AKU: tidak diketahui"
 
-#: src/logname.c:45
+#: src/logname.c:39
 #, c-format
 msgid "Usage: %s [OPTION]\n"
 msgstr "Penggunaan: %s [PILIHAN]\n"
 
-#: src/logname.c:46
+#: src/logname.c:40
 msgid ""
 "Print the name of the current user.\n"
 "\n"
@@ -5674,7 +5817,7 @@ msgstr ""
 "Menampilkan nama dari pengguna sekarang.\n"
 "\n"
 
-#: src/logname.c:85
+#: src/logname.c:78
 msgid "no login name"
 msgstr "bukan nama login"
 
@@ -5683,7 +5826,7 @@ msgstr "bukan nama login"
 #. Note %b is handled specially by ls and aligned correctly.
 #. Note also that specifying a width as in %5b is erroneous as strftime
 #. will count bytes rather than characters in multibyte locales.
-#: src/ls.c:770
+#: src/ls.c:777
 msgid "%b %e  %Y"
 msgstr "%b %e %Y"
 
@@ -5692,97 +5835,97 @@ msgstr "%b %e %Y"
 #. Note %b is handled specially by ls and aligned correctly.
 #. Note also that specifying a width as in %5b is erroneous as strftime
 #. will count bytes rather than characters in multibyte locales.
-#: src/ls.c:783
+#: src/ls.c:790
 msgid "%b %e %H:%M"
 msgstr "%b %e %H:%M"
 
-#: src/ls.c:1751
+#: src/ls.c:1930
 #, c-format
 msgid "ignoring invalid width in environment variable COLUMNS: %s"
 msgstr "mengabaikan lebar tidak valid dalam variabel lingkungan KOLOM: %s"
 
-#: src/ls.c:1779
+#: src/ls.c:1955
 #, c-format
 msgid "ignoring invalid tab size in environment variable TABSIZE: %s"
 msgstr ""
 "mengabaikan ukuran tab tidak valid dalam variabel lingkungan UKURAN TAB: %s"
 
-#: src/ls.c:1898
+#: src/ls.c:2074
 #, fuzzy
 msgid "invalid line width"
 msgstr "lebar baris tidak valid: %s"
 
-#: src/ls.c:1966
+#: src/ls.c:2142
 #, fuzzy
 msgid "invalid tab size"
 msgstr "ukuran tab tidak valid: %s"
 
-#: src/ls.c:2199
+#: src/ls.c:2376
 #, c-format
 msgid "invalid time style format %s"
 msgstr "format gaya waktu tidak valid: %s"
 
-#: src/ls.c:2223
+#: src/ls.c:2400
 #, fuzzy
 msgid "Valid arguments are:\n"
 msgstr "Argumen yang valid adalah:"
 
-#: src/ls.c:2227
+#: src/ls.c:2404
 msgid "  - +FORMAT (e.g., +%H:%M) for a 'date'-style format\n"
 msgstr ""
 
-#: src/ls.c:2601
+#: src/ls.c:2778
 #, c-format
 msgid "unrecognized prefix: %s"
 msgstr "prefix tidak dikenal: %s"
 
-#: src/ls.c:2631
+#: src/ls.c:2808
 #, c-format
 msgid "unparsable value for LS_COLORS environment variable"
 msgstr "nilai tidak dapat diparse untuk variabel lingkungan LS_COLORS"
 
-#: src/ls.c:2661 src/stat.c:1038
+#: src/ls.c:2838 src/stat.c:1046
 #, c-format
 msgid "ignoring invalid value of environment variable QUOTING_STYLE: %s"
 msgstr ""
 "mengabaikan nilai tidak valid dari variabel lingkungan QUOTING_STYLE: %s"
 
-#: src/ls.c:2727 src/pwd.c:164
+#: src/ls.c:2905 src/pwd.c:164
 #, c-format
 msgid "cannot open directory %s"
 msgstr "tidak dapat membuka direktori %s"
 
-#: src/ls.c:2742
+#: src/ls.c:2920
 #, c-format
 msgid "cannot determine device and inode of %s"
 msgstr "tidak dapat menentukan perangkat dan inode dari %s"
 
-#: src/ls.c:2751
+#: src/ls.c:2929
 #, c-format
 msgid "%s: not listing already-listed directory"
 msgstr "%s: tidak mendaftar direktori yang sudah terdaftar"
 
-#: src/ls.c:2776 src/ls.c:3195 src/selinux.c:127 src/selinux.c:300
+#: src/ls.c:2954 src/ls.c:3390 src/selinux.c:127 src/selinux.c:300
 #, fuzzy, c-format
 msgid "error canonicalizing %s"
 msgstr "gagal untuk menutup %s"
 
-#: src/ls.c:2838 src/pwd.c:232
+#: src/ls.c:3017 src/ls.c:3032 src/pwd.c:232
 #, c-format
 msgid "reading directory %s"
 msgstr "membaca direktori %s"
 
-#: src/ls.c:2853
+#: src/ls.c:3048
 #, c-format
 msgid "closing directory %s"
 msgstr "menutup direktori %s"
 
-#: src/ls.c:3572
+#: src/ls.c:3765
 #, c-format
 msgid "cannot compare file names %s and %s"
 msgstr "tidak dapat membandingkan nama berkas %s dan %s"
 
-#: src/ls.c:5132
+#: src/ls.c:5343
 #, fuzzy
 msgid ""
 "List information about the FILEs (the current directory by default).\n"
@@ -5792,7 +5935,7 @@ msgstr ""
 "Urutkan masukan secara alphabet jika tidak ada dari -cftuvSUX atau --sort.\n"
 "\n"
 
-#: src/ls.c:5139
+#: src/ls.c:5350
 #, fuzzy
 msgid ""
 "  -a, --all                  do not ignore entries starting with .\n"
@@ -5808,7 +5951,7 @@ msgstr ""
 "  -b, --escape               menampilkan oktal escape untuk karakter bukan "
 "bergambar\n"
 
-#: src/ls.c:5145
+#: src/ls.c:5356
 msgid ""
 "      --block-size=SIZE      with -l, scale sizes by SIZE when printing "
 "them;\n"
@@ -5816,7 +5959,7 @@ msgid ""
 "below\n"
 msgstr ""
 
-#: src/ls.c:5149
+#: src/ls.c:5360
 #, fuzzy
 msgid ""
 "  -B, --ignore-backups       do not list implied entries ending with ~\n"
@@ -5837,7 +5980,7 @@ msgstr ""
 "nama\n"
 "                             jika tidak; urutkan dengan ctime\n"
 
-#: src/ls.c:5156
+#: src/ls.c:5367
 #, fuzzy
 msgid ""
 "  -C                         list entries by columns\n"
@@ -5859,7 +6002,7 @@ msgstr ""
 "  -D, --dired                menghasilkan keluarkan didesign untuk Emacs' "
 "dired mode\n"
 
-#: src/ls.c:5165
+#: src/ls.c:5376
 #, fuzzy
 msgid ""
 "  -f                         do not sort, enable -aU, disable -ls --color\n"
@@ -5880,12 +6023,12 @@ msgstr ""
 "                             satu-kolom -1, verbose -l, vertikal -C\n"
 "      --full-time            seperti -l --time-style=full-iso\n"
 
-#: src/ls.c:5173
+#: src/ls.c:5384
 msgid "  -g                         like -l, but do not list owner\n"
 msgstr ""
 "  -g                         seperti -l, tetapi jangan mendaftar pemilik\n"
 
-#: src/ls.c:5176
+#: src/ls.c:5387
 #, fuzzy
 msgid ""
 "      --group-directories-first\n"
@@ -5901,12 +6044,12 @@ msgstr ""
 "                               penggunaan apapun dari --sort=none (-U) "
 "menonaktifkan grup\n"
 
-#: src/ls.c:5182
+#: src/ls.c:5393
 msgid ""
 "  -G, --no-group             in a long listing, don't print group names\n"
 msgstr ""
 
-#: src/ls.c:5185
+#: src/ls.c:5396
 #, fuzzy
 msgid ""
 "  -h, --human-readable       with -l and -s, print sizes like 1K 234M 2G "
@@ -5921,7 +6064,7 @@ msgstr ""
 "      --si                   sama seperti diatas, tetapi menggunakan "
 "kelipatan 1000 bukan 1024\n"
 
-#: src/ls.c:5189
+#: src/ls.c:5400
 #, fuzzy
 msgid ""
 "  -H, --dereference-command-line\n"
@@ -5944,13 +6087,13 @@ msgstr ""
 "POLA\n"
 "                             (overriden dengan -a atau -A)\n"
 
-#: src/ls.c:5199
+#: src/ls.c:5410
 msgid ""
 "      --hyperlink[=WHEN]     hyperlink file names; WHEN can be 'always'\n"
 "                               (default if omitted), 'auto', or 'never'\n"
 msgstr ""
 
-#: src/ls.c:5203
+#: src/ls.c:5414
 #, fuzzy
 msgid ""
 "      --indicator-style=WORD  append indicator with style WORD to entry "
@@ -5970,13 +6113,13 @@ msgstr ""
 "POLA\n"
 "  -k                         seperti --block-size=1K\n"
 
-#: src/ls.c:5212
+#: src/ls.c:5423
 msgid ""
 "  -k, --kibibytes            default to 1024-byte blocks for disk usage;\n"
 "                               used only with -s and per directory totals\n"
 msgstr ""
 
-#: src/ls.c:5216
+#: src/ls.c:5427
 msgid ""
 "  -l                         use a long listing format\n"
 "  -L, --dereference          when showing file information for a symbolic\n"
@@ -5994,7 +6137,7 @@ msgstr ""
 "  -m                          isi lebar dengan sebuah masukan yang "
 "dipisahkan dengan koma\n"
 
-#: src/ls.c:5224
+#: src/ls.c:5435
 #, fuzzy
 msgid ""
 "  -n, --numeric-uid-gid      like -l, but list numeric user and group IDs\n"
@@ -6013,7 +6156,7 @@ msgstr ""
 "  -p, --indicator-style=slash\n"
 "                             menambahkan / indikator ke direktori\n"
 
-#: src/ls.c:5231
+#: src/ls.c:5442
 #, fuzzy
 msgid ""
 "  -q, --hide-control-chars   print ? instead of nongraphic characters\n"
@@ -6036,7 +6179,7 @@ msgstr ""
 "      --quoting-style-chars  gunakan quoting style KATA untuk masukan nama:\n"
 "                             literal, local, shell, shell-always, c, escape\n"
 
-#: src/ls.c:5242
+#: src/ls.c:5453
 msgid ""
 "  -r, --reverse              reverse order while sorting\n"
 "  -R, --recursive            list subdirectories recursively\n"
@@ -6048,19 +6191,20 @@ msgstr ""
 "  -s, --size                 tampilkan ukuran dari setiap berkas yang "
 "dialokasikan, dalam blok\n"
 
-#: src/ls.c:5247
+#: src/ls.c:5458
 #, fuzzy
 msgid ""
 "  -S                         sort by file size, largest first\n"
 "      --sort=WORD            sort by WORD instead of name: none (-U), size (-"
 "S),\n"
 "                               time (-t), version (-v), extension (-X)\n"
-"      --time=WORD            with -l, show time as WORD instead of default\n"
-"                               modification time: atime or access or use (-"
-"u);\n"
-"                               ctime or status (-c); also use specified "
-"time\n"
-"                               as sort key if --sort=time (newest first)\n"
+"      --time=WORD            change the default of using modification "
+"times;\n"
+"                               access time (-u): atime, access, use;\n"
+"                               change time (-c): ctime, status;\n"
+"                               birth time: birth, creation;\n"
+"                             with -l, WORD determines which time to show;\n"
+"                             with --sort=time, sort by WORD (newest first)\n"
 msgstr ""
 "  -S                         mengurutkan dengan ukuran berkas\n"
 "      --sort=WORD            urutkan dengan WORD daripada dari nama: none -"
@@ -6073,23 +6217,23 @@ msgstr ""
 "sebagai kunci pengurut\n"
 "                             jika --sort=time\n"
 
-#: src/ls.c:5258
+#: src/ls.c:5470
 msgid ""
 "      --time-style=TIME_STYLE  time/date format with -l; see TIME_STYLE "
 "below\n"
 msgstr ""
 
-#: src/ls.c:5261
+#: src/ls.c:5473
 #, fuzzy
 msgid ""
-"  -t                         sort by modification time, newest first\n"
+"  -t                         sort by time, newest first; see --time\n"
 "  -T, --tabsize=COLS         assume tab stops at each COLS instead of 8\n"
 msgstr ""
 "  -t                         urutkan sesuai dengan waktu modifikasi\n"
 "  -T, --tabsize=COLS         asumsikan tab stops ada  di setiap COLS "
 "daripada 8\n"
 
-#: src/ls.c:5265
+#: src/ls.c:5477
 #, fuzzy
 msgid ""
 "  -u                         with -lt: sort by, and show, access time;\n"
@@ -6107,7 +6251,7 @@ msgstr ""
 "direktori\n"
 "  -v                         urutkan sesuai dengan versi\n"
 
-#: src/ls.c:5272
+#: src/ls.c:5484
 #, fuzzy
 msgid ""
 "  -w, --width=COLS           set output width to COLS.  0 means no limit\n"
@@ -6126,7 +6270,7 @@ msgstr ""
 "untuk setiap berkas\n"
 "  -1                         tampilkan sat berkas per baris\n"
 
-#: src/ls.c:5283
+#: src/ls.c:5495
 msgid ""
 "\n"
 "The TIME_STYLE argument can be full-iso, long-iso, iso, locale, or +FORMAT.\n"
@@ -6138,7 +6282,7 @@ msgid ""
 "Also the TIME_STYLE environment variable sets the default style to use.\n"
 msgstr ""
 
-#: src/ls.c:5291
+#: src/ls.c:5503
 msgid ""
 "\n"
 "Using color to distinguish file types is disabled both by default and\n"
@@ -6155,7 +6299,7 @@ msgstr ""
 "dapat mengubah konfigurasi ini. Gunakan perintah dircolors untuk "
 "mengubahnya.\n"
 
-#: src/ls.c:5298
+#: src/ls.c:5510
 msgid ""
 "\n"
 "Exit status:\n"
@@ -6177,7 +6321,7 @@ msgid "Samuel Neves"
 msgstr ""
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/md5sum.c:111 src/seq.c:43
+#: src/md5sum.c:111 src/seq.c:48
 msgid "Ulrich Drepper"
 msgstr "Ulrich Drepper"
 
@@ -6290,6 +6434,9 @@ msgid ""
 "line with checksum, a space, a character indicating input mode ('*' for "
 "binary,\n"
 "' ' for text or where binary is insignificant), and name for each FILE.\n"
+"\n"
+"Note: There is no difference between binary mode and text mode on GNU "
+"systems.\n"
 msgstr ""
 "\n"
 "Sum dihitung sesuai dijelaskan dalam %s. Ketika memeriksa, masukan\n"
@@ -6423,7 +6570,7 @@ msgstr "pilihan --quiet hanya berguna ketika memverifikasikan checksum"
 msgid "the --strict option is meaningful only when verifying checksums"
 msgstr "pilihan --status hanya berguna ketika memverifikasikan checksum"
 
-#: src/mkdir.c:59 src/rmdir.c:163
+#: src/mkdir.c:59 src/rmdir.c:164
 #, c-format
 msgid "Usage: %s [OPTION]... DIRECTORY...\n"
 msgstr "Penggunaan: %s [PILIHAN]... DIREKTORI...\n"
@@ -6683,7 +6830,7 @@ msgstr "terlalu banyak template"
 msgid "with --suffix, template %s must end in X"
 msgstr "dengan --suffix, template %s harus berakhir dalam X"
 
-#: src/mktemp.c:256 src/split.c:1344
+#: src/mktemp.c:256 src/split.c:1345
 #, c-format
 msgid "invalid suffix %s, contains directory separator"
 msgstr "akhiran tidak valid %s, berisi pemisah direktori"
@@ -6931,51 +7078,51 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/nl.c:284
+#: src/nl.c:281
 msgid "line number overflow"
 msgstr "nomor baris overflow"
 
-#: src/nl.c:488
+#: src/nl.c:484
 #, c-format
 msgid "invalid header numbering style: %s"
 msgstr "gaya penomoran header: %s tidak valid"
 
-#: src/nl.c:496
+#: src/nl.c:492
 #, c-format
 msgid "invalid body numbering style: %s"
 msgstr "gaya penomoran body: %s tidak valid"
 
-#: src/nl.c:504
+#: src/nl.c:500
 #, c-format
 msgid "invalid footer numbering style: %s"
 msgstr "gaya penomoran footer: %s tidak valid"
 
-#: src/nl.c:511
+#: src/nl.c:507
 #, fuzzy
 msgid "invalid starting line number"
 msgstr "awalan nomor baris: %s tidak valid"
 
-#: src/nl.c:516
+#: src/nl.c:512
 #, fuzzy
 msgid "invalid line number increment"
 msgstr "nomor baris increment: %s tidak valid"
 
-#: src/nl.c:523
+#: src/nl.c:519
 #, fuzzy
 msgid "invalid line number of blank lines"
 msgstr "jumlah dari baris kosong: %s tidak valid"
 
-#: src/nl.c:530
+#: src/nl.c:526
 #, fuzzy
 msgid "invalid line number field width"
 msgstr "lebar field nomor baris: %s tidak valid"
 
-#: src/nl.c:541
+#: src/nl.c:537
 #, c-format
 msgid "invalid line numbering format: %s"
 msgstr "format penomoran baris: %s tidak valid"
 
-#: src/nohup.c:56
+#: src/nohup.c:50
 #, c-format
 msgid ""
 "Usage: %s COMMAND [ARG]...\n"
@@ -6984,7 +7131,7 @@ msgstr ""
 "Penggunaan: %s PERINTAH [ARG]...\n"
 "  atau:     %s PILIHAN\n"
 
-#: src/nohup.c:62
+#: src/nohup.c:56
 msgid ""
 "Run COMMAND, ignoring hangup signals.\n"
 "\n"
@@ -6992,7 +7139,7 @@ msgstr ""
 "Jalankan PERINTAH, mengabaikan sinyal hangup.\n"
 "\n"
 
-#: src/nohup.c:68
+#: src/nohup.c:62
 #, fuzzy, c-format
 msgid ""
 "\n"
@@ -7011,37 +7158,37 @@ msgstr ""
 "keluaran.\n"
 "Untuk menyimpan BERKAS keluaran, gunakan `%s PERINTAH > BERKAS'.\n"
 
-#: src/nohup.c:130
+#: src/nohup.c:123
 #, c-format
 msgid "failed to render standard input unusable"
 msgstr "gagal untuk me-'render' masukan baku yang tidak berguna"
 
-#: src/nohup.c:132
+#: src/nohup.c:125
 #, c-format
 msgid "ignoring input"
 msgstr "mengabaikan masukan"
 
-#: src/nohup.c:176
+#: src/nohup.c:169
 #, c-format
 msgid "ignoring input and appending output to %s"
 msgstr "mengabaikan masukan dan menambahkan keluaran ke %s"
 
-#: src/nohup.c:177
+#: src/nohup.c:170
 #, c-format
 msgid "appending output to %s"
 msgstr "menambahkan keluaran ke %s"
 
-#: src/nohup.c:195
+#: src/nohup.c:188
 #, c-format
 msgid "ignoring input and redirecting stderr to stdout"
 msgstr "mengabaikan masukan dan meredirect stderr ke stdout"
 
-#: src/nohup.c:196
+#: src/nohup.c:189
 #, c-format
 msgid "redirecting stderr to stdout"
 msgstr "meredirect stderr ke stdout"
 
-#: src/nohup.c:200
+#: src/nohup.c:193
 #, c-format
 msgid "failed to redirect standard error"
 msgstr "gagal untuk meredirect standar error"
@@ -7051,7 +7198,7 @@ msgstr "gagal untuk meredirect standar error"
 msgid "Giuseppe Scrivano"
 msgstr "Giuseppe Scrivano"
 
-#: src/nproc.c:57 src/pwd.c:57 src/tty.c:65 src/uname.c:121 src/whoami.c:50
+#: src/nproc.c:57 src/pwd.c:57 src/tty.c:65 src/uname.c:121 src/whoami.c:44
 #, c-format
 msgid "Usage: %s [OPTION]...\n"
 msgstr "Penggunaan: %s [PILIHAN]...\n"
@@ -7319,7 +7466,7 @@ msgid ""
 "  $ ls -lh | %s --header --field 5 --from=iec --format %%10f\n"
 msgstr ""
 
-#: src/numfmt.c:1059 src/seq.c:240
+#: src/numfmt.c:1059 src/seq.c:248
 #, c-format
 msgid "format %s has no %% directive"
 msgstr "format %s tidak memiliki %% direktif"
@@ -7334,7 +7481,7 @@ msgstr "format lebar tidak valid"
 msgid "--format padding overriding --padding"
 msgstr ""
 
-#: src/numfmt.c:1110 src/seq.c:257
+#: src/numfmt.c:1110 src/seq.c:265
 #, c-format
 msgid "format %s ends in %%"
 msgstr "format %s berakhir dalam %%"
@@ -7349,7 +7496,7 @@ msgstr "presisi tidak valid: %s"
 msgid "invalid format %s, directive must be %%[0]['][-][N][.][N]f"
 msgstr ""
 
-#: src/numfmt.c:1140 src/seq.c:264
+#: src/numfmt.c:1140 src/seq.c:272
 #, c-format
 msgid "format %s has too many %% directives"
 msgstr "format %s memiliki terlalu banyak %% direktif"
@@ -7401,7 +7548,7 @@ msgstr "tanggal tidak valid %s"
 msgid "--grouping cannot be combined with --format"
 msgstr "berkas operand tidak dapat dikombinasikan dengan --files0-from."
 
-#: src/numfmt.c:1577 src/sort.c:4685
+#: src/numfmt.c:1577 src/sort.c:4686
 #, fuzzy, c-format
 msgid "failed to set locale"
 msgstr "gagal untuk menset peran baru %s"
@@ -7436,7 +7583,7 @@ msgstr "error membaca %s"
 msgid "failed to convert some of the input numbers"
 msgstr "gagal untuk me-'render' masukan baku yang tidak berguna"
 
-#: src/od.c:322
+#: src/od.c:323
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... [FILE]...\n"
@@ -7449,7 +7596,7 @@ msgstr ""
 "  atau:     %s --traditional [PILIHAN]... [BERKAS] [[+]OFFSET[.][b] [+]"
 "[LABEL][.][b]]\n"
 
-#: src/od.c:328
+#: src/od.c:329
 #, fuzzy
 msgid ""
 "\n"
@@ -7464,7 +7611,7 @@ msgstr ""
 "dengan tidak ada BERKAS, atau ketika BERKAS adalah -, baca standar masukan.\n"
 "\n"
 
-#: src/od.c:336
+#: src/od.c:337
 #, fuzzy
 msgid ""
 "\n"
@@ -7486,7 +7633,7 @@ msgstr ""
 "hexadesimal;\n"
 "akhiran mungkin . untuk oktal dan b untuk kelipatan dari 512.\n"
 
-#: src/od.c:348
+#: src/od.c:349
 #, fuzzy
 msgid ""
 "  -A, --address-radix=RADIX   output format for file offsets; RADIX is one\n"
@@ -7498,7 +7645,7 @@ msgstr ""
 "  -A, --address-radix=RADIX   tentukan bagaimana berkas ofset ditampilkan\n"
 "  -j, --skip-bytes=BYTES      lewati BYTES masukan awal byte\n"
 
-#: src/od.c:354
+#: src/od.c:355
 #, fuzzy
 msgid ""
 "  -N, --read-bytes=BYTES      limit dump to BYTES input bytes\n"
@@ -7520,7 +7667,7 @@ msgstr ""
 "  -w, --width[=BYTES]         keluarkan byte BYTES per baris keluaran\n"
 "      --traditional           menerima argumen dalam format tradisional\n"
 
-#: src/od.c:367
+#: src/od.c:368
 #, fuzzy
 msgid ""
 "\n"
@@ -7539,7 +7686,7 @@ msgstr ""
 "  -c   sama seperti -t c, pilih ASCII karakter atau backslash escapes\n"
 "  -d   sama seperti -t u2, pilih unsigned desimal 2-byte units\n"
 
-#: src/od.c:376
+#: src/od.c:377
 msgid ""
 "  -f   same as -t fF, select floats\n"
 "  -i   same as -t dI, select decimal ints\n"
@@ -7555,7 +7702,7 @@ msgstr ""
 "  -s   sama seperti -t d2, pilih desimal 2-byte units\n"
 "  -x   sama seperti -t x2, pilih hexadesimal 2-byte units\n"
 
-#: src/od.c:384
+#: src/od.c:385
 #, fuzzy
 msgid ""
 "\n"
@@ -7570,7 +7717,7 @@ msgstr ""
 "  a          karakter bernama, mengabaikan high-order bit\n"
 "  c          karakter ASCII atau backslash escape\n"
 
-#: src/od.c:391
+#: src/od.c:392
 #, fuzzy
 msgid ""
 "  d[SIZE]    signed decimal, SIZE bytes per integer\n"
@@ -7585,7 +7732,7 @@ msgstr ""
 "  u[SIZE]    unsigned desimal, SIZE bytes per integer\n"
 "  x[SIZE]    hexadesimal, SIZE bytes per integer\n"
 
-#: src/od.c:398
+#: src/od.c:399
 #, fuzzy
 msgid ""
 "\n"
@@ -7601,14 +7748,14 @@ msgstr ""
 "D\n"
 "untuk sizeof (double) atau L untuk sizeof(long double).\n"
 
-#: src/od.c:405
+#: src/od.c:406
 msgid ""
 "\n"
 "Adding a z suffix to any type displays printable characters at the end of\n"
 "each output line.\n"
 msgstr ""
 
-#: src/od.c:410
+#: src/od.c:411
 #, fuzzy
 msgid ""
 "\n"
@@ -7620,18 +7767,19 @@ msgid ""
 "  MB   1000*1000\n"
 "  M    1024*1024\n"
 "and so on for G, T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 msgstr ""
 "\n"
 "K mungkin memiliki sebuah akhiran pengali:\n"
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, dan seterusnya untuk T, P, E, Z, Y.\n"
 
-#: src/od.c:683 src/od.c:803
+#: src/od.c:685 src/od.c:805
 #, c-format
 msgid "invalid type string %s"
 msgstr "tipe string %s tidak valid"
 
-#: src/od.c:693
+#: src/od.c:695
 #, c-format
 msgid ""
 "invalid type string %s;\n"
@@ -7640,7 +7788,7 @@ msgstr ""
 "tipe string %s tidak valid;\n"
 "Sistem ini tidak memberikan sebuah tipe %lu-byte integral"
 
-#: src/od.c:814
+#: src/od.c:816
 #, c-format
 msgid ""
 "invalid type string %s;\n"
@@ -7649,43 +7797,38 @@ msgstr ""
 "Tipe string %s tidak valid;\n"
 "Sistem ini tidak memberikan sebuah %lu-byte tipe floating point"
 
-#: src/od.c:872
+#: src/od.c:874
 #, fuzzy, c-format
 msgid "invalid character '%c' in type string %s"
 msgstr "karakter `%c' tidak valid dalam tipe string %s"
 
-#: src/od.c:1104
+#: src/od.c:1110
 msgid "cannot skip past end of combined input"
 msgstr "tidak dapat melewatkan akhir dari kombinasi masukan"
 
-#: src/od.c:1654
+#: src/od.c:1660
 #, fuzzy, c-format
 msgid "invalid output address radix '%c'; it must be one character from [doxn]"
 msgstr ""
 "keluaran alamat radix `%c' tidak valid; ini harus berupa sebuah karakter "
 "dari [doxn]"
 
-#: src/od.c:1792
+#: src/od.c:1798
 msgid "no type may be specified when dumping strings"
 msgstr "tidak ada tipe yang bisa dispesikasikan ketika mendump strings"
 
-#: src/od.c:1867
+#: src/od.c:1873
 msgid "compatibility mode supports at most one file"
 msgstr "mode kompabilitas melayani di setiap berkas."
 
-#: src/od.c:1888
+#: src/od.c:1894
 msgid "skip-bytes + read-bytes is too large"
 msgstr "Skip-bytes + read-bytes terlalu besar"
 
-#: src/od.c:1931
+#: src/od.c:1937
 #, c-format
 msgid "warning: invalid width %lu; using %d instead"
 msgstr "peringatan: lebar tidak valid %lu; menggunakan %d"
-
-#: src/operand2sig.c:88
-#, c-format
-msgid "%s: invalid signal"
-msgstr "%s: sinyal tidak valid"
 
 #: src/paste.c:222
 msgid "standard input is closed"
@@ -7762,12 +7905,12 @@ msgid "limit %lu exceeded by length %lu of file name component %s"
 msgstr "batas %lu dilewati dengan panjang %lu dari komponen nama berkas %s"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pinky.c:37 src/uptime.c:46 src/users.c:36 src/who.c:50
+#: src/pinky.c:37 src/uptime.c:45 src/users.c:35 src/who.c:50
 msgid "Joseph Arceneaux"
 msgstr "Joseph Arceneaux"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pinky.c:39 src/uptime.c:48
+#: src/pinky.c:39 src/uptime.c:47
 msgid "Kaveh Ghazi"
 msgstr "Kaveh Ghazi"
 
@@ -7840,11 +7983,6 @@ msgstr "Ketika"
 msgid "Where"
 msgstr "Dimana"
 
-#: src/pinky.c:489
-#, c-format
-msgid "Usage: %s [OPTION]... [USER]...\n"
-msgstr "Penggunaan: %s [PILIHAN]... [PENGGUNA]...\n"
-
 #: src/pinky.c:490
 msgid ""
 "\n"
@@ -7898,98 +8036,98 @@ msgstr ""
 "dispesifikasikan ketika menggunakan -l"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pr.c:331
+#: src/pr.c:332
 msgid "Pete TerMaat"
 msgstr "Pete TerMaat"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/pr.c:332
+#: src/pr.c:333
 msgid "Roland Huebner"
 msgstr "Roland Huebner"
 
-#: src/pr.c:777
+#: src/pr.c:778
 #, fuzzy
 msgid "integer overflow"
 msgstr "nomor baris overflow"
 
-#: src/pr.c:916
+#: src/pr.c:917
 #, fuzzy
 msgid "'--pages=FIRST_PAGE[:LAST_PAGE]' missing argument"
 msgstr "`--pages=FIRST_PAGE[:LAST_PAGE]' argumen hilang"
 
-#: src/pr.c:918
+#: src/pr.c:919
 #, c-format
 msgid "invalid page range %s"
 msgstr "jangkauan halaman %s tidak valid"
 
-#: src/pr.c:978
+#: src/pr.c:979
 #, fuzzy
 msgid "'-l PAGE_LENGTH' invalid number of lines"
 msgstr "`-l PAGE_LENGTH' nomor baris tidak valid: %s"
 
-#: src/pr.c:993
+#: src/pr.c:994
 #, fuzzy
 msgid "'-N NUMBER' invalid starting line number"
 msgstr "`-N NOMOR' tidak valid dimulai dibaris nomor: %s"
 
-#: src/pr.c:997
+#: src/pr.c:998
 #, fuzzy
 msgid "'-o MARGIN' invalid line offset"
 msgstr "`-o MARGIN' tidak valid di baris ofset: %s"
 
-#: src/pr.c:1034
+#: src/pr.c:1035
 #, fuzzy
 msgid "'-w PAGE_WIDTH' invalid number of characters"
 msgstr "`-w PAGE_WIDTH' tidak valid jumlah dari karakter: %s"
 
-#: src/pr.c:1043
+#: src/pr.c:1044
 #, fuzzy
 msgid "'-W PAGE_WIDTH' invalid number of characters"
 msgstr "`-W PAGE_WIDTH' tidak valid jumlah dari karakter: %s"
 
-#: src/pr.c:1072
+#: src/pr.c:1073
 msgid "cannot specify number of columns when printing in parallel"
 msgstr ""
 "tidak dapat menspesifikasikan jumlah dari kolom ketika menampilkan dalam "
 "paralel"
 
-#: src/pr.c:1076
+#: src/pr.c:1077
 msgid "cannot specify both printing across and printing in parallel"
 msgstr ""
 "tidak dapat menspesifikasikan baik mencetak across dan mencetak dalam paralel"
 
-#: src/pr.c:1179
+#: src/pr.c:1180
 #, fuzzy, c-format
 msgid "'-%c' extra characters or invalid number in the argument: %s"
 msgstr "`-%c' kelebihan karakter atau jumlah tida valid dalam argumen: %s"
 
-#: src/pr.c:1281
+#: src/pr.c:1282
 msgid "page width too narrow"
 msgstr "lebar halaman terlalu kecil"
 
-#: src/pr.c:2337
+#: src/pr.c:2338
 #, c-format
 msgid "starting page number %<PRIuMAX> exceeds page count %<PRIuMAX>"
 msgstr ""
 "nomor halaman dimulai dari %<PRIuMAX> melebihi jumlah halaman %<PRIuMAX>"
 
-#: src/pr.c:2364
+#: src/pr.c:2365
 msgid "page number overflow"
 msgstr "jumlah halaman berlebihan"
 
-#: src/pr.c:2369
+#: src/pr.c:2370
 #, c-format
 msgid "Page %<PRIuMAX>"
 msgstr "Halaman %<PRIuMAX>"
 
-#: src/pr.c:2741
+#: src/pr.c:2742
 #, fuzzy
 msgid "Paginate or columnate FILE(s) for printing.\n"
 msgstr ""
 "Paginate atau columnate BERKAS untuk dicetak.\n"
 "\n"
 
-#: src/pr.c:2748
+#: src/pr.c:2749
 #, fuzzy
 msgid ""
 "  +FIRST_PAGE[:LAST_PAGE], --pages=FIRST_PAGE[:LAST_PAGE]\n"
@@ -8007,7 +8145,7 @@ msgstr ""
 "dalam\n"
 "                    kolom disetiap halaman.\n"
 
-#: src/pr.c:2756
+#: src/pr.c:2757
 msgid ""
 "  -a, --across      print columns across rather than down, used together\n"
 "                    with -COLUMN\n"
@@ -8024,7 +8162,7 @@ msgstr ""
 "  -d, --double-space\n"
 "                    keluaran menggunakan dua spasi\n"
 
-#: src/pr.c:2764
+#: src/pr.c:2765
 msgid ""
 "  -D, --date-format=FORMAT\n"
 "                    use FORMAT for the header date\n"
@@ -8046,7 +8184,7 @@ msgstr ""
 "5 baris header\n"
 "                    dan trailer tanpat -F)\n"
 
-#: src/pr.c:2774
+#: src/pr.c:2775
 msgid ""
 "  -h, --header=HEADER\n"
 "                    use a centered HEADER instead of filename in page "
@@ -8069,7 +8207,7 @@ msgstr ""
 "ada kolom\n"
 "                    penyesuaian, --sep-string[=STRING] set pemisah\n"
 
-#: src/pr.c:2783
+#: src/pr.c:2784
 #, fuzzy
 msgid ""
 "  -l, --length=PAGE_LENGTH\n"
@@ -8085,7 +8223,7 @@ msgstr ""
 "                    truncate baris, tetapi gabungkan baris dari lebar "
 "panjang lengkap dengan -J\n"
 
-#: src/pr.c:2789
+#: src/pr.c:2790
 #, fuzzy
 msgid ""
 "  -m, --merge       print all files in parallel, one in each column,\n"
@@ -8099,7 +8237,7 @@ msgstr ""
 "                    truncate baris, tetapi gabungkan baris dari lebar "
 "panjang lengkap dengan -J\n"
 
-#: src/pr.c:2793
+#: src/pr.c:2794
 msgid ""
 "  -n[SEP[DIGITS]], --number-lines[=SEP[DIGITS]]\n"
 "                    number lines, use DIGITS (5) digits, then SEP (TAB),\n"
@@ -8118,7 +8256,7 @@ msgstr ""
 "berkas\n"
 "                    pertama yang ditampilkan (lihat +FIRST_PAGE)\n"
 
-#: src/pr.c:2801
+#: src/pr.c:2802
 msgid ""
 "  -o, --indent=MARGIN\n"
 "                    offset each line with MARGIN (zero) spaces, do not\n"
@@ -8134,7 +8272,7 @@ msgstr ""
 "                    abaikan peringatan ketika sebuah berkas tidak dapat "
 "dibuka\n"
 
-#: src/pr.c:2808
+#: src/pr.c:2809
 #, fuzzy
 msgid ""
 "  -s[CHAR], --separator[=CHAR]\n"
@@ -8153,7 +8291,7 @@ msgstr ""
 "kolom\n"
 "                    pilihan (-COLUMN|-a -COLUMN|-m) kecuali -w diset\n"
 
-#: src/pr.c:2816
+#: src/pr.c:2817
 #, fuzzy
 msgid ""
 "  -S[STRING], --sep-string[=STRING]\n"
@@ -8169,13 +8307,13 @@ msgstr ""
 "pilihan kolom\n"
 "  -t, --omit-header  abaikan header halaman dan akhiran\n"
 
-#: src/pr.c:2822
+#: src/pr.c:2823
 msgid ""
 "  -t, --omit-header  omit page headers and trailers;\n"
 "                     implied if PAGE_LENGTH <= 10\n"
 msgstr ""
 
-#: src/pr.c:2826
+#: src/pr.c:2827
 msgid ""
 "  -T, --omit-pagination\n"
 "                    omit page headers and trailers, eliminate any "
@@ -8199,7 +8337,7 @@ msgstr ""
 "                    keluaran multiple text-kolom saja, -s[char] matikan "
 "(72)\n"
 
-#: src/pr.c:2836
+#: src/pr.c:2837
 msgid ""
 "  -W, --page-width=PAGE_WIDTH\n"
 "                    set page width to PAGE_WIDTH (72) characters always,\n"
@@ -8513,7 +8651,7 @@ msgstr "mengabaikan argumen bukan pilihan"
 msgid "Dmitry V. Levin"
 msgstr "Dmitry V. Levin"
 
-#: src/readlink.c:62 src/realpath.c:71 src/shred.c:170 src/stat.c:1497
+#: src/readlink.c:62 src/realpath.c:71 src/shred.c:170 src/stat.c:1691
 #: src/touch.c:213
 #, c-format
 msgid "Usage: %s [OPTION]... FILE...\n"
@@ -8814,17 +8952,17 @@ msgid_plural "%s: remove %<PRIuMAX> arguments? "
 msgstr[0] "%s: hapus seluruh argumen? "
 msgstr[1] "%s: hapus seluruh argumen? "
 
-#: src/rmdir.c:133 src/rmdir.c:232
+#: src/rmdir.c:133 src/rmdir.c:233
 #, c-format
 msgid "removing directory, %s"
 msgstr "menghapus direktori, %s"
 
-#: src/rmdir.c:147
+#: src/rmdir.c:148
 #, c-format
 msgid "failed to remove directory %s"
 msgstr "gagal untuk menghapus direktori %s"
 
-#: src/rmdir.c:164
+#: src/rmdir.c:165
 msgid ""
 "Remove the DIRECTORY(ies), if they are empty.\n"
 "\n"
@@ -8839,7 +8977,7 @@ msgstr ""
 "sebuah\n"
 "                  direktori yang tidak kosong\n"
 
-#: src/rmdir.c:171
+#: src/rmdir.c:172
 #, fuzzy
 msgid ""
 "  -p, --parents   remove DIRECTORY and its ancestors; e.g., 'rmdir -p a/b/c' "
@@ -8853,7 +8991,7 @@ msgstr ""
 "  -v, --verbose   keluarkan sebuah pesan diagnosis untuk setiap direktori "
 "yang diproses\n"
 
-#: src/rmdir.c:241
+#: src/rmdir.c:243
 #, c-format
 msgid "failed to remove %s"
 msgstr "gagal untuk menghapus %s"
@@ -8960,7 +9098,7 @@ msgstr "gagal untuk menset peran baru %s"
 msgid "unable to set security context %s"
 msgstr "gagal untuk menset konteks keamanan %s"
 
-#: src/seq.c:72
+#: src/seq.c:80
 #, c-format
 msgid ""
 "Usage: %s [OPTION]... LAST\n"
@@ -8971,11 +9109,11 @@ msgstr ""
 "  atau:     %s [PILIHAN]... PERTAMA TERAKHIR\n"
 "  atau:     %s [PILIHAN]... PERTAMA PENINGKATAN TERAKHIR\n"
 
-#: src/seq.c:77
+#: src/seq.c:85
 msgid "Print numbers from FIRST to LAST, in steps of INCREMENT.\n"
 msgstr ""
 
-#: src/seq.c:83
+#: src/seq.c:91
 #, fuzzy
 msgid ""
 "  -f, --format=FORMAT      use printf style floating-point FORMAT\n"
@@ -8991,7 +9129,7 @@ msgstr ""
 "  -w, --equal-width        samakan lebar dengan menambahkan dengan awalan "
 "nol\n"
 
-#: src/seq.c:90
+#: src/seq.c:98
 #, fuzzy
 msgid ""
 "\n"
@@ -9014,7 +9152,7 @@ msgstr ""
 "PENINGKATAN biasanya positif jika PERTAMA lebih kecil dari TERAKHIR, dan\n"
 "PENINGKATAN biasanya negatif jika PERTAMA lebih besar dari TERAKHIR.\n"
 
-#: src/seq.c:101
+#: src/seq.c:109
 #, fuzzy
 msgid ""
 "FORMAT must be suitable for printing one argument of type 'double';\n"
@@ -9026,29 +9164,29 @@ msgstr ""
 "bilangan bulat desimal dengam maksimal presisi PREC, dan sampai %g jika "
 "tidak.\n"
 
-#: src/seq.c:147
+#: src/seq.c:155
 #, c-format
 msgid "invalid floating point argument: %s"
 msgstr "argumen floating point tidak valid: %s"
 
-#: src/seq.c:153
+#: src/seq.c:161
 #, fuzzy, c-format
 msgid "invalid %s argument: %s"
 msgstr "argumen --%s tidak valid %s"
 
-#: src/seq.c:260
+#: src/seq.c:268
 #, c-format
 msgid "format %s has unknown %%%c directive"
 msgstr "format %s memiliki %%%c direktif tidak diketahui"
 
-#: src/seq.c:628
+#: src/seq.c:648
 #, c-format
 msgid "format string may not be specified when printing equal width strings"
 msgstr ""
 "format string mungkin tidak dispesifikasikan ketika menampilkan string "
 "dengan lebar sama"
 
-#: src/seq.c:665
+#: src/seq.c:693
 #, fuzzy, c-format
 msgid "invalid Zero increment value: %s"
 msgstr "nomor baris increment: %s tidak valid"
@@ -9194,210 +9332,128 @@ msgstr ""
 
 #: src/shred.c:210
 msgid ""
-"CAUTION: Note that shred relies on a very important assumption:\n"
-"that the file system overwrites data in place.  This is the traditional\n"
-"way to do things, but many modern file system designs do not satisfy this\n"
-"assumption.  The following are examples of file systems on which shred is\n"
-"not effective, or is not guaranteed to be effective in all file system "
-"modes:\n"
-"\n"
+"CAUTION: shred assumes the file system and hardware overwrite data in "
+"place.\n"
+"Although this is common, many platforms operate otherwise.  Also, backups\n"
+"and mirrors may contain unremovable copies that will let a shredded file\n"
+"be recovered later.  See the GNU coreutils manual for details.\n"
 msgstr ""
-"PERHATIAN: Catat shred bergantung di asumsi sangat penting:\n"
-"bahwa sistem berkas memaksa tulis data di tempat. Ini adalah cara\n"
-"tradisional untuk melakukan itu, tetapi banyak rancangan sistem berkas "
-"modern tidak memenuhi asumsi\n"
-"ini. Contoh berikut dari sistem berkas dimana shred\n"
-"tidak efektif, atau tidak digaransi untuk efektif di seluruh mode sistem "
-"berkas:\n"
-"\n"
 
-#: src/shred.c:218
-msgid ""
-"* log-structured or journaled file systems, such as those supplied with\n"
-"AIX and Solaris (and JFS, ReiserFS, XFS, Ext3, etc.)\n"
-"\n"
-"* file systems that write redundant data and carry on even if some writes\n"
-"fail, such as RAID-based file systems\n"
-"\n"
-"* file systems that make snapshots, such as Network Appliance's NFS server\n"
-"\n"
-msgstr ""
-"* berstruktur-log atau sistem berkas terjurnal, seperti yang disupply "
-"dengan\n"
-"AIX dan Solaris (dan JFS, ReiserFS, XFS, Ext3, dan lain sebagainya.)\n"
-"\n"
-"* sistem berkas yang menulis data secara redundancy dan membawa bahkan jika "
-"beberapa tulis\n"
-"gagal, seperti dalam sistem berkas berbasis RAID\n"
-"\n"
-"* sistem berkas yang membuat snapshot, seperti dalam Network Appliance NFS "
-"server\n"
-"\n"
-
-#: src/shred.c:228
-msgid ""
-"* file systems that cache in temporary locations, such as NFS\n"
-"version 3 clients\n"
-"\n"
-"* compressed file systems\n"
-"\n"
-msgstr ""
-"* sistem berkas yang disimpan di lokasi sementara, seperti di NFS\n"
-"versi 3 klien\n"
-"\n"
-"* sistem berkas terkompres\n"
-"\n"
-
-#: src/shred.c:235
-msgid ""
-"In the case of ext3 file systems, the above disclaimer applies\n"
-"(and shred is thus of limited effectiveness) only in data=journal mode,\n"
-"which journals file data in addition to just metadata.  In both the\n"
-"data=ordered (default) and data=writeback modes, shred works as usual.\n"
-"Ext3 journaling modes can be changed by adding the data=something option\n"
-"to the mount options for a particular file system in the /etc/fstab file,\n"
-"as documented in the mount man page (man mount).\n"
-"\n"
-msgstr ""
-"Dalam kasus sistem berkas ext3, disclaimer diatas berjalan\n"
-"(dan shred juga terbatas efektivitasnya) hanya dalam mode data=journal,\n"
-"yang berkas data jurnal dalam tambahan daripada hanya metadata. Dalam "
-"keduanya\n"
-"data=ordered (default) dan mode data=writeback, shred bekerja seperti "
-"biasa.\n"
-"Mode jurnal ext3 dapat diubah dengan menambahkan pilihan data=sesuatu\n"
-"ke pilihan mount untuk sistem berkas yang bersangkutan di berkas /etc/"
-"fstab,\n"
-"seperti yang terdokumentasi dalam halaman manual mount (man mount).\n"
-"\n"
-
-#: src/shred.c:245
-msgid ""
-"In addition, file system backups and remote mirrors may contain copies\n"
-"of the file that cannot be removed, and that will allow a shredded file\n"
-"to be recovered later.\n"
-msgstr ""
-"Sebagai tambahan, sistem berkas backup dan remote mirror mungkin berisi "
-"salinan\n"
-"dari berkas yang tidak dapat dihapus, dan itu mungkin memungkinkan sebuah "
-"berkas yang tershred untuk\n"
-"diselamatkan nanti.\n"
-
-#: src/shred.c:344
+#: src/shred.c:310
 #, c-format
 msgid "%s: fdatasync failed"
 msgstr "%s: fdatasync gagal"
 
-#: src/shred.c:355
+#: src/shred.c:321
 #, c-format
 msgid "%s: fsync failed"
 msgstr "%s: fsync gagal"
 
-#: src/shred.c:472
+#: src/shred.c:438
 #, c-format
 msgid "%s: cannot rewind"
 msgstr "%s: gagal rewind"
 
-#: src/shred.c:492
+#: src/shred.c:458
 #, c-format
 msgid "%s: pass %lu/%lu (%s)..."
 msgstr "%s: tahap %lu/%lu (%s)..."
 
-#: src/shred.c:543
+#: src/shred.c:509
 #, c-format
 msgid "%s: error writing at offset %s"
 msgstr "%s: error menulis di ofset %s"
 
-#: src/shred.c:564
+#: src/shred.c:530
 #, c-format
 msgid "%s: lseek failed"
 msgstr "%s: lseek gagal"
 
-#: src/shred.c:576
+#: src/shred.c:542
 #, c-format
 msgid "%s: file too large"
 msgstr "%s: berkas terlalu besar"
 
-#: src/shred.c:600
+#: src/shred.c:566
 #, c-format
 msgid "%s: pass %lu/%lu (%s)...%s"
 msgstr "%s: tahap %lu/%lu (%s)...%s"
 
-#: src/shred.c:616
+#: src/shred.c:582
 #, c-format
 msgid "%s: pass %lu/%lu (%s)...%s/%s %d%%"
 msgstr "%s: tahap %lu/%lu (%s)...%s/%s %d%%"
 
-#: src/shred.c:874
+#: src/shred.c:840
 #, c-format
 msgid "%s: fstat failed"
 msgstr "%s: fstat gagal"
 
-#: src/shred.c:885
+#: src/shred.c:851
 #, c-format
 msgid "%s: invalid file type"
 msgstr "%s: tipe berkas tidak valid"
 
-#: src/shred.c:890
+#: src/shred.c:856
 #, c-format
 msgid "%s: file has negative size"
 msgstr "%s: berkas memilik ukuran negatif"
 
-#: src/shred.c:984 src/sort.c:967 src/split.c:474
+#: src/shred.c:952 src/sort.c:972 src/split.c:475
 #, c-format
 msgid "%s: error truncating"
 msgstr "%s: error memotong"
 
-#: src/shred.c:1003
+#: src/shred.c:971
 #, c-format
 msgid "%s: fcntl failed"
 msgstr "%s: fcntl gagal"
 
-#: src/shred.c:1008
+#: src/shred.c:976
 #, c-format
 msgid "%s: cannot shred append-only file descriptor"
 msgstr "%s: tidak dapat menshred tambah-saja berkas deskripsi"
 
-#: src/shred.c:1091
+#: src/shred.c:1059
 #, c-format
 msgid "%s: removing"
 msgstr "%s: menghapus"
 
-#: src/shred.c:1116
+#: src/shred.c:1084
 #, c-format
 msgid "%s: renamed to %s"
 msgstr "%s: diubah namanya menjadi %s"
 
-#: src/shred.c:1125
+#: src/shred.c:1093
 #, c-format
 msgid "%s: failed to remove"
 msgstr "%s: gagal untuk menghapus"
 
-#: src/shred.c:1129
+#: src/shred.c:1097
 #, c-format
 msgid "%s: removed"
 msgstr "%s: dihapus"
 
-#: src/shred.c:1136 src/shred.c:1179
+#: src/shred.c:1104 src/shred.c:1147
 #, c-format
 msgid "%s: failed to close"
 msgstr "%s: gagal untuk menutup"
 
-#: src/shred.c:1172
+#: src/shred.c:1140
 #, c-format
 msgid "%s: failed to open for writing"
 msgstr "%s: gagal untuk membuka untuk menulis"
 
-#: src/shred.c:1235
+#: src/shred.c:1203
 #, fuzzy
 msgid "invalid number of passes"
 msgstr "%s: jumlah tahap tidak valid"
 
-#: src/shred.c:1240 src/shuf.c:462 src/sort.c:4507
+#: src/shred.c:1208 src/shuf.c:462 src/sort.c:4508
 msgid "multiple random sources specified"
 msgstr "banyak sumber random dispesifikasikan"
 
-#: src/shred.c:1254
+#: src/shred.c:1222
 #, fuzzy
 msgid "invalid file size"
 msgstr "%s: ukuran berkas tidak valid"
@@ -9459,7 +9515,7 @@ msgstr "jangkauan masukan %s tidak valid"
 msgid "invalid line count: %s"
 msgstr "jumlah baris %s tidak valid"
 
-#: src/shuf.c:456 src/sort.c:4501
+#: src/shuf.c:456 src/sort.c:4502
 msgid "multiple output files specified"
 msgstr "banyak berkas keluaran dispesifikasikan"
 
@@ -9468,20 +9524,18 @@ msgstr "banyak berkas keluaran dispesifikasikan"
 msgid "cannot combine -e and -i options"
 msgstr "tidak dapat mengkombinasikan pilihan -e dan -i"
 
-#: src/shuf.c:570
+#: src/shuf.c:575
 msgid "no lines to repeat"
 msgstr ""
 
-#: src/sleep.c:50
+#: src/sleep.c:44
 #, fuzzy, c-format
 msgid ""
 "Usage: %s NUMBER[SUFFIX]...\n"
 "  or:  %s OPTION\n"
 "Pause for NUMBER seconds.  SUFFIX may be 's' for seconds (the default),\n"
-"'m' for minutes, 'h' for hours or 'd' for days.  Unlike most "
-"implementations\n"
-"that require NUMBER be an integer, here NUMBER may be an arbitrary floating\n"
-"point number.  Given two or more arguments, pause for the amount of time\n"
+"'m' for minutes, 'h' for hours or 'd' for days.  NUMBER need not be an\n"
+"integer.  Given two or more arguments, pause for the amount of time\n"
 "specified by the sum of their values.\n"
 "\n"
 msgstr ""
@@ -9497,23 +9551,23 @@ msgstr ""
 "yang dispesifikasikan oleh jumlah dari nilainya.\n"
 "\n"
 
-#: src/sleep.c:140 src/timeout.c:332
+#: src/sleep.c:132 src/timeout.c:332
 #, c-format
 msgid "invalid time interval %s"
 msgstr "jangka waktu %s tidak valid"
 
-#: src/sleep.c:151 src/tail.c:1287
+#: src/sleep.c:143 src/tail.c:1311
 msgid "cannot read realtime clock"
 msgstr "tidak dapat membaca realtime clock"
 
-#: src/sort.c:432
+#: src/sort.c:420
 #, fuzzy
 msgid "Write sorted concatenation of all FILE(s) to standard output.\n"
 msgstr ""
 "Tulis concatenation terurut dari seluruh BERKAS ke standar keluaran.\n"
 "\n"
 
-#: src/sort.c:439
+#: src/sort.c:427
 msgid ""
 "Ordering options:\n"
 "\n"
@@ -9521,7 +9575,7 @@ msgstr ""
 "Pilihan pengurutan:\n"
 "\n"
 
-#: src/sort.c:443
+#: src/sort.c:431
 msgid ""
 "  -b, --ignore-leading-blanks  ignore leading blanks\n"
 "  -d, --dictionary-order      consider only blanks and alphanumeric "
@@ -9533,7 +9587,7 @@ msgstr ""
 "dan angka\n"
 "  -f, --ignore-case            ubah karakter huruf kecil ke huruf besar\n"
 
-#: src/sort.c:449
+#: src/sort.c:437
 #, fuzzy
 msgid ""
 "  -g, --general-numeric-sort  compare according to general numerical value\n"
@@ -9546,14 +9600,14 @@ msgstr ""
 "  -M, --month-sort            bandingkan (tidak diketahui) < `JAN' < ... < "
 "`DEC'\n"
 
-#: src/sort.c:454
+#: src/sort.c:442
 msgid ""
 "  -h, --human-numeric-sort    compare human readable numbers (e.g., 2K 1G)\n"
 msgstr ""
 "  -h, --human-numeric-sort    bandingkan dengan angka yang mudah dibaca "
 "(seperti, 2K 1G)\n"
 
-#: src/sort.c:457
+#: src/sort.c:445
 #, fuzzy
 msgid ""
 "  -n, --numeric-sort          compare according to string numerical value\n"
@@ -9567,7 +9621,7 @@ msgstr ""
 "      --random-source=BERKAS  dapatkan random bytes dari BERKAS\n"
 "  -r, --reverse               balik hasil dari komparasi\n"
 
-#: src/sort.c:463
+#: src/sort.c:451
 msgid ""
 "      --sort=WORD             sort according to WORD:\n"
 "                                general-numeric -g, human-numeric -h, month -"
@@ -9583,7 +9637,7 @@ msgstr ""
 "  -V, --version-sort          urutan alami dari nomor versi dalam teks\n"
 "\n"
 
-#: src/sort.c:471
+#: src/sort.c:459
 msgid ""
 "Other options:\n"
 "\n"
@@ -9591,7 +9645,7 @@ msgstr ""
 "Pilihan lain:\n"
 "\n"
 
-#: src/sort.c:475
+#: src/sort.c:463
 msgid ""
 "      --batch-size=NMERGE   merge at most NMERGE inputs at once;\n"
 "                            for more use temp files\n"
@@ -9599,7 +9653,7 @@ msgstr ""
 "      --batch-size=NMERGE    gabungkan di NMERGE masukan dalam satu waktu;\n"
 "                             untuk penggunaan lebih berkas sementara\n"
 
-#: src/sort.c:479
+#: src/sort.c:467
 #, fuzzy
 msgid ""
 "  -c, --check, --check=diagnose-first  check for sorted input; do not sort\n"
@@ -9618,7 +9672,7 @@ msgstr ""
 "oleh\n"
 "                            nama yang diakhiri NUL dalam berkas F\n"
 
-#: src/sort.c:486
+#: src/sort.c:474
 #, fuzzy
 msgid ""
 "      --debug               annotate the part of the line used to sort,\n"
@@ -9637,7 +9691,7 @@ msgstr ""
 "oleh\n"
 "                            nama yang diakhiri NUL dalam berkas F\n"
 
-#: src/sort.c:493
+#: src/sort.c:481
 #, fuzzy
 msgid ""
 "  -k, --key=KEYDEF          sort via a key; KEYDEF gives location and type\n"
@@ -9649,7 +9703,7 @@ msgstr ""
 "  -m, --merge               gabungkan berkas yang sudah diurutkan, jangan "
 "urutkan\n"
 
-#: src/sort.c:497
+#: src/sort.c:485
 msgid ""
 "  -o, --output=FILE         write result to FILE instead of standard output\n"
 "  -s, --stable              stabilize sort by disabling last-resort "
@@ -9662,7 +9716,7 @@ msgstr ""
 "perbandingan terakhir\n"
 "  -S, --buffer-size=SIZE    gunakan SIZE untuk buffer memori utama\n"
 
-#: src/sort.c:503
+#: src/sort.c:491
 #, fuzzy, c-format
 msgid ""
 "  -t, --field-separator=SEP  use SEP instead of non-blank to blank "
@@ -9686,7 +9740,7 @@ msgstr ""
 "                            tanpa -c, keluarkan hanya pertama dari sebuah "
 "jalan pertama\n"
 
-#: src/sort.c:517
+#: src/sort.c:505
 #, fuzzy
 msgid ""
 "\n"
@@ -9719,7 +9773,7 @@ msgstr ""
 "\n"
 "UKURAN mungkin diikuti dengan akhiran pengali berikut:\n"
 
-#: src/sort.c:530
+#: src/sort.c:518
 #, fuzzy
 msgid ""
 "% 1% of memory, b 1, K 1024 (default), and so on for M, G, T, P, E, Z, Y.\n"
@@ -9739,224 +9793,224 @@ msgstr ""
 "Set LC_ALL=C untuk memperoleh cara pengurutan tradisional yang menggunakan\n"
 "nilai  byte asli.\n"
 
-#: src/sort.c:728
+#: src/sort.c:716
 #, c-format
 msgid "waiting for %s [-d]"
 msgstr "menunggu untuk %s [-d]"
 
-#: src/sort.c:733
+#: src/sort.c:721
 #, c-format
 msgid "%s [-d] terminated abnormally"
 msgstr "%s [-d] berakhir secara tidak normal"
 
-#: src/sort.c:888
+#: src/sort.c:876
 #, c-format
 msgid "cannot create temporary file in %s"
 msgstr "tidak dapat membuat berkas sementara dalam %s"
 
-#: src/sort.c:985 src/sort.c:2094 src/sort.c:3131 src/sort.c:3779
-#: src/sort.c:3870 src/sort.c:3873
+#: src/sort.c:991 src/sort.c:2100 src/sort.c:3137 src/sort.c:3780
+#: src/sort.c:3871 src/sort.c:3874
 msgid "open failed"
 msgstr "gagal membuka"
 
-#: src/sort.c:1005
+#: src/sort.c:1011
 msgid "fflush failed"
 msgstr "fflush gagal"
 
-#: src/sort.c:1010 src/sort.c:2097 src/sort.c:4776
+#: src/sort.c:1016 src/sort.c:2103 src/sort.c:4778
 msgid "close failed"
 msgstr "gagal menutup"
 
-#: src/sort.c:1149
+#: src/sort.c:1155
 msgid "couldn't create temporary file"
 msgstr "tidak dapat membuat berkas sementara"
 
-#: src/sort.c:1188
+#: src/sort.c:1194
 #, c-format
 msgid "couldn't create process for %s -d"
 msgstr "tidak dapat membuat proses untuk %s -d"
 
-#: src/sort.c:1261
+#: src/sort.c:1267
 #, c-format
 msgid "warning: cannot remove: %s"
 msgstr "peringatan: tidak dapat menghapus: %s"
 
-#: src/sort.c:1347
+#: src/sort.c:1353
 #, c-format
 msgid "invalid --%s argument %s"
 msgstr "argumen --%s tidak valid %s"
 
-#: src/sort.c:1350
+#: src/sort.c:1356
 #, c-format
 msgid "minimum --%s argument is %s"
 msgstr "argumen %s minimum --%s"
 
-#: src/sort.c:1365
+#: src/sort.c:1371
 #, c-format
 msgid "--%s argument %s too large"
 msgstr "--%s argumen %s terlalu besar"
 
-#: src/sort.c:1368
+#: src/sort.c:1374
 #, c-format
 msgid "maximum --%s argument with current rlimit is %s"
 msgstr "maksimal --%s argumen dengan rlimit sekarang adalah %s"
 
-#: src/sort.c:1450
+#: src/sort.c:1456
 msgid "number in parallel must be nonzero"
 msgstr ""
 
-#: src/sort.c:1533
+#: src/sort.c:1539
 msgid "stat failed"
 msgstr "stat gagal"
 
-#: src/sort.c:1795
+#: src/sort.c:1801
 msgid "read failed"
 msgstr "baca gagal"
 
-#: src/sort.c:2112
+#: src/sort.c:2118
 #, c-format
 msgid "string transformation failed"
 msgstr "Transformasi string gagal"
 
-#: src/sort.c:2115
+#: src/sort.c:2121
 #, c-format
 msgid "the untransformed string was %s"
 msgstr "untransformasi string adalah %s"
 
-#: src/sort.c:2278
+#: src/sort.c:2284
 #, c-format
 msgid "^ no match for key\n"
 msgstr ""
 
-#: src/sort.c:2450
+#: src/sort.c:2456
 #, c-format
 msgid "obsolescent key %s used; consider %s instead"
 msgstr ""
 
-#: src/sort.c:2457
+#: src/sort.c:2463
 #, c-format
 msgid "key %lu has zero width and will be ignored"
 msgstr ""
 
-#: src/sort.c:2466
+#: src/sort.c:2472
 #, c-format
 msgid "leading blanks are significant in key %lu; consider also specifying 'b'"
 msgstr ""
 
-#: src/sort.c:2479
+#: src/sort.c:2485
 #, c-format
 msgid "key %lu is numeric and spans multiple fields"
 msgstr ""
 
-#: src/sort.c:2511
+#: src/sort.c:2517
 #, fuzzy, c-format
 msgid "option '-%s' is ignored"
 msgid_plural "options '-%s' are ignored"
 msgstr[0] "%s: pilihan '%s' adalah ambigu\n"
 msgstr[1] "%s: pilihan '%s' adalah ambigu\n"
 
-#: src/sort.c:2517
+#: src/sort.c:2523
 #, c-format
 msgid "option '-r' only applies to last-resort comparison"
 msgstr ""
 
-#: src/sort.c:2791 src/sort.c:2800
+#: src/sort.c:2797 src/sort.c:2806
 msgid "write failed"
 msgstr "tulis gagal"
 
-#: src/sort.c:2843
+#: src/sort.c:2849
 #, c-format
 msgid "%s: %s:%s: disorder: "
 msgstr "%s: %s:%s: tidak terurut: "
 
-#: src/sort.c:2846
+#: src/sort.c:2852
 msgid "standard error"
 msgstr "standar error"
 
-#: src/sort.c:3763
+#: src/sort.c:3764
 #, fuzzy
 msgid "cannot read"
 msgstr "%s: gagal rewind"
 
-#: src/sort.c:4042
+#: src/sort.c:4043
 #, c-format
 msgid "%s: invalid field specification %s"
 msgstr "%s: spesifikasi field %s tidak valid"
 
-#: src/sort.c:4052
+#: src/sort.c:4053
 #, fuzzy, c-format
 msgid "options '-%s' are incompatible"
 msgstr "pilihan `-%s' tidak kompatibel"
 
-#: src/sort.c:4102
+#: src/sort.c:4103
 #, c-format
 msgid "%s: invalid count at start of %s"
 msgstr "%s: jumlah tidak valid di awal dari %s"
 
-#: src/sort.c:4361
+#: src/sort.c:4362
 #, fuzzy
 msgid "invalid number after '-'"
 msgstr "jumlah tidak valid setelah `-'"
 
-#: src/sort.c:4368 src/sort.c:4454 src/sort.c:4482
+#: src/sort.c:4369 src/sort.c:4455 src/sort.c:4483
 #, fuzzy
 msgid "invalid number after '.'"
 msgstr "jumlah tidak valid setelah `.'"
 
-#: src/sort.c:4381 src/sort.c:4487
+#: src/sort.c:4382 src/sort.c:4488
 msgid "stray character in field spec"
 msgstr "karakter sisa dalam spesifikasi field"
 
-#: src/sort.c:4428
+#: src/sort.c:4429
 msgid "multiple compress programs specified"
 msgstr "banyak aplikasi kompresi dispesifikasikan"
 
-#: src/sort.c:4445
+#: src/sort.c:4446
 msgid "invalid number at field start"
 msgstr "jumlah tidak valid di awal field"
 
-#: src/sort.c:4449 src/sort.c:4477
+#: src/sort.c:4450 src/sort.c:4478
 msgid "field number is zero"
 msgstr "jumlah field adalah nol"
 
-#: src/sort.c:4458
+#: src/sort.c:4459
 msgid "character offset is zero"
 msgstr "karakter ofset adalah nol"
 
-#: src/sort.c:4473
+#: src/sort.c:4474
 #, fuzzy
 msgid "invalid number after ','"
 msgstr "jumlah tidak valid setelah `,'"
 
-#: src/sort.c:4523
+#: src/sort.c:4524
 msgid "empty tab"
 msgstr "empty tab"
 
-#: src/sort.c:4606 src/wc.c:763
+#: src/sort.c:4607 src/wc.c:784
 #, c-format
 msgid "cannot read file names from %s"
 msgstr "tidak dapat membaca nama berkas dari %s"
 
-#: src/sort.c:4628
+#: src/sort.c:4629
 #, c-format
 msgid "%s:%lu: invalid zero-length file name"
 msgstr "%s:%lu: nama berkas panjang-nol tidak valid"
 
-#: src/sort.c:4634
+#: src/sort.c:4635
 #, c-format
 msgid "no input from %s"
 msgstr "tidak ada masukan masukan dari %s"
 
-#: src/sort.c:4687
+#: src/sort.c:4688
 #, c-format
-msgid "using %s sorting rules"
+msgid "text ordering performed using %s sorting rules"
 msgstr ""
 
-#: src/sort.c:4690
-msgid "using simple byte comparison"
+#: src/sort.c:4692
+msgid "text ordering performed using simple byte comparison"
 msgstr ""
 
-#: src/sort.c:4722
+#: src/sort.c:4724
 #, c-format
 msgid "extra operand %s not allowed with -%c"
 msgstr "kelebihan operan %s tidak dibolehkan dengan -%c"
@@ -10042,185 +10096,190 @@ msgstr "membuat berkas %s\n"
 msgid "%s would overwrite input; aborting"
 msgstr ""
 
-#: src/split.c:487
+#: src/split.c:488
 #, fuzzy
 msgid "failed to set FILE environment variable"
 msgstr "gagal untuk memperbarui lingkungan dengan %s"
 
-#: src/split.c:489
+#: src/split.c:490
 #, c-format
 msgid "executing with FILE=%s\n"
 msgstr ""
 
-#: src/split.c:491
+#: src/split.c:492
 #, fuzzy
 msgid "failed to create pipe"
 msgstr "gagal untuk menghapus %s"
 
-#: src/split.c:505
+#: src/split.c:506
 #, fuzzy
 msgid "closing prior pipe"
 msgstr "menutup direktori %s"
 
-#: src/split.c:507
+#: src/split.c:508
 #, fuzzy
 msgid "closing output pipe"
 msgstr "menutup berkas keluaran %s"
 
-#: src/split.c:511
+#: src/split.c:512
 #, fuzzy
 msgid "moving input pipe"
 msgstr "menutup berkas masukan %s"
 
-#: src/split.c:513
+#: src/split.c:514
 #, fuzzy
 msgid "closing input pipe"
 msgstr "menutup berkas masukan %s"
 
-#: src/split.c:518
+#: src/split.c:519
 #, fuzzy, c-format
 msgid "failed to run command: \"%s -c %s\""
 msgstr "gagal menjalankan perintah %s"
 
-#: src/split.c:524
+#: src/split.c:525
 #, fuzzy
 msgid "failed to close input pipe"
 msgstr "gagal menutup direktori %s"
 
-#: src/split.c:560
+#: src/split.c:561
 #, fuzzy
 msgid "waiting for child process"
 msgstr "menunggu untuk strip"
 
-#: src/split.c:570
+#: src/split.c:571
 #, c-format
 msgid "with FILE=%s, signal %s from command: %s"
 msgstr ""
 
-#: src/split.c:578
+#: src/split.c:579
 #, c-format
 msgid "with FILE=%s, exit %d from command: %s"
 msgstr ""
 
-#: src/split.c:585
+#: src/split.c:586
 #, c-format
 msgid "unknown status from command (0x%X)"
 msgstr "status dari perintah (0x%X) tidak diketahui"
 
-#: src/split.c:1273
+#: src/split.c:1274
 #, c-format
 msgid "cannot split in more than one way"
 msgstr "tidak dapat memisahkan lebih dari satu cara"
 
-#: src/split.c:1285 src/split.c:1400 src/split.c:1601
+#: src/split.c:1286 src/split.c:1401 src/split.c:1602
 #, fuzzy
 msgid "invalid number of chunks"
 msgstr "%s: jumlah detik tidak valid"
 
-#: src/split.c:1290
+#: src/split.c:1291
 #, fuzzy
 msgid "invalid chunk number"
 msgstr "%s: nomor tidak valid"
 
-#: src/split.c:1337
+#: src/split.c:1338
 #, fuzzy
 msgid "invalid suffix length"
 msgstr "%s: panjang akhiran tidak valid"
 
-#: src/split.c:1411
+#: src/split.c:1412
 msgid "empty record separator"
 msgstr ""
 
-#: src/split.c:1422
+#: src/split.c:1423
 #, fuzzy, c-format
 msgid "multi-character separator %s"
 msgstr "multi-character tab %s"
 
-#: src/split.c:1430
+#: src/split.c:1431
 #, fuzzy
 msgid "multiple separator characters specified"
 msgstr "banyak sumber random dispesifikasikan"
 
-#: src/split.c:1461
+#: src/split.c:1462
 #, c-format
 msgid "line count option -%s%c... is too large"
 msgstr "jumlah baris pilihan -%s%c... terlalu besar"
 
-#: src/split.c:1478
+#: src/split.c:1479
 #, fuzzy, c-format
 msgid "%s: invalid start value for numerical suffix"
 msgstr "awalan nomor baris: %s tidak valid"
 
-#: src/split.c:1479
+#: src/split.c:1480
 #, fuzzy, c-format
 msgid "%s: invalid start value for hexadecimal suffix"
 msgstr "awalan nomor baris: %s tidak valid"
 
-#: src/split.c:1503
+#: src/split.c:1504
 #, fuzzy
 msgid "invalid IO block size"
 msgstr "%s: ukuran berkas tidak valid"
 
-#: src/split.c:1521
+#: src/split.c:1522
 #, c-format
 msgid "--filter does not process a chunk extracted to stdout"
 msgstr ""
 
-#: src/split.c:1561
+#: src/split.c:1562
 #, c-format
 msgid "numerical suffix start value is too large for the suffix length"
 msgstr ""
 
-#: src/split.c:1593
+#: src/split.c:1594
 #, fuzzy, c-format
 msgid "%s: cannot determine file size"
 msgstr "tidak dapat menentukan nama host"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/stat.c:190
+#: src/stat.c:197
 msgid "Michael Meskes"
 msgstr "Michael Meskes"
 
-#: src/stat.c:949
+#: src/stat.c:989
 #, fuzzy, c-format
 msgid "failed to canonicalize %s"
 msgstr "gagal untuk menutup %s"
 
-#: src/stat.c:1217
+#: src/stat.c:1092
 #, fuzzy, c-format
 msgid "warning: unrecognized escape '\\%c'"
 msgstr "peringatan: escape tidak dikenal `\\%c'"
 
-#: src/stat.c:1272
+#: src/stat.c:1153
 #, c-format
 msgid "%s: invalid directive"
 msgstr "%s: direktif tidak valid"
 
-#: src/stat.c:1319
+#: src/stat.c:1200
 #, c-format
 msgid "warning: backslash at end of format"
 msgstr "peringatan: backslash di akhir dari format"
 
-#: src/stat.c:1350
+#: src/stat.c:1231
 #, c-format
 msgid "using %s to denote standard input does not work in file system mode"
 msgstr ""
 "menggunakan %s untuk mengatakan standar masukan tidak bekerja dalam mode "
 "sistem berkas"
 
-#: src/stat.c:1357
+#: src/stat.c:1238
 #, c-format
 msgid "cannot read file system information for %s"
 msgstr "tidak dapat membaca informasi sistem berkas untuk %s"
 
-#: src/stat.c:1378
+#: src/stat.c:1362 src/stat.c:1429
 #, c-format
 msgid "cannot stat standard input"
 msgstr "tidak dapat memperoleh statistik standar masukan"
 
+#: src/stat.c:1364
+#, fuzzy, c-format
+msgid "cannot statx %s"
+msgstr "tidak dapat memperoleh statistik %s"
+
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' with --file-system, and NOT from printf.
-#: src/stat.c:1414
+#: src/stat.c:1608
 msgid ""
 "  File: \"%n\"\n"
 "    ID: %-8i Namelen: %-7l Type: %T\n"
@@ -10231,7 +10290,7 @@ msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1435
+#: src/stat.c:1629
 msgid ""
 "  File: %N\n"
 "  Size: %-10s\tBlocks: %-10b IO Block: %-6o %F\n"
@@ -10239,30 +10298,30 @@ msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1445
+#: src/stat.c:1639
 msgid "Device: %Dh/%dd\tInode: %-10i  Links: %-5h Device type: %t,%T\n"
 msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1453
+#: src/stat.c:1647
 msgid "Device: %Dh/%dd\tInode: %-10i  Links: %h\n"
 msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1462
+#: src/stat.c:1656
 msgid "Access: (%04a/%10.10A)  Uid: (%5u/%8U)   Gid: (%5g/%8G)\n"
 msgstr ""
 
 #. TRANSLATORS: This string uses format specifiers from
 #. 'stat --help' without --file-system, and NOT from printf.
-#: src/stat.c:1472
+#: src/stat.c:1666
 #, fuzzy, c-format
 msgid "Context: %C\n"
 msgstr " konteks=%s"
 
-#: src/stat.c:1480
+#: src/stat.c:1674
 msgid ""
 "Access: %x\n"
 "Modify: %y\n"
@@ -10270,11 +10329,11 @@ msgid ""
 " Birth: %w\n"
 msgstr ""
 
-#: src/stat.c:1498
+#: src/stat.c:1692
 msgid "Display file or file system status.\n"
 msgstr ""
 
-#: src/stat.c:1504
+#: src/stat.c:1698
 #, fuzzy
 msgid ""
 "  -L, --dereference     follow links\n"
@@ -10286,7 +10345,13 @@ msgstr ""
 "  -f, --file-system     tampilkan status sistem berkas dari pada status "
 "berkas\n"
 
-#: src/stat.c:1508
+#: src/stat.c:1702
+msgid ""
+"      --cached=MODE     specify how to use cached attributes;\n"
+"                          useful on remote file systems. See MODE below\n"
+msgstr ""
+
+#: src/stat.c:1706
 #, fuzzy
 msgid ""
 "  -c  --format=FORMAT   use the specified FORMAT instead of the default;\n"
@@ -10307,14 +10372,23 @@ msgstr ""
 "FORMAT.\n"
 "  -t, --terse           tampilkan informasi dalam format lengkap\n"
 
-#: src/stat.c:1519
+#: src/stat.c:1717
+msgid ""
+"\n"
+"The --cached MODE argument can be; always, never, or default.\n"
+"`always` will use cached attributes if available, while\n"
+"`never` will try to synchronize with the latest attributes, and\n"
+"`default` will leave it up to the underlying file system.\n"
+msgstr ""
+
+#: src/stat.c:1724
 #, fuzzy
 msgid ""
 "\n"
 "The valid format sequences for files (without --file-system):\n"
 "\n"
-"  %a   access rights in octal (note '#' and '0' printf flags)\n"
-"  %A   access rights in human readable form\n"
+"  %a   permission bits in octal (note '#' and '0' printf flags)\n"
+"  %A   permission bits and file type in human readable form\n"
 "  %b   number of blocks allocated (see %B)\n"
 "  %B   the size in bytes of each block reported by %b\n"
 "  %C   SELinux security context string\n"
@@ -10328,7 +10402,7 @@ msgstr ""
 "  %B   Jumlah dalam bytes untuk setiap blok yang dilaporkan oleh %b\n"
 "  %C   String konteks keamanan SELinux\n"
 
-#: src/stat.c:1528
+#: src/stat.c:1733
 #, fuzzy
 msgid ""
 "  %d   device number in decimal\n"
@@ -10345,7 +10419,7 @@ msgstr ""
 "  %g   Grup ID dari pemilik\n"
 "  %G   Nama ID dari pemilik\n"
 
-#: src/stat.c:1536
+#: src/stat.c:1741
 #, fuzzy
 msgid ""
 "  %h   number of hard links\n"
@@ -10367,7 +10441,7 @@ msgstr ""
 "  %t   Tipe perangkat major dalam heksadesimal\n"
 "  %T   Tipe perangkat minor dalam heksadesimal\n"
 
-#: src/stat.c:1547
+#: src/stat.c:1752
 #, fuzzy
 msgid ""
 "  %u   user ID of owner\n"
@@ -10391,7 +10465,7 @@ msgstr ""
 "  %z   Waktu terakhir diubah\n"
 "  %Z   Waktu terakhir diubah sebagai detik sejak Epoch\n"
 
-#: src/stat.c:1561
+#: src/stat.c:1766
 #, fuzzy
 msgid ""
 "Valid format sequences for file systems:\n"
@@ -10411,7 +10485,7 @@ msgstr ""
 "  %f   Blok bebas dalam sistem berkas\n"
 "  %C   String konteks keamanan SELinux\n"
 
-#: src/stat.c:1570
+#: src/stat.c:1775
 #, fuzzy
 msgid ""
 "  %i   file system ID in hex\n"
@@ -10430,7 +10504,7 @@ msgstr ""
 "  %t   Tipe dalam heksadesimal\n"
 "  %T   Tipe dalam format yang mudah dibaca\n"
 
-#: src/stat.c:1580
+#: src/stat.c:1785
 #, c-format
 msgid ""
 "\n"
@@ -10438,7 +10512,7 @@ msgid ""
 "    %s"
 msgstr ""
 
-#: src/stat.c:1591
+#: src/stat.c:1796
 #, c-format
 msgid ""
 "--terse --file-system is equivalent to the following FORMAT:\n"
@@ -10492,10 +10566,12 @@ msgstr ""
 "Jika MODE adalah `0' maka aliran yang berhubungan tidak akan disangga.\n"
 
 #: src/stdbuf.c:111
+#, fuzzy
 msgid ""
 "\n"
 "Otherwise MODE is a number which may be followed by one of the following:\n"
 "KB 1000, K 1024, MB 1000*1000, M 1024*1024, and so on for G, T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 "In this case the corresponding stream will be fully buffered with the "
 "buffer\n"
 "size set to MODE bytes.\n"
@@ -10509,7 +10585,7 @@ msgstr ""
 "ukuran\n"
 "penyangga di set ke MODE bytes.\n"
 
-#: src/stdbuf.c:117
+#: src/stdbuf.c:118
 #, fuzzy
 msgid ""
 "\n"
@@ -10527,22 +10603,22 @@ msgstr ""
 "gunakan aliran untuk I/O,\n"
 "dan sehingga tidak terpengaruh oleh konfigurasi `stdbuf'.\n"
 
-#: src/stdbuf.c:242
+#: src/stdbuf.c:243
 #, fuzzy, c-format
 msgid "failed to find %s"
 msgstr "gagal untuk membuka %s"
 
-#: src/stdbuf.c:266 src/stdbuf.c:299
+#: src/stdbuf.c:267 src/stdbuf.c:300
 #, c-format
 msgid "failed to update the environment with %s"
 msgstr "gagal untuk memperbarui lingkungan dengan %s"
 
-#: src/stdbuf.c:345
+#: src/stdbuf.c:346
 #, c-format
 msgid "line buffering stdin is meaningless"
 msgstr "baris penyangga stdin tidak berarti"
 
-#: src/stdbuf.c:376
+#: src/stdbuf.c:377
 #, fuzzy, c-format
 msgid "you must specify a buffering mode option"
 msgstr "anda harus menspesifikasikan satu dari %s atau %s"
@@ -11276,30 +11352,30 @@ msgstr ""
 msgid "  -f, --file-system      sync the file systems that contain the files\n"
 msgstr ""
 
-#: src/sync.c:114
+#: src/sync.c:115
 #, fuzzy, c-format
 msgid "error opening %s"
 msgstr "error membaca %s"
 
-#: src/sync.c:124
+#: src/sync.c:126
 #, fuzzy, c-format
 msgid "couldn't reset non-blocking mode %s"
 msgstr "%s: tidak dapat mereset mode non-blocking"
 
-#: src/sync.c:155
+#: src/sync.c:157
 #, fuzzy, c-format
 msgid "error syncing %s"
 msgstr "error membaca %s"
 
-#: src/sync.c:213
+#: src/sync.c:215
 msgid "cannot specify both --data and --file-system"
 msgstr ""
 
-#: src/sync.c:217
+#: src/sync.c:219
 msgid "--data needs at least one argument"
 msgstr ""
 
-#: src/system.h:344
+#: src/system.h:347
 #, c-format
 msgid ""
 "\n"
@@ -11313,15 +11389,15 @@ msgstr ""
 "dari versi yang dijelaskan disini. Tolong lihat ke dokumentasi shell anda\n"
 "untuk detail mengenai pilihan yang didukung.\n"
 
-#: src/system.h:350
+#: src/system.h:353
 msgid "      --help     display this help and exit\n"
 msgstr "      --help     tampilkan bantuan ini dan keluar\n"
 
-#: src/system.h:352
+#: src/system.h:355
 msgid "      --version  output version information and exit\n"
 msgstr "      --version  keluarkan informasi versi dan keluar\n"
 
-#: src/system.h:580
+#: src/system.h:583
 msgid ""
 "\n"
 "With no FILE, or when FILE is -, read standard input.\n"
@@ -11329,7 +11405,7 @@ msgstr ""
 "\n"
 "Tanpa BERKAS, atau ketika BERKAS adalah -, baca masukan standar.\n"
 
-#: src/system.h:587
+#: src/system.h:590
 #, fuzzy
 msgid ""
 "\n"
@@ -11337,15 +11413,16 @@ msgid ""
 msgstr ""
 "Argumen wajib untuk pilihan panjang adalah wajib untuk pilihan pendek juga.\n"
 
-#: src/system.h:595
+#: src/system.h:598
 msgid ""
 "\n"
 "The SIZE argument is an integer and optional unit (example: 10K is "
 "10*1024).\n"
 "Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 msgstr ""
 
-#: src/system.h:604
+#: src/system.h:608
 #, c-format
 msgid ""
 "\n"
@@ -11360,7 +11437,7 @@ msgstr ""
 "Jika tidak, satuan baku ke 1024 bytes (atau 512 jika POSIXLY_CORRECT "
 "diset).\n"
 
-#: src/system.h:614
+#: src/system.h:618
 #, fuzzy
 msgid ""
 "\n"
@@ -11377,7 +11454,7 @@ msgstr ""
 "melalui variabel lingkungan VERSION_CONTROL. Ini adalah nilainya:\n"
 "\n"
 
-#: src/system.h:621
+#: src/system.h:625
 msgid ""
 "  none, off       never make backups (even if --backup is given)\n"
 "  numbered, t     make numbered backups\n"
@@ -11390,7 +11467,7 @@ msgstr ""
 "  existing, nil   bernomor jika backup bernomor ada, simple jika tidak\n"
 "  simple, never   selalu membuat backup sederhana\n"
 
-#: src/system.h:651
+#: src/system.h:655
 #, fuzzy, c-format
 msgid ""
 "\n"
@@ -11401,27 +11478,27 @@ msgstr "%s halaman rumah: <%s>\n"
 #. <https://translationproject.org/team/LANG_CODE.html> to form one of
 #. the URLs at https://translationproject.org/team/.  Otherwise, replace
 #. the entire URL with your translation team's email address.
-#: src/system.h:662
-#, fuzzy, c-format
-msgid "Report %s translation bugs to <https://translationproject.org/team/>\n"
+#: src/system.h:666
+#, fuzzy
+msgid "Report any translation bugs to <https://translationproject.org/team/>\n"
 msgstr "Laporkan %s bugs terjemahan ke <http://translationproject.org/team/>\n"
 
-#: src/system.h:665
+#: src/system.h:669
 #, c-format
-msgid "Full documentation at: <%s%s>\n"
+msgid "Full documentation <%s%s>\n"
 msgstr ""
 
-#: src/system.h:667
+#: src/system.h:671
 #, c-format
 msgid "or available locally via: info '(coreutils) %s%s'\n"
 msgstr ""
 
-#: src/system.h:678
+#: src/system.h:682
 #, fuzzy, c-format
 msgid "Try '%s --help' for more information.\n"
 msgstr "Coba `%s --help' untuk informasi lebih lanjut.\n"
 
-#: src/system.h:722
+#: src/system.h:726
 #, c-format
 msgid ""
 "WARNING: Circular directory structure.\n"
@@ -11501,11 +11578,11 @@ msgid "separator cannot be empty"
 msgstr "pemisah tidak dapat kosong"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/tail.c:74
+#: src/tail.c:78
 msgid "Ian Lance Taylor"
 msgstr "Ian Lance Taylor"
 
-#: src/tail.c:265
+#: src/tail.c:269
 #, fuzzy, c-format
 msgid ""
 "Print the last %d lines of each FILE to standard output.\n"
@@ -11517,7 +11594,7 @@ msgstr ""
 "Tanpa BERKAS, atau ketika BERKAS adalah -, baca standar masukan.\n"
 "\n"
 
-#: src/tail.c:273
+#: src/tail.c:277
 #, fuzzy
 msgid ""
 "  -c, --bytes=[+]NUM       output the last NUM bytes; or use -c +NUM to\n"
@@ -11528,7 +11605,7 @@ msgstr ""
 "                           mengeluarkan bytes dimulai dengan ke K dari "
 "setiap berkas\n"
 
-#: src/tail.c:277
+#: src/tail.c:281
 #, fuzzy
 msgid ""
 "  -f, --follow[={name|descriptor}]\n"
@@ -11543,7 +11620,7 @@ msgstr ""
 "                          sama\n"
 "  -F                      sama seperti --follow=name --retry\n"
 
-#: src/tail.c:283
+#: src/tail.c:287
 #, fuzzy, c-format
 msgid ""
 "  -n, --lines=[+]NUM       output the last NUM lines, instead of the last "
@@ -11569,7 +11646,7 @@ msgstr ""
 "diubah nama\n"
 "                           (ini biasa untuk berkas log terotasi)\n"
 
-#: src/tail.c:296
+#: src/tail.c:300
 #, fuzzy
 msgid ""
 "      --pid=PID            with -f, terminate after process ID, PID dies\n"
@@ -11584,7 +11661,7 @@ msgstr ""
 "mengikuti\n"
 "                           nama, contoh, dengan --follow=name\n"
 
-#: src/tail.c:301
+#: src/tail.c:305
 #, fuzzy
 msgid ""
 "  -s, --sleep-interval=N   with -f, sleep for approximately N seconds\n"
@@ -11597,13 +11674,14 @@ msgstr ""
 "                           (baku 1.0) diantara interasi.\n"
 "  -v, --verbose            selalu mengeluarkan header diberikan nama berkas\n"
 
-#: src/tail.c:313
+#: src/tail.c:317
 #, fuzzy
 msgid ""
 "\n"
 "NUM may have a multiplier suffix:\n"
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+"Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n"
 "\n"
 msgstr ""
 "\n"
@@ -11611,7 +11689,7 @@ msgstr ""
 "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
 "GB 1000*1000*1000, G 1024*1024*1024, dan seterusnya untuk T, P, E, Z, Y.\n"
 
-#: src/tail.c:320
+#: src/tail.c:325
 msgid ""
 "With --follow (-f), tail defaults to following the file descriptor, which\n"
 "means that even if a tail'ed file is renamed, tail will continue to track\n"
@@ -11632,175 +11710,175 @@ msgstr ""
 "telah dihapus dan\n"
 "dibuat kembali oleh aplikasi lain.\n"
 
-#: src/tail.c:393
+#: src/tail.c:416
 #, c-format
 msgid "closing %s (fd=%d)"
 msgstr "menutup %s (fd=%d)"
 
-#: src/tail.c:492
+#: src/tail.c:515
 #, c-format
 msgid "%s: cannot seek to end-relative offset %s"
 msgstr "%s: tidak dapat mencari ofset akhir-relatif %s"
 
-#: src/tail.c:927
+#: src/tail.c:951
 #, c-format
 msgid "cannot determine location of %s. reverting to polling"
 msgstr "tidak dapat menentukan lokasi dari %s. kembali ke polling"
 
-#: src/tail.c:983
+#: src/tail.c:1007
 #, fuzzy, c-format
 msgid "%s has been replaced with an untailable symbolic link"
 msgstr ""
 "%s telah diganti dengan berkas yang tidak dapat ditail; menyerah untuk nama "
 "ini"
 
-#: src/tail.c:998
+#: src/tail.c:1022
 #, c-format
 msgid "%s has become inaccessible"
 msgstr "%s telah menjadi tidak dapat diakses"
 
-#: src/tail.c:1016
+#: src/tail.c:1040
 #, fuzzy, c-format
 msgid "%s has been replaced with an untailable file%s"
 msgstr ""
 "%s telah diganti dengan berkas yang tidak dapat ditail; menyerah untuk nama "
 "ini"
 
-#: src/tail.c:1018 src/tail.c:2024
+#: src/tail.c:1042 src/tail.c:2048
 msgid "; giving up on this name"
 msgstr ""
 
-#: src/tail.c:1024
+#: src/tail.c:1048
 #, fuzzy, c-format
 msgid "%s has been replaced with an untailable remote file"
 msgstr ""
 "%s telah diganti dengan berkas yang tidak dapat ditail; menyerah untuk nama "
 "ini"
 
-#: src/tail.c:1045
+#: src/tail.c:1069
 #, c-format
 msgid "%s has become accessible"
 msgstr "%s telah menjadi dapat diakses"
 
-#: src/tail.c:1057
+#: src/tail.c:1081
 #, fuzzy, c-format
 msgid "%s has appeared;  following new file"
 msgstr "%s telah muncul;  mengikuti akhir dari berkas baru"
 
-#: src/tail.c:1067
+#: src/tail.c:1091
 #, fuzzy, c-format
 msgid "%s has been replaced;  following new file"
 msgstr "%s telah diganti; mengikuti akhir dari berkas baru"
 
-#: src/tail.c:1182
+#: src/tail.c:1206
 #, c-format
 msgid "%s: cannot change nonblocking mode"
 msgstr "%s: tidak dapat mengubah mode nonblocking"
 
-#: src/tail.c:1228 src/tail.c:1403
+#: src/tail.c:1252 src/tail.c:1427
 #, c-format
 msgid "%s: file truncated"
 msgstr "%s: berkas terpotong"
 
-#: src/tail.c:1262 src/tail.c:1604
+#: src/tail.c:1286 src/tail.c:1628
 #, c-format
 msgid "no files remaining"
 msgstr "tidak ada berkas tersisa"
 
-#: src/tail.c:1498
+#: src/tail.c:1522
 #, c-format
 msgid "cannot watch parent directory of %s"
 msgstr "tidak dapat mengamati direktori atas dari %s"
 
-#: src/tail.c:1501 src/tail.c:1518 src/tail.c:1728
+#: src/tail.c:1525 src/tail.c:1542 src/tail.c:1752
 #, fuzzy, c-format
 msgid "inotify resources exhausted"
 msgstr "Kehabisan akhiran berkas keluaran"
 
-#: src/tail.c:1522 src/tail.c:1736
+#: src/tail.c:1546 src/tail.c:1760
 #, c-format
 msgid "cannot watch %s"
 msgstr "tidak dapat mengamati %s"
 
-#: src/tail.c:1571
+#: src/tail.c:1595
 #, fuzzy, c-format
 msgid "%s was replaced"
 msgstr "%s: menimpa %s? "
 
-#: src/tail.c:1643
+#: src/tail.c:1667
 #, fuzzy
 msgid "error waiting for inotify and output events"
 msgstr "error membaca inotify event"
 
-#: src/tail.c:1671
+#: src/tail.c:1695
 msgid "error reading inotify event"
 msgstr "error membaca inotify event"
 
-#: src/tail.c:1690
+#: src/tail.c:1714
 #, c-format
 msgid "directory containing watched file was removed"
 msgstr ""
 
-#: src/tail.c:2022
+#: src/tail.c:2046
 #, fuzzy, c-format
 msgid "%s: cannot follow end of this type of file%s"
 msgstr ""
 "%s: tidak dapat mengikuti akhir dari berkas tipe ini; menyerah di nama ini"
 
-#: src/tail.c:2203
+#: src/tail.c:2227
 #, fuzzy
 msgid "invalid maximum number of unchanged stats between opens"
 msgstr ""
 "%s: jumlah maksimal dari statistik tidak diubah tidak valid diantar buka"
 
-#: src/tail.c:2211
+#: src/tail.c:2235
 #, fuzzy
 msgid "invalid PID"
 msgstr "%s: PID tidak valid"
 
-#: src/tail.c:2227
+#: src/tail.c:2251
 #, fuzzy, c-format
 msgid "invalid number of seconds: %s"
 msgstr "jumlah dari kolom tidak valid: %s"
 
-#: src/tail.c:2246
+#: src/tail.c:2270
 #, c-format
 msgid "option used in invalid context -- %c"
 msgstr "pilihan yang digunakan tidak valid dalam konteks -- %c"
 
-#: src/tail.c:2258
+#: src/tail.c:2282
 #, fuzzy, c-format
 msgid "warning: --retry ignored; --retry is useful only when following"
 msgstr "peringatan: PID diabaikan; --pid=PID hanya berguna ketika mengikuti"
 
-#: src/tail.c:2262
+#: src/tail.c:2286
 #, c-format
 msgid "warning: --retry only effective for the initial open"
 msgstr ""
 
-#: src/tail.c:2267
+#: src/tail.c:2291
 #, c-format
 msgid "warning: PID ignored; --pid=PID is useful only when following"
 msgstr "peringatan: PID diabaikan; --pid=PID hanya berguna ketika mengikuti"
 
-#: src/tail.c:2270
+#: src/tail.c:2294
 #, c-format
 msgid "warning: --pid=PID is not supported on this system"
 msgstr "peringata: --pid=PID tidak didukung dalam sistem ini"
 
-#: src/tail.c:2376
+#: src/tail.c:2400
 #, c-format
 msgid "cannot follow %s by name"
 msgstr "tidak dapat mengikuti %s dengan nama"
 
-#: src/tail.c:2391
+#: src/tail.c:2415
 #, c-format
 msgid "warning: following standard input indefinitely is ineffective"
 msgstr ""
 "peringatan: mengikuti standar masukan secara tak terhingga adalah tidak "
 "efektif"
 
-#: src/tail.c:2488
+#: src/tail.c:2512
 #, c-format
 msgid "inotify cannot be used, reverting to polling"
 msgstr "inotify tidak dapat digunakan, kembali ke polling"
@@ -11838,54 +11916,54 @@ msgid ""
 "writing to non pipe outputs.\n"
 msgstr ""
 
-#: src/test.c:127
+#: src/test.c:126
 #, c-format
 msgid "missing argument after %s"
 msgstr "argumen hilang setelah %s"
 
-#: src/test.c:163
+#: src/test.c:162
 #, c-format
 msgid "invalid integer %s"
 msgstr "integer %s tidak valid"
 
-#: src/test.c:245
+#: src/test.c:244
 #, fuzzy, c-format
 msgid "%s expected"
 msgstr "')' diharapkan"
 
-#: src/test.c:248
+#: src/test.c:247
 #, fuzzy, c-format
 msgid "%s expected, found %s"
 msgstr "')' diharapkan, ditemukan %s"
 
-#: src/test.c:265 src/test.c:623
-#, c-format
-msgid "%s: unary operator expected"
-msgstr "%s: operator unary diharapkan"
-
-#: src/test.c:334
+#: src/test.c:328
 msgid "-nt does not accept -l"
 msgstr "-nt tidak menerima -l"
 
-#: src/test.c:347
+#: src/test.c:341
 msgid "-ef does not accept -l"
 msgstr "-ef tidak menerima -l"
 
-#: src/test.c:363
+#: src/test.c:357
 msgid "-ot does not accept -l"
 msgstr "-ot tidak menerima -l"
 
-#: src/test.c:372
+#: src/test.c:366
 #, fuzzy, c-format
 msgid "%s: unknown binary operator"
 msgstr "operator binary tidak diketahui"
 
-#: src/test.c:651
+#: src/test.c:396
+#, c-format
+msgid "%s: unary operator expected"
+msgstr "%s: operator unary diharapkan"
+
+#: src/test.c:632
 #, c-format
 msgid "%s: binary operator expected"
 msgstr "%s: operator binary diharapkan"
 
-#: src/test.c:709
+#: src/test.c:690
 msgid ""
 "Usage: test EXPRESSION\n"
 "  or:  test\n"
@@ -11899,7 +11977,7 @@ msgstr ""
 "  atau:     [ ]\n"
 "  atau:     [ PILIHAN ]\n"
 
-#: src/test.c:716
+#: src/test.c:697
 msgid ""
 "Exit with the status determined by EXPRESSION.\n"
 "\n"
@@ -11907,7 +11985,7 @@ msgstr ""
 "Keluar dengan status ditentukan oleh EKSPRESI.\n"
 "\n"
 
-#: src/test.c:722
+#: src/test.c:703
 msgid ""
 "\n"
 "An omitted EXPRESSION defaults to false.  Otherwise,\n"
@@ -11918,7 +11996,7 @@ msgstr ""
 "EKSPRESI adalah benar atau salah dan set status keluar. Ini adalah salah "
 "satu dari:\n"
 
-#: src/test.c:727
+#: src/test.c:708
 msgid ""
 "\n"
 "  ( EXPRESSION )               EXPRESSION is true\n"
@@ -11932,7 +12010,7 @@ msgstr ""
 "  EKSPRESI1 -a EKSPRESI2       kedua EKSPRESI1 dan EKSPRESI2 adalah benar\n"
 "  EKSPRESI1 -o EKSPRESI2       EKSPRESI1 atau EKSPRESI2 adalah benar\n"
 
-#: src/test.c:734
+#: src/test.c:715
 msgid ""
 "\n"
 "  -n STRING            the length of STRING is nonzero\n"
@@ -11948,7 +12026,7 @@ msgstr ""
 "  STRING1 = STRING2    string adalah sama\n"
 "  STRING1 != STRING2   string tidak sama\n"
 
-#: src/test.c:742
+#: src/test.c:723
 msgid ""
 "\n"
 "  INTEGER1 -eq INTEGER2   INTEGER1 is equal to INTEGER2\n"
@@ -11968,7 +12046,7 @@ msgstr ""
 "  INTEGER1 -lt INTEGER2   INTEGER1 adalah lebih kecil dari INTEGER2\n"
 "  INTEGER1 -ne INTEGER2   INTEGER1 tidak sama dengan INTEGER2\n"
 
-#: src/test.c:751
+#: src/test.c:732
 msgid ""
 "\n"
 "  FILE1 -ef FILE2   FILE1 and FILE2 have the same device and inode numbers\n"
@@ -11982,7 +12060,7 @@ msgstr ""
 "BERKAS2\n"
 "  FILE1 -ot FILE2   BERKAS1 adalah lebih lama dari BERKAS2\n"
 
-#: src/test.c:757
+#: src/test.c:738
 msgid ""
 "\n"
 "  -b FILE     FILE exists and is block special\n"
@@ -11996,7 +12074,7 @@ msgstr ""
 "  -d BERKAS   BERKAS ada dan ini adalah sebuah direktori\n"
 "  -e BERKAS   BERKAS ada\n"
 
-#: src/test.c:764
+#: src/test.c:745
 msgid ""
 "  -f FILE     FILE exists and is a regular file\n"
 "  -g FILE     FILE exists and is set-group-ID\n"
@@ -12010,9 +12088,11 @@ msgstr ""
 "  -h BERKAS   BERKAS ada dan ini adalah link simbolik (sama seperti -L)\n"
 "  -k BERKAS   BERKAS ada dan ini memiliki sticky bit diset\n"
 
-#: src/test.c:771
+#: src/test.c:752
+#, fuzzy
 msgid ""
 "  -L FILE     FILE exists and is a symbolic link (same as -h)\n"
+"  -N FILE     FILE exists and has been modified since it was last read\n"
 "  -O FILE     FILE exists and is owned by the effective user ID\n"
 "  -p FILE     FILE exists and is a named pipe\n"
 "  -r FILE     FILE exists and read permission is granted\n"
@@ -12024,7 +12104,7 @@ msgstr ""
 "  -r BERKAS   BERKAS ada dan ijin membaca diberikan\n"
 "  -s BERKAS   BERKAS ada dan memiliki ukuran lebih besar dari nol\n"
 
-#: src/test.c:778
+#: src/test.c:760
 msgid ""
 "  -S FILE     FILE exists and is a socket\n"
 "  -t FD       file descriptor FD is opened on a terminal\n"
@@ -12038,7 +12118,7 @@ msgstr ""
 "  -w BERKAS   BERKAS ada dan ijin tulis diberikan\n"
 "  -x BERKAS   BERKAS ada dan ijin menjalankan (atau pencarian) ada\n"
 
-#: src/test.c:785
+#: src/test.c:767
 msgid ""
 "\n"
 "Except for -h and -L, all FILE-related tests dereference symbolic links.\n"
@@ -12053,14 +12133,14 @@ msgstr ""
 "shell.\n"
 "INTEGER mungkin juga -l STRING, yang dievaluasi ke panjang dari STRING.\n"
 
-#: src/test.c:791
+#: src/test.c:773
 msgid ""
 "\n"
 "NOTE: Binary -a and -o are inherently ambiguous.  Use 'test EXPR1 && test\n"
 "EXPR2' or 'test EXPR1 || test EXPR2' instead.\n"
 msgstr ""
 
-#: src/test.c:796
+#: src/test.c:778
 msgid ""
 "\n"
 "NOTE: [ honors the --help and --version options, but test does not.\n"
@@ -12071,26 +12151,26 @@ msgstr ""
 "memperlakukan test dari setiap itu seperti memperlakukan STRING tidak kosong "
 "lain.\n"
 
-#: src/test.c:801
+#: src/test.c:783
 msgid "test and/or ["
 msgstr "test dan/atau ["
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/test.c:813
+#: src/test.c:795
 msgid "Kevin Braunsdorf"
 msgstr "Kevin Braunsdorf"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/test.c:814
+#: src/test.c:796
 msgid "Matthew Bradburn"
 msgstr "Matthew Bradburn"
 
-#: src/test.c:868
+#: src/test.c:850
 #, fuzzy, c-format
 msgid "missing %s"
 msgstr "hilang `]'"
 
-#: src/test.c:882
+#: src/test.c:864
 #, c-format
 msgid "extra argument %s"
 msgstr "kelebihan argumen %s"
@@ -12588,7 +12668,7 @@ msgid ""
 "A FILE argument that does not exist is created.\n"
 "\n"
 "If a FILE is larger than the specified size, the extra data is lost.\n"
-"If a FILE is shorter, it is extended and the extended part (hole)\n"
+"If a FILE is shorter, it is extended and the sparse extended part (hole)\n"
 "reads as zero bytes.\n"
 msgstr ""
 "Kecilkan atau lebarkan ukuran dari setiap BERKAS ke ukuran yang "
@@ -12638,72 +12718,67 @@ msgstr ""
 "`/' membulatkan kebawah ke kelipatan dari, `%' membulatkan keatas ke "
 "kelipatan dari.\n"
 
-#: src/truncate.c:123
-#, c-format
-msgid "overflow in %<PRIdMAX> * %<PRIdMAX> byte blocks for file %s"
+#: src/truncate.c:124
+#, fuzzy, c-format
+msgid "overflow in %<PRIdMAX> * %<PRIdPTR> byte blocks for file %s"
 msgstr "overflow dalam %<PRIdMAX> * %<PRIdMAX> byte blok untuk berkas %s"
 
-#: src/truncate.c:147
+#: src/truncate.c:145
 #, c-format
 msgid "%s has unusable, apparently negative size"
 msgstr "%s adalah tidak berguna, kelihatannya memiliki ukuran negatif"
 
-#: src/truncate.c:157 src/truncate.c:359
+#: src/truncate.c:155 src/truncate.c:348
 #, fuzzy, c-format
 msgid "cannot get the size of %s"
 msgstr "tidak dapat mengubah kepemilikan dari %s"
 
 #: src/truncate.c:179
 #, c-format
-msgid "overflow rounding up size of file %s"
-msgstr "pembulatan overflow dari ukuran berkas %s"
-
-#: src/truncate.c:189
-#, c-format
 msgid "overflow extending size of file %s"
 msgstr "extending overflow dari ukuran berkas %s"
 
-#: src/truncate.c:204
+#: src/truncate.c:193
 #, fuzzy, c-format
 msgid "failed to truncate %s at %<PRIdMAX> bytes"
 msgstr "memotong %s di %<PRIdMAX> byte"
 
-#: src/truncate.c:277
+#: src/truncate.c:266
 #, c-format
 msgid "multiple relative modifiers specified"
 msgstr "multiple relatif pengubah dispesifikasikan"
 
-#: src/truncate.c:286
+#: src/truncate.c:275
 #, fuzzy
 msgid "Invalid number"
 msgstr "nomor %s tidak valid"
 
-#: src/truncate.c:308
+#: src/truncate.c:297
 #, fuzzy, c-format
 msgid "you must specify either %s or %s"
 msgstr "anda harus menspesifikasikan satu dari %s atau %s"
 
-#: src/truncate.c:315
+#: src/truncate.c:304
 #, fuzzy, c-format
 msgid "you must specify a relative %s with %s"
 msgstr "anda harus menspesifikasikan satu dari %s atau %s"
 
-#: src/truncate.c:322
+#: src/truncate.c:311
 #, c-format
 msgid "%s was specified but %s was not"
 msgstr "%s telah dispesifikasikan tetapi %s belum"
 
-#: src/truncate.c:379
+#: src/truncate.c:368
 #, c-format
 msgid "cannot open %s for writing"
 msgstr "tidak dapat membuka %s untuk ditulis"
 
 #. This is a proper name. See the gettext manual, section Names.
-#: src/tsort.c:41
+#: src/tsort.c:40
 msgid "Mark Kettenis"
 msgstr "Mark Kettenis"
 
-#: src/tsort.c:88
+#: src/tsort.c:82
 #, fuzzy, c-format
 msgid ""
 "Usage: %s [OPTION] [FILE]\n"
@@ -12715,17 +12790,17 @@ msgstr ""
 "Tanpa BERKAS, atau ketika BERKAS adalah -, baca standar masukan.\n"
 "\n"
 
-#: src/tsort.c:95 src/uptime.c:218
+#: src/tsort.c:89 src/uptime.c:213
 #, c-format
 msgid "\n"
 msgstr "\n"
 
-#: src/tsort.c:481
+#: src/tsort.c:475
 #, c-format
 msgid "%s: input contains an odd number of tokens"
 msgstr "%s: masukan berisi sebuah angka ganjil dari tokens"
 
-#: src/tsort.c:527
+#: src/tsort.c:521
 #, c-format
 msgid "%s: input contains a loop:"
 msgstr "%s: masukan berisi sebuah loop:"
@@ -12818,12 +12893,12 @@ msgstr ""
 msgid "tab stop value is too large"
 msgstr "nilai tab stop terlalu besar"
 
-#: src/uniq.c:171
+#: src/uniq.c:166
 #, c-format
 msgid "Usage: %s [OPTION]... [INPUT [OUTPUT]]\n"
 msgstr "Penggunaan: %s [PILIHAN]... [INPUT [OUTPUT]]\n"
 
-#: src/uniq.c:175
+#: src/uniq.c:170
 #, fuzzy
 msgid ""
 "Filter adjacent matching lines from INPUT (or standard input),\n"
@@ -12838,7 +12913,7 @@ msgstr ""
 "pertama.\n"
 "\n"
 
-#: src/uniq.c:184
+#: src/uniq.c:179
 #, fuzzy
 msgid ""
 "  -c, --count           prefix lines by the number of occurrences\n"
@@ -12847,7 +12922,7 @@ msgstr ""
 "  -c, --count           awali baris dengan jumlah kejadian\n"
 "  -d, --repeated        hanya menampilkan baris duplikasi\n"
 
-#: src/uniq.c:188
+#: src/uniq.c:183
 msgid ""
 "  -D                    print all duplicate lines\n"
 "      --all-repeated[=METHOD]  like -D, but allow separating groups\n"
@@ -12855,30 +12930,30 @@ msgid ""
 "                                 METHOD={none(default),prepend,separate}\n"
 msgstr ""
 
-#: src/uniq.c:194
+#: src/uniq.c:189
 msgid "  -f, --skip-fields=N   avoid comparing the first N fields\n"
 msgstr ""
 
-#: src/uniq.c:197
+#: src/uniq.c:192
 msgid ""
 "      --group[=METHOD]  show all items, separating groups with an empty "
 "line;\n"
 "                          METHOD={separate(default),prepend,append,both}\n"
 msgstr ""
 
-#: src/uniq.c:201
+#: src/uniq.c:196
 msgid ""
 "  -i, --ignore-case     ignore differences in case when comparing\n"
 "  -s, --skip-chars=N    avoid comparing the first N characters\n"
 "  -u, --unique          only print unique lines\n"
 msgstr ""
 
-#: src/uniq.c:209
+#: src/uniq.c:204
 msgid "  -w, --check-chars=N   compare no more than N characters in lines\n"
 msgstr ""
 "  -w, --check-chars=N   bandingkan tidak lebih dari N karakter dalam baris\n"
 
-#: src/uniq.c:214
+#: src/uniq.c:209
 msgid ""
 "\n"
 "A field is a run of blanks (usually spaces and/or TABs), then non-blank\n"
@@ -12889,13 +12964,12 @@ msgstr ""
 "bukan-kosong\n"
 "karakter. Fields dilewati sebelum karakter.\n"
 
-#: src/uniq.c:219
+#: src/uniq.c:214
 #, fuzzy
 msgid ""
 "\n"
 "Note: 'uniq' does not detect repeated lines unless they are adjacent.\n"
 "You may want to sort the input first, or use 'sort -u' without 'uniq'.\n"
-"Also, comparisons honor the rules specified by 'LC_COLLATE'.\n"
 msgstr ""
 "\n"
 "Catat: 'uniq' tidak mendeteksi pengulangan baris kecuali mereka berurutan.\n"
@@ -12904,42 +12978,42 @@ msgstr ""
 "Juga, perbandingan menghargain aturan yang dispesifikasikan oleh "
 "`LC_COLLATE'.\n"
 
-#: src/uniq.c:437
+#: src/uniq.c:425
 msgid "too many repeated lines"
 msgstr "terlalu banyak pengulangan baris"
 
-#: src/uniq.c:613
+#: src/uniq.c:600
 msgid "invalid number of fields to skip"
 msgstr "jumlah bagian yang dilewati tidak valid"
 
-#: src/uniq.c:622
+#: src/uniq.c:609
 msgid "invalid number of bytes to skip"
 msgstr "jumlah bytes yang dilewati tidak valid"
 
-#: src/uniq.c:632
+#: src/uniq.c:619
 msgid "invalid number of bytes to compare"
 msgstr "jumlah bytes yang dibandingkan tidak valid"
 
-#: src/uniq.c:654
+#: src/uniq.c:641
 #, c-format
 msgid "--group is mutually exclusive with -c/-d/-D/-u"
 msgstr ""
 
-#: src/uniq.c:661
+#: src/uniq.c:648
 #, fuzzy, c-format
 msgid "grouping and printing repeat counts is meaningless"
 msgstr ""
 "menampilkan seluruh baris duplikat dan jumlah pengulangan adalah tidak "
 "berarti"
 
-#: src/uniq.c:668
+#: src/uniq.c:655
 #, c-format
 msgid "printing all duplicated lines and repeat counts is meaningless"
 msgstr ""
 "menampilkan seluruh baris duplikat dan jumlah pengulangan adalah tidak "
 "berarti"
 
-#: src/unlink.c:51
+#: src/unlink.c:45
 #, c-format
 msgid ""
 "Usage: %s FILE\n"
@@ -12948,7 +13022,7 @@ msgstr ""
 "Penggunaan: %s BERKAS\n"
 "  atau:     %s PILIHAN\n"
 
-#: src/unlink.c:54
+#: src/unlink.c:48
 msgid ""
 "Call the unlink function to remove the specified FILE.\n"
 "\n"
@@ -12956,51 +13030,51 @@ msgstr ""
 "Panggil fungsi unlink untuk menghapus BERKAS yang dispesifikasikan.\n"
 "\n"
 
-#: src/uptime.c:131
+#: src/uptime.c:126
 msgid "couldn't get boot time"
 msgstr "tidak dapat memperoleh waktu nyala"
 
 #. TRANSLATORS: This prints the current clock time.
-#: src/uptime.c:142
+#: src/uptime.c:137
 #, fuzzy
 msgid " %H:%M:%S  "
 msgstr " %H:%M%P  "
 
-#: src/uptime.c:144
+#: src/uptime.c:139
 #, c-format
 msgid " ??:????  "
 msgstr " ??:????  "
 
-#: src/uptime.c:146
+#: src/uptime.c:141
 #, c-format
 msgid "up ???? days ??:??,  "
 msgstr "nyala ???? hari ??:??,  "
 
-#: src/uptime.c:150
+#: src/uptime.c:145
 #, c-format
 msgid "up %ld day %2d:%02d,  "
 msgid_plural "up %ld days %2d:%02d,  "
 msgstr[0] "nyala %ld hari %2d:%02d,  "
 msgstr[1] "nyala %ld hari %2d:%02d,  "
 
-#: src/uptime.c:155
+#: src/uptime.c:150
 #, fuzzy, c-format
 msgid "up  %2d:%02d,  "
 msgstr "nyala %ld hari %2d:%02d,  "
 
-#: src/uptime.c:157
+#: src/uptime.c:152
 #, c-format
 msgid "%lu user"
 msgid_plural "%lu users"
 msgstr[0] "%lu pengguna"
 msgstr[1] "%lu pengguna"
 
-#: src/uptime.c:167
+#: src/uptime.c:162
 #, c-format
 msgid ",  load average: %.2f"
 msgstr ",  beban rata-rata: %.2f"
 
-#: src/uptime.c:205
+#: src/uptime.c:200
 #, c-format
 msgid ""
 "Print the current time, the length of time the system has been up,\n"
@@ -13011,7 +13085,7 @@ msgstr ""
 "jumlah pengguna dari sistem, dan jumlah rata-rata pekerjaan\n"
 "dalam antrian pekerjaan lebih dari terakhir 1, 5 dan 15 menit."
 
-#: src/uptime.c:214
+#: src/uptime.c:209
 #, c-format
 msgid ""
 "  Processes in\n"
@@ -13021,7 +13095,7 @@ msgstr ""
 "sebuah keadaan tidur tidak dapat diinterupsi juga berkontribusi terhada "
 "beban kerja.\n"
 
-#: src/uptime.c:220
+#: src/uptime.c:215
 #, c-format
 msgid ""
 "If FILE is not specified, use %s.  %s as FILE is common.\n"
@@ -13031,7 +13105,7 @@ msgstr ""
 "umum.\n"
 "\n"
 
-#: src/users.c:112
+#: src/users.c:106
 #, c-format
 msgid ""
 "Output who is currently logged in according to FILE.\n"
@@ -13043,14 +13117,14 @@ msgstr ""
 "umum.\n"
 "\n"
 
-#: src/wc.c:120
+#: src/wc.c:123
 msgid ""
 "Print newline, word, and byte counts for each FILE, and a total line if\n"
 "more than one FILE is specified.  A word is a non-zero-length sequence of\n"
 "characters delimited by white space.\n"
 msgstr ""
 
-#: src/wc.c:128
+#: src/wc.c:131
 #, fuzzy
 msgid ""
 "\n"
@@ -13069,7 +13143,7 @@ msgstr ""
 "  -m, --chars            menampilkan jumlah karakter\n"
 "  -l, --lines            menampilkan jumlah baris baru\n"
 
-#: src/wc.c:136
+#: src/wc.c:139
 #, fuzzy
 msgid ""
 "      --files0-from=F    read input from the files specified by\n"
@@ -13236,7 +13310,7 @@ msgstr ""
 "Jika ARG1 ARG2 diberikan, -m diasumsikan: `am i' atau `mom likes' seperti "
 "biasa.\n"
 
-#: src/whoami.c:51
+#: src/whoami.c:45
 msgid ""
 "Print the user name associated with the current effective user ID.\n"
 "Same as id -un.\n"
@@ -13246,12 +13320,12 @@ msgstr ""
 "Sama seperti id -un.\n"
 "\n"
 
-#: src/whoami.c:93
+#: src/whoami.c:86
 #, fuzzy, c-format
 msgid "cannot find name for user ID %lu"
 msgstr "tidak dapat menemukan nama untuk pengguna ID %lu"
 
-#: src/yes.c:47
+#: src/yes.c:41
 #, c-format
 msgid ""
 "Usage: %s [STRING]...\n"
@@ -13260,7 +13334,7 @@ msgstr ""
 "Penggunaan: %s [STRING]...\n"
 "  atau:     %s PILIHAN\n"
 
-#: src/yes.c:53
+#: src/yes.c:47
 #, fuzzy
 msgid ""
 "Repeatedly output a line with all specified STRING(s), or 'y'.\n"
@@ -13269,6 +13343,120 @@ msgstr ""
 "Secara berulang mengeluarkan sebuah baris dengan seluruh spesifikasi STRING, "
 "atau `y'.\n"
 "\n"
+
+#~ msgid ""
+#~ "CAUTION: Note that shred relies on a very important assumption:\n"
+#~ "that the file system overwrites data in place.  This is the traditional\n"
+#~ "way to do things, but many modern file system designs do not satisfy "
+#~ "this\n"
+#~ "assumption.  The following are examples of file systems on which shred "
+#~ "is\n"
+#~ "not effective, or is not guaranteed to be effective in all file system "
+#~ "modes:\n"
+#~ "\n"
+#~ msgstr ""
+#~ "PERHATIAN: Catat shred bergantung di asumsi sangat penting:\n"
+#~ "bahwa sistem berkas memaksa tulis data di tempat. Ini adalah cara\n"
+#~ "tradisional untuk melakukan itu, tetapi banyak rancangan sistem berkas "
+#~ "modern tidak memenuhi asumsi\n"
+#~ "ini. Contoh berikut dari sistem berkas dimana shred\n"
+#~ "tidak efektif, atau tidak digaransi untuk efektif di seluruh mode sistem "
+#~ "berkas:\n"
+#~ "\n"
+
+#~ msgid ""
+#~ "* log-structured or journaled file systems, such as those supplied with\n"
+#~ "AIX and Solaris (and JFS, ReiserFS, XFS, Ext3, etc.)\n"
+#~ "\n"
+#~ "* file systems that write redundant data and carry on even if some "
+#~ "writes\n"
+#~ "fail, such as RAID-based file systems\n"
+#~ "\n"
+#~ "* file systems that make snapshots, such as Network Appliance's NFS "
+#~ "server\n"
+#~ "\n"
+#~ msgstr ""
+#~ "* berstruktur-log atau sistem berkas terjurnal, seperti yang disupply "
+#~ "dengan\n"
+#~ "AIX dan Solaris (dan JFS, ReiserFS, XFS, Ext3, dan lain sebagainya.)\n"
+#~ "\n"
+#~ "* sistem berkas yang menulis data secara redundancy dan membawa bahkan "
+#~ "jika beberapa tulis\n"
+#~ "gagal, seperti dalam sistem berkas berbasis RAID\n"
+#~ "\n"
+#~ "* sistem berkas yang membuat snapshot, seperti dalam Network Appliance "
+#~ "NFS server\n"
+#~ "\n"
+
+#~ msgid ""
+#~ "* file systems that cache in temporary locations, such as NFS\n"
+#~ "version 3 clients\n"
+#~ "\n"
+#~ "* compressed file systems\n"
+#~ "\n"
+#~ msgstr ""
+#~ "* sistem berkas yang disimpan di lokasi sementara, seperti di NFS\n"
+#~ "versi 3 klien\n"
+#~ "\n"
+#~ "* sistem berkas terkompres\n"
+#~ "\n"
+
+#~ msgid ""
+#~ "In the case of ext3 file systems, the above disclaimer applies\n"
+#~ "(and shred is thus of limited effectiveness) only in data=journal mode,\n"
+#~ "which journals file data in addition to just metadata.  In both the\n"
+#~ "data=ordered (default) and data=writeback modes, shred works as usual.\n"
+#~ "Ext3 journaling modes can be changed by adding the data=something option\n"
+#~ "to the mount options for a particular file system in the /etc/fstab "
+#~ "file,\n"
+#~ "as documented in the mount man page (man mount).\n"
+#~ "\n"
+#~ msgstr ""
+#~ "Dalam kasus sistem berkas ext3, disclaimer diatas berjalan\n"
+#~ "(dan shred juga terbatas efektivitasnya) hanya dalam mode data=journal,\n"
+#~ "yang berkas data jurnal dalam tambahan daripada hanya metadata. Dalam "
+#~ "keduanya\n"
+#~ "data=ordered (default) dan mode data=writeback, shred bekerja seperti "
+#~ "biasa.\n"
+#~ "Mode jurnal ext3 dapat diubah dengan menambahkan pilihan data=sesuatu\n"
+#~ "ke pilihan mount untuk sistem berkas yang bersangkutan di berkas /etc/"
+#~ "fstab,\n"
+#~ "seperti yang terdokumentasi dalam halaman manual mount (man mount).\n"
+#~ "\n"
+
+#~ msgid ""
+#~ "In addition, file system backups and remote mirrors may contain copies\n"
+#~ "of the file that cannot be removed, and that will allow a shredded file\n"
+#~ "to be recovered later.\n"
+#~ msgstr ""
+#~ "Sebagai tambahan, sistem berkas backup dan remote mirror mungkin berisi "
+#~ "salinan\n"
+#~ "dari berkas yang tidak dapat dihapus, dan itu mungkin memungkinkan sebuah "
+#~ "berkas yang tershred untuk\n"
+#~ "diselamatkan nanti.\n"
+
+#, fuzzy
+#~ msgid "%s home page: <https://www.gnu.org/software/%s/>\n"
+#~ msgstr "%s halaman rumah: <http://www.gnu.org/software/%s/>\n"
+
+#~ msgid "overflow rounding up size of file %s"
+#~ msgstr "pembulatan overflow dari ukuran berkas %s"
+
+#, fuzzy
+#~ msgid ""
+#~ "\n"
+#~ "NUM may have a multiplier suffix:\n"
+#~ "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
+#~ "GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n"
+#~ msgstr ""
+#~ "\n"
+#~ "K mungkin memiliki sebuah akhiran pengali:\n"
+#~ "b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n"
+#~ "GB 1000*1000*1000, G 1024*1024*1024, dan seterusnya untuk T, P, E, Z, Y.\n"
+
+#, fuzzy
+#~ msgid "Usage: %s [OPTION]... [USER]\n"
+#~ msgstr "Penggunaan: %s [PILIHAN]... [PENGGUNA]...\n"
 
 #, fuzzy
 #~ msgid ""

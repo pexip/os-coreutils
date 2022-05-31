@@ -1,5 +1,5 @@
 /* Thread-local storage in multithreaded situations.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,33 +22,13 @@
 
 /* ========================================================================= */
 
+#if USE_ISOC_THREADS || USE_ISOC_AND_POSIX_THREADS
+
+#endif
+
+/* ========================================================================= */
+
 #if USE_POSIX_THREADS
-
-#endif
-
-/* ========================================================================= */
-
-#if USE_PTH_THREADS
-
-#endif
-
-/* ========================================================================= */
-
-#if USE_SOLARIS_THREADS
-
-/* Use the old Solaris threads library.  */
-
-/* ------------------------- gl_tls_key_t datatype ------------------------- */
-
-void *
-glthread_tls_get_multithreaded (thread_key_t key)
-{
-  void *value;
-
-  if (thr_getspecific (key, &value) != 0)
-    abort ();
-  return value;
-}
 
 #endif
 

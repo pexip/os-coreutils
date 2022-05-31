@@ -1,5 +1,5 @@
 /* Specialized functions to manipulate a set of files.
-   Copyright (C) 2007, 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ record_file (Hash_table *ht, char const *file, struct stat const *stats)
 
     if (ent_from_table != ent)
       {
-        /* There was alread a matching entry in the table, so ENT was
+        /* There was already a matching entry in the table, so ENT was
            not inserted.  Free it.  */
         triple_free (ent);
       }

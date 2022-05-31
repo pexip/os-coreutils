@@ -1,5 +1,5 @@
 /* du -- summarize disk usage
-   Copyright (C) 1988-2018 Free Software Foundation, Inc.
+   Copyright (C) 1988-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@
 #include "stdio--.h"
 #include "xfts.h"
 #include "xstrtol.h"
+#include "xstrtol-error.h"
 
 extern bool fts_debug;
 
@@ -807,12 +808,12 @@ main (int argc, char **argv)
 
         case 'd':		/* --max-depth=N */
           {
-            unsigned long int tmp_ulong;
-            if (xstrtoul (optarg, NULL, 0, &tmp_ulong, NULL) == LONGINT_OK
-                && tmp_ulong <= SIZE_MAX)
+            uintmax_t tmp;
+            if (xstrtoumax (optarg, NULL, 0, &tmp, "") == LONGINT_OK
+                && tmp <= SIZE_MAX)
               {
                 max_depth_specified = true;
-                max_depth = tmp_ulong;
+                max_depth = tmp;
               }
             else
               {

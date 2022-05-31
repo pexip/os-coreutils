@@ -1,5 +1,5 @@
 /* factor -- print prime factors of n.
-   Copyright (C) 1986-2018 Free Software Foundation, Inc.
+   Copyright (C) 1986-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2400,10 +2400,10 @@ lbuf_putc (char c)
     {
       size_t buffered = lbuf.end - lbuf.buf;
 
-      /* Provide immediate output for interactive input.  */
+      /* Provide immediate output for interactive use.  */
       static int line_buffered = -1;
       if (line_buffered == -1)
-        line_buffered = isatty (STDIN_FILENO);
+        line_buffered = isatty (STDIN_FILENO) || isatty (STDOUT_FILENO);
       if (line_buffered)
         lbuf_flush ();
       else if (buffered >= FACTOR_PIPE_BUF)

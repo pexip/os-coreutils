@@ -1,5 +1,5 @@
 /* nohup -- run a command immune to hangups, with output to a non-tty
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 /* Written by Jim Meyering  */
 
 #include <config.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <signal.h>
@@ -33,11 +32,6 @@
 #define PROGRAM_NAME "nohup"
 
 #define AUTHORS proper_name ("Jim Meyering")
-
-static struct option const long_options[] =
-{
-  {NULL, 0, NULL, 0}
-};
 
 /* Exit statuses.  */
 enum
@@ -104,10 +98,9 @@ main (int argc, char **argv)
   initialize_exit_failure (exit_internal_failure);
   atexit (close_stdout);
 
-  parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, Version,
-                      usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "+", long_options, NULL) != -1)
-    usage (exit_internal_failure);
+  parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
+                                   Version, false, usage, AUTHORS,
+                                   (char const *) NULL);
 
   if (argc <= optind)
     {

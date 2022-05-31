@@ -1,5 +1,5 @@
 /* printf - format and print data
-   Copyright (C) 1990-2018 Free Software Foundation, Inc.
+   Copyright (C) 1990-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@
 #include <sys/types.h>
 
 #include "system.h"
-#include "c-strtod.h"
+#include "cl-strtod.h"
 #include "die.h"
 #include "error.h"
 #include "quote.h"
@@ -188,7 +188,7 @@ FUNC_NAME (char const *s)						 \
 
 STRTOX (intmax_t,    vstrtoimax, strtoimax (s, &end, 0))
 STRTOX (uintmax_t,   vstrtoumax, strtoumax (s, &end, 0))
-STRTOX (long double, vstrtold,   c_strtold (s, &end))
+STRTOX (long double, vstrtold,   cl_strtold (s, &end))
 
 /* Output a single-character \ escape.  */
 

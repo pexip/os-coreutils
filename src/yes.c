@@ -1,5 +1,5 @@
 /* yes - output a string repeatedly until killed
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <getopt.h>
 
 #include "system.h"
 
@@ -31,11 +30,6 @@
 #define PROGRAM_NAME "yes"
 
 #define AUTHORS proper_name ("David MacKenzie")
-
-static struct option const long_options[] =
-{
-  {NULL, 0, NULL, 0}
-};
 
 void
 usage (int status)
@@ -72,10 +66,9 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, Version,
-                      usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "+", long_options, NULL) != -1)
-    usage (EXIT_FAILURE);
+  parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
+                                   Version, true, usage, AUTHORS,
+                                   (char const *) NULL);
 
   char **operands = argv + optind;
   char **operand_lim = argv + argc;
@@ -86,7 +79,8 @@ main (int argc, char **argv)
      large overhead of stdio buffering each item.  */
   size_t bufalloc = 0;
   bool reuse_operand_strings = true;
-  for (char **operandp = operands; operandp < operand_lim; operandp++)
+  char **operandp = operands;
+  do
     {
       size_t operand_len = strlen (*operandp);
       bufalloc += operand_len + 1;
@@ -94,6 +88,7 @@ main (int argc, char **argv)
           && *operandp + operand_len + 1 != operandp[1])
         reuse_operand_strings = false;
     }
+  while (++operandp < operand_lim);
 
   /* Improve performance by using a buffer size greater than BUFSIZ / 2.  */
   if (bufalloc <= BUFSIZ / 2)
@@ -106,7 +101,8 @@ main (int argc, char **argv)
      the operands strings; this wins when the buffer would be large.  */
   char *buf = reuse_operand_strings ? *operands : xmalloc (bufalloc);
   size_t bufused = 0;
-  for (char **operandp = operands; operandp < operand_lim; operandp++)
+  operandp = operands;
+  do
     {
       size_t operand_len = strlen (*operandp);
       if (! reuse_operand_strings)
@@ -114,6 +110,7 @@ main (int argc, char **argv)
       bufused += operand_len;
       buf[bufused++] = ' ';
     }
+  while (++operandp < operand_lim);
   buf[bufused - 1] = '\n';
 
   /* If a larger buffer was allocated, fill it by repeating the buffer

@@ -1,5 +1,5 @@
 # Customize maint.mk                           -*- makefile -*-
-# Copyright (C) 2003-2018 Free Software Foundation, Inc.
+# Copyright (C) 2003-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ export VERBOSE = yes
 # 4914152 9e
 export XZ_OPT = -8e
 
-old_NEWS_hash = 48668bce5e01bf434b1d1ff10d141884
+old_NEWS_hash = d914d8ae972de9e5f77e9398a39de945
 
 # Add an exemption for sc_makefile_at_at_check.
 _makefile_at_at_check_exceptions = ' && !/^cu_install_prog/ && !/dynamic-dep/'
@@ -121,6 +121,7 @@ sc_tests_list_consistency:
 # Ensure that all version-controlled test scripts are executable.
 sc_tests_executable:
 	@set -o noglob 2>/dev/null || set -f;				   \
+	cd $(srcdir);							   \
 	find_ext="-name '' "`printf -- "-o -name *%s " $(TEST_EXTENSIONS)`;\
 	find $(srcdir)/tests/ \( $$find_ext \) \! -perm -u+x -print	   \
 	  | { sed "s|^$(srcdir)/||"; git ls-files $(srcdir)/tests/; }	   \
@@ -138,8 +139,8 @@ sc_ensure_gl_diffs_apply_cleanly:
 
 # Avoid :>file which doesn't propagate errors
 sc_prohibit_colon_redirection:
-	@cd $(srcdir)/tests && GIT_PAGER= git grep -n ': *>.*||' \
-	  && { echo '$(ME): '"The leading colon in :> will hide errors" 1>&2; \
+	@cd $(srcdir)/tests && GIT_PAGER= git grep -En ': *>.*\|\|'	\
+	  && { echo '$(ME): '"The leading colon in :> will hide errors" >&2; \
 	       exit 1; }  \
 	  || :
 
@@ -248,6 +249,11 @@ sc_prohibit-quotearg:
 	@prohibit='quotearg(_n)?(|_colon|_char|_mem) ' \
 	in_vc_files='\.c$$' \
 	halt='Unstyled diagnostic quoting detected' \
+	  $(_sc_search_regexp)
+
+sc_prohibit-skip:
+	@prohibit='\|\| skip ' \
+	halt='Use skip_ not skip' \
 	  $(_sc_search_regexp)
 
 sc_sun_os_names:
@@ -402,7 +408,7 @@ check-programs-vs-x:
 
 # Ensure we can check out on case insensitive file systems
 sc_case_insensitive_file_names: src/uniq
-	@git ls-files | sort -f | src/uniq -Di | grep . && \
+	@git -C $(srcdir) ls-files | sort -f | src/uniq -Di | grep . && \
 	  { echo "$(ME): the above file(s) conflict on case insensitive" \
 	  " file systems" 1>&2; exit 1; } || :
 
@@ -440,20 +446,22 @@ sc_prohibit_stat_macro_address:
 # Ensure that date's --help output stays in sync with the info
 # documentation for GNU strftime.  The only exception is %N and %q,
 # which date accepts but GNU strftime does not.
+#
+# "info foo" fails with error, but not "info foo >/dev/null".
 extract_char = sed 's/^[^%][^%]*%\(.\).*/\1/'
 sc_strftime_check:
 	@if test -f $(srcdir)/src/date.c; then				\
-	  grep '^  %.  ' $(srcdir)/src/date.c | sort			\
-	    | $(extract_char) > $@-src;					\
-	  { echo N; echo q;						\
-	    info libc date calendar format 2>/dev/null			\
-	      | grep "^ *['\`]%.'$$"| $(extract_char); }| sort >$@-info;\
-	  if test $$(stat --format %s $@-info) != 2; then		\
+	  if info libc date calendar format 2>/dev/null |		\
+		grep "^ *['\`]%.'$$" >$@-tmp; then			\
+	    { echo N; echo q; $(extract_char) $@-tmp; }| sort		\
+	      >$@-info;							\
+	    grep '^  %.  ' $(srcdir)/src/date.c | sort			\
+	      | $(extract_char) > $@-src;				\
 	    diff -u $@-src $@-info || exit 1;				\
 	  else								\
 	    echo '$(ME): skipping $@: libc info not installed' 1>&2;	\
 	  fi;								\
-	  rm -f $@-src $@-info;						\
+	  rm -f $@-info $@-src $@-tmp;					\
 	fi
 
 # Indent only with spaces.
@@ -508,6 +516,14 @@ sc_prohibit_and_fail_1:
 	@prohibit='&& fail=1'						\
 	exclude='(returns_|stat|kill|test |EGREP|grep|compare|2> *[^/])' \
 	halt='&& fail=1 detected. Please use: returns_ 1 ... || fail=1'	\
+	in_vc_files='^tests/'						\
+	  $(_sc_search_regexp)
+
+# Ensure that tests don't use `cmd ... || fail` as that's a noop.
+sc_prohibit_or_fail:
+	@prohibit='\|\| fail$$'						\
+	exclude=':#'							\
+	halt='|| fail detected. Please use: || fail=1'			\
 	in_vc_files='^tests/'						\
 	  $(_sc_search_regexp)
 
@@ -603,7 +619,8 @@ sc_prohibit_expr_unsigned:
 # Others, use the EXIT_CANCELED, EXIT_ENOENT, etc. macros defined in system.h.
 # In those programs, ensure that EXIT_FAILURE is not used by mistake.
 sc_some_programs_must_avoid_exit_failure:
-	@grep -nw EXIT_FAILURE						\
+	@cd $(srcdir)							\
+	&& grep -nw EXIT_FAILURE					\
 	    $$(git grep -El '[^T]_FAILURE|EXIT_CANCELED' $(srcdir)/src)	\
 	  | grep -vE '= EXIT_FAILURE|return .* \?' | grep .		\
 	    && { echo '$(ME): do not use EXIT_FAILURE in the above'	\
@@ -611,22 +628,22 @@ sc_some_programs_must_avoid_exit_failure:
 
 # Ensure that tests call the get_min_ulimit_v_ function if using ulimit -v
 sc_prohibit_test_ulimit_without_require_:
-	@(git grep -l get_min_ulimit_v_ $(srcdir)/tests;		\
-	  git grep -l 'ulimit -v' $(srcdir)/tests)			\
+	@(git -C $(srcdir) grep -l get_min_ulimit_v_ tests;		\
+	  git -C $(srcdir) grep -l 'ulimit -v' tests)			\
 	  | sort | uniq -u | grep . && { echo "$(ME): the above test(s)"\
 	  " should match get_min_ulimit_v_ with ulimit -v" 1>&2; exit 1; } || :
 
 # Ensure that tests call the cleanup_ function if using background processes
 sc_prohibit_test_background_without_cleanup_:
-	@(git grep -El '( &$$|&[^&]*=\$$!)' $(srcdir)/tests;		\
-	  git grep -l 'cleanup_()' $(srcdir)/tests | sed p)		\
+	@(git -C $(srcdir) grep -El '( &$$|&[^&]*=\$$!)' tests;		\
+	  git -C $(srcdir) grep -l 'cleanup_()' tests | sed p)		\
 	  | sort | uniq -u | grep . && { echo "$(ME): the above test(s)"\
 	  " should use cleanup_ for background processes" 1>&2; exit 1; } || :
 
 # Ensure that tests call the print_ver_ function for programs which are
 # actually used in that test.
 sc_prohibit_test_calls_print_ver_with_irrelevant_argument:
-	@git grep -w print_ver_ $(srcdir)/tests				\
+	@git -C $(srcdir) grep -w print_ver_ tests			\
 	  | sed 's#:print_ver_##'					\
 	  | { fail=0;							\
 	      while read file name; do					\
@@ -738,7 +755,7 @@ sc_preprocessor_indentation:
 # someone who was initially listed only in THANKS.in later authors a commit,
 # this rule detects that their pair may now be removed from THANKS.in.
 sc_THANKS_in_duplicates:
-	@{ git log --pretty=format:%aN | sort -u;			\
+	@{ git -C $(srcdir) log --pretty=format:%aN | sort -u;		\
 	    cut -b-36 $(srcdir)/THANKS.in				\
 	      | sed '/^$$/,/^$$/!d;/^$$/d;s/  *$$//'; }			\
 	  | sort | uniq -d | grep .					\
@@ -823,8 +840,9 @@ exclude_file_name_regexp--sc_system_h_headers = \
   ^src/((die|system|copy)\.h|make-prime-list\.c)$$
 
 _src = (false|lbracket|ls-(dir|ls|vdir)|tac-pipe|uname-(arch|uname))
+_gl_src = (xdecto.max|cl-strtold)
 exclude_file_name_regexp--sc_require_config_h_first = \
-  (^lib/buffer-lcm\.c|gl/lib/xdecto.max\.c|src/$(_src)\.c)$$
+  (^lib/buffer-lcm\.c|gl/lib/$(_gl_src)\.c|src/$(_src)\.c)$$
 exclude_file_name_regexp--sc_require_config_h = \
   $(exclude_file_name_regexp--sc_require_config_h_first)
 

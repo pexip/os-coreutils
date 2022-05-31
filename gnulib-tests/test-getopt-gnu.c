@@ -1,5 +1,5 @@
 /* Test of command line argument processing.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #define _GL_NO_LARGE_FILES
 
 /* POSIX and glibc provide the getopt() function in <unistd.h>, see
-   http://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html
+   https://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html
    https://www.gnu.org/software/libc/manual/html_node/Using-Getopt.html
    But gnulib provides the getopt() function in <getopt.h>, not in <unistd.h>.
    This is what we are testing here.  */

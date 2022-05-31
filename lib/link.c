@@ -1,6 +1,6 @@
 /* Emulate link on platforms that lack it, namely native Windows platforms.
 
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,10 @@
 
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
+
+/* Avoid warnings from gcc -Wcast-function-type.  */
+#  define GetProcAddress \
+    (void *) GetProcAddress
 
 /* CreateHardLink was introduced only in Windows 2000.  */
 typedef BOOL (WINAPI * CreateHardLinkFuncType) (LPCTSTR lpFileName,

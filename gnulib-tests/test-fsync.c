@@ -1,5 +1,5 @@
 /* Test of fsync() function.
-   Copyright (C) 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2008-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -64,7 +64,9 @@ main (void)
   ASSERT (close (fd) == 0);
 
   /* For a read-only regular file input file descriptor, fsync should
-     succeed (since at least atime changes can be synchronized).  */
+     succeed (since at least atime changes can be synchronized).
+     On AIX and Cygwin, this test would fail.  */
+#if !(defined _AIX || defined __CYGWIN__)
   fd = open (file, O_RDONLY);
   ASSERT (0 <= fd);
   {
@@ -73,6 +75,7 @@ main (void)
   }
   ASSERT (fsync (fd) == 0);
   ASSERT (close (fd) == 0);
+#endif
 
   ASSERT (unlink (file) == 0);
 

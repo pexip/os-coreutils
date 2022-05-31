@@ -1,5 +1,5 @@
 /* Permuted index for GNU, with keywords in their context.
-   Copyright (C) 1990-2018 Free Software Foundation, Inc.
+   Copyright (C) 1990-2020 Free Software Foundation, Inc.
    François Pinard <pinard@iro.umontreal.ca>, 1988.
 
    This program is free software: you can redistribute it and/or modify
@@ -1940,7 +1940,7 @@ main (int argc, char **argv)
         case 'g':
           {
             intmax_t tmp;
-            if (! (xstrtoimax (optarg, NULL, 0, &tmp, NULL) == LONGINT_OK
+            if (! (xstrtoimax (optarg, NULL, 0, &tmp, "") == LONGINT_OK
                    && 0 < tmp && tmp <= PTRDIFF_MAX))
               die (EXIT_FAILURE, 0, _("invalid gap width: %s"),
                    quote (optarg));
@@ -1967,7 +1967,7 @@ main (int argc, char **argv)
         case 'w':
           {
             intmax_t tmp;
-            if (! (xstrtoimax (optarg, NULL, 0, &tmp, NULL) == LONGINT_OK
+            if (! (xstrtoimax (optarg, NULL, 0, &tmp, "") == LONGINT_OK
                    && 0 < tmp && tmp <= PTRDIFF_MAX))
               die (EXIT_FAILURE, 0, _("invalid line width: %s"),
                    quote (optarg));

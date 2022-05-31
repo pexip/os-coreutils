@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test various sync(1) operations
 
-# Copyright (C) 2015-2018 Free Software Foundation, Inc.
+# Copyright (C) 2015-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ sync
 
-touch file
+touch file || framework_failure_
 
 # fdatasync+syncfs is nonsensical
 returns_ 1 sync --data --file-system || fail=1
@@ -28,6 +28,11 @@ returns_ 1 sync --data --file-system || fail=1
 returns_ 1 sync -d || fail=1
 
 # Test syncing of file (fsync) (little side effects)
+sync file || fail=1
+
+# Test syncing of write-only file - which failed since adding argument
+# support to sync in coreutils-8.24.
+chmod 0200 file || framework_failure_
 sync file || fail=1
 
 # Ensure multiple args are processed and diagnosed
