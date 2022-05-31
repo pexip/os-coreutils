@@ -21,6 +21,7 @@ default__progs += src/[
 default__progs += src/b2sum
 default__progs += src/base64
 default__progs += src/base32
+default__progs += src/basenc
 default__progs += src/basename
 default__progs += src/cat
 default__progs += src/chcon

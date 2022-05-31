@@ -1,13 +1,13 @@
 dnl A placeholder for ISO C99 <wchar.h>, for platforms that have issues.
 
-dnl Copyright (C) 2007-2018 Free Software Foundation, Inc.
+dnl Copyright (C) 2007-2020 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
 
 dnl Written by Eric Blake.
 
-# wchar_h.m4 serial 42
+# wchar_h.m4 serial 45
 
 AC_DEFUN([gl_WCHAR_H],
 [
@@ -57,6 +57,8 @@ AC_DEFUN([gl_WCHAR_H],
      wcsncmp wcscasecmp wcsncasecmp wcscoll wcsxfrm wcsdup wcschr wcsrchr
      wcscspn wcsspn wcspbrk wcsstr wcstok wcswidth wcsftime
     ])
+
+  AC_REQUIRE([AC_C_RESTRICT])
 ])
 
 dnl Check whether <wchar.h> is usable at all.
@@ -90,7 +92,8 @@ int main () { return zero(); }
      dnl that the object file has the latter name from the start.
      save_ac_compile="$ac_compile"
      ac_compile=`echo "$save_ac_compile" | sed s/conftest/conftest1/`
-     if AC_TRY_EVAL([ac_compile]); then
+     if echo '#include "conftest.c"' >conftest1.c &&
+        AC_TRY_EVAL([ac_compile]); then
        AC_LANG_CONFTEST([
          AC_LANG_SOURCE([[#define wcstod renamed_wcstod
 /* Tru64 with Desktop Toolkit C has a bug: <stdio.h> must be included before
@@ -105,7 +108,8 @@ int zero (void) { return 0; }
 ]])])
        dnl See note above about renaming object files.
        ac_compile=`echo "$save_ac_compile" | sed s/conftest/conftest2/`
-       if AC_TRY_EVAL([ac_compile]); then
+       if echo '#include "conftest.c"' >conftest2.c &&
+          AC_TRY_EVAL([ac_compile]); then
          if $CC -o conftest$ac_exeext $CFLAGS $LDFLAGS conftest1.$ac_objext conftest2.$ac_objext $LIBS >&AS_MESSAGE_LOG_FD 2>&1; then
            :
          else
@@ -114,7 +118,7 @@ int zero (void) { return 0; }
        fi
      fi
      ac_compile="$save_ac_compile"
-     rm -f conftest1.$ac_objext conftest2.$ac_objext conftest$ac_exeext
+     rm -f conftest[12].c conftest[12].$ac_objext conftest$ac_exeext
     ])
   if test $gl_cv_header_wchar_h_correct_inline = no; then
     AC_MSG_ERROR([<wchar.h> cannot be used with this compiler ($CC $CFLAGS $CPPFLAGS).
@@ -235,4 +239,5 @@ AC_DEFUN([gl_WCHAR_H_DEFAULTS],
   REPLACE_WCWIDTH=0;    AC_SUBST([REPLACE_WCWIDTH])
   REPLACE_WCSWIDTH=0;   AC_SUBST([REPLACE_WCSWIDTH])
   REPLACE_WCSFTIME=0;   AC_SUBST([REPLACE_WCSFTIME])
+  REPLACE_WCSTOK=0;     AC_SUBST([REPLACE_WCSTOK])
 ])

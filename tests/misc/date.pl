@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test "date".
 
-# Copyright (C) 2005-2018 Free Software Foundation, Inc.
+# Copyright (C) 2005-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -297,6 +297,19 @@ my @Tests =
       {ENV => 'TZ=PST8'},
       {OUT => 'Wed Dec 31 21:00:00 PST 1969'},
      ],
+
+     # https://bugs.gnu.org/34608
+     ['date-century-plus', '-d @0 +.%+4C.', {OUT => '.+019.'}],
+
+
+     # Military time zones, new behavior (since 8.32)
+     # https://lists.gnu.org/r/bug-gnulib/2019-08/msg00005.html
+     ['mtz1', '-u -d "09:00B" +%T', {OUT => '07:00:00'}],
+     ['mtz2', '-u -d "09:00L" +%T', {OUT => '22:00:00'}],
+     ['mtz3', '-u -d "09:00N" +%T', {OUT => '10:00:00'}],
+     ['mtz4', '-u -d "09:00T" +%T', {OUT => '16:00:00'}],
+     ['mtz5', '-u -d "09:00X" +%T', {OUT => '20:00:00'}],
+     ['mtz6', '-u -d "09:00Z" +%T', {OUT => '09:00:00'}],
     );
 
 # Repeat the cross-dst test, using Jan 1, 2005 and every interval from 1..364.

@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in -*-Makefile-*-.
 
-## Copyright (C) 2007-2018 Free Software Foundation, Inc.
+## Copyright (C) 2007-2020 Free Software Foundation, Inc.
 
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -163,6 +163,7 @@ check-root:
 
 all_tests =					\
   tests/misc/help-version.sh			\
+  tests/misc/help-version-getopt.sh		\
   tests/tail-2/inotify-race.sh			\
   tests/tail-2/inotify-race2.sh			\
   tests/misc/invalid-opt.pl			\
@@ -237,12 +238,16 @@ all_tests =					\
   tests/fmt/base.pl				\
   tests/fmt/long-line.sh			\
   tests/fmt/goal-option.sh			\
+  tests/misc/echo.sh				\
   tests/misc/env.sh				\
+  tests/misc/env-signal-handler.sh		\
   tests/misc/ptx.pl				\
   tests/misc/test.pl				\
   tests/misc/seq.pl				\
   tests/misc/seq-epipe.sh			\
+  tests/misc/seq-extra-number.sh		\
   tests/misc/seq-io-errors.sh			\
+  tests/misc/seq-locale.sh			\
   tests/misc/seq-long-double.sh			\
   tests/misc/seq-precision.sh			\
   tests/misc/head.pl				\
@@ -270,6 +275,7 @@ all_tests =					\
   tests/misc/wc.pl				\
   tests/misc/wc-files0-from.pl			\
   tests/misc/wc-files0.sh			\
+  tests/misc/wc-nbsp.sh				\
   tests/misc/wc-parallel.sh			\
   tests/misc/wc-proc.sh				\
   tests/misc/cat-proc.sh			\
@@ -277,6 +283,7 @@ all_tests =					\
   tests/misc/cat-self.sh			\
   tests/misc/base64.pl				\
   tests/misc/basename.pl			\
+  tests/misc/basenc.pl				\
   tests/misc/close-stdout.sh			\
   tests/misc/chroot-fail.sh			\
   tests/misc/comm.pl				\
@@ -408,11 +415,13 @@ all_tests =					\
   tests/misc/tac-2-nonseekable.sh		\
   tests/misc/tail.pl				\
   tests/misc/tee.sh				\
+  tests/misc/test-N.sh				\
   tests/misc/test-diag.pl			\
   tests/misc/time-style.sh			\
   tests/misc/timeout.sh				\
   tests/misc/timeout-blocked.pl			\
   tests/misc/timeout-group.sh			\
+  tests/misc/timeout-large-parameters.sh	\
   tests/misc/timeout-parameters.sh		\
   tests/misc/tr.pl				\
   tests/misc/tr-case-class.sh			\
@@ -430,6 +439,7 @@ all_tests =					\
   tests/misc/unexpand.pl			\
   tests/misc/uniq.pl				\
   tests/misc/uniq-perf.sh			\
+  tests/misc/uniq-collate.sh			\
   tests/misc/xattr.sh				\
   tests/misc/yes.sh				\
   tests/tail-2/wait.sh				\
@@ -581,6 +591,7 @@ all_tests =					\
   tests/ln/target-1.sh				\
   tests/ls/a-option.sh				\
   tests/ls/abmon-align.sh			\
+  tests/ls/birthtime.sh				\
   tests/ls/block-size.sh			\
   tests/ls/color-clear-to-eol.sh		\
   tests/ls/color-dtype-dir.sh			\
@@ -592,6 +603,7 @@ all_tests =					\
   tests/ls/file-type.sh				\
   tests/ls/follow-slink.sh			\
   tests/ls/getxattr-speedup.sh			\
+  tests/ls/group-dirs.sh			\
   tests/ls/hex-option.sh			\
   tests/ls/infloop.sh				\
   tests/ls/inode.sh				\
@@ -604,6 +616,7 @@ all_tests =					\
   tests/ls/quote-align.sh			\
   tests/ls/readdir-mountpoint-inode.sh		\
   tests/ls/recursive.sh				\
+  tests/ls/removed-directory.sh			\
   tests/ls/root-rel-symlink-color.sh		\
   tests/ls/rt-1.sh				\
   tests/ls/slink-acl.sh				\

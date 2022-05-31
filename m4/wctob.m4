@@ -1,5 +1,5 @@
-# wctob.m4 serial 11
-dnl Copyright (C) 2008-2018 Free Software Foundation, Inc.
+# wctob.m4 serial 12
+dnl Copyright (C) 2008-2020 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -74,6 +74,7 @@ int main ()
           AC_RUN_IFELSE(
             [AC_LANG_SOURCE([[
 #include <locale.h>
+#include <stdlib.h>
 #include <string.h>
 /* Tru64 with Desktop Toolkit C has a bug: <stdio.h> must be included before
    <wchar.h>.

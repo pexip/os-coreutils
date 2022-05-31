@@ -1,5 +1,5 @@
 /* Test the di-set module.
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@ int
 main (void)
 {
   struct di_set *dis = di_set_alloc ();
+  ASSERT (dis);
+  di_set_free (dis); /* free with dis->ino_map still being NULL */
+  dis = di_set_alloc ();
   ASSERT (dis);
 
   ASSERT (di_set_lookup (dis, 2, 5) == 0); /* initial lookup fails */

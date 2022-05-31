@@ -1,5 +1,5 @@
 /* Test of freadseek() function.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ int
 main (int argc, char **argv)
 {
   static const char stdin_contents[] =
-    "#!/bin/sh\n\n./test-freadseek${EXEEXT} 5 19 6 7 18 9 19 < \"$srcdir/test-freadseek.sh\" || exit 1\ncat \"$srcdir/test-freadseek.sh\" | ./test-freadseek${EXEEXT} 5 19 6 7 18 9 19 || exit 1\nexit 0\n";
+    "#!/bin/sh\n\n${CHECKER} ./test-freadseek${EXEEXT} 5 19 6 7 18 9 19 < \"$srcdir/test-freadseek.sh\" || exit 1\ncat \"$srcdir/test-freadseek.sh\" | ${CHECKER} ./test-freadseek${EXEEXT} 5 19 6 7 18 9 19 || exit 1\nexit 0\n";
   int nbytes1 = atoi (argv[1]);
   int nbytes2 = atoi (argv[2]);
   int nbytes3 = atoi (argv[3]);
@@ -88,6 +88,11 @@ main (int argc, char **argv)
   ASSERT (fgetc (stdin) == EOF);
   ASSERT (!ferror (stdin));
 #endif
+
+  free (buf7);
+  free (buf5);
+  free (buf3);
+  free (buf1);
 
   return 0;
 }

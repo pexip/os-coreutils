@@ -1,5 +1,5 @@
 /* logname -- print user's login name
-   Copyright (C) 1990-2018 Free Software Foundation, Inc.
+   Copyright (C) 1990-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 #include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <getopt.h>
 
 #include "system.h"
 #include "die.h"
@@ -29,11 +28,6 @@
 #define PROGRAM_NAME "logname"
 
 #define AUTHORS proper_name ("FIXME: unknown")
-
-static struct option const long_options[] =
-{
-  {NULL, 0, NULL, 0}
-};
 
 void
 usage (int status)
@@ -67,10 +61,9 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, Version,
-                      usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
-    usage (EXIT_FAILURE);
+  parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
+                                   Version, true, usage, AUTHORS,
+                                   (char const *) NULL);
 
   if (optind < argc)
     {

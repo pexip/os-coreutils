@@ -1,5 +1,5 @@
 /* split.c -- split a file into pieces.
-   Copyright (C) 1988-2018 Free Software Foundation, Inc.
+   Copyright (C) 1988-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ set_suffix_length (uintmax_t n_units, enum Split_type split_type)
 {
 #define DEFAULT_SUFFIX_LENGTH 2
 
-  uintmax_t suffix_needed = 0;
+  uintmax_t suffix_length_needed = 0;
 
   /* The suffix auto length feature is incompatible with
      a user specified start value as the generated suffixes
@@ -176,7 +176,7 @@ set_suffix_length (uintmax_t n_units, enum Split_type split_type)
   if (split_type == type_chunk_bytes || split_type == type_chunk_lines
       || split_type == type_rr)
     {
-      uintmax_t n_units_end = n_units;
+      uintmax_t n_units_end = n_units - 1;
       if (numeric_suffix_start)
         {
           uintmax_t n_start;
@@ -194,26 +194,26 @@ set_suffix_length (uintmax_t n_units, enum Split_type split_type)
 
         }
       size_t alphabet_len = strlen (suffix_alphabet);
-      bool alphabet_slop = (n_units_end % alphabet_len) != 0;
-      while (n_units_end /= alphabet_len)
-        suffix_needed++;
-      suffix_needed += alphabet_slop;
+      do
+        suffix_length_needed++;
+      while (n_units_end /= alphabet_len);
+
       suffix_auto = false;
     }
 
   if (suffix_length)            /* set by user */
     {
-      if (suffix_length < suffix_needed)
+      if (suffix_length < suffix_length_needed)
         {
           die (EXIT_FAILURE, 0,
                _("the suffix length needs to be at least %"PRIuMAX),
-               suffix_needed);
+               suffix_length_needed);
         }
       suffix_auto = false;
       return;
     }
   else
-    suffix_length = MAX (DEFAULT_SUFFIX_LENGTH, suffix_needed);
+    suffix_length = MAX (DEFAULT_SUFFIX_LENGTH, suffix_length_needed);
 }
 
 void
@@ -470,7 +470,8 @@ create (const char *name)
       if (SAME_INODE (in_stat_buf, out_stat_buf))
         die (EXIT_FAILURE, 0, _("%s would overwrite input; aborting"),
              quoteaf (name));
-      if (ftruncate (fd, 0) != 0)
+      if (ftruncate (fd, 0) != 0
+          && (S_ISREG (out_stat_buf.st_mode) || S_TYPEISSHM (&out_stat_buf)))
         die (EXIT_FAILURE, errno, _("%s: error truncating"), quotef (name));
 
       return fd;

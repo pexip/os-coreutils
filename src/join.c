@@ -1,5 +1,5 @@
 /* join - join lines of two files on a common field
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -839,10 +839,9 @@ static size_t
 string_to_join_field (char const *str)
 {
   size_t result;
-  unsigned long int val;
-  verify (SIZE_MAX <= ULONG_MAX);
+  uintmax_t val;
 
-  strtol_error s_err = xstrtoul (str, NULL, 10, &val, "");
+  strtol_error s_err = xstrtoumax (str, NULL, 10, &val, "");
   if (s_err == LONGINT_OVERFLOW || (s_err == LONGINT_OK && SIZE_MAX < val))
     val = SIZE_MAX;
   else if (s_err != LONGINT_OK || val == 0)
@@ -1193,7 +1192,7 @@ main (int argc, char **argv)
     die (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
 
   if (issued_disorder_warning[0] || issued_disorder_warning[1])
-    return EXIT_FAILURE;
+    die (EXIT_FAILURE, 0, _("input is not in sorted order"));
   else
     return EXIT_SUCCESS;
 }

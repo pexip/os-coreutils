@@ -1,5 +1,5 @@
 /* hostname - set or print the name of current host system
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 /* Written by Jim Meyering.  */
 
 #include <config.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <sys/types.h>
 
@@ -32,11 +31,6 @@
 #define PROGRAM_NAME "hostname"
 
 #define AUTHORS proper_name ("Jim Meyering")
-
-static struct option const long_options[] =
-{
-  {NULL, 0, NULL, 0}
-};
 
 #if !defined HAVE_SETHOSTNAME && defined HAVE_SYSINFO && \
      defined HAVE_SYS_SYSTEMINFO_H
@@ -86,10 +80,9 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, Version,
-                      usage, AUTHORS, (char const *) NULL);
-  if (getopt_long (argc, argv, "", long_options, NULL) != -1)
-    usage (EXIT_FAILURE);
+  parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
+                                   Version, true, usage, AUTHORS,
+                                   (char const *) NULL);
 
   if (argc == optind + 1)
     {

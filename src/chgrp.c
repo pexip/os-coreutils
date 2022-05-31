@@ -1,5 +1,5 @@
 /* chgrp -- change group ownership of files
-   Copyright (C) 1989-2018 Free Software Foundation, Inc.
+   Copyright (C) 1989-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -87,8 +87,8 @@ parse_group (const char *name)
         gid = grp->gr_gid;
       else
         {
-          unsigned long int tmp;
-          if (! (xstrtoul (name, NULL, 10, &tmp, "") == LONGINT_OK
+          uintmax_t tmp;
+          if (! (xstrtoumax (name, NULL, 10, &tmp, "") == LONGINT_OK
                  && tmp <= GID_T_MAX))
             die (EXIT_FAILURE, 0, _("invalid group: %s"),
                  quote (name));

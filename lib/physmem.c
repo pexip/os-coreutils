@@ -1,6 +1,6 @@
 /* Calculate the size of physical memory.
 
-   Copyright (C) 2000-2001, 2003, 2005-2006, 2009-2018 Free Software
+   Copyright (C) 2000-2001, 2003, 2005-2006, 2009-2020 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,7 @@
 # include <sys/param.h>
 #endif
 
-#if HAVE_SYS_SYSCTL_H
+#if HAVE_SYS_SYSCTL_H && ! defined __GLIBC__
 # include <sys/sysctl.h>
 #endif
 
@@ -59,8 +59,14 @@
 #endif
 
 #ifdef _WIN32
+
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
+
+/* Avoid warnings from gcc -Wcast-function-type.  */
+# define GetProcAddress \
+   (void *) GetProcAddress
+
 /*  MEMORYSTATUSEX is missing from older windows headers, so define
     a local replacement.  */
 typedef struct
@@ -76,6 +82,7 @@ typedef struct
   DWORDLONG ullAvailExtendedVirtual;
 } lMEMORYSTATUSEX;
 typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
+
 #endif
 
 #define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
@@ -142,7 +149,7 @@ physmem_total (void)
   }
 #endif
 
-#if HAVE_SYSCTL && defined HW_PHYSMEM
+#if HAVE_SYSCTL && ! defined __GLIBC__ && defined HW_PHYSMEM
   { /* This works on *bsd and darwin.  */
     unsigned int physmem;
     size_t len = sizeof physmem;
@@ -256,7 +263,7 @@ physmem_available (void)
   }
 #endif
 
-#if HAVE_SYSCTL && defined HW_USERMEM
+#if HAVE_SYSCTL && ! defined __GLIBC__ && defined HW_USERMEM
   { /* This works on *bsd and darwin.  */
     unsigned int usermem;
     size_t len = sizeof usermem;

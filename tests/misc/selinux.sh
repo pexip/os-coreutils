@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test SELinux-related options.
 
-# Copyright (C) 2007-2018 Free Software Foundation, Inc.
+# Copyright (C) 2007-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ mkfifo_or_skip_ p
 ctx='root:object_r:tmp_t'
 mls_enabled_ && ctx="$ctx:s0"
 
-chcon $ctx f d p || skip "Failed to set context: $ctx"
+chcon $ctx f d p || skip_ "Failed to set context: $ctx"
 
 # inspect that context with both ls -Z and stat.
 for i in d f p; do

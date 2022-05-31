@@ -1,5 +1,5 @@
 /* Test of freadptr() function.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,8 +30,11 @@ int
 main (int argc, char **argv)
 {
   int nbytes = atoi (argv[1]);
-  void *buf = malloc (nbytes);
-  ASSERT (fread (buf, 1, nbytes, stdin) == nbytes);
+  {
+    void *buf = malloc (nbytes);
+    ASSERT (fread (buf, 1, nbytes, stdin) == nbytes);
+    free (buf);
+  }
 
   if (lseek (0, 0, SEEK_CUR) == nbytes)
     {
@@ -44,7 +47,7 @@ main (int argc, char **argv)
     {
       /* Normal buffered stdio.  */
       const char stdin_contents[] =
-        "#!/bin/sh\n\n./test-freadptr${EXEEXT} 5 < \"$srcdir/test-freadptr.sh\" || exit 1\ncat \"$srcdir/test-freadptr.sh\" | ./test-freadptr${EXEEXT} 5 || exit 1\nexit 0\n";
+        "#!/bin/sh\n\n${CHECKER} ./test-freadptr${EXEEXT} 5 < \"$srcdir/test-freadptr.sh\" || exit 1\ncat \"$srcdir/test-freadptr.sh\" | ${CHECKER} ./test-freadptr${EXEEXT} 5 || exit 1\nexit 0\n";
       const char *expected = stdin_contents + nbytes;
       size_t available1;
       size_t available2;
@@ -89,6 +92,9 @@ main (int argc, char **argv)
           }
       }
     }
+
+  /* Free memory allocated during ungetc().  */
+  fclose (stdin);
 
   return 0;
 }

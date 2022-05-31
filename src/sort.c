@@ -1,5 +1,5 @@
 /* sort - sort lines of text (with all kinds of options).
-   Copyright (C) 1988-2018 Free Software Foundation, Inc.
+   Copyright (C) 1988-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@
 #include "xmemcoll.h"
 #include "xnanosleep.h"
 #include "xstrtol.h"
+#include "xstrtol-error.h"
 
 #ifndef RLIMIT_DATA
 struct rlimit { size_t rlim_cur; };
@@ -82,11 +83,6 @@ struct rlimit { size_t rlim_cur; };
 # endif
 #endif
 
-#if GNULIB_defined_pthread_functions
-# undef pthread_sigmask
-# define pthread_sigmask(how, set, oset) sigprocmask (how, set, oset)
-#endif
-
 #if !defined OPEN_MAX && defined NR_OPEN
 # define OPEN_MAX NR_OPEN
 #endif
@@ -95,14 +91,6 @@ struct rlimit { size_t rlim_cur; };
 #endif
 
 #define UCHAR_LIM (UCHAR_MAX + 1)
-
-#if HAVE_C99_STRTOLD
-# define long_double long double
-#else
-# define long_double double
-# undef strtold
-# define strtold strtod
-#endif
 
 #ifndef DEFAULT_TMPDIR
 # define DEFAULT_TMPDIR "/tmp"
@@ -895,8 +883,21 @@ create_temp_file (int *pfd, bool survive_fd_exhaustion)
   return node;
 }
 
-/* Return a stream for FILE, opened with mode HOW.  A null FILE means
-   standard output; HOW should be "w".  When opening for input, "-"
+/* Return a pointer to stdout status, or NULL on failure.  */
+
+static struct stat *
+get_outstatus (void)
+{
+  static int outstat_errno;
+  static struct stat outstat;
+  if (outstat_errno == 0)
+    outstat_errno = fstat (STDOUT_FILENO, &outstat) == 0 ? -1 : errno;
+  return outstat_errno < 0 ? &outstat : NULL;
+}
+
+/* Return a stream for FILE, opened with mode HOW.  If HOW is "w",
+   the file is already open on standard output, and needs to be
+   truncated unless FILE is null.  When opening for input, "-"
    means standard input.  To avoid confusion, do not return file
    descriptors STDIN_FILENO, STDOUT_FILENO, or STDERR_FILENO when
    opening an ordinary FILE.  Return NULL if unsuccessful.
@@ -964,8 +965,13 @@ stream_open (char const *file, char const *how)
   else if (*how == 'w')
     {
       if (file && ftruncate (STDOUT_FILENO, 0) != 0)
-        die (SORT_FAILURE, errno, _("%s: error truncating"),
-             quotef (file));
+        {
+          int ftruncate_errno = errno;
+          struct stat *outst = get_outstatus ();
+          if (!outst || S_ISREG (outst->st_mode) || S_TYPEISSHM (outst))
+            die (SORT_FAILURE, ftruncate_errno, _("%s: error truncating"),
+                 quotef (file));
+        }
       fp = stdout;
     }
   else
@@ -1325,7 +1331,7 @@ specify_nmerge (int oi, char c, char const *s)
 {
   uintmax_t n;
   struct rlimit rlimit;
-  enum strtol_error e = xstrtoumax (s, NULL, 10, &n, NULL);
+  enum strtol_error e = xstrtoumax (s, NULL, 10, &n, "");
 
   /* Try to find out how many file descriptors we'll be able
      to open.  We need at least nmerge + 3 (STDIN_FILENO,
@@ -1438,8 +1444,8 @@ specify_sort_size (int oi, char c, char const *s)
 static size_t
 specify_nthreads (int oi, char c, char const *s)
 {
-  unsigned long int nthreads;
-  enum strtol_error e = xstrtoul (s, NULL, 10, &nthreads, "");
+  uintmax_t nthreads;
+  enum strtol_error e = xstrtoumax (s, NULL, 10, &nthreads, "");
   if (e == LONGINT_OVERFLOW)
     return SIZE_MAX;
   if (e != LONGINT_OK)
@@ -1993,16 +1999,16 @@ numcompare (char const *a, char const *b)
 
 /* Work around a problem whereby the long double value returned by glibc's
    strtold ("NaN", ...) contains uninitialized bits: clear all bytes of
-   A and B before calling strtold.  FIXME: remove this function once
+   A and B before calling strtold.  FIXME: remove this function if
    gnulib guarantees that strtold's result is always well defined.  */
 static int
 nan_compare (char const *sa, char const *sb)
 {
-  long_double a;
+  long double a;
   memset (&a, 0, sizeof a);
   a = strtold (sa, NULL);
 
-  long_double b;
+  long double b;
   memset (&b, 0, sizeof b);
   b = strtold (sb, NULL);
 
@@ -2017,8 +2023,8 @@ general_numcompare (char const *sa, char const *sb)
 
   char *ea;
   char *eb;
-  long_double a = strtold (sa, &ea);
-  long_double b = strtold (sb, &eb);
+  long double a = strtold (sa, &ea);
+  long double b = strtold (sb, &eb);
 
   /* Put conversion errors at the start of the collating sequence.  */
   if (sa == ea)
@@ -3699,8 +3705,6 @@ static void
 avoid_trashing_input (struct sortfile *files, size_t ntemps,
                       size_t nfiles, char const *outfile)
 {
-  bool got_outstat = false;
-  struct stat outstat;
   struct tempnode *tempcopy = NULL;
 
   for (size_t i = ntemps; i < nfiles; i++)
@@ -3713,18 +3717,15 @@ avoid_trashing_input (struct sortfile *files, size_t ntemps,
         same = true;
       else
         {
-          if (! got_outstat)
-            {
-              if (fstat (STDOUT_FILENO, &outstat) != 0)
-                break;
-              got_outstat = true;
-            }
+          struct stat *outst = get_outstatus ();
+          if (!outst)
+            break;
 
           same = (((is_stdin
                     ? fstat (STDIN_FILENO, &instat)
                     : stat (files[i].name, &instat))
                    == 0)
-                  && SAME_INODE (instat, outstat));
+                  && SAME_INODE (instat, *outst));
         }
 
       if (same)
@@ -4684,10 +4685,11 @@ main (int argc, char **argv)
       if (! locale_ok)
           error (0, 0, "%s", _("failed to set locale"));
       if (hard_LC_COLLATE)
-        error (0, 0, _("using %s sorting rules"),
+        error (0, 0, _("text ordering performed using %s sorting rules"),
                quote (setlocale (LC_COLLATE, NULL)));
       else
-        error (0, 0, "%s", _("using simple byte comparison"));
+        error (0, 0, "%s",
+               _("text ordering performed using simple byte comparison"));
 
       key_warnings (&gkey, gkey_only);
     }

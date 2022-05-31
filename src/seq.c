@@ -1,5 +1,5 @@
 /* seq - print sequence of numbers to standard output.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 #include "system.h"
 #include "die.h"
-#include "c-strtod.h"
+#include "cl-strtod.h"
 #include "error.h"
 #include "quote.h"
 #include "xstrtod.h"
@@ -37,10 +37,18 @@
 # define isnan(x) ((x) != (x))
 #endif
 
+/* Limit below which seq_fast has more throughput.
+   Determined with: seq 0 200 inf | pv > /dev/null  */
+#define SEQ_FAST_STEP_LIMIT 200
+#define SEQ_FAST_STEP_LIMIT_DIGITS 3
+
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "seq"
 
 #define AUTHORS proper_name ("Ulrich Drepper")
+
+/* True if the locale settings were honored.  */
+static bool locale_ok;
 
 /* If true print all number with equal width.  */
 static bool equal_width;
@@ -142,7 +150,7 @@ scan_arg (const char *arg)
 {
   operand ret;
 
-  if (! xstrtold (arg, NULL, &ret.value, c_strtold))
+  if (! xstrtold (arg, NULL, &ret.value, cl_strtold))
     {
       error (0, 0, _("invalid floating point argument: %s"), quote (arg));
       usage (EXIT_FAILURE);
@@ -324,19 +332,23 @@ print_numbers (char const *fmt, struct layout layout,
               long double x_val;
               char *x_str;
               int x_strlen;
-              setlocale (LC_NUMERIC, "C");
+              if (locale_ok)
+                setlocale (LC_NUMERIC, "C");
               x_strlen = asprintf (&x_str, fmt, x);
-              setlocale (LC_NUMERIC, "");
+              if (locale_ok)
+                setlocale (LC_NUMERIC, "");
               if (x_strlen < 0)
                 xalloc_die ();
               x_str[x_strlen - layout.suffix_len] = '\0';
 
-              if (xstrtold (x_str + layout.prefix_len, NULL, &x_val, c_strtold)
+              if (xstrtold (x_str + layout.prefix_len, NULL, &x_val, cl_strtold)
                   && x_val == last)
                 {
                   char *x0_str = NULL;
-                  if (asprintf (&x0_str, fmt, x0) < 0)
+                  int x0_strlen = asprintf (&x0_str, fmt, x0);
+                  if (x0_strlen < 0)
                     xalloc_die ();
+                  x0_str[x0_strlen - layout.suffix_len] = '\0';
                   print_extra_number = !STREQ (x0_str, x_str);
                   free (x0_str);
                 }
@@ -424,7 +436,7 @@ cmp (char const *a, size_t a_len, char const *b, size_t b_len)
     return -1;
   if (b_len < a_len)
     return 1;
-  return (strcmp (a, b));
+  return (memcmp (a, b, a_len));
 }
 
 /* Trim leading 0's from S, but if S is all 0's, leave one.
@@ -446,7 +458,7 @@ trim_leading_zeros (char const *s)
    followed by a newline.  If B < A, return false and print nothing.
    Otherwise, return true.  */
 static bool
-seq_fast (char const *a, char const *b)
+seq_fast (char const *a, char const *b, uintmax_t step)
 {
   bool inf = STREQ (b, "inf");
 
@@ -460,7 +472,10 @@ seq_fast (char const *a, char const *b)
 
   /* Allow for at least 31 digits without realloc.
      1 more than p_len is needed for the inf case.  */
-  size_t inc_size = MAX (MAX (p_len + 1, q_len), 31);
+#define INITIAL_ALLOC_DIGITS 31
+  size_t inc_size = MAX (MAX (p_len + 1, q_len), INITIAL_ALLOC_DIGITS);
+  /* Ensure we only increase by at most 1 digit at buffer boundaries.  */
+  verify (SEQ_FAST_STEP_LIMIT_DIGITS < INITIAL_ALLOC_DIGITS - 1);
 
   /* Copy input strings (incl NUL) to end of new buffers.  */
   char *p0 = xmalloc (inc_size + 1);
@@ -491,10 +506,15 @@ seq_fast (char const *a, char const *b)
       bufp = mempcpy (bufp, p, p_len);
 
       /* Append separator then number.  */
-      while (inf || cmp (p, p_len, q, q_len) < 0)
+      while (true)
         {
+          for (uintmax_t n_incr = step; n_incr; n_incr--)
+            incr (&p, &p_len);
+
+          if (! inf && 0 < cmp (p, p_len, q, q_len))
+            break;
+
           *bufp++ = *separator;
-          incr (&p, &p_len);
 
           /* Double up the buffers when needed for the inf case.  */
           if (p_len == inc_size)
@@ -559,7 +579,7 @@ main (int argc, char **argv)
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
-  setlocale (LC_ALL, "");
+  locale_ok = !!setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
@@ -634,17 +654,25 @@ main (int argc, char **argv)
      - no format string, [FIXME: relax this, eventually]
      - integer start (or no start)
      - integer end
-     - increment == 1 or not specified [FIXME: relax this, eventually]
-     then use the much more efficient integer-only code.  */
+     - integer increment <= SEQ_FAST_STEP_LIMIT
+     then use the much more efficient integer-only code,
+     operating on arbitrarily large numbers.  */
+  bool fast_step_ok = false;
+  if (n_args != 3
+      || (all_digits_p (argv[optind + 1])
+          && xstrtold (argv[optind + 1], NULL, &step.value, cl_strtold)
+          && 0 < step.value && step.value <= SEQ_FAST_STEP_LIMIT))
+    fast_step_ok = true;
+
   if (all_digits_p (argv[optind])
       && (n_args == 1 || all_digits_p (argv[optind + 1]))
-      && (n_args < 3 || (STREQ ("1", argv[optind + 1])
+      && (n_args < 3 || (fast_step_ok
                          && all_digits_p (argv[optind + 2])))
       && !equal_width && !format_str && strlen (separator) == 1)
     {
       char const *s1 = n_args == 1 ? "1" : argv[optind];
       char const *s2 = argv[optind + (n_args - 1)];
-      if (seq_fast (s1, s2))
+      if (seq_fast (s1, s2, step.value))
         return EXIT_SUCCESS;
 
       /* Upon any failure, let the more general code deal with it.  */
@@ -671,9 +699,11 @@ main (int argc, char **argv)
         }
     }
 
-  if ((isfinite (first.value) && first.precision == 0)
-      && step.precision == 0 && last.precision == 0
-      && 0 <= first.value && step.value == 1 && 0 <= last.value
+  /* Try the fast method again, for integers of the form 1e1 etc.,
+     or "inf" end value.  */
+  if (first.precision == 0 && step.precision == 0 && last.precision == 0
+      && isfinite (first.value) && 0 <= first.value && 0 <= last.value
+      && 0 < step.value && step.value <= SEQ_FAST_STEP_LIMIT
       && !equal_width && !format_str && strlen (separator) == 1)
     {
       char *s1;
@@ -685,7 +715,7 @@ main (int argc, char **argv)
       else if (asprintf (&s2, "%0.Lf", last.value) < 0)
         xalloc_die ();
 
-      if (*s1 != '-' && *s2 != '-' && seq_fast (s1, s2))
+      if (*s1 != '-' && *s2 != '-' && seq_fast (s1, s2, step.value))
         {
           IF_LINT (free (s1));
           IF_LINT (free (s2));

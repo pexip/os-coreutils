@@ -1,5 +1,5 @@
 /* date - print or set the system date and time
-   Copyright (C) 1989-2018 Free Software Foundation, Inc.
+   Copyright (C) 1989-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -194,7 +194,7 @@ FORMAT controls the output.  Interpreted sequences are:\n\
   %e   day of month, space padded; same as %_d\n\
 "), stdout);
       fputs (_("\
-  %F   full date; same as %Y-%m-%d\n\
+  %F   full date; like %+4Y-%m-%d\n\
   %g   last two digits of year of ISO week number (see %G)\n\
   %G   year of ISO week number (see %V); normally useful only with %V\n\
 "), stdout);
@@ -253,6 +253,7 @@ The following optional flags may follow '%':\n\
   -  (hyphen) do not pad the field\n\
   _  (underscore) pad with spaces\n\
   0  (zero) pad with zeros\n\
+  +  pad with zeros, and put '+' before future years with >4 digits\n\
   ^  use upper case if possible\n\
   #  use opposite case if possible\n\
 "), stdout);

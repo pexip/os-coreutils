@@ -1,5 +1,5 @@
 /* Test of locking in multithreaded situations.
-   Copyright (C) 2005, 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2008-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,16 +18,16 @@
 
 #include <config.h>
 
-#if USE_POSIX_THREADS || USE_SOLARIS_THREADS || USE_PTH_THREADS || USE_WINDOWS_THREADS
+#if USE_ISOC_THREADS || USE_POSIX_THREADS || USE_ISOC_AND_POSIX_THREADS || USE_WINDOWS_THREADS
 
+#if USE_ISOC_THREADS
+# define TEST_ISOC_THREADS 1
+#endif
 #if USE_POSIX_THREADS
 # define TEST_POSIX_THREADS 1
 #endif
-#if USE_SOLARIS_THREADS
-# define TEST_SOLARIS_THREADS 1
-#endif
-#if USE_PTH_THREADS
-# define TEST_PTH_THREADS 1
+#if USE_ISOC_AND_POSIX_THREADS
+# define TEST_ISOC_AND_POSIX_THREADS 1
 #endif
 #if USE_WINDOWS_THREADS
 # define TEST_WINDOWS_THREADS 1
@@ -83,27 +83,28 @@
    an "OK" result even without ENABLE_LOCKING (on Linux/x86).  */
 #define REPEAT_COUNT 50000
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #if !ENABLE_LOCKING
+# undef USE_ISOC_THREADS
 # undef USE_POSIX_THREADS
-# undef USE_SOLARIS_THREADS
-# undef USE_PTH_THREADS
+# undef USE_ISOC_AND_POSIX_THREADS
 # undef USE_WINDOWS_THREADS
 #endif
 #include "glthread/lock.h"
 
 #if !ENABLE_LOCKING
+# if TEST_ISOC_THREADS
+#  define USE_ISOC_THREADS 1
+# endif
 # if TEST_POSIX_THREADS
 #  define USE_POSIX_THREADS 1
 # endif
-# if TEST_SOLARIS_THREADS
-#  define USE_SOLARIS_THREADS 1
-# endif
-# if TEST_PTH_THREADS
-#  define USE_PTH_THREADS 1
+# if TEST_ISOC_AND_POSIX_THREADS
+#  define USE_ISOC_AND_POSIX_THREADS 1
 # endif
 # if TEST_WINDOWS_THREADS
 #  define USE_WINDOWS_THREADS 1
@@ -116,6 +117,11 @@
 # include <errno.h>
 # include <fcntl.h>
 # include <semaphore.h>
+# include <unistd.h>
+#endif
+
+#if HAVE_DECL_ALARM
+# include <signal.h>
 # include <unistd.h>
 #endif
 
@@ -587,7 +593,7 @@ once_execute (void)
 static void *
 once_contender_thread (void *arg)
 {
-  int id = (int) (long) arg;
+  int id = (int) (intptr_t) arg;
   int repeat;
 
   for (repeat = 0; repeat <= REPEAT_COUNT; repeat++)
@@ -641,13 +647,16 @@ test_once (void)
   fire_signal_state = 0;
 #endif
 
+#if ENABLE_LOCKING
   /* Block all fire_signals.  */
   for (i = REPEAT_COUNT-1; i >= 0; i--)
     gl_rwlock_wrlock (fire_signal[i]);
+#endif
 
   /* Spawn the threads.  */
   for (i = 0; i < THREAD_COUNT; i++)
-    threads[i] = gl_thread_create (once_contender_thread, (void *) (long) i);
+    threads[i] =
+      gl_thread_create (once_contender_thread, (void *) (intptr_t) i);
 
   for (repeat = 0; repeat <= REPEAT_COUNT; repeat++)
     {
@@ -713,9 +722,12 @@ test_once (void)
 int
 main ()
 {
-#if TEST_PTH_THREADS
-  if (!pth_init ())
-    abort ();
+#if HAVE_DECL_ALARM
+  /* Declare failure if test takes too long, by using default abort
+     caused by SIGALRM.  */
+  int alarm_value = 600;
+  signal (SIGALRM, SIG_DFL);
+  alarm (alarm_value);
 #endif
 
 #if DO_TEST_LOCK

@@ -1,5 +1,5 @@
 /* od -- dump files in octal and other formats
-   Copyright (C) 1992-2018 Free Software Foundation, Inc.
+   Copyright (C) 1992-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include "xbinary-io.h"
 #include "xprintf.h"
 #include "xstrtol.h"
+#include "xstrtol-error.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "od"
@@ -417,6 +418,7 @@ BYTES is hex with 0x or 0X prefix, and may have a multiplier suffix:\n\
   MB   1000*1000\n\
   M    1024*1024\n\
 and so on for G, T, P, E, Z, Y.\n\
+Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n\
 "), stdout);
       emit_ancillary_info (PROGRAM_NAME);
     }
@@ -1032,6 +1034,8 @@ skip (uintmax_t n_skip)
 
       if (fstat (fileno (in_stream), &file_stats) == 0)
         {
+          bool usable_size = usable_st_size (&file_stats);
+
           /* The st_size field is valid for regular files.
              If the number of bytes left to skip is larger than
              the size of the current file, we can decrement n_skip
@@ -1039,8 +1043,7 @@ skip (uintmax_t n_skip)
              when st_size is no greater than the block size, because
              some kernels report nonsense small file sizes for
              proc-like file systems.  */
-          if (usable_st_size (&file_stats)
-              && ST_BLKSIZE (file_stats) < file_stats.st_size)
+          if (usable_size && ST_BLKSIZE (file_stats) < file_stats.st_size)
             {
               if ((uintmax_t) file_stats.st_size < n_skip)
                 n_skip -= file_stats.st_size;
@@ -1054,6 +1057,9 @@ skip (uintmax_t n_skip)
                   n_skip = 0;
                 }
             }
+
+          else if (!usable_size && fseeko (in_stream, n_skip, SEEK_CUR) == 0)
+            n_skip = 0;
 
           /* If it's not a regular file with nonnegative size,
              or if it's so small that it might be in a proc-like file system,

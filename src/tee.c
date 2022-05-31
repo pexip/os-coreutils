@@ -1,5 +1,5 @@
 /* tee - read from standard input and write to standard output and files.
-   Copyright (C) 1985-2018 Free Software Foundation, Inc.
+   Copyright (C) 1985-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -228,7 +228,7 @@ tee_files (int nfiles, char **files)
 
   while (n_outputs)
     {
-      bytes_read = read (0, buffer, sizeof buffer);
+      bytes_read = read (STDIN_FILENO, buffer, sizeof buffer);
       if (bytes_read < 0 && errno == EINTR)
         continue;
       if (bytes_read <= 0)

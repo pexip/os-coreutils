@@ -1,5 +1,5 @@
 /* core functions for copying files and directories
-   Copyright (C) 1989-2018 Free Software Foundation, Inc.
+   Copyright (C) 1989-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -275,11 +275,6 @@ struct cp_options
   /* FIXME */
   Hash_table *src_info;
 };
-
-# define XSTAT(X, Src_name, Src_sb) \
-  ((X)->dereference == DEREF_NEVER \
-   ? lstat (Src_name, Src_sb) \
-   : stat (Src_name, Src_sb))
 
 /* Arrange to make rename calls go through the wrapper function
    on systems with a rename function that fails for a source file name

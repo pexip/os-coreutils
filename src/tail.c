@@ -1,5 +1,5 @@
 /* tail -- output the last part of file(s)
-   Copyright (C) 1989-2018 Free Software Foundation, Inc.
+   Copyright (C) 1989-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,12 +28,16 @@
 #include <stdio.h>
 #include <assert.h>
 #include <getopt.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <signal.h>
+#ifdef _AIX
+# include <poll.h>
+#endif
 
 #include "system.h"
 #include "argmatch.h"
-#include "c-strtod.h"
+#include "cl-strtod.h"
 #include "die.h"
 #include "error.h"
 #include "fcntl--.h"
@@ -52,10 +56,10 @@
 #if HAVE_INOTIFY
 # include "hash.h"
 # include <sys/inotify.h>
-/* 'select' is used by tail_forever_inotify.  */
-# include <sys/select.h>
+#endif
 
-/* inotify needs to know if a file is local.  */
+/* Linux can optimize the handling of local files.  */
+#if defined __linux__ || defined __ANDROID__
 # include "fs.h"
 # include "fs-is-local.h"
 # if HAVE_SYS_STATFS_H
@@ -315,6 +319,7 @@ With more than one FILE, precede each with a header giving the file name.\n\
 NUM may have a multiplier suffix:\n\
 b 512, kB 1000, K 1024, MB 1000*1000, M 1024*1024,\n\
 GB 1000*1000*1000, G 1024*1024*1024, and so on for T, P, E, Z, Y.\n\
+Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n\
 \n\
 "), stdout);
      fputs (_("\
@@ -330,6 +335,14 @@ named file in a way that accommodates renaming, removal and creation.\n\
   exit (status);
 }
 
+/* Ensure exit, either with SIGPIPE or EXIT_FAILURE status.  */
+static void ATTRIBUTE_NORETURN
+die_pipe (void)
+{
+  raise (SIGPIPE);
+  exit (EXIT_FAILURE);
+}
+
 /* If the output has gone away, then terminate
    as we would if we had written to this output.  */
 static void
@@ -338,6 +351,15 @@ check_output_alive (void)
   if (! monitor_output)
     return;
 
+#ifdef _AIX
+  /* select on AIX was seen to give a readable event immediately.  */
+  struct pollfd pfd;
+  pfd.fd = STDOUT_FILENO;
+  pfd.events = POLLERR;
+
+  if (poll (&pfd, 1, 0) >= 0 && (pfd.revents & POLLERR))
+    die_pipe ();
+#else
   struct timeval delay;
   delay.tv_sec = delay.tv_usec = 0;
 
@@ -348,7 +370,8 @@ check_output_alive (void)
   /* readable event on STDOUT is equivalent to POLLERR,
      and implies an error condition on output like broken pipe.  */
   if (select (STDOUT_FILENO + 1, &rfd, NULL, NULL, &delay) == 1)
-    raise (SIGPIPE);
+    die_pipe ();
+#endif
 }
 
 static bool
@@ -916,7 +939,8 @@ fremote (int fd, const char *name)
 {
   bool remote = true;           /* be conservative (poll by default).  */
 
-#if HAVE_FSTATFS && HAVE_STRUCT_STATFS_F_TYPE && defined __linux__
+#if HAVE_FSTATFS && HAVE_STRUCT_STATFS_F_TYPE \
+ && (defined __linux__ || defined __ANDROID__)
   struct statfs buf;
   int err = fstatfs (fd, &buf);
   if (err != 0)
@@ -1645,7 +1669,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
              {
                /* readable event on STDOUT is equivalent to POLLERR,
                   and implies an error on output like broken pipe.  */
-               raise (SIGPIPE);
+               die_pipe ();
              }
            else
              break;
@@ -2222,7 +2246,7 @@ parse_options (int argc, char **argv,
         case 's':
           {
             double s;
-            if (! (xstrtod (optarg, NULL, &s, c_strtod) && 0 <= s))
+            if (! (xstrtod (optarg, NULL, &s, cl_strtod) && 0 <= s))
               die (EXIT_FAILURE, 0,
                    _("invalid number of seconds: %s"), quote (optarg));
             *sleep_interval = s;

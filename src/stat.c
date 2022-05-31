@@ -1,5 +1,5 @@
 /* stat.c -- display file or file system status
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -73,6 +73,13 @@
 #include "strftime.h"
 #include "find-mount-point.h"
 #include "xvasprintf.h"
+#include "statx.h"
+
+#if HAVE_STATX && defined STATX_INO
+# define USE_STATX 1
+#else
+# define USE_STATX 0
+#endif
 
 #if USE_STATVFS
 # define STRUCT_STATXFS_F_FSID_IS_INTEGER STRUCT_STATVFS_F_FSID_IS_INTEGER
@@ -194,6 +201,23 @@ enum
   PRINTF_OPTION = CHAR_MAX + 1
 };
 
+enum cached_mode
+{
+  cached_default,
+  cached_never,
+  cached_always
+};
+
+static char const *const cached_args[] =
+{
+  "default", "never", "always", NULL
+};
+
+static enum cached_mode const cached_modes[] =
+{
+  cached_default, cached_never, cached_always
+};
+
 static struct option const long_options[] =
 {
   {"dereference", no_argument, NULL, 'L'},
@@ -201,6 +225,7 @@ static struct option const long_options[] =
   {"format", required_argument, NULL, 'c'},
   {"printf", required_argument, NULL, PRINTF_OPTION},
   {"terse", no_argument, NULL, 't'},
+  {"cached", required_argument, NULL, 0},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
@@ -221,6 +246,10 @@ static char const *trailing_delim = "";
 static char const *decimal_point;
 static size_t decimal_point_len;
 
+static bool
+print_stat (char *pformat, size_t prefix_len, unsigned int m,
+            int fd, char const *filename, void const *data);
+
 /* Return the type of the specified file system.
    Some systems have statfvs.f_basetype[FSTYPSZ] (AIX, HP-UX, and Solaris).
    Others have statvfs.f_fstypename[_VFS_NAMELEN] (NetBSD 3.0).
@@ -235,7 +264,7 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
 #else
   switch (statfsbuf->f_type)
     {
-# if defined __linux__
+# if defined __linux__ || defined __ANDROID__
 
       /* Compare with what's in libc:
          f=/a/libc/sysdeps/unix/sysv/linux/linux_fsinfo.h
@@ -284,6 +313,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "bdevfs";
     case S_MAGIC_BFS: /* 0x1BADFACE local */
       return "bfs";
+    case S_MAGIC_BINDERFS: /* 0x6C6F6F70 local */
+      return "binderfs";
     case S_MAGIC_BPF_FS: /* 0xCAFE4A11 local */
       return "bpf_fs";
     case S_MAGIC_BINFMTFS: /* 0x42494E4D local */
@@ -318,12 +349,16 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "devfs";
     case S_MAGIC_DEVPTS: /* 0x1CD1 local */
       return "devpts";
+    case S_MAGIC_DMA_BUF: /* 0x444D4142 local */
+      return "dma-buf-fs";
     case S_MAGIC_ECRYPTFS: /* 0xF15F local */
       return "ecryptfs";
     case S_MAGIC_EFIVARFS: /* 0xDE5E81E4 local */
       return "efivarfs";
     case S_MAGIC_EFS: /* 0x00414A53 local */
       return "efs";
+    case S_MAGIC_EROFS_V1: /* 0xE0F5E1E2 local */
+      return "erofs";
     case S_MAGIC_EXFS: /* 0x45584653 local */
       return "exfs";
     case S_MAGIC_EXOFS: /* 0x5DF5 local */
@@ -430,6 +465,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
          pipefs and prlfs are labeled as "remote" so that tail always polls,
          but these aren't really remote file system types.  */
       return "pipefs";
+    case S_MAGIC_PPC_CMM: /* 0xC7571590 local */
+      return "ppc-cmm-fs";
     case S_MAGIC_PRL_FS: /* 0x7C7C6673 remote */
       return "prl_fs";
     case S_MAGIC_PROC: /* 0x9FA0 local */
@@ -450,6 +487,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "romfs";
     case S_MAGIC_RPC_PIPEFS: /* 0x67596969 local */
       return "rpc_pipefs";
+    case S_MAGIC_SDCARDFS: /* 0x5DCA2DF5 local */
+      return "sdcardfs";
     case S_MAGIC_SECURITYFS: /* 0x73636673 local */
       return "securityfs";
     case S_MAGIC_SELINUX: /* 0xF97CFF8C local */
@@ -506,6 +545,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "xfs";
     case S_MAGIC_XIAFS: /* 0x012FD16D local */
       return "xia";
+    case S_MAGIC_Z3FOLD: /* 0x0033 local */
+      return "z3fold";
     case S_MAGIC_ZFS: /* 0x2FC12FC1 local */
       return "zfs";
     case S_MAGIC_ZSMALLOC: /* 0x58295829 local */
@@ -674,7 +715,6 @@ out_minus_zero (char *pformat, size_t prefix_len)
    acts like printf's %f format.  */
 static void
 out_epoch_sec (char *pformat, size_t prefix_len,
-               struct stat const *statbuf _GL_UNUSED,
                struct timespec arg)
 {
   char *dot = memchr (pformat, '.', prefix_len);
@@ -978,38 +1018,6 @@ print_mount_point:
   return fail;
 }
 
-static struct timespec
-get_birthtime (int fd, char const *filename, struct stat const *st)
-{
-  struct timespec ts = get_stat_birthtime (st);
-
-#if HAVE_GETATTRAT
-  if (ts.tv_nsec < 0)
-    {
-      nvlist_t *response;
-      if ((fd < 0
-           ? getattrat (AT_FDCWD, XATTR_VIEW_READWRITE, filename, &response)
-           : fgetattr (fd, XATTR_VIEW_READWRITE, &response))
-          == 0)
-        {
-          uint64_t *val;
-          uint_t n;
-          if (nvlist_lookup_uint64_array (response, A_CRTIME, &val, &n) == 0
-              && 2 <= n
-              && val[0] <= TYPE_MAXIMUM (time_t)
-              && val[1] < 1000000000 * 2 /* for leap seconds */)
-            {
-              ts.tv_sec = val[0];
-              ts.tv_nsec = val[1];
-            }
-          nvlist_free (response);
-        }
-    }
-#endif
-
-  return ts;
-}
-
 /* Map a TS with negative TS.tv_nsec to {0,0}.  */
 static inline struct timespec
 neg_to_zero (struct timespec ts)
@@ -1045,139 +1053,6 @@ getenv_quoting_style (void)
 
 /* Equivalent to quotearg(), but explicit to avoid syntax checks.  */
 #define quoteN(x) quotearg_style (get_quoting_style (NULL), x)
-
-/* Print stat info.  Return zero upon success, nonzero upon failure.  */
-static bool
-print_stat (char *pformat, size_t prefix_len, unsigned int m,
-            int fd, char const *filename, void const *data)
-{
-  struct stat *statbuf = (struct stat *) data;
-  struct passwd *pw_ent;
-  struct group *gw_ent;
-  bool fail = false;
-
-  switch (m)
-    {
-    case 'n':
-      out_string (pformat, prefix_len, filename);
-      break;
-    case 'N':
-      out_string (pformat, prefix_len, quoteN (filename));
-      if (S_ISLNK (statbuf->st_mode))
-        {
-          char *linkname = areadlink_with_size (filename, statbuf->st_size);
-          if (linkname == NULL)
-            {
-              error (0, errno, _("cannot read symbolic link %s"),
-                     quoteaf (filename));
-              return true;
-            }
-          printf (" -> ");
-          out_string (pformat, prefix_len, quoteN (linkname));
-          free (linkname);
-        }
-      break;
-    case 'd':
-      out_uint (pformat, prefix_len, statbuf->st_dev);
-      break;
-    case 'D':
-      out_uint_x (pformat, prefix_len, statbuf->st_dev);
-      break;
-    case 'i':
-      out_uint (pformat, prefix_len, statbuf->st_ino);
-      break;
-    case 'a':
-      out_uint_o (pformat, prefix_len, statbuf->st_mode & CHMOD_MODE_BITS);
-      break;
-    case 'A':
-      out_string (pformat, prefix_len, human_access (statbuf));
-      break;
-    case 'f':
-      out_uint_x (pformat, prefix_len, statbuf->st_mode);
-      break;
-    case 'F':
-      out_string (pformat, prefix_len, file_type (statbuf));
-      break;
-    case 'h':
-      out_uint (pformat, prefix_len, statbuf->st_nlink);
-      break;
-    case 'u':
-      out_uint (pformat, prefix_len, statbuf->st_uid);
-      break;
-    case 'U':
-      pw_ent = getpwuid (statbuf->st_uid);
-      out_string (pformat, prefix_len,
-                  pw_ent ? pw_ent->pw_name : "UNKNOWN");
-      break;
-    case 'g':
-      out_uint (pformat, prefix_len, statbuf->st_gid);
-      break;
-    case 'G':
-      gw_ent = getgrgid (statbuf->st_gid);
-      out_string (pformat, prefix_len,
-                  gw_ent ? gw_ent->gr_name : "UNKNOWN");
-      break;
-    case 't':
-      out_uint_x (pformat, prefix_len, major (statbuf->st_rdev));
-      break;
-    case 'm':
-      fail |= out_mount_point (filename, pformat, prefix_len, statbuf);
-      break;
-    case 'T':
-      out_uint_x (pformat, prefix_len, minor (statbuf->st_rdev));
-      break;
-    case 's':
-      out_int (pformat, prefix_len, statbuf->st_size);
-      break;
-    case 'B':
-      out_uint (pformat, prefix_len, ST_NBLOCKSIZE);
-      break;
-    case 'b':
-      out_uint (pformat, prefix_len, ST_NBLOCKS (*statbuf));
-      break;
-    case 'o':
-      out_uint (pformat, prefix_len, ST_BLKSIZE (*statbuf));
-      break;
-    case 'w':
-      {
-        struct timespec t = get_birthtime (fd, filename, statbuf);
-        if (t.tv_nsec < 0)
-          out_string (pformat, prefix_len, "-");
-        else
-          out_string (pformat, prefix_len, human_time (t));
-      }
-      break;
-    case 'W':
-      out_epoch_sec (pformat, prefix_len, statbuf,
-                     neg_to_zero (get_birthtime (fd, filename, statbuf)));
-      break;
-    case 'x':
-      out_string (pformat, prefix_len, human_time (get_stat_atime (statbuf)));
-      break;
-    case 'X':
-      out_epoch_sec (pformat, prefix_len, statbuf, get_stat_atime (statbuf));
-      break;
-    case 'y':
-      out_string (pformat, prefix_len, human_time (get_stat_mtime (statbuf)));
-      break;
-    case 'Y':
-      out_epoch_sec (pformat, prefix_len, statbuf, get_stat_mtime (statbuf));
-      break;
-    case 'z':
-      out_string (pformat, prefix_len, human_time (get_stat_ctime (statbuf)));
-      break;
-    case 'Z':
-      out_epoch_sec (pformat, prefix_len, statbuf, get_stat_ctime (statbuf));
-      break;
-    case 'C':
-      fail |= out_file_context (pformat, prefix_len, filename);
-      break;
-    default:
-      fputc ('?', stdout);
-      break;
-    }
-  return fail;
-}
 
 /* Output a single-character \ escape.  */
 
@@ -1220,6 +1095,17 @@ print_esc_char (char c)
   putchar (c);
 }
 
+static size_t _GL_ATTRIBUTE_PURE
+format_code_offset (char const* directive)
+{
+  size_t len = strspn (directive + 1, printf_flags);
+  char const *fmt_char = directive + len + 1;
+  fmt_char += strspn (fmt_char, digits);
+  if (*fmt_char == '.')
+    fmt_char += 1 + strspn (fmt_char + 1, digits);
+  return fmt_char - directive;
+}
+
 /* Print the information specified by the format string, FORMAT,
    calling PRINT_FUNC for each %-directive encountered.
    Return zero upon success, nonzero upon failure.  */
@@ -1249,33 +1135,28 @@ print_it (char const *format, int fd, char const *filename,
         {
         case '%':
           {
-            size_t len = strspn (b + 1, printf_flags);
-            char const *fmt_char = b + len + 1;
-            fmt_char += strspn (fmt_char, digits);
-            if (*fmt_char == '.')
-              fmt_char += 1 + strspn (fmt_char + 1, digits);
-            len = fmt_char - (b + 1);
-            unsigned int fmt_code = *fmt_char;
-            memcpy (dest, b, len + 1);
+            size_t len = format_code_offset (b);
+            char const *fmt_char = b + len;
+            memcpy (dest, b, len);
+            b += len;
 
-            b = fmt_char;
-            switch (fmt_code)
+            switch (*fmt_char)
               {
               case '\0':
                 --b;
                 FALLTHROUGH;
               case '%':
-                if (0 < len)
+                if (1 < len)
                   {
-                    dest[len + 1] = *fmt_char;
-                    dest[len + 2] = '\0';
+                    dest[len] = *fmt_char;
+                    dest[len + 1] = '\0';
                     die (EXIT_FAILURE, 0, _("%s: invalid directive"),
                          quote (dest));
                   }
                 putchar ('%');
                 break;
               default:
-                fail |= print_func (dest, len + 1, fmt_code,
+                fail |= print_func (dest, len, to_uchar (*fmt_char),
                                     fd, filename, data);
                 break;
               }
@@ -1363,6 +1244,173 @@ do_statfs (char const *filename, char const *format)
   return ! fail;
 }
 
+struct print_args {
+  struct stat *st;
+  struct timespec btime;
+};
+
+/* Ask statx to avoid syncing? */
+static bool dont_sync;
+
+/* Ask statx to force sync? */
+static bool force_sync;
+
+#if USE_STATX
+static unsigned int
+fmt_to_mask (char fmt)
+{
+  switch (fmt)
+    {
+    case 'N':
+      return STATX_MODE;
+    case 'd':
+    case 'D':
+      return STATX_MODE;
+    case 'i':
+      return STATX_INO;
+    case 'a':
+    case 'A':
+      return STATX_MODE;
+    case 'f':
+      return STATX_MODE|STATX_TYPE;
+    case 'F':
+      return STATX_TYPE;
+    case 'h':
+      return STATX_NLINK;
+    case 'u':
+    case 'U':
+      return STATX_UID;
+    case 'g':
+    case 'G':
+      return STATX_GID;
+    case 'm':
+      return STATX_MODE|STATX_INO;
+    case 's':
+      return STATX_SIZE;
+    case 't':
+    case 'T':
+      return STATX_MODE;
+    case 'b':
+      return STATX_BLOCKS;
+    case 'w':
+    case 'W':
+      return STATX_BTIME;
+    case 'x':
+    case 'X':
+      return STATX_ATIME;
+    case 'y':
+    case 'Y':
+      return STATX_MTIME;
+    case 'z':
+    case 'Z':
+      return STATX_CTIME;
+    }
+  return 0;
+}
+
+static unsigned int _GL_ATTRIBUTE_PURE
+format_to_mask (char const *format)
+{
+  unsigned int mask = 0;
+  char const *b;
+
+  for (b = format; *b; b++)
+    {
+      if (*b != '%')
+        continue;
+
+      b += format_code_offset (b);
+      if (*b == '\0')
+        break;
+      mask |= fmt_to_mask (*b);
+    }
+  return mask;
+}
+
+/* statx the file and print what we find */
+static bool ATTRIBUTE_WARN_UNUSED_RESULT
+do_stat (char const *filename, char const *format, char const *format2)
+{
+  int fd = STREQ (filename, "-") ? 0 : AT_FDCWD;
+  int flags = 0;
+  struct stat st;
+  struct statx stx = { 0, };
+  const char *pathname = filename;
+  struct print_args pa;
+  pa.st = &st;
+  pa.btime = (struct timespec) {-1, -1};
+
+  if (AT_FDCWD != fd)
+    {
+      pathname = "";
+      flags = AT_EMPTY_PATH;
+    }
+  else if (!follow_links)
+    {
+      flags = AT_SYMLINK_NOFOLLOW;
+    }
+
+  if (dont_sync)
+    flags |= AT_STATX_DONT_SYNC;
+  else if (force_sync)
+    flags |= AT_STATX_FORCE_SYNC;
+
+  fd = statx (fd, pathname, flags, format_to_mask (format), &stx);
+  if (fd < 0)
+    {
+      if (flags & AT_EMPTY_PATH)
+        error (0, errno, _("cannot stat standard input"));
+      else
+        error (0, errno, _("cannot statx %s"), quoteaf (filename));
+      return false;
+    }
+
+  if (S_ISBLK (stx.stx_mode) || S_ISCHR (stx.stx_mode))
+    format = format2;
+
+  statx_to_stat (&stx, &st);
+  if (stx.stx_mask & STATX_BTIME)
+    pa.btime = statx_timestamp_to_timespec (stx.stx_btime);
+
+  bool fail = print_it (format, fd, filename, print_stat, &pa);
+  return ! fail;
+}
+
+#else /* USE_STATX */
+
+static struct timespec
+get_birthtime (int fd, char const *filename, struct stat const *st)
+{
+  struct timespec ts = get_stat_birthtime (st);
+
+# if HAVE_GETATTRAT
+  if (ts.tv_nsec < 0)
+    {
+      nvlist_t *response;
+      if ((fd < 0
+           ? getattrat (AT_FDCWD, XATTR_VIEW_READWRITE, filename, &response)
+           : fgetattr (fd, XATTR_VIEW_READWRITE, &response))
+          == 0)
+        {
+          uint64_t *val;
+          uint_t n;
+          if (nvlist_lookup_uint64_array (response, A_CRTIME, &val, &n) == 0
+              && 2 <= n
+              && val[0] <= TYPE_MAXIMUM (time_t)
+              && val[1] < 1000000000 * 2 /* for leap seconds */)
+            {
+              ts.tv_sec = val[0];
+              ts.tv_nsec = val[1];
+            }
+          nvlist_free (response);
+        }
+    }
+# endif
+
+  return ts;
+}
+
+
 /* stat the file and print what we find */
 static bool ATTRIBUTE_WARN_UNUSED_RESULT
 do_stat (char const *filename, char const *format,
@@ -1370,6 +1418,9 @@ do_stat (char const *filename, char const *format,
 {
   int fd = STREQ (filename, "-") ? 0 : -1;
   struct stat statbuf;
+  struct print_args pa;
+  pa.st = &statbuf;
+  pa.btime = (struct timespec) {-1, -1};
 
   if (0 <= fd)
     {
@@ -1393,8 +1444,151 @@ do_stat (char const *filename, char const *format,
   if (S_ISBLK (statbuf.st_mode) || S_ISCHR (statbuf.st_mode))
     format = format2;
 
-  bool fail = print_it (format, fd, filename, print_stat, &statbuf);
+  bool fail = print_it (format, fd, filename, print_stat, &pa);
   return ! fail;
+}
+#endif /* USE_STATX */
+
+
+/* Print stat info.  Return zero upon success, nonzero upon failure.  */
+static bool
+print_stat (char *pformat, size_t prefix_len, unsigned int m,
+            int fd, char const *filename, void const *data)
+{
+  struct print_args *parg = (struct print_args *) data;
+  struct stat *statbuf = parg->st;
+  struct timespec btime = parg->btime;
+  struct passwd *pw_ent;
+  struct group *gw_ent;
+  bool fail = false;
+
+  switch (m)
+    {
+    case 'n':
+      out_string (pformat, prefix_len, filename);
+      break;
+    case 'N':
+      out_string (pformat, prefix_len, quoteN (filename));
+      if (S_ISLNK (statbuf->st_mode))
+        {
+          char *linkname = areadlink_with_size (filename, statbuf->st_size);
+          if (linkname == NULL)
+            {
+              error (0, errno, _("cannot read symbolic link %s"),
+                     quoteaf (filename));
+              return true;
+            }
+          printf (" -> ");
+          out_string (pformat, prefix_len, quoteN (linkname));
+          free (linkname);
+        }
+      break;
+    case 'd':
+      out_uint (pformat, prefix_len, statbuf->st_dev);
+      break;
+    case 'D':
+      out_uint_x (pformat, prefix_len, statbuf->st_dev);
+      break;
+    case 'i':
+      out_uint (pformat, prefix_len, statbuf->st_ino);
+      break;
+    case 'a':
+      out_uint_o (pformat, prefix_len, statbuf->st_mode & CHMOD_MODE_BITS);
+      break;
+    case 'A':
+      out_string (pformat, prefix_len, human_access (statbuf));
+      break;
+    case 'f':
+      out_uint_x (pformat, prefix_len, statbuf->st_mode);
+      break;
+    case 'F':
+      out_string (pformat, prefix_len, file_type (statbuf));
+      break;
+    case 'h':
+      out_uint (pformat, prefix_len, statbuf->st_nlink);
+      break;
+    case 'u':
+      out_uint (pformat, prefix_len, statbuf->st_uid);
+      break;
+    case 'U':
+      pw_ent = getpwuid (statbuf->st_uid);
+      out_string (pformat, prefix_len,
+                  pw_ent ? pw_ent->pw_name : "UNKNOWN");
+      break;
+    case 'g':
+      out_uint (pformat, prefix_len, statbuf->st_gid);
+      break;
+    case 'G':
+      gw_ent = getgrgid (statbuf->st_gid);
+      out_string (pformat, prefix_len,
+                  gw_ent ? gw_ent->gr_name : "UNKNOWN");
+      break;
+    case 'm':
+      fail |= out_mount_point (filename, pformat, prefix_len, statbuf);
+      break;
+    case 's':
+      out_int (pformat, prefix_len, statbuf->st_size);
+      break;
+    case 't':
+      out_uint_x (pformat, prefix_len, major (statbuf->st_rdev));
+      break;
+    case 'T':
+      out_uint_x (pformat, prefix_len, minor (statbuf->st_rdev));
+      break;
+    case 'B':
+      out_uint (pformat, prefix_len, ST_NBLOCKSIZE);
+      break;
+    case 'b':
+      out_uint (pformat, prefix_len, ST_NBLOCKS (*statbuf));
+      break;
+    case 'o':
+      out_uint (pformat, prefix_len, ST_BLKSIZE (*statbuf));
+      break;
+    case 'w':
+      {
+#if ! USE_STATX
+        btime = get_birthtime (fd, filename, statbuf);
+#endif
+        if (btime.tv_nsec < 0)
+          out_string (pformat, prefix_len, "-");
+        else
+          out_string (pformat, prefix_len, human_time (btime));
+      }
+      break;
+    case 'W':
+      {
+#if ! USE_STATX
+        btime = get_birthtime (fd, filename, statbuf);
+#endif
+        out_epoch_sec (pformat, prefix_len, neg_to_zero (btime));
+      }
+      break;
+    case 'x':
+      out_string (pformat, prefix_len, human_time (get_stat_atime (statbuf)));
+      break;
+    case 'X':
+      out_epoch_sec (pformat, prefix_len, get_stat_atime (statbuf));
+      break;
+    case 'y':
+      out_string (pformat, prefix_len, human_time (get_stat_mtime (statbuf)));
+      break;
+    case 'Y':
+      out_epoch_sec (pformat, prefix_len, get_stat_mtime (statbuf));
+      break;
+    case 'z':
+      out_string (pformat, prefix_len, human_time (get_stat_ctime (statbuf)));
+      break;
+    case 'Z':
+      out_epoch_sec (pformat, prefix_len, get_stat_ctime (statbuf));
+      break;
+    case 'C':
+      fail |= out_file_context (pformat, prefix_len, filename);
+      break;
+    default:
+      fputc ('?', stdout);
+      break;
+    }
+  return fail;
 }
 
 /* Return an allocated format string in static storage that
@@ -1506,6 +1700,10 @@ Display file or file system status.\n\
   -f, --file-system     display file system status instead of file status\n\
 "), stdout);
       fputs (_("\
+      --cached=MODE     specify how to use cached attributes;\n\
+                          useful on remote file systems. See MODE below\n\
+"), stdout);
+      fputs (_("\
   -c  --format=FORMAT   use the specified FORMAT instead of the default;\n\
                           output a newline after each use of FORMAT\n\
       --printf=FORMAT   like --format, but interpret backslash escapes,\n\
@@ -1517,10 +1715,17 @@ Display file or file system status.\n\
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
 
       fputs (_("\n\
+The --cached MODE argument can be; always, never, or default.\n\
+`always` will use cached attributes if available, while\n\
+`never` will try to synchronize with the latest attributes, and\n\
+`default` will leave it up to the underlying file system.\n\
+"), stdout);
+
+      fputs (_("\n\
 The valid format sequences for files (without --file-system):\n\
 \n\
-  %a   access rights in octal (note '#' and '0' printf flags)\n\
-  %A   access rights in human readable form\n\
+  %a   permission bits in octal (note '#' and '0' printf flags)\n\
+  %A   permission bits and file type in human readable form\n\
   %b   number of blocks allocated (see %B)\n\
   %B   the size in bytes of each block reported by %b\n\
   %C   SELinux security context string\n\
@@ -1647,6 +1852,23 @@ main (int argc, char *argv[])
 
         case 't':
           terse = true;
+          break;
+
+        case 0:
+          switch (XARGMATCH ("--cached", optarg, cached_args, cached_modes))
+            {
+              case cached_never:
+                force_sync = true;
+                dont_sync = false;
+                break;
+              case cached_always:
+                force_sync = false;
+                dont_sync = true;
+                break;
+              case cached_default:
+                force_sync = false;
+                dont_sync = false;
+            }
           break;
 
         case_GETOPT_HELP_CHAR;

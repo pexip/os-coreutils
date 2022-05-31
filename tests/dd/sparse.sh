@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2012-2018 Free Software Foundation, Inc.
+# Copyright (C) 2012-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,9 +60,9 @@ kb_alloc() { du -k "$1"|cut -f1; }
 # after its creation.
 if test $(kb_alloc file.in) -gt 3000; then
 
-  # Ensure NUL blocks smaller than the block size are not made sparse.
+  # Ensure NUL blocks smaller than the *output* block size are not made sparse.
   # Here, with a 2MiB block size, dd's conv=sparse must *not* introduce a hole.
-  dd if=file.in of=file.out bs=2M conv=sparse || fail=1
+  dd if=file.in of=file.out ibs=1M obs=2M conv=sparse || fail=1
 
   # Intermittently BTRFS returns 0 allocation for file.out unless synced
   sync file.out || framework_failure_
@@ -75,9 +75,18 @@ if test $(kb_alloc file.in) -gt 3000; then
   rm -f file.out
   truncate --size=3M file.out
 
-  # Ensure that this 1MiB string of NULs *is* converted to a hole.
-  dd if=file.in of=file.out bs=1M conv=sparse,notrunc
-  test $(kb_alloc file.out) -lt 2500 || fail=1
+  # Ensure that this 1MiB *output* block of NULs *is* converted to a hole.
+  dd if=file.in of=file.out ibs=2M obs=1M conv=sparse,notrunc
+  if test $(kb_alloc file.out) -ge 2500; then
+    # Double check the failure by creating a sparse file in
+    # the traditional manner for comparison, as we're not guaranteed
+    # that seek=1M will create a hole.  apfs on darwin 19.2.0 for example
+    # was seen to not to create holes < 16MiB.
+    dd if=file.in of=manual.out bs=1M count=1 || fail=1
+    dd if=file.in of=manual.out bs=1M count=1 seek=2 conv=notrunc || fail=1
+
+    test $(kb_alloc file.out) -eq $(kb_alloc manual.out) || fail=1
+  fi
 
 fi
 

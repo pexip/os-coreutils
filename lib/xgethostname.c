@@ -1,6 +1,6 @@
 /* xgethostname.c -- return current hostname with unlimited length
 
-   Copyright (C) 1992, 1996, 2000-2001, 2003-2006, 2009-2018 Free Software
+   Copyright (C) 1992, 1996, 2000-2001, 2003-2006, 2009-2020 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "xalloc.h"
@@ -69,6 +70,17 @@ xgethostname (void)
           return NULL;
         }
     }
+
+  /* Shrink HOSTNAME before returning it.  */
+  {
+    size_t actual_size = strlen (hostname) + 1;
+    if (actual_size < size)
+      {
+        char *shrinked_hostname = realloc (hostname, actual_size);
+        if (shrinked_hostname != NULL)
+          hostname = shrinked_hostname;
+      }
+  }
 
   return hostname;
 }

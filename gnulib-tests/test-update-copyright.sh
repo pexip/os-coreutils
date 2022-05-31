@@ -1,6 +1,6 @@
 #!/bin/sh
 # Test suite for update-copyright.
-# Copyright (C) 2009-2018 Free Software Foundation, Inc.
+# Copyright (C) 2009-2020 Free Software Foundation, Inc.
 # This file is part of the GNUlib Library.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -37,9 +37,23 @@ trap 'rm -f $TMP_BASE*' 0 1 2 3 15
 TMP=$TMP_BASE
 s=$TMP-script
 cat <<\EOF > $s
-eval '(exit $?0)' && eval 'exec perl -wS -0777 -pi "$0" "$@"'
-  & eval 'exec perl -wS -0777 -pi "$0" $argv:q'
-    if 0;
+#!/bin/sh
+#! -*-perl-*-
+# This is a prologue that allows to run a perl script as an executable
+# on systems that are compliant to a POSIX version before POSIX:2017.
+# On such systems, the usual invocation of an executable through execlp()
+# or execvp() fails with ENOEXEC if it is a script that does not start
+# with a #! line.  The script interpreter mentioned in the #! line has
+# to be /bin/sh, because on GuixSD systems that is the only program that
+# has a fixed file name.  The second line is essential for perl and is
+# also useful for editing this file in Emacs.  The next two lines below
+# are valid code in both sh and perl.  When executed by sh, they re-execute
+# the script through the perl program found in $PATH.  The '-x' option
+# is essential as well; without it, perl would re-execute the script
+# through /bin/sh.  When executed by  perl, the next two lines are a no-op.
+eval 'exec perl -wSx -pi "$0" "$@"'
+     if 0;
+
 s/a/b/
 EOF
 chmod a+x $s
