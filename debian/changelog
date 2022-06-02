@@ -1,3 +1,9 @@
+coreutils (8.32-4pexip1) pexip; urgency=medium
+
+  * Initial bullseye build
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Thu, 02 Jun 2022 14:42:05 +0100
+
 coreutils (8.32-4) unstable; urgency=low
 
   * Fix FTBFS on ARM64. (Closes: #966449)
