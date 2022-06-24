@@ -1,3 +1,9 @@
+coreutils (8.32-4pexip2) pexip-bullseye; urgency=medium
+
+  * Main bullseye build
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Fri, 24 Jun 2022 13:54:58 +0100
+
 coreutils (8.32-4pexip1) pexip; urgency=medium
 
   * Initial bullseye build
