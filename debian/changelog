@@ -1,3 +1,9 @@
+coreutils (8.32-4+b1pexip1) pexip-bullseye; urgency=medium
+
+  * Rebuild with higher version number to supercede bullseye.
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Mon, 25 Jul 2022 11:24:36 +0100
+
 coreutils (8.32-4pexip2) pexip-bullseye; urgency=medium
 
   * Main bullseye build
