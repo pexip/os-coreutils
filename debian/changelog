@@ -1,3 +1,9 @@
+coreutils (8.32-4+b1pexip2) pexip-bullseye; urgency=medium
+
+  * Bullseye rebuild for ARM64 inclusion
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Mon, 05 Sep 2022 10:31:22 +0100
+
 coreutils (8.32-4+b1pexip1) pexip-bullseye; urgency=medium
 
   * Rebuild with higher version number to supercede bullseye.
