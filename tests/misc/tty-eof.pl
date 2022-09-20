@@ -4,7 +4,7 @@
 # Do the same for all programs that can read stdin,
 # require no arguments and that write to standard output.
 
-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
+# Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ $@
 {
   my $fail = 0;
   my @stdin_reading_commands = qw(
+    b2sum
     base32
     base64
     cat
@@ -63,7 +64,7 @@ $@
     wc
   );
   my $stderr = 'tty-eof.err';
-  foreach my $cmd ((@stdin_reading_commands), 'cut -f2',
+  foreach my $cmd ((@stdin_reading_commands), 'basenc --z85', 'cut -f2',
                    'numfmt --invalid=ignore')
     {
       my $exp = new Expect;

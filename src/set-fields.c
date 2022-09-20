@@ -1,5 +1,5 @@
 /* set-fields.c -- common functions for parsing field list
-   Copyright (C) 2015-2020 Free Software Foundation, Inc.
+   Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #include "system.h"
 #include "error.h"
 #include "quote.h"
-#include "xstrndup.h"
 #include "set-fields.h"
 
 /* Array of `struct field_range_pair' holding all the finite ranges. */
@@ -83,14 +82,14 @@ complement_rp (void)
 
   for (size_t i = 1; i < n; ++i)
     {
-      if (c[i-1].hi + 1 == c[i].lo)
+      if (c[i - 1].hi + 1 == c[i].lo)
         continue;
 
-      add_range_pair (c[i-1].hi + 1, c[i].lo - 1);
+      add_range_pair (c[i - 1].hi + 1, c[i].lo - 1);
     }
 
-  if (c[n-1].hi < UINTMAX_MAX)
-    add_range_pair (c[n-1].hi + 1, UINTMAX_MAX);
+  if (c[n - 1].hi < UINTMAX_MAX)
+    add_range_pair (c[n - 1].hi + 1, UINTMAX_MAX);
 
   free (c);
 }
@@ -135,7 +134,7 @@ complement_rp (void)
                           { .lo = UINTMAX_MAX, .hi = UINTMAX_MAX } ];
 */
 void
-set_fields (const char *fieldstr, unsigned int options)
+set_fields (char const *fieldstr, unsigned int options)
 {
   uintmax_t initial = 1;	/* Value of first number in a range.  */
   uintmax_t value = 0;		/* If nonzero, a number being accumulated.  */
@@ -163,17 +162,17 @@ set_fields (const char *fieldstr, unsigned int options)
           in_digits = false;
           /* Starting a range. */
           if (dash_found)
-            FATAL_ERROR ( (options & SETFLD_ERRMSG_USE_POS)
-                          ?_("invalid byte or character range")
-                          :_("invalid field range"));
+            FATAL_ERROR ((options & SETFLD_ERRMSG_USE_POS)
+                         ? _("invalid byte or character range")
+                         : _("invalid field range"));
 
           dash_found = true;
           fieldstr++;
 
           if (lhs_specified && !value)
-            FATAL_ERROR ( (options & SETFLD_ERRMSG_USE_POS)
-                          ?_("byte/character positions are numbered from 1")
-                          :_("fields are numbered from 1"));
+            FATAL_ERROR ((options & SETFLD_ERRMSG_USE_POS)
+                         ? _("byte/character positions are numbered from 1")
+                         : _("fields are numbered from 1"));
 
           initial = (lhs_specified ? value : 1);
           value = 0;
@@ -217,9 +216,9 @@ set_fields (const char *fieldstr, unsigned int options)
             {
               /* A simple field number, not a range. */
               if (value == 0)
-                FATAL_ERROR ( (options & SETFLD_ERRMSG_USE_POS)
-                              ?_("byte/character positions are numbered from 1")
-                              :_("fields are numbered from 1"));
+                FATAL_ERROR ((options & SETFLD_ERRMSG_USE_POS)
+                             ? _("byte/character positions are numbered from 1")
+                             : _("fields are numbered from 1"));
 
               add_range_pair (value, value);
               value = 0;
@@ -254,7 +253,7 @@ set_fields (const char *fieldstr, unsigned int options)
                  complain only about the first number.  */
               /* Determine the length of the offending number.  */
               size_t len = strspn (num_start, "0123456789");
-              char *bad_num = xstrndup (num_start, len);
+              char *bad_num = ximemdup0 (num_start, len);
               error (0, 0, (options & SETFLD_ERRMSG_USE_POS)
                            ?_("byte/character offset %s is too large")
                            :_("field number %s is too large"),
@@ -276,9 +275,9 @@ set_fields (const char *fieldstr, unsigned int options)
     }
 
   if (!n_frp)
-    FATAL_ERROR ( (options&SETFLD_ERRMSG_USE_POS)
-                  ?_("missing list of byte/character positions")
-                  :_("missing list of fields"));
+    FATAL_ERROR ((options&SETFLD_ERRMSG_USE_POS)
+                 ? _("missing list of byte/character positions")
+                 : _("missing list of fields"));
 
   qsort (frp, n_frp, sizeof (frp[0]), compare_ranges);
 
@@ -308,13 +307,4 @@ set_fields (const char *fieldstr, unsigned int options)
   ++n_frp;
   frp = xrealloc (frp, n_frp * sizeof (struct field_range_pair));
   frp[n_frp - 1].lo = frp[n_frp - 1].hi = UINTMAX_MAX;
-}
-
-void
-reset_fields (void)
-{
-  n_frp = 0 ;
-  n_frp_allocated = 0;
-  free (frp);
-  frp = NULL;
 }

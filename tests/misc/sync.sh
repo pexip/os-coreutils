@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test various sync(1) operations
 
-# Copyright (C) 2015-2020 Free Software Foundation, Inc.
+# Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ returns_ 1 sync file nofile || fail=1
 mkdir norw || framework_failure_
 chmod 0 norw || framework_failure_
 if ! test -r norw; then
-  returns_ 1 sync norw 2>errt
+  returns_ 1 sync norw 2>errt || fail=1
   # AIX gives "Is a directory"
   sed 's/Is a directory/Permission denied/' <errt >err || framework_failure_
   printf "sync: error opening 'norw': Permission denied\n" >exp

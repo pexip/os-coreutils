@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2018-2020 Free Software Foundation, Inc.
+ * Copyright (C) 2018-2022 Free Software Foundation, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -82,6 +82,11 @@ main (int argc, char *argv[])
   int repeat = atoi (argv[2]);
 
   char *memblock = (char *) malloc (size);
+  if (!memblock)
+    {
+      fprintf (stderr, "%s: memory exhausted\n", argv[0]);
+      return 1;
+    }
 
   /* Fill the memory block.  */
   {

@@ -1,9 +1,9 @@
 #!/bin/sh
-# If ls is asked to list a removed directory (e.g. the parent process's
-# current working directory that has been removed by another process), it
-# emits an error message.
+# If ls is asked to list a removed directory (e.g., the parent process's
+# current working directory has been removed by another process), it
+# should not emit an error message merely because the directory is removed.
 
-# Copyright (C) 2020 Free Software Foundation, Inc.
+# Copyright (C) 2020-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,25 +21,18 @@
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ ls
 
-case $host_triplet in
-  *linux*) ;;
-  *) skip_ 'non linux kernel' ;;
-esac
-
-LS_FAILURE=2
-
-cat <<\EOF >exp-err || framework_failure_
-ls: reading directory '.': No such file or directory
-EOF
-
 cwd=$(pwd)
 mkdir d || framework_failure_
 cd d || framework_failure_
-rmdir ../d || framework_failure_
+rmdir ../d || skip_ "can't remove working directory on this platform"
 
-returns_ $LS_FAILURE ls >../out 2>../err || fail=1
+# On NFS, 'ls' would run into the error "Stale file handle".
+test -d . || skip_ "can't examine removed working directory on this platform"
+
+ls >"$cwd"/out 2>"$cwd"/err || fail=1
 cd "$cwd" || framework_failure_
+
 compare /dev/null out || fail=1
-compare exp-err err || fail=1
+compare /dev/null err || fail=1
 
 Exit $fail

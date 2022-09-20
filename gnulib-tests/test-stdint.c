@@ -1,9 +1,9 @@
 /* Test of <stdint.h> substitute.
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -26,7 +26,7 @@
 #include "verify.h"
 #include "intprops.h"
 
-#if __GNUC__ >= 2 && DO_PEDANTIC
+#if ((__GNUC__ >= 2) || (__clang_major__ >= 4)) && DO_PEDANTIC
 # define verify_same_types(expr1,expr2)  \
     extern void _verify_func(__LINE__) (__typeof__ (expr1) *); \
     extern void _verify_func(__LINE__) (__typeof__ (expr2) *);
@@ -247,9 +247,10 @@ uintmax_t j[2] = { UINTMAX_C (17), UINTMAX_MAX };
 verify (TYPE_MAXIMUM (uintmax_t) == UINTMAX_MAX);
 verify_same_types (UINTMAX_MAX, (uintmax_t) 0 + 0);
 
-/* As of 2007, Sun C and HP-UX 10.20 cc don't support 'long long' constants in
+/* Older Sun C and HP-UX 10.20 cc don't support 'long long' constants in
    the preprocessor.  */
-#if !(defined __SUNPRO_C || (defined __hpux && !defined __GNUC__))
+#if !((defined __SUNPRO_C && __SUNPRO_C < 0x5150) \
+      || (defined __hpux && !defined __GNUC__))
 #if INTMAX_MIN && INTMAX_MAX && UINTMAX_MAX
 /* ok */
 #else
@@ -363,7 +364,7 @@ verify_same_types (UINTMAX_C (17), (uintmax_t)0 + 0);
   */
 #define verify_width(width, min, max) \
   _GL_VERIFY ((max) >> ((width) - 1 - ((min) < 0)) == 1, \
-              "verify_width check")
+              "verify_width check", -)
 
 /* Macros specified by ISO/IEC TS 18661-1:2014.  */
 

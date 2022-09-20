@@ -1,11 +1,11 @@
 /* exclude.h -- declarations for excluding file names
 
-   Copyright (C) 1992-1994, 1997, 1999, 2001-2003, 2005-2006, 2009-2020 Free
+   Copyright (C) 1992-1994, 1997, 1999, 2001-2003, 2005-2006, 2009-2022 Free
    Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -48,8 +48,11 @@ struct exclude;
 
 bool fnmatch_pattern_has_wildcards (const char *, int) _GL_ATTRIBUTE_PURE;
 
-struct exclude *new_exclude (void) _GL_ATTRIBUTE_MALLOC;
-void free_exclude (struct exclude *);
+void free_exclude (struct exclude *)
+  _GL_ATTRIBUTE_NONNULL ((1));
+struct exclude *new_exclude (void)
+  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_RETURNS_NONNULL
+  _GL_ATTRIBUTE_DEALLOC (free_exclude, 1);
 void add_exclude (struct exclude *, char const *, int);
 int add_exclude_file (void (*) (struct exclude *, char const *, int),
                       struct exclude *, char const *, int, char);

@@ -1,5 +1,5 @@
 /* group-list.c --Print a list of group IDs or names.
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 
 /* Print all of the distinct groups the user is in. */
 extern bool
-print_group_list (const char *username,
+print_group_list (char const *username,
                   uid_t ruid, gid_t rgid, gid_t egid,
                   bool use_names, char delim)
 {

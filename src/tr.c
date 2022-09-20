@@ -1,5 +1,5 @@
 /* tr -- a filter to translate characters
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -285,25 +285,26 @@ usage (int status)
   else
     {
       printf (_("\
-Usage: %s [OPTION]... SET1 [SET2]\n\
+Usage: %s [OPTION]... STRING1 [STRING2]\n\
 "),
               program_name);
       fputs (_("\
 Translate, squeeze, and/or delete characters from standard input,\n\
-writing to standard output.\n\
+writing to standard output.  STRING1 and STRING2 specify arrays of\n\
+characters ARRAY1 and ARRAY2 that control the action.\n\
 \n\
-  -c, -C, --complement    use the complement of SET1\n\
-  -d, --delete            delete characters in SET1, do not translate\n\
+  -c, -C, --complement    use the complement of ARRAY1\n\
+  -d, --delete            delete characters in ARRAY1, do not translate\n\
   -s, --squeeze-repeats   replace each sequence of a repeated character\n\
-                            that is listed in the last specified SET,\n\
+                            that is listed in the last specified ARRAY,\n\
                             with a single occurrence of that character\n\
-  -t, --truncate-set1     first truncate SET1 to length of SET2\n\
+  -t, --truncate-set1     first truncate ARRAY1 to length of ARRAY2\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       fputs (_("\
 \n\
-SETs are specified as strings of characters.  Most represent themselves.\n\
+ARRAYs are specified as strings of characters.  Most represent themselves.\n\
 Interpreted sequences are:\n\
 \n\
   \\NNN            character with octal value NNN (1 to 3 octal digits)\n\
@@ -318,7 +319,7 @@ Interpreted sequences are:\n\
      fputs (_("\
   \\v              vertical tab\n\
   CHAR1-CHAR2     all characters from CHAR1 to CHAR2 in ascending order\n\
-  [CHAR*]         in SET2, copies of CHAR until length of SET1\n\
+  [CHAR*]         in ARRAY2, copies of CHAR until length of ARRAY1\n\
   [CHAR*REPEAT]   REPEAT copies of CHAR, REPEAT octal if starting with 0\n\
   [:alnum:]       all letters and digits\n\
   [:alpha:]       all letters\n\
@@ -338,13 +339,12 @@ Interpreted sequences are:\n\
 "), stdout);
      fputs (_("\
 \n\
-Translation occurs if -d is not given and both SET1 and SET2 appear.\n\
--t may be used only when translating.  SET2 is extended to length of\n\
-SET1 by repeating its last character as necessary.  Excess characters\n\
-of SET2 are ignored.  Only [:lower:] and [:upper:] are guaranteed to\n\
-expand in ascending order; used in SET2 while translating, they may\n\
-only be used in pairs to specify case conversion.  -s uses the last\n\
-specified SET, and occurs after translation or deletion.\n\
+Translation occurs if -d is not given and both STRING1 and STRING2 appear.\n\
+-t may be used only when translating.  ARRAY2 is extended to length of\n\
+ARRAY1 by repeating its last character as necessary.  Excess characters\n\
+of ARRAY2 are ignored.  Character classes expand in unspecified order;\n\
+while translating, [:lower:] and [:upper:] may be used in pairs to\n\
+specify case conversion.  Squeezing occurs after translation or deletion.\n\
 "), stdout);
       emit_ancillary_info (PROGRAM_NAME);
     }
@@ -363,7 +363,8 @@ is_equiv_class_member (unsigned char equiv_class, unsigned char c)
 /* Return true if the character C is a member of the
    character class CHAR_CLASS.  */
 
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 is_char_class_member (enum Char_class char_class, unsigned char c)
 {
   int result;
@@ -539,7 +540,8 @@ unquote (char const *s, struct E_string *es)
 /* If CLASS_STR is a valid character class string, return its index
    in the global char_class_name array.  Otherwise, return CC_NO_CLASS.  */
 
-static enum Char_class _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static enum Char_class
 look_up_char_class (char const *class_str, size_t len)
 {
   enum Char_class i;
@@ -826,7 +828,8 @@ find_bracketed_repeat (const struct E_string *es, size_t start_idx,
    expression '\*[0-9]*\]', false otherwise.  The string does not
    match if any of its characters are escaped.  */
 
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 star_digits_closebracket (const struct E_string *es, size_t idx)
 {
   if (!es_match (es, idx, '*'))
@@ -1176,7 +1179,7 @@ validate_case_classes (struct Spec_list *s1, struct Spec_list *s2)
   bool s1_new_element = true;
   bool s2_new_element = true;
 
-  if (!s2->has_char_class)
+  if (complement || !s2->has_char_class)
     return;
 
   for (int i = 0; i < N_CHARS; i++)
@@ -1775,13 +1778,13 @@ main (int argc, char **argv)
 
   spec_init (s1);
   if (!parse_str (argv[optind], s1))
-    return EXIT_FAILURE;
+    main_exit (EXIT_FAILURE);
 
   if (non_option_args == 2)
     {
       spec_init (s2);
       if (!parse_str (argv[optind + 1], s2))
-        return EXIT_FAILURE;
+        main_exit (EXIT_FAILURE);
     }
   else
     s2 = NULL;
@@ -1910,5 +1913,5 @@ main (int argc, char **argv)
   if (close (STDIN_FILENO) != 0)
     die (EXIT_FAILURE, errno, _("standard input"));
 
-  return EXIT_SUCCESS;
+  main_exit (EXIT_SUCCESS);
 }

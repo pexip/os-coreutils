@@ -2,7 +2,7 @@
 # Ensure that du does not rely on narrow types like size_t for
 # file sizes or sums.
 
-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
+# Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ because file offsets are only 32 bits on this file system'
 fi
 
 # FIXME: this should be a test of dd.
-# On some systems (at least linux-2.4.18 + NFS to disks on a Solaris system)
+# On some systems (at least linux-2.4.18 + NFS to Solaris system)
 # the 'dd' command above mistakenly creates a file of length '0', yet
 # doesn't fail.  The root of that failure is that the ftruncate call
 # returns zero but doesn't do its job.  Detect this failure.

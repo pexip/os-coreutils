@@ -1,10 +1,10 @@
 /* Declarations for GNU's read utmp module.
 
-   Copyright (C) 1992-2007, 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 1992-2007, 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -20,6 +20,7 @@
 #ifndef __READUTMP_H__
 # define __READUTMP_H__
 
+# include <stdlib.h>
 # include <sys/types.h>
 
 /* AIX 4.3.3 has both utmp.h and utmpx.h, but only struct utmp
@@ -211,7 +212,11 @@ enum
     READ_UTMP_USER_PROCESS = 2
   };
 
-char *extract_trimmed_name (const STRUCT_UTMP *ut);
+char *extract_trimmed_name (const STRUCT_UTMP *ut)
+  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC_FREE
+  _GL_ATTRIBUTE_RETURNS_NONNULL;
+
+/* FIXME: This header should use idx_t, not size_t.  */
 int read_utmp (char const *file, size_t *n_entries, STRUCT_UTMP **utmp_buf,
                int options);
 

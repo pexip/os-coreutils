@@ -1,5 +1,5 @@
 /* split.c -- split a file into pieces.
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <sys/wait.h>
 
 #include "system.h"
+#include "alignalloc.h"
 #include "die.h"
 #include "error.h"
 #include "fd-reopen.h"
@@ -84,7 +85,7 @@ static size_t suffix_length;
 static char const *suffix_alphabet = "abcdefghijklmnopqrstuvwxyz";
 
 /* Numerical suffix start value.  */
-static const char *numeric_suffix_start;
+static char const *numeric_suffix_start;
 
 /* Additional suffix to append to output file names.  */
 static char const *additional_suffix;
@@ -454,7 +455,7 @@ new_name:
 /* Create or truncate a file.  */
 
 static int
-create (const char *name)
+create (char const *name)
 {
   if (!filter_command)
     {
@@ -594,7 +595,7 @@ closeout (FILE *fp, int fd, pid_t pid, char const *name)
    Return true if successful.  */
 
 static bool
-cwrite (bool new_file_flag, const char *bp, size_t bytes)
+cwrite (bool new_file_flag, char const *bp, size_t bytes)
 {
   if (new_file_flag)
     {
@@ -716,7 +717,7 @@ lines_split (uintmax_t n_lines, char *buf, size_t bufsize)
       *eob = eolchar;
       while (true)
         {
-          bp = memchr (bp, eolchar, eob - bp + 1);
+          bp = rawmemchr (bp, eolchar);
           if (bp == eob)
             {
               if (eob != bp_out) /* do not write 0 bytes! */
@@ -921,8 +922,11 @@ lines_chunk_split (uintmax_t k, uintmax_t n, char *buf, size_t bufsize,
           /* Begin looking for '\n' at last byte of chunk.  */
           off_t skip = MIN (n_read, MAX (0, chunk_end - n_written));
           char *bp_out = memchr (bp + skip, eolchar, n_read - skip);
-          if (bp_out++)
-            next = true;
+          if (bp_out)
+            {
+              bp_out++;
+              next = true;
+            }
           else
             bp_out = eob;
           to_write = bp_out - bp;
@@ -1001,7 +1005,7 @@ bytes_chunk_extract (uintmax_t k, uintmax_t n, char *buf, size_t bufsize,
     }
   else
     {
-      if (lseek (STDIN_FILENO, start, SEEK_CUR) < 0)
+      if (lseek (STDIN_FILENO, start - initial_read, SEEK_CUR) < 0)
         die (EXIT_FAILURE, errno, "%s", quotef (infile));
       initial_read = SIZE_MAX;
     }
@@ -1121,12 +1125,14 @@ ofile_open (of_t *files, size_t i_check, size_t nfiles)
 }
 
 /* -n r/[K/]N: Divide file into N chunks in round robin fashion.
+   Use BUF of size BUFSIZE for the buffer, and if allocating storage
+   put its address into *FILESP to pacify -fsanitize=leak.
    When K == 0, we try to keep the files open in parallel.
    If we run out of file resources, then we revert
    to opening and closing each file for each line.  */
 
 static void
-lines_rr (uintmax_t k, uintmax_t n, char *buf, size_t bufsize)
+lines_rr (uintmax_t k, uintmax_t n, char *buf, size_t bufsize, of_t **filesp)
 {
   bool wrapped = false;
   bool wrote = false;
@@ -1141,7 +1147,7 @@ lines_rr (uintmax_t k, uintmax_t n, char *buf, size_t bufsize)
     {
       if (SIZE_MAX < n)
         xalloc_die ();
-      files = xnmalloc (n, sizeof *files);
+      files = *filesp = xnmalloc (n, sizeof *files);
 
       /* Generate output file names. */
       for (i_file = 0; i_file < n; i_file++)
@@ -1265,7 +1271,6 @@ no_filters:
           files[i_file].ofd = OFD_APPEND;
         }
     }
-  IF_LINT (free (files));
 }
 
 #define FAIL_ONLY_ONE_WAY()					\
@@ -1297,7 +1302,7 @@ int
 main (int argc, char **argv)
 {
   enum Split_type split_type = type_undef;
-  size_t in_blk_size = 0;	/* optimal block size of input file device */
+  idx_t in_blk_size = 0;	/* optimal block size of input file device */
   size_t page_size = getpagesize ();
   uintmax_t k_units = 0;
   uintmax_t n_units = 0;
@@ -1500,7 +1505,7 @@ main (int argc, char **argv)
           break;
 
         case IO_BLKSIZE_OPTION:
-          in_blk_size = xdectoumax (optarg, 1, SIZE_MAX - page_size,
+          in_blk_size = xdectoumax (optarg, 1, MIN (IDX_MAX, SIZE_MAX) - 1,
                                     multipliers, _("invalid IO block size"), 0);
           break;
 
@@ -1582,8 +1587,7 @@ main (int argc, char **argv)
   if (! specified_buf_size)
     in_blk_size = io_blksize (in_stat_buf);
 
-  void *b = xmalloc (in_blk_size + 1 + page_size - 1);
-  char *buf = ptr_align (b, page_size);
+  char *buf = xalignalloc (page_size, in_blk_size + 1);
   size_t initial_read = SIZE_MAX;
 
   if (split_type == type_chunk_bytes || split_type == type_chunk_lines)
@@ -1651,18 +1655,19 @@ main (int argc, char **argv)
     case type_rr:
       /* Note, this is like 'sed -n ${k}~${n}p' when k > 0,
          but the functionality is provided for symmetry.  */
-      lines_rr (k_units, n_units, buf, in_blk_size);
+      {
+        of_t *files;
+        lines_rr (k_units, n_units, buf, in_blk_size, &files);
+      }
       break;
 
     default:
       abort ();
     }
 
-  IF_LINT (free (b));
-
   if (close (STDIN_FILENO) != 0)
     die (EXIT_FAILURE, errno, "%s", quotef (infile));
   closeout (NULL, output_desc, filter_pid, outfile);
 
-  return EXIT_SUCCESS;
+  main_exit (EXIT_SUCCESS);
 }

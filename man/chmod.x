@@ -1,4 +1,4 @@
-'\" Copyright (C) 1998-2020 Free Software Foundation, Inc.
+'\" Copyright (C) 1998-2022 Free Software Foundation, Inc.
 '\"
 '\" This is free software.  You may redistribute copies of it under the terms
 '\" of the GNU General Public License <https://www.gnu.org/licenses/gpl.html>.
@@ -96,10 +96,12 @@ symbolic modes like
 and
 .BR g\-s .
 To clear these bits for directories with a numeric mode requires
-an additional leading zero, or leading = like
-.B 00755
-, or
-.B =755
+an additional leading zero like
+.BR 00755 ,
+leading minus like
+.BR \-6000 ,
+or leading equals like
+.BR =755 .
 .SH "RESTRICTED DELETION FLAG OR STICKY BIT"
 The restricted deletion flag or sticky bit is a single bit, whose
 interpretation depends on the file type.  For directories, it prevents

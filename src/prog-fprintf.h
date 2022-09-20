@@ -1,5 +1,5 @@
 /* prog-fprintf.h - common formating output functions and definitions
-   Copyright (C) 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,6 @@
 # include <stdio.h>
 
 extern void prog_fprintf (FILE *fp, char const *fmt, ...)
-  __attribute__ ((__format__ (__printf__, 2, 3)));
+  _GL_ATTRIBUTE_FORMAT ((__printf__, 2, 3)) _GL_ATTRIBUTE_NONNULL ((1, 2));
 
 #endif

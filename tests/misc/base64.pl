@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Exercise base{32,64}.
 
-# Copyright (C) 2006-2020 Free Software Foundation, Inc.
+# Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,9 +91,6 @@ sub gen_tests($)
      ['wrap-bad-3', '-w-1', {IN=>''}, {OUT=>""},
       {ERR_SUBST => 's/base..:/base..:/'},
       {ERR => "base..: invalid wrap size: '-1'\n"}, {EXIT => 1}],
-     ['wrap-bad-4', '-w-0', {IN=>''}, {OUT=>""},
-      {ERR_SUBST => 's/base..:/base..:/'},
-      {ERR => "base..: invalid wrap size: '-0'\n"}, {EXIT => 1}],
 
      ['buf-1',   '--decode', {IN=>&$enc(1)}, {OUT=>'a' x 1}],
      ['buf-2',   '--decode', {IN=>&$enc(2)}, {OUT=>'a' x 2}],

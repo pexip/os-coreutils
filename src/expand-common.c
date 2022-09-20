@@ -1,5 +1,5 @@
 /* expand-common - common functionality for expand/unexapnd
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 #include "error.h"
 #include "fadvise.h"
 #include "quote.h"
-#include "xstrndup.h"
 
 #include "expand-common.h"
 
@@ -200,7 +199,7 @@ parse_tab_stops (char const *stops)
           if (!DECIMAL_DIGIT_ACCUMULATE (tabval, *stops - '0', uintmax_t))
             {
               size_t len = strspn (num_start, "0123456789");
-              char *bad_num = xstrndup (num_start, len);
+              char *bad_num = ximemdup0 (num_start, len);
               error (0, 0, _("tab stop is too large %s"), quote (bad_num));
               free (bad_num);
               ok = false;
@@ -276,8 +275,8 @@ finalize_tab_stops (void)
 
 
 extern uintmax_t
-get_next_tab_column (const uintmax_t column, size_t* tab_index,
-                     bool* last_tab)
+get_next_tab_column (const uintmax_t column, size_t *tab_index,
+                     bool *last_tab)
 {
   *last_tab = false;
 
@@ -339,16 +338,16 @@ next_file (FILE *fp)
   if (fp)
     {
       assert (prev_file);
-      if (ferror (fp))
-        {
-          error (0, errno, "%s", quotef (prev_file));
-          exit_status = EXIT_FAILURE;
-        }
+      int err = errno;
+      if (!ferror (fp))
+        err = 0;
       if (STREQ (prev_file, "-"))
         clearerr (fp);		/* Also clear EOF.  */
       else if (fclose (fp) != 0)
+        err = errno;
+      if (err)
         {
-          error (0, errno, "%s", quotef (prev_file));
+          error (0, err, "%s", quotef (prev_file));
           exit_status = EXIT_FAILURE;
         }
     }
@@ -388,7 +387,7 @@ emit_tab_list_info (void)
 {
   /* suppress syntax check for emit_mandatory_arg_note() */
   fputs (_("\
-  -t, --tabs=LIST  use comma separated list of tab positions\n\
+  -t, --tabs=LIST  use comma separated list of tab positions.\n\
 "), stdout);
   fputs (_("\
                      The last specified position can be prefixed with '/'\n\

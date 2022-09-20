@@ -1,9 +1,9 @@
 /* Test of <sched.h> substitute.
-   Copyright (C) 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -29,7 +29,7 @@ int b[] = { SCHED_FIFO, SCHED_RR, SCHED_OTHER };
 /* Check that the types are all defined.  */
 pid_t t1;
 
-static int f1;
+int f1;
 
 int
 main ()

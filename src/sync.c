@@ -1,5 +1,5 @@
 /* sync - update the super block
-   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+   Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -94,8 +94,8 @@ sync_arg (enum sync_mode mode, char const *file)
   int open_flags = O_RDONLY | O_NONBLOCK;
   int fd;
 
-#ifdef _AIX
-  /* AIX 7.1 fsync requires write access to file.  */
+#if defined _AIX || defined __CYGWIN__
+  /* AIX 7.1, CYGWIN 2.9.0, fsync requires write access to file.  */
   if (mode == MODE_FILE)
     open_flags = O_WRONLY | O_NONBLOCK;
 #endif

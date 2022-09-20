@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test non breaking space handling
 
-# Copyright (C) 2019-2020 Free Software Foundation, Inc.
+# Copyright (C) 2019-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,8 +31,8 @@ check_word_sep() {
   fi
 }
 
-export LC_ALL=en_US.ISO-8859-1
-if test "$(locale charmap 2>/dev/null)" = ISO-8859-1; then
+export LC_ALL=en_US.iso8859-1  # only lowercase form works on macOS 10.15.7
+if test "$(locale charmap 2>/dev/null | sed 's/iso/ISO-/')" = ISO-8859-1; then
   check_word_sep '\xA0'
 fi
 

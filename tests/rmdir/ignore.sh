@@ -1,7 +1,7 @@
 #!/bin/sh
 # make sure rmdir's --ignore-fail-on-non-empty option works
 
-# Copyright (C) 1999-2020 Free Software Foundation, Inc.
+# Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,17 +33,24 @@ test -d "$cwd/a/b/c" && fail=1
 # Between 6.11 and 8.31, the following rmdir would mistakenly succeed.
 mkdir -p x/y || framework_failure_
 chmod a-w x || framework_failure_
-returns_ 1 rmdir --ignore-fail-on-non-empty x/y || fail=1
+
+if ! uid_is_privileged_; then  # root does not get EPERM.
+  returns_ 1 rmdir --ignore-fail-on-non-empty x/y || fail=1
+fi
+
 test -d x/y || fail=1
 # Between 6.11 and 8.31, the following rmdir would mistakenly fail,
 # and also give a non descript error
 touch x/y/z || framework_failure_
 rmdir --ignore-fail-on-non-empty x/y || fail=1
 test -d x/y || fail=1
-# assume empty dir if unreadable entries (so failure to remove diagnosed)
-rm x/y/z || framework_failure_
-chmod a-r x/y || framework_failure_
-returns_ 1 rmdir --ignore-fail-on-non-empty x/y || fail=1
-test -d x/y || fail=1
+
+if ! uid_is_privileged_; then  # root does not get EPERM.
+  # assume empty dir if unreadable entries (so failure to remove diagnosed)
+  rm x/y/z || framework_failure_
+  chmod a-r x/y || framework_failure_
+  returns_ 1 rmdir --ignore-fail-on-non-empty x/y || fail=1
+  test -d x/y || fail=1
+fi
 
 Exit $fail

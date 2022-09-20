@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2020 Free Software Foundation, Inc.
+/* Copyright (C) 2014-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ Use: '%s --coreutils-prog=PROGRAM_NAME --help' for individual program help.\n"),
 }
 
 static void
-launch_program (const char *prog_name, int prog_argc, char **prog_argv)
+launch_program (char const *prog_name, int prog_argc, char **prog_argv)
 {
   int (*prog_main) (int, char **) = NULL;
 
@@ -120,8 +120,9 @@ launch_program (const char *prog_name, int prog_argc, char **prog_argv)
 #endif
 #if HAVE_PRCTL && defined PR_SET_MM_ARG_START
   /* Shift the beginning of the command line to prog_argv[0] (if set) so
-     /proc/pid/cmdline reflects the right value.  */
-  prctl (PR_SET_MM_ARG_START, prog_argv[0]);
+     /proc/$pid/cmdline reflects a more specific value.  Note one needs
+     CAP_SYS_RESOURCE or root privileges for this to succeed.  */
+  prctl (PR_SET_MM, PR_SET_MM_ARG_START, prog_argv[0], 0, 0);
 #endif
 
   exit (prog_main (prog_argc, prog_argv));

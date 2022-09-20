@@ -1,11 +1,11 @@
 /* readtokens.h -- Functions for reading tokens from an input stream.
 
-   Copyright (C) 1990-1991, 1999, 2001-2004, 2009-2020 Free Software
+   Copyright (C) 1990-1991, 1999, 2001-2004, 2009-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -22,6 +22,8 @@
 # define READTOKENS_H
 
 # include <stdio.h>
+
+/* FIXME: This header should use idx_t, not size_t.  */
 
 struct tokenbuffer
 {

@@ -1,5 +1,5 @@
 /* expand - convert tabs to spaces
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@
 #include <sys/types.h>
 #include "system.h"
 #include "die.h"
-#include "xstrndup.h"
 
 #include "expand-common.h"
 
@@ -134,7 +133,7 @@ expand (void)
                 {
                   /* Column the next input tab stop is on.  */
                   uintmax_t next_tab_column;
-                  bool last_tab IF_LINT (=0);
+                  bool last_tab;
 
                   next_tab_column = get_next_tab_column (column, &tab_index,
                                                          &last_tab);
@@ -228,7 +227,7 @@ main (int argc, char **argv)
 
   finalize_tab_stops ();
 
-  set_file_list ( (optind < argc) ? &argv[optind] : NULL);
+  set_file_list ((optind < argc) ? &argv[optind] : NULL);
 
   expand ();
 

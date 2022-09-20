@@ -1,5 +1,5 @@
 /* 'dir', 'vdir' and 'ls' directory listing programs for GNU.
-   Copyright (C) 1985-2020 Free Software Foundation, Inc.
+   Copyright (C) 1985-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,10 +47,6 @@
 #ifdef WINSIZE_IN_PTEM
 # include <sys/stream.h>
 # include <sys/ptem.h>
-#endif
-
-#ifdef __linux__
-# include <sys/syscall.h>
 #endif
 
 #include <stdio.h>
@@ -138,10 +134,6 @@
 
 #define obstack_chunk_alloc malloc
 #define obstack_chunk_free free
-
-/* Return an int indicating the result of comparing two integers.
-   Subtracting doesn't always work, due to overflow.  */
-#define longdiff(a, b) ((a) < (b) ? -1 : (a) > (b))
 
 /* Unix-based readdir implementations have historically returned a dirent.d_ino
    value that is sometimes not equal to the stat-obtained st_ino value for
@@ -239,6 +231,9 @@ struct fileinfo
 
     /* Whether file name needs quoting. tri-state with -1 == unknown.  */
     int quoted;
+
+    /* Cached screen width (including quoting).  */
+    size_t width;
   };
 
 #define LEN_STR_PAIR(s) sizeof (s) - 1, s
@@ -250,7 +245,7 @@ struct fileinfo
 struct bin_str
   {
     size_t len;			/* Number of bytes */
-    const char *string;		/* Pointer to the same */
+    char const *string;		/* Pointer to the same */
   };
 
 #if ! HAVE_TCGETPGRP
@@ -277,8 +272,8 @@ static const struct bin_str * get_color_indicator (const struct fileinfo *f,
                                                    bool symlink_target);
 static bool print_color_indicator (const struct bin_str *ind);
 static void put_indicator (const struct bin_str *ind);
-static void add_ignore_pattern (const char *pattern);
-static void attach (char *dest, const char *dirname, const char *name);
+static void add_ignore_pattern (char const *pattern);
+static void attach (char *dest, char const *dirname, char const *name);
 static void clear_files (void);
 static void extract_dirs_from_files (char const *dirname,
                                      bool command_line_arg);
@@ -309,11 +304,15 @@ static void queue_directory (char const *name, char const *realname,
 static void sort_files (void);
 static void parse_ls_color (void);
 
-static void getenv_quoting_style (void);
+static int getenv_quoting_style (void);
+
+static size_t quote_name_width (char const *name,
+                                struct quoting_options const *options,
+                                int needs_general_quoting);
 
 /* Initial size of hash table.
    Most hierarchies are likely to be shallower than this.  */
-#define INITIAL_TABLE_SIZE 30
+enum { INITIAL_TABLE_SIZE = 30 };
 
 /* The set of 'active' directories, from the current command-line argument
    to the level in the hierarchy at which files are being listed.
@@ -362,10 +361,13 @@ static bool color_symlink_as_referent;
 
 static char const *hostname;
 
-/* mode of appropriate file for colorization */
-#define FILE_OR_LINK_MODE(File) \
-    ((color_symlink_as_referent && (File)->linkok) \
-     ? (File)->linkmode : (File)->stat.st_mode)
+/* Mode of appropriate file for coloring.  */
+static mode_t
+file_or_link_mode (struct fileinfo const *file)
+{
+  return (color_symlink_as_referent && file->linkok
+          ? file->linkmode : file->stat.st_mode);
+}
 
 
 /* Record of one pending directory waiting to be listed.  */
@@ -461,7 +463,7 @@ ARGMATCH_VERIFY (time_style_args, time_style_types);
 
 enum time_type
   {
-    time_mtime,			/* default */
+    time_mtime = 0,		/* default */
     time_ctime,			/* -c */
     time_atime,			/* -u */
     time_btime,                 /* birth time */
@@ -476,12 +478,13 @@ static enum time_type time_type;
 
 enum sort_type
   {
-    sort_none = -1,		/* -U */
-    sort_name,			/* default */
+    sort_name = 0,		/* default */
     sort_extension,		/* -X */
+    sort_width,
     sort_size,			/* -S */
     sort_version,		/* -v */
-    sort_time,			/* -t */
+    sort_time,			/* -t; must be second to last */
+    sort_none,			/* -U; must be last */
     sort_numtypes		/* the number of elements of this enum */
   };
 
@@ -540,7 +543,7 @@ static bool dired;
 
 enum indicator_style
   {
-    none,	/*     --indicator-style=none */
+    none = 0,	/*     --indicator-style=none (default) */
     slash,	/* -p, --indicator-style=slash */
     file_type,	/*     --indicator-style=file-type */
     classify	/* -F, --indicator-style=classify */
@@ -582,7 +585,7 @@ enum when_type
 
 enum Dereference_symlink
   {
-    DEREF_UNDEFINED = 1,
+    DEREF_UNDEFINED = 0,		/* default */
     DEREF_NEVER,
     DEREF_COMMAND_LINE_ARGUMENTS,	/* -H */
     DEREF_COMMAND_LINE_SYMLINK_TO_DIR,	/* the default, in certain cases */
@@ -598,7 +601,7 @@ enum indicator_no
     C_CLR_TO_EOL
   };
 
-static const char *const indicator_name[]=
+static char const *const indicator_name[]=
   {
     "lc", "rc", "ec", "rs", "no", "fi", "di", "ln", "pi", "so",
     "bd", "cd", "mi", "or", "ex", "do", "su", "sg", "st",
@@ -635,7 +638,7 @@ static struct bin_str color_indicator[] =
     { LEN_STR_PAIR ("37;44") },		/* st: sticky: black on blue */
     { LEN_STR_PAIR ("34;42") },		/* ow: other-writable: blue on green */
     { LEN_STR_PAIR ("30;42") },		/* tw: ow w/ sticky: black on green */
-    { LEN_STR_PAIR ("30;41") },		/* ca: black on red */
+    { 0, NULL },			/* ca: disabled by default */
     { 0, NULL },			/* mh: disabled by default */
     { LEN_STR_PAIR ("\033[K") },	/* cl: clear to end of line */
   };
@@ -680,7 +683,7 @@ static enum
 {
   /* Ignore files whose names start with '.', and files specified by
      --hide and --ignore.  */
-  IGNORE_DEFAULT,
+  IGNORE_DEFAULT = 0,
 
   /* Ignore '.', '..', and files specified by --ignore.  */
   IGNORE_DOT_AND_DOTDOT,
@@ -696,7 +699,7 @@ static enum
 
 struct ignore_pattern
   {
-    const char *pattern;
+    char const *pattern;
     struct ignore_pattern *next;
   };
 
@@ -731,7 +734,7 @@ static size_t tabsize;
 static bool print_dir_name;
 
 /* The line length to use for breaking lines in many-per-line format.
-   Can be set with -w.  */
+   Can be set with -w.  If zero, there is no limit.  */
 
 static size_t line_length;
 
@@ -840,7 +843,8 @@ enum
   SI_OPTION,
   SORT_OPTION,
   TIME_OPTION,
-  TIME_STYLE_OPTION
+  TIME_STYLE_OPTION,
+  ZERO_OPTION,
 };
 
 static struct option const long_options[] =
@@ -863,7 +867,7 @@ static struct option const long_options[] =
   {"width", required_argument, NULL, 'w'},
   {"almost-all", no_argument, NULL, 'A'},
   {"ignore-backups", no_argument, NULL, 'B'},
-  {"classify", no_argument, NULL, 'F'},
+  {"classify", optional_argument, NULL, 'F'},
   {"file-type", no_argument, NULL, FILE_TYPE_INDICATOR_OPTION},
   {"si", no_argument, NULL, SI_OPTION},
   {"dereference-command-line", no_argument, NULL, 'H'},
@@ -883,6 +887,7 @@ static struct option const long_options[] =
   {"tabsize", required_argument, NULL, 'T'},
   {"time", required_argument, NULL, TIME_OPTION},
   {"time-style", required_argument, NULL, TIME_STYLE_OPTION},
+  {"zero", no_argument, NULL, ZERO_OPTION},
   {"color", optional_argument, NULL, COLOR_OPTION},
   {"hyperlink", optional_argument, NULL, HYPERLINK_OPTION},
   {"block-size", required_argument, NULL, BLOCK_SIZE_OPTION},
@@ -907,11 +912,11 @@ ARGMATCH_VERIFY (format_args, format_types);
 
 static char const *const sort_args[] =
 {
-  "none", "time", "size", "extension", "version", NULL
+  "none", "time", "size", "extension", "version", "width", NULL
 };
 static enum sort_type const sort_types[] =
 {
-  sort_none, sort_time, sort_size, sort_extension, sort_version
+  sort_none, sort_time, sort_size, sort_extension, sort_version, sort_width
 };
 ARGMATCH_VERIFY (sort_args, sort_types);
 
@@ -961,33 +966,43 @@ static size_t max_idx;
 
 /* The minimum width of a column is 3: 1 character for the name and 2
    for the separating white space.  */
-#define MIN_COLUMN_WIDTH	3
+enum { MIN_COLUMN_WIDTH = 3 };
 
 
-/* This zero-based index is used solely with the --dired option.
-   When that option is in effect, this counter is incremented for each
-   byte of output generated by this program so that the beginning
+/* This zero-based index is for the --dired option.  It is incremented
+   for each byte of output generated by this program so that the beginning
    and ending indices (in that output) of every file name can be recorded
    and later output themselves.  */
-static size_t dired_pos;
+static off_t dired_pos;
 
-#define DIRED_PUTCHAR(c) do {putchar ((c)); ++dired_pos;} while (0)
+static void
+dired_outbyte (char c)
+{
+  dired_pos++;
+  putchar (c);
+}
 
-/* Write S to STREAM and increment DIRED_POS by S_LEN.  */
-#define DIRED_FPUTS(s, stream, s_len) \
-    do {fputs (s, stream); dired_pos += s_len;} while (0)
+/* Output the buffer S, of length S_LEN, and increment DIRED_POS by S_LEN.  */
+static void
+dired_outbuf (char const *s, size_t s_len)
+{
+  dired_pos += s_len;
+  fwrite (s, sizeof *s, s_len, stdout);
+}
 
-/* Like DIRED_FPUTS, but for use when S is a literal string.  */
-#define DIRED_FPUTS_LITERAL(s, stream) \
-    do {fputs (s, stream); dired_pos += sizeof (s) - 1;} while (0)
+/* Output the string S, and increment DIRED_POS by its length.  */
+static void
+dired_outstring (char const *s)
+{
+  dired_outbuf (s, strlen (s));
+}
 
-#define DIRED_INDENT()							\
-    do									\
-      {									\
-        if (dired)							\
-          DIRED_FPUTS_LITERAL ("  ", stdout);				\
-      }									\
-    while (0)
+static void
+dired_indent (void)
+{
+  if (dired)
+    dired_outstring ("  ");
+}
 
 /* With --dired, store pairs of beginning and ending indices of file names.  */
 static struct obstack dired_obstack;
@@ -1000,13 +1015,12 @@ static struct obstack dired_obstack;
 static struct obstack subdired_obstack;
 
 /* Save the current index on the specified obstack, OBS.  */
-#define PUSH_CURRENT_DIRED_POS(obs)					\
-  do									\
-    {									\
-      if (dired)							\
-        obstack_grow (obs, &dired_pos, sizeof (dired_pos));		\
-    }									\
-  while (0)
+static void
+push_current_dired_pos (struct obstack *obs)
+{
+  if (dired)
+    obstack_grow (obs, &dired_pos, sizeof dired_pos);
+}
 
 /* With -R, this stack is used to help detect directory cycles.
    The device/inode pairs on this stack mirror the pairs in the
@@ -1043,34 +1057,36 @@ dev_ino_pop (void)
   return *di;
 }
 
-/* Note the use commented out below:
-#define ASSERT_MATCHING_DEV_INO(Name, Di)	\
-  do						\
-    {						\
-      struct stat sb;				\
-      assert (Name);				\
-      assert (0 <= stat (Name, &sb));		\
-      assert (sb.st_dev == Di.st_dev);		\
-      assert (sb.st_ino == Di.st_ino);		\
-    }						\
-  while (0)
-*/
+static void
+assert_matching_dev_ino (char const *name, struct dev_ino di)
+{
+  struct stat sb;
+  assert (name);
+  assert (0 <= stat (name, &sb));
+  assert (sb.st_dev == di.st_dev);
+  assert (sb.st_ino == di.st_ino);
+}
+
+static char eolbyte = '\n';
 
 /* Write to standard output PREFIX, followed by the quoting style and
    a space-separated list of the integers stored in OS all on one line.  */
 
 static void
-dired_dump_obstack (const char *prefix, struct obstack *os)
+dired_dump_obstack (char const *prefix, struct obstack *os)
 {
   size_t n_pos;
 
   n_pos = obstack_object_size (os) / sizeof (dired_pos);
   if (n_pos > 0)
     {
-      size_t *pos = (size_t *) obstack_finish (os);
+      off_t *pos = obstack_finish (os);
       fputs (prefix, stdout);
       for (size_t i = 0; i < n_pos; i++)
-        printf (" %lu", (unsigned long int) pos[i]);
+        {
+          intmax_t p = pos[i];
+          printf (" %"PRIdMAX, p);
+        }
       putchar ('\n');
     }
 }
@@ -1094,7 +1110,8 @@ get_stat_btime (struct stat const *st)
 }
 
 #if HAVE_STATX && defined STATX_INO
-static unsigned int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static unsigned int
 time_type_to_statx (void)
 {
   switch (time_type)
@@ -1113,7 +1130,8 @@ time_type_to_statx (void)
     return 0;
 }
 
-static unsigned int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static unsigned int
 calc_req_mask (void)
 {
   unsigned int mask = STATX_MODE;
@@ -1138,6 +1156,7 @@ calc_req_mask (void)
     case sort_name:
     case sort_version:
     case sort_extension:
+    case sort_width:
       break;
     case sort_time:
       mask |= time_type_to_statx ();
@@ -1153,12 +1172,12 @@ calc_req_mask (void)
 }
 
 static int
-do_statx (int fd, const char *name, struct stat *st, int flags,
+do_statx (int fd, char const *name, struct stat *st, int flags,
           unsigned int mask)
 {
   struct statx stx;
   bool want_btime = mask & STATX_BTIME;
-  int ret = statx (fd, name, flags, mask, &stx);
+  int ret = statx (fd, name, flags | AT_NO_AUTOMOUNT, mask, &stx);
   if (ret >= 0)
     {
       statx_to_stat (&stx, st);
@@ -1176,62 +1195,62 @@ do_statx (int fd, const char *name, struct stat *st, int flags,
   return ret;
 }
 
-static inline int
-do_stat (const char *name, struct stat *st)
+static int
+do_stat (char const *name, struct stat *st)
 {
   return do_statx (AT_FDCWD, name, st, 0, calc_req_mask ());
 }
 
-static inline int
-do_lstat (const char *name, struct stat *st)
+static int
+do_lstat (char const *name, struct stat *st)
 {
   return do_statx (AT_FDCWD, name, st, AT_SYMLINK_NOFOLLOW, calc_req_mask ());
 }
 
-static inline int
-stat_for_mode (const char *name, struct stat *st)
+static int
+stat_for_mode (char const *name, struct stat *st)
 {
   return do_statx (AT_FDCWD, name, st, 0, STATX_MODE);
 }
 
 /* dev+ino should be static, so no need to sync with backing store */
-static inline int
-stat_for_ino (const char *name, struct stat *st)
+static int
+stat_for_ino (char const *name, struct stat *st)
 {
   return do_statx (AT_FDCWD, name, st, 0, STATX_INO);
 }
 
-static inline int
+static int
 fstat_for_ino (int fd, struct stat *st)
 {
   return do_statx (fd, "", st, AT_EMPTY_PATH, STATX_INO);
 }
 #else
-static inline int
-do_stat (const char *name, struct stat *st)
+static int
+do_stat (char const *name, struct stat *st)
 {
   return stat (name, st);
 }
 
-static inline int
-do_lstat (const char *name, struct stat *st)
+static int
+do_lstat (char const *name, struct stat *st)
 {
   return lstat (name, st);
 }
 
-static inline int
-stat_for_mode (const char *name, struct stat *st)
+static int
+stat_for_mode (char const *name, struct stat *st)
 {
   return stat (name, st);
 }
 
-static inline int
-stat_for_ino (const char *name, struct stat *st)
+static int
+stat_for_ino (char const *name, struct stat *st)
 {
   return stat (name, st);
 }
 
-static inline int
+static int
 fstat_for_ino (int fd, struct stat *st)
 {
   return fstat (fd, st);
@@ -1242,7 +1261,8 @@ fstat_for_ino (int fd, struct stat *st)
    there is no such spec.  %5b etc. do not match, so that user
    widths/flags are honored.  */
 
-static char const * _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static char const *
 first_percent_b (char const *fmt)
 {
   for (; *fmt; fmt++)
@@ -1609,13 +1629,13 @@ signal_setup (bool init)
     }
 }
 
-static inline void
+static void
 signal_init (void)
 {
   signal_setup (true);
 }
 
-static inline void
+static void
 signal_restore (void)
 {
   signal_setup (false);
@@ -1654,6 +1674,15 @@ main (int argc, char **argv)
 
   /* Test print_with_color again, because the call to parse_ls_color
      may have just reset it -- e.g., if LS_COLORS is invalid.  */
+
+  if (print_with_color)
+    {
+      /* Don't use TAB characters in output.  Some terminal
+         emulators can't handle the combination of tabs and
+         color codes on the same line.  */
+      tabsize = 0;
+    }
+
   if (directories_first)
     check_symlink_mode = true;
   else if (print_with_color)
@@ -1751,7 +1780,7 @@ main (int argc, char **argv)
     {
       print_current_files ();
       if (pending_dirs)
-        DIRED_PUTCHAR ('\n');
+        dired_outbyte ('\n');
     }
   else if (n_files <= 1 && pending_dirs && pending_dirs->next == 0)
     print_dir_name = false;
@@ -1770,8 +1799,9 @@ main (int argc, char **argv)
                  Use its dev/ino numbers to remove the corresponding
                  entry from the active_dir_set hash table.  */
               struct dev_ino di = dev_ino_pop ();
-              struct dev_ino *found = hash_delete (active_dir_set, &di);
-              /* ASSERT_MATCHING_DEV_INO (thispend->realname, di); */
+              struct dev_ino *found = hash_remove (active_dir_set, &di);
+              if (false)
+                assert_matching_dev_ino (thispend->realname, di);
               assert (found);
               dev_ino_free (found);
               free_pending_ent (thispend);
@@ -1831,29 +1861,39 @@ main (int argc, char **argv)
   return exit_status;
 }
 
-/* Set the line length to the value given by SPEC.  Return true if
-   successful.  0 means no limit on line length.  */
+/* Return the line length indicated by the value given by SPEC, or -1
+   if unsuccessful.  0 means no limit on line length.  */
 
-static bool
-set_line_length (char const *spec)
+static ptrdiff_t
+decode_line_length (char const *spec)
 {
   uintmax_t val;
 
-  /* Treat too-large values as if they were SIZE_MAX, which is
+  /* Treat too-large values as if they were 0, which is
      effectively infinity.  */
   switch (xstrtoumax (spec, NULL, 0, &val, ""))
     {
     case LONGINT_OK:
-      line_length = MIN (val, SIZE_MAX);
-      return true;
+      return val <= MIN (PTRDIFF_MAX, SIZE_MAX) ? val : 0;
 
     case LONGINT_OVERFLOW:
-      line_length = SIZE_MAX;
-      return true;
+      return 0;
 
     default:
-      return false;
+      return -1;
     }
+}
+
+/* Return true if standard output is a tty, caching the result.  */
+
+static bool
+stdout_isatty (void)
+{
+  static signed char out_tty = -1;
+  if (out_tty < 0)
+    out_tty = isatty (STDOUT_FILENO);
+  assume (out_tty == 0 || out_tty == 1);
+  return out_tty;
 }
 
 /* Set all the option flags according to the switches specified.
@@ -1864,99 +1904,14 @@ decode_switches (int argc, char **argv)
 {
   char *time_style_option = NULL;
 
-  bool sort_type_specified = false;
+  /* These variables are false or -1 unless a switch says otherwise.  */
   bool kibibytes_specified = false;
-
-  qmark_funny_chars = false;
-
-  /* initialize all switches to default settings */
-
-  switch (ls_mode)
-    {
-    case LS_MULTI_COL:
-      /* This is for the 'dir' program.  */
-      format = many_per_line;
-      set_quoting_style (NULL, escape_quoting_style);
-      break;
-
-    case LS_LONG_FORMAT:
-      /* This is for the 'vdir' program.  */
-      format = long_format;
-      set_quoting_style (NULL, escape_quoting_style);
-      break;
-
-    case LS_LS:
-      /* This is for the 'ls' program.  */
-      if (isatty (STDOUT_FILENO))
-        {
-          format = many_per_line;
-          set_quoting_style (NULL, shell_escape_quoting_style);
-          /* See description of qmark_funny_chars, above.  */
-          qmark_funny_chars = true;
-        }
-      else
-        {
-          format = one_per_line;
-          qmark_funny_chars = false;
-        }
-      break;
-
-    default:
-      abort ();
-    }
-
-  time_type = time_mtime;
-  sort_type = sort_name;
-  sort_reverse = false;
-  numeric_ids = false;
-  print_block_size = false;
-  indicator_style = none;
-  print_inode = false;
-  dereference = DEREF_UNDEFINED;
-  recursive = false;
-  immediate_dirs = false;
-  ignore_mode = IGNORE_DEFAULT;
-  ignore_patterns = NULL;
-  hide_patterns = NULL;
-  print_scontext = false;
-
-  getenv_quoting_style ();
-
-  line_length = 80;
-  {
-    char const *p = getenv ("COLUMNS");
-    if (p && *p && ! set_line_length (p))
-      error (0, 0,
-             _("ignoring invalid width in environment variable COLUMNS: %s"),
-             quote (p));
-  }
-
-#ifdef TIOCGWINSZ
-  {
-    struct winsize ws;
-
-    if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws) != -1
-        && 0 < ws.ws_col && ws.ws_col == (size_t) ws.ws_col)
-      line_length = ws.ws_col;
-  }
-#endif
-
-  {
-    char const *p = getenv ("TABSIZE");
-    tabsize = 8;
-    if (p)
-      {
-        uintmax_t tmp;
-        if (xstrtoumax (p, NULL, 0, &tmp, "") == LONGINT_OK
-            && tmp <= SIZE_MAX)
-          tabsize = tmp;
-        else
-          error (0, 0,
-                 _("ignoring invalid tab size in environment variable TABSIZE:"
-                   " %s"),
-                 quote (p));
-      }
-  }
+  int format_opt = -1;
+  int hide_control_chars_opt = -1;
+  int quoting_style_opt = -1;
+  int sort_opt = -1;
+  ptrdiff_t tabsize_opt = -1;
+  ptrdiff_t width_opt = -1;
 
   while (true)
     {
@@ -1974,7 +1929,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'b':
-          set_quoting_style (NULL, escape_quoting_style);
+          quoting_style_opt = escape_quoting_style;
           break;
 
         case 'c':
@@ -1986,16 +1941,15 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'f':
-          /* Same as enabling -a -U and disabling -l -s.  */
+          /* Same as -a -U -1 --color=none --hyperlink=none,
+             while disabling -s.  */
           ignore_mode = IGNORE_MINIMAL;
-          sort_type = sort_none;
-          sort_type_specified = true;
-          /* disable -l */
-          if (format == long_format)
-            format = (isatty (STDOUT_FILENO) ? many_per_line : one_per_line);
-          print_block_size = false;	/* disable -s */
-          print_with_color = false;	/* disable --color */
-          print_hyperlink = false;	/* disable --hyperlink */
+          sort_opt = sort_none;
+          if (format_opt == long_format)
+            format_opt = -1;
+          print_with_color = false;
+          print_hyperlink = false;
+          print_block_size = false;
           break;
 
         case FILE_TYPE_INDICATOR_OPTION: /* --file-type */
@@ -2003,7 +1957,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'g':
-          format = long_format;
+          format_opt = long_format;
           print_owner = false;
           break;
 
@@ -2022,20 +1976,20 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'l':
-          format = long_format;
+          format_opt = long_format;
           break;
 
         case 'm':
-          format = with_commas;
+          format_opt = with_commas;
           break;
 
         case 'n':
           numeric_ids = true;
-          format = long_format;
+          format_opt = long_format;
           break;
 
         case 'o':  /* Just like -l, but don't display group info.  */
-          format = long_format;
+          format_opt = long_format;
           print_group = false;
           break;
 
@@ -2044,7 +1998,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'q':
-          qmark_funny_chars = true;
+          hide_control_chars_opt = true;
           break;
 
         case 'r':
@@ -2056,8 +2010,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case 't':
-          sort_type = sort_time;
-          sort_type_specified = true;
+          sort_opt = sort_time;
           break;
 
         case 'u':
@@ -2065,18 +2018,18 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'v':
-          sort_type = sort_version;
-          sort_type_specified = true;
+          sort_opt = sort_version;
           break;
 
         case 'w':
-          if (! set_line_length (optarg))
+          width_opt = decode_line_length (optarg);
+          if (width_opt < 0)
             die (LS_FAILURE, 0, "%s: %s", _("invalid line width"),
                  quote (optarg));
           break;
 
         case 'x':
-          format = horizontal;
+          format_opt = horizontal;
           break;
 
         case 'A':
@@ -2089,7 +2042,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'C':
-          format = many_per_line;
+          format_opt = many_per_line;
           break;
 
         case 'D':
@@ -2097,8 +2050,19 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'F':
-          indicator_style = classify;
-          break;
+          {
+            int i;
+            if (optarg)
+              i = XARGMATCH ("--classify", optarg, when_args, when_types);
+            else
+              /* Using --classify with no argument is equivalent to using
+                 --classify=always.  */
+              i = when_always;
+
+            if (i == when_always || (i == when_if_tty && stdout_isatty ()))
+              indicator_style = classify;
+            break;
+          }
 
         case 'G':		/* inhibit display of group info */
           print_group = false;
@@ -2121,11 +2085,11 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'N':
-          set_quoting_style (NULL, literal_quoting_style);
+          quoting_style_opt = literal_quoting_style;
           break;
 
         case 'Q':
-          set_quoting_style (NULL, c_quoting_style);
+          quoting_style_opt = c_quoting_style;
           break;
 
         case 'R':
@@ -2133,29 +2097,26 @@ decode_switches (int argc, char **argv)
           break;
 
         case 'S':
-          sort_type = sort_size;
-          sort_type_specified = true;
+          sort_opt = sort_size;
           break;
 
         case 'T':
-          tabsize = xnumtoumax (optarg, 0, 0, SIZE_MAX, "",
-                                _("invalid tab size"), LS_FAILURE);
+          tabsize_opt = xnumtoumax (optarg, 0, 0, MIN (PTRDIFF_MAX, SIZE_MAX),
+                                    "", _("invalid tab size"), LS_FAILURE);
           break;
 
         case 'U':
-          sort_type = sort_none;
-          sort_type_specified = true;
+          sort_opt = sort_none;
           break;
 
         case 'X':
-          sort_type = sort_extension;
-          sort_type_specified = true;
+          sort_opt = sort_extension;
           break;
 
         case '1':
           /* -1 has no effect after -l.  */
-          if (format != long_format)
-            format = one_per_line;
+          if (format_opt != long_format)
+            format_opt = one_per_line;
           break;
 
         case AUTHOR_OPTION:
@@ -2172,8 +2133,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case SORT_OPTION:
-          sort_type = XARGMATCH ("--sort", optarg, sort_args, sort_types);
-          sort_type_specified = true;
+          sort_opt = XARGMATCH ("--sort", optarg, sort_args, sort_types);
           break;
 
         case GROUP_DIRECTORIES_FIRST_OPTION:
@@ -2185,11 +2145,12 @@ decode_switches (int argc, char **argv)
           break;
 
         case FORMAT_OPTION:
-          format = XARGMATCH ("--format", optarg, format_args, format_types);
+          format_opt = XARGMATCH ("--format", optarg, format_args,
+                                  format_types);
           break;
 
         case FULL_TIME_OPTION:
-          format = long_format;
+          format_opt = long_format;
           time_style_option = bad_cast ("full-iso");
           break;
 
@@ -2204,16 +2165,7 @@ decode_switches (int argc, char **argv)
               i = when_always;
 
             print_with_color = (i == when_always
-                                || (i == when_if_tty
-                                    && isatty (STDOUT_FILENO)));
-
-            if (print_with_color)
-              {
-                /* Don't use TAB characters in output.  Some terminal
-                   emulators can't handle the combination of tabs and
-                   color codes on the same line.  */
-                tabsize = 0;
-              }
+                                || (i == when_if_tty && stdout_isatty ()));
             break;
           }
 
@@ -2228,8 +2180,7 @@ decode_switches (int argc, char **argv)
               i = when_always;
 
             print_hyperlink = (i == when_always
-                               || (i == when_if_tty
-                                   && isatty (STDOUT_FILENO)));
+                               || (i == when_if_tty && stdout_isatty ()));
             break;
           }
 
@@ -2240,10 +2191,9 @@ decode_switches (int argc, char **argv)
           break;
 
         case QUOTING_STYLE_OPTION:
-          set_quoting_style (NULL,
-                             XARGMATCH ("--quoting-style", optarg,
-                                        quoting_style_args,
-                                        quoting_style_vals));
+          quoting_style_opt = XARGMATCH ("--quoting-style", optarg,
+                                         quoting_style_args,
+                                         quoting_style_vals);
           break;
 
         case TIME_STYLE_OPTION:
@@ -2251,7 +2201,7 @@ decode_switches (int argc, char **argv)
           break;
 
         case SHOW_CONTROL_CHARS_OPTION:
-          qmark_funny_chars = false;
+          hide_control_chars_opt = false;
           break;
 
         case BLOCK_SIZE_OPTION:
@@ -2273,6 +2223,15 @@ decode_switches (int argc, char **argv)
 
         case 'Z':
           print_scontext = true;
+          break;
+
+        case ZERO_OPTION:
+          eolbyte = 0;
+          hide_control_chars_opt = false;
+          if (format_opt != long_format)
+            format_opt = one_per_line;
+          print_with_color = false;
+          quoting_style_opt = literal_quoting_style;
           break;
 
         case_GETOPT_HELP_CHAR;
@@ -2301,19 +2260,102 @@ decode_switches (int argc, char **argv)
         }
     }
 
+  format = (0 <= format_opt ? format_opt
+            : ls_mode == LS_LS ? (stdout_isatty ()
+                                  ? many_per_line : one_per_line)
+            : ls_mode == LS_MULTI_COL ? many_per_line
+            : /* ls_mode == LS_LONG_FORMAT */ long_format);
+
+  /* If the line length was not set by a switch but is needed to determine
+     output, go to the work of obtaining it from the environment.  */
+  ptrdiff_t linelen = width_opt;
+  if (format == many_per_line || format == horizontal || format == with_commas
+      || print_with_color)
+    {
+#ifdef TIOCGWINSZ
+      if (linelen < 0)
+        {
+          /* Suppress bogus warning re comparing ws.ws_col to big integer.  */
+# if 4 < __GNUC__ + (6 <= __GNUC_MINOR__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wtype-limits"
+# endif
+          struct winsize ws;
+          if (stdout_isatty ()
+              && 0 <= ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws)
+              && 0 < ws.ws_col)
+            linelen = ws.ws_col <= MIN (PTRDIFF_MAX, SIZE_MAX) ? ws.ws_col : 0;
+# if 4 < __GNUC__ + (6 <= __GNUC_MINOR__)
+#  pragma GCC diagnostic pop
+# endif
+        }
+#endif
+      if (linelen < 0)
+        {
+          char const *p = getenv ("COLUMNS");
+          if (p && *p)
+            {
+              linelen = decode_line_length (p);
+              if (linelen < 0)
+                error (0, 0,
+                       _("ignoring invalid width"
+                         " in environment variable COLUMNS: %s"),
+                       quote (p));
+            }
+        }
+    }
+
+  line_length = linelen < 0 ? 80 : linelen;
+
   /* Determine the max possible number of display columns.  */
   max_idx = line_length / MIN_COLUMN_WIDTH;
   /* Account for first display column not having a separator,
      or line_lengths shorter than MIN_COLUMN_WIDTH.  */
   max_idx += line_length % MIN_COLUMN_WIDTH != 0;
 
-  enum quoting_style qs = get_quoting_style (NULL);
-  align_variable_outer_quotes = format != with_commas
-                                && format != one_per_line
-                                && (line_length || format == long_format)
-                                && (qs == shell_quoting_style
-                                    || qs == shell_escape_quoting_style
-                                    || qs == c_maybe_quoting_style);
+  if (format == many_per_line || format == horizontal || format == with_commas)
+    {
+      if (0 <= tabsize_opt)
+        tabsize = tabsize_opt;
+      else
+        {
+          tabsize = 8;
+          char const *p = getenv ("TABSIZE");
+          if (p)
+            {
+              uintmax_t tmp;
+              if (xstrtoumax (p, NULL, 0, &tmp, "") == LONGINT_OK
+                  && tmp <= SIZE_MAX)
+                tabsize = tmp;
+              else
+                error (0, 0,
+                       _("ignoring invalid tab size"
+                         " in environment variable TABSIZE: %s"),
+                       quote (p));
+            }
+        }
+    }
+
+  qmark_funny_chars = (hide_control_chars_opt < 0
+                       ? ls_mode == LS_LS && stdout_isatty ()
+                       : hide_control_chars_opt);
+
+  int qs = quoting_style_opt;
+  if (qs < 0)
+    qs = getenv_quoting_style ();
+  if (qs < 0)
+    qs = (ls_mode == LS_LS
+          ? (stdout_isatty () ? shell_escape_quoting_style : -1)
+          : escape_quoting_style);
+  if (0 <= qs)
+    set_quoting_style (NULL, qs);
+  qs = get_quoting_style (NULL);
+  align_variable_outer_quotes
+    = ((format == long_format
+        || ((format == many_per_line || format == horizontal) && line_length))
+       && (qs == shell_quoting_style
+           || qs == shell_escape_quoting_style
+           || qs == c_maybe_quoting_style));
   filename_quoting_options = clone_quoting_options (NULL);
   if (qs == escape_quoting_style)
     set_char_quoting (filename_quoting_options, ' ', 1);
@@ -2327,11 +2369,13 @@ decode_switches (int argc, char **argv)
   dirname_quoting_options = clone_quoting_options (NULL);
   set_char_quoting (dirname_quoting_options, ':', 1);
 
-  /* --dired is meaningful only with --format=long (-l).
+  /* --dired is meaningful only with --format=long (-l) and sans --hyperlink.
      Otherwise, ignore it.  FIXME: warn about this?
      Alternatively, make --dired imply --format=long?  */
-  if (dired && (format != long_format || print_hyperlink))
-    dired = false;
+  dired &= (format == long_format) & !print_hyperlink;
+
+  if (eolbyte < dired)
+    die (LS_FAILURE, 0, _("--dired and --zero are incompatible"));
 
   /* If -c or -u is specified and not -l (or any other option that implies -l),
      and no sort-type was specified, then sort by the ctime (-c) or atime (-u).
@@ -2341,12 +2385,11 @@ decode_switches (int argc, char **argv)
      -lu means show atime and sort by name, -lut means show atime and sort
      by atime.  */
 
-  if ((time_type == time_ctime || time_type == time_atime
-       || time_type == time_btime)
-      && !sort_type_specified && format != long_format)
-    {
-      sort_type = sort_time;
-    }
+  sort_type = (0 <= sort_opt ? sort_opt
+               : (format != long_format
+                  && (time_type == time_ctime || time_type == time_atime
+                      || time_type == time_btime))
+               ? sort_time : sort_name);
 
   if (format == long_format)
     {
@@ -2451,7 +2494,7 @@ decode_switches (int argc, char **argv)
    the input string, respectively.  */
 
 static bool
-get_funky_string (char **dest, const char **src, bool equals_end,
+get_funky_string (char **dest, char const **src, bool equals_end,
                   size_t *output_count)
 {
   char num;			/* For numerical codes */
@@ -2459,7 +2502,7 @@ get_funky_string (char **dest, const char **src, bool equals_end,
   enum {
     ST_GND, ST_BACKSLASH, ST_OCTAL, ST_HEX, ST_CARET, ST_END, ST_ERROR
   } state;
-  const char *p;
+  char const *p;
   char *q;
 
   p = *src;			/* We don't want to double-indirect */
@@ -2682,7 +2725,7 @@ known_term_type (void)
 static void
 parse_ls_color (void)
 {
-  const char *p;		/* Pointer to character being parsed */
+  char const *p;		/* Pointer to character being parsed */
   char *buf;			/* color_buf buffer pointer */
   int ind_no;			/* Indicator number */
   char label[3];		/* Indicator label */
@@ -2821,23 +2864,25 @@ parse_ls_color (void)
     color_symlink_as_referent = true;
 }
 
-/* Set the quoting style default if the environment variable
-   QUOTING_STYLE is set.  */
+/* Return the quoting style specified by the environment variable
+   QUOTING_STYLE if set and valid, -1 otherwise.  */
 
-static void
+static int
 getenv_quoting_style (void)
 {
   char const *q_style = getenv ("QUOTING_STYLE");
-  if (q_style)
+  if (!q_style)
+    return -1;
+  int i = ARGMATCH (q_style, quoting_style_args, quoting_style_vals);
+  if (i < 0)
     {
-      int i = ARGMATCH (q_style, quoting_style_args, quoting_style_vals);
-      if (0 <= i)
-        set_quoting_style (NULL, quoting_style_vals[i]);
-      else
-        error (0, 0,
-       _("ignoring invalid value of environment variable QUOTING_STYLE: %s"),
-               quote (q_style));
+      error (0, 0,
+             _("ignoring invalid value"
+               " of environment variable QUOTING_STYLE: %s"),
+             quote (q_style));
+      return -1;
     }
+  return quoting_style_vals[i];
 }
 
 /* Set the exit status to report a failure.  If SERIOUS, it is a
@@ -2896,7 +2941,6 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
   struct dirent *next;
   uintmax_t total_blocks = 0;
   static bool first = true;
-  bool found_any_entries = false;
 
   errno = 0;
   dirp = opendir (name);
@@ -2941,9 +2985,9 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
   if (recursive || print_dir_name)
     {
       if (!first)
-        DIRED_PUTCHAR ('\n');
+        dired_outbyte ('\n');
       first = false;
-      DIRED_INDENT ();
+      dired_indent ();
 
       char *absolute_name = NULL;
       if (print_hyperlink)
@@ -2958,13 +3002,13 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
 
       free (absolute_name);
 
-      DIRED_FPUTS_LITERAL (":\n", stdout);
+      dired_outstring (":\n");
     }
 
   /* Read the directory entries, and insert the subfiles into the 'cwd_file'
      table.  */
 
-  while (1)
+  while (true)
     {
       /* Set errno to zero so we can distinguish between a readdir failure
          and when readdir simply finds that there are no more entries.  */
@@ -2972,7 +3016,6 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
       next = readdir (dirp);
       if (next)
         {
-          found_any_entries = true;
           if (! file_ignored (next->d_name))
             {
               enum filetype type = unknown;
@@ -3018,22 +3061,6 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
           if (errno != EOVERFLOW)
             break;
         }
-#ifdef __linux__
-      else if (! found_any_entries)
-        {
-          /* If readdir finds no directory entries at all, not even "." or
-             "..", then double check that the directory exists.  */
-          if (syscall (SYS_getdents, dirfd (dirp), NULL, 0) == -1
-              && errno != EINVAL)
-            {
-              /* We exclude EINVAL as that pertains to buffer handling,
-                 and we've passed NULL as the buffer for simplicity.
-                 ENOENT is returned if appropriate before buffer handling.  */
-              file_failure (command_line_arg, _("reading directory %s"), name);
-            }
-          break;
-        }
-#endif
       else
         break;
 
@@ -3060,17 +3087,15 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
 
   if (format == long_format || print_block_size)
     {
-      const char *p;
-      char buf[LONGEST_HUMAN_READABLE + 1];
-
-      DIRED_INDENT ();
-      p = _("total");
-      DIRED_FPUTS (p, stdout, strlen (p));
-      DIRED_PUTCHAR (' ');
-      p = human_readable (total_blocks, buf, human_output_opts,
-                          ST_NBLOCKSIZE, output_block_size);
-      DIRED_FPUTS (p, stdout, strlen (p));
-      DIRED_PUTCHAR ('\n');
+      char buf[LONGEST_HUMAN_READABLE + 3];
+      char *p = human_readable (total_blocks, buf + 1, human_output_opts,
+                                ST_NBLOCKSIZE, output_block_size);
+      char *pend = p + strlen (p);
+      *--p = ' ';
+      *pend++ = eolbyte;
+      dired_indent ();
+      dired_outstring (_("total"));
+      dired_outbuf (p, pend - p);
     }
 
   if (cwd_n_used)
@@ -3081,7 +3106,7 @@ print_dir (char const *name, char const *realname, bool command_line_arg)
    not listed.  */
 
 static void
-add_ignore_pattern (const char *pattern)
+add_ignore_pattern (char const *pattern)
 {
   struct ignore_pattern *ignore;
 
@@ -3152,7 +3177,7 @@ has_capability (char const *name)
 }
 #else
 static bool
-has_capability (char const *name _GL_UNUSED)
+has_capability (MAYBE_UNUSED char const *name)
 {
   errno = ENOTSUP;
   return false;
@@ -3287,7 +3312,7 @@ has_capability_cache (char const *file, struct fileinfo *f)
 }
 
 static bool
-needs_quoting (char const* name)
+needs_quoting (char const *name)
 {
   char test[2];
   size_t len = quotearg_buffer (test, sizeof test , name, -1,
@@ -3434,6 +3459,9 @@ gobble_file (char const *name, enum filetype type, ino_t inode,
              provokes an exit status of 1.  */
           file_failure (command_line_arg,
                         _("cannot access %s"), full_name);
+
+          f->scontext = UNKNOWN_SECURITY_CONTEXT;
+
           if (command_line_arg)
             return 0;
 
@@ -3685,7 +3713,7 @@ make_link_name (char const *name, char const *linkname)
    This is so we don't try to recurse on '././././. ...' */
 
 static bool
-basename_is_dot_or_dotdot (const char *name)
+basename_is_dot_or_dotdot (char const *name)
 {
   char const *base = last_component (name);
   return dot_or_dotdot (base);
@@ -3775,20 +3803,14 @@ xstrcoll (char const *a, char const *b)
 typedef void const *V;
 typedef int (*qsortFunc)(V a, V b);
 
-/* Used below in DEFINE_SORT_FUNCTIONS for _df_ sort function variants.
-   The do { ... } while(0) makes it possible to use the macro more like
-   a statement, without violating C89 rules: */
-#define DIRFIRST_CHECK(a, b)						\
-  do									\
-    {									\
-      bool a_is_dir = is_linked_directory ((struct fileinfo const *) a);\
-      bool b_is_dir = is_linked_directory ((struct fileinfo const *) b);\
-      if (a_is_dir && !b_is_dir)					\
-        return -1;         /* a goes before b */			\
-      if (!a_is_dir && b_is_dir)					\
-        return 1;          /* b goes before a */			\
-    }									\
-  while (0)
+/* Used below in DEFINE_SORT_FUNCTIONS for _df_ sort function variants.  */
+static int
+dirfirst_check (struct fileinfo const *a, struct fileinfo const *b,
+                int (*cmp) (V, V))
+{
+  int diff = is_linked_directory (b) - is_linked_directory (a);
+  return diff ? diff : cmp (a, b);
+}
 
 /* Define the 8 different sort function variants required for each sortkey.
    KEY_NAME is a token describing the sort key, e.g., ctime, atime, size.
@@ -3799,28 +3821,28 @@ typedef int (*qsortFunc)(V a, V b);
   /* direct, non-dirfirst versions */					\
   static int xstrcoll_##key_name (V a, V b)				\
   { return key_cmp_func (a, b, xstrcoll); }				\
-  static int _GL_ATTRIBUTE_PURE strcmp_##key_name (V a, V b)		\
+  ATTRIBUTE_PURE static int strcmp_##key_name (V a, V b)		\
   { return key_cmp_func (a, b, strcmp); }				\
                                                                         \
   /* reverse, non-dirfirst versions */					\
   static int rev_xstrcoll_##key_name (V a, V b)				\
   { return key_cmp_func (b, a, xstrcoll); }				\
-  static int _GL_ATTRIBUTE_PURE rev_strcmp_##key_name (V a, V b)	\
+  ATTRIBUTE_PURE static int rev_strcmp_##key_name (V a, V b)	\
   { return key_cmp_func (b, a, strcmp); }				\
                                                                         \
   /* direct, dirfirst versions */					\
   static int xstrcoll_df_##key_name (V a, V b)				\
-  { DIRFIRST_CHECK (a, b); return key_cmp_func (a, b, xstrcoll); }	\
-  static int _GL_ATTRIBUTE_PURE strcmp_df_##key_name (V a, V b)		\
-  { DIRFIRST_CHECK (a, b); return key_cmp_func (a, b, strcmp); }	\
+  { return dirfirst_check (a, b, xstrcoll_##key_name); }		\
+  ATTRIBUTE_PURE static int strcmp_df_##key_name (V a, V b)		\
+  { return dirfirst_check (a, b, strcmp_##key_name); }			\
                                                                         \
   /* reverse, dirfirst versions */					\
   static int rev_xstrcoll_df_##key_name (V a, V b)			\
-  { DIRFIRST_CHECK (a, b); return key_cmp_func (b, a, xstrcoll); }	\
-  static int _GL_ATTRIBUTE_PURE rev_strcmp_df_##key_name (V a, V b)	\
-  { DIRFIRST_CHECK (a, b); return key_cmp_func (b, a, strcmp); }
+  { return dirfirst_check (a, b, rev_xstrcoll_##key_name); }		\
+  ATTRIBUTE_PURE static int rev_strcmp_df_##key_name (V a, V b)	\
+  { return dirfirst_check (a, b, rev_strcmp_##key_name); }
 
-static inline int
+static int
 cmp_ctime (struct fileinfo const *a, struct fileinfo const *b,
            int (*cmp) (char const *, char const *))
 {
@@ -3829,7 +3851,7 @@ cmp_ctime (struct fileinfo const *a, struct fileinfo const *b,
   return diff ? diff : cmp (a->name, b->name);
 }
 
-static inline int
+static int
 cmp_mtime (struct fileinfo const *a, struct fileinfo const *b,
            int (*cmp) (char const *, char const *))
 {
@@ -3838,7 +3860,7 @@ cmp_mtime (struct fileinfo const *a, struct fileinfo const *b,
   return diff ? diff : cmp (a->name, b->name);
 }
 
-static inline int
+static int
 cmp_atime (struct fileinfo const *a, struct fileinfo const *b,
            int (*cmp) (char const *, char const *))
 {
@@ -3847,7 +3869,7 @@ cmp_atime (struct fileinfo const *a, struct fileinfo const *b,
   return diff ? diff : cmp (a->name, b->name);
 }
 
-static inline int
+static int
 cmp_btime (struct fileinfo const *a, struct fileinfo const *b,
            int (*cmp) (char const *, char const *))
 {
@@ -3856,15 +3878,21 @@ cmp_btime (struct fileinfo const *a, struct fileinfo const *b,
   return diff ? diff : cmp (a->name, b->name);
 }
 
-static inline int
+static int
+off_cmp (off_t a, off_t b)
+{
+  return a < b ? -1 : a > b;
+}
+
+static int
 cmp_size (struct fileinfo const *a, struct fileinfo const *b,
           int (*cmp) (char const *, char const *))
 {
-  int diff = longdiff (b->stat.st_size, a->stat.st_size);
+  int diff = off_cmp (b->stat.st_size, a->stat.st_size);
   return diff ? diff : cmp (a->name, b->name);
 }
 
-static inline int
+static int
 cmp_name (struct fileinfo const *a, struct fileinfo const *b,
           int (*cmp) (char const *, char const *))
 {
@@ -3874,13 +3902,32 @@ cmp_name (struct fileinfo const *a, struct fileinfo const *b,
 /* Compare file extensions.  Files with no extension are 'smallest'.
    If extensions are the same, compare by file names instead.  */
 
-static inline int
+static int
 cmp_extension (struct fileinfo const *a, struct fileinfo const *b,
                int (*cmp) (char const *, char const *))
 {
   char const *base1 = strrchr (a->name, '.');
   char const *base2 = strrchr (b->name, '.');
   int diff = cmp (base1 ? base1 : "", base2 ? base2 : "");
+  return diff ? diff : cmp (a->name, b->name);
+}
+
+/* Return the (cached) screen width,
+   for the NAME associated with the passed fileinfo F.  */
+
+static size_t
+fileinfo_name_width (struct fileinfo const *f)
+{
+  return f->width
+         ? f->width
+         : quote_name_width (f->name, filename_quoting_options, f->quoted);
+}
+
+static int
+cmp_width (struct fileinfo const *a, struct fileinfo const *b,
+          int (*cmp) (char const *, char const *))
+{
+  int diff = fileinfo_name_width (a) - fileinfo_name_width (b);
   return diff ? diff : cmp (a->name, b->name);
 }
 
@@ -3891,30 +3938,45 @@ DEFINE_SORT_FUNCTIONS (btime, cmp_btime)
 DEFINE_SORT_FUNCTIONS (size, cmp_size)
 DEFINE_SORT_FUNCTIONS (name, cmp_name)
 DEFINE_SORT_FUNCTIONS (extension, cmp_extension)
+DEFINE_SORT_FUNCTIONS (width, cmp_width)
 
 /* Compare file versions.
-   Unlike all other compare functions above, cmp_version depends only
-   on filevercmp, which does not fail (even for locale reasons), and does not
-   need a secondary sort key. See lib/filevercmp.h for function description.
+   Unlike the other compare functions, cmp_version does not fail
+   because filevercmp and strcmp do not fail; cmp_version uses strcmp
+   instead of xstrcoll because filevercmp is locale-independent so
+   strcmp is its appropriate secondary.
 
-   All the other sort options, in fact, need xstrcoll and strcmp variants,
-   because they all use a string comparison (either as the primary or secondary
+   All the other sort options need xstrcoll and strcmp variants,
+   because they all use xstrcoll (either as the primary or secondary
    sort key), and xstrcoll has the ability to do a longjmp if strcoll fails for
-   locale reasons.  Lastly, filevercmp is ALWAYS available with gnulib.  */
-static inline int
+   locale reasons.  */
+static int
 cmp_version (struct fileinfo const *a, struct fileinfo const *b)
 {
-  return filevercmp (a->name, b->name);
+  int diff = filevercmp (a->name, b->name);
+  return diff ? diff : strcmp (a->name, b->name);
 }
 
-static int xstrcoll_version (V a, V b)
-{ return cmp_version (a, b); }
-static int rev_xstrcoll_version (V a, V b)
-{ return cmp_version (b, a); }
-static int xstrcoll_df_version (V a, V b)
-{ DIRFIRST_CHECK (a, b); return cmp_version (a, b); }
-static int rev_xstrcoll_df_version (V a, V b)
-{ DIRFIRST_CHECK (a, b); return cmp_version (b, a); }
+static int
+xstrcoll_version (V a, V b)
+{
+  return cmp_version (a, b);
+}
+static int
+rev_xstrcoll_version (V a, V b)
+{
+  return cmp_version (b, a);
+}
+static int
+xstrcoll_df_version (V a, V b)
+{
+  return dirfirst_check (a, b, xstrcoll_version);
+}
+static int
+rev_xstrcoll_df_version (V a, V b)
+{
+  return dirfirst_check (a, b, rev_xstrcoll_version);
+}
 
 
 /* We have 2^3 different variants for each sort-key function
@@ -3943,6 +4005,7 @@ static qsortFunc const sort_functions[][2][2][2] =
   {
     LIST_SORTFUNCTION_VARIANTS (name),
     LIST_SORTFUNCTION_VARIANTS (extension),
+    LIST_SORTFUNCTION_VARIANTS (width),
     LIST_SORTFUNCTION_VARIANTS (size),
 
     {
@@ -3970,14 +4033,15 @@ static qsortFunc const sort_functions[][2][2][2] =
 
 /* The number of sort keys is calculated as the sum of
      the number of elements in the sort_type enum (i.e., sort_numtypes)
-     the number of elements in the time_type enum (i.e., time_numtypes) - 1
+     -2 because neither sort_time nor sort_none use entries themselves
+     the number of elements in the time_type enum (i.e., time_numtypes)
    This is because when sort_type==sort_time, we have up to
    time_numtypes possible sort keys.
 
    This line verifies at compile-time that the array of sort functions has been
    initialized for all possible sort keys. */
 verify (ARRAY_CARDINALITY (sort_functions)
-        == sort_numtypes + time_numtypes - 1 );
+        == sort_numtypes - 2 + time_numtypes);
 
 /* Set up SORTED_FILE to point to the in-use entries in CWD_FILE, in order.  */
 
@@ -3986,6 +4050,24 @@ initialize_ordering_vector (void)
 {
   for (size_t i = 0; i < cwd_n_used; i++)
     sorted_file[i] = &cwd_file[i];
+}
+
+/* Cache values based on attributes global to all files.  */
+
+static void
+update_current_files_info (void)
+{
+  /* Cache screen width of name, if needed multiple times.  */
+  if (sort_type == sort_width
+      || (line_length && (format == many_per_line || format == horizontal)))
+    {
+      size_t i;
+      for (i = 0; i < cwd_n_used; i++)
+        {
+          struct fileinfo *f = sorted_file[i];
+          f->width = fileinfo_name_width (f);
+        }
+    }
 }
 
 /* Sort the files now in the table.  */
@@ -4003,6 +4085,8 @@ sort_files (void)
     }
 
   initialize_ordering_vector ();
+
+  update_current_files_info ();
 
   if (sort_type == sort_none)
     return;
@@ -4041,7 +4125,7 @@ print_current_files (void)
       for (i = 0; i < cwd_n_used; i++)
         {
           print_file_name_and_frills (sorted_file[i], 0);
-          putchar ('\n');
+          putchar (eolbyte);
         }
       break;
 
@@ -4068,7 +4152,7 @@ print_current_files (void)
         {
           set_normal_color ();
           print_long_format (sorted_file[i]);
-          DIRED_PUTCHAR ('\n');
+          dired_outbyte (eolbyte);
         }
       break;
     }
@@ -4128,28 +4212,20 @@ long_time_expected_width (void)
    print width of WIDTH columns.  */
 
 static void
-format_user_or_group (char const *name, unsigned long int id, int width)
+format_user_or_group (char const *name, uintmax_t id, int width)
 {
-  size_t len;
-
   if (name)
     {
       int width_gap = width - mbswidth (name, 0);
       int pad = MAX (0, width_gap);
-      fputs (name, stdout);
-      len = strlen (name) + pad;
+      dired_outstring (name);
 
       do
-        putchar (' ');
+        dired_outbyte (' ');
       while (pad--);
     }
   else
-    {
-      printf ("%*lu ", width, id);
-      len = width;
-    }
-
-  dired_pos += len + 1;
+    dired_pos += printf ("%*"PRIuMAX" ", width, id);
 }
 
 /* Print the name or id of the user with id U, using a print width of
@@ -4174,7 +4250,7 @@ format_group (gid_t g, int width, bool stat_ok)
 /* Return the number of columns that format_user_or_group will print.  */
 
 static int
-format_user_or_group_width (char const *name, unsigned long int id)
+format_user_or_group_width (char const *name, uintmax_t id)
 {
   if (name)
     {
@@ -4182,11 +4258,7 @@ format_user_or_group_width (char const *name, unsigned long int id)
       return MAX (0, len);
     }
   else
-    {
-      char buf[INT_BUFSIZE_BOUND (id)];
-      sprintf (buf, "%lu", id);
-      return strlen (buf);
-    }
+    return snprintf (NULL, 0, "%"PRIuMAX, id);
 }
 
 /* Return the number of columns that format_user will print.  */
@@ -4279,11 +4351,8 @@ print_long_format (const struct fileinfo *f)
   if (print_inode)
     {
       char hbuf[INT_BUFSIZE_BOUND (uintmax_t)];
-      sprintf (p, "%*s ", inode_number_width,
-               format_inode (hbuf, sizeof hbuf, f));
-      /* Increment by strlen (p) here, rather than by inode_number_width + 1.
-         The latter is wrong when inode_number_width is zero.  */
-      p += strlen (p);
+      p += sprintf (p, "%*s ", inode_number_width,
+                    format_inode (hbuf, sizeof hbuf, f));
     }
 
   if (print_block_size)
@@ -4306,19 +4375,15 @@ print_long_format (const struct fileinfo *f)
      "optional alternate access method flag".  */
   {
     char hbuf[INT_BUFSIZE_BOUND (uintmax_t)];
-    sprintf (p, "%s %*s ", modebuf, nlink_width,
-             ! f->stat_ok ? "?" : umaxtostr (f->stat.st_nlink, hbuf));
+    p += sprintf (p, "%s %*s ", modebuf, nlink_width,
+                  ! f->stat_ok ? "?" : umaxtostr (f->stat.st_nlink, hbuf));
   }
-  /* Increment by strlen (p) here, rather than by, e.g.,
-     sizeof modebuf - 2 + any_has_acl + 1 + nlink_width + 1.
-     The latter is wrong when nlink_width is zero.  */
-  p += strlen (p);
 
-  DIRED_INDENT ();
+  dired_indent ();
 
   if (print_owner || print_group || print_author || print_scontext)
     {
-      DIRED_FPUTS (buf, stdout, p - buf);
+      dired_outbuf (buf, p - buf);
 
       if (print_owner)
         format_user (f->stat.st_uid, owner_width, f->stat_ok);
@@ -4343,12 +4408,11 @@ print_long_format (const struct fileinfo *f)
       int blanks_width = (file_size_width
                           - (major_device_number_width + 2
                              + minor_device_number_width));
-      sprintf (p, "%*s, %*s ",
-               major_device_number_width + MAX (0, blanks_width),
-               umaxtostr (major (f->stat.st_rdev), majorbuf),
-               minor_device_number_width,
-               umaxtostr (minor (f->stat.st_rdev), minorbuf));
-      p += file_size_width + 1;
+      p += sprintf (p, "%*s, %*s ",
+                    major_device_number_width + MAX (0, blanks_width),
+                    umaxtostr (major (f->stat.st_rdev), majorbuf),
+                    minor_device_number_width,
+                    umaxtostr (minor (f->stat.st_rdev), minorbuf));
     }
   else
     {
@@ -4390,7 +4454,7 @@ print_long_format (const struct fileinfo *f)
       six_months_ago.tv_nsec = current_time.tv_nsec;
 
       recent = (timespec_cmp (six_months_ago, when_timespec) < 0
-                && (timespec_cmp (when_timespec, current_time) < 0));
+                && timespec_cmp (when_timespec, current_time) < 0);
 
       /* We assume here that all time zones are offset from UTC by a
          whole number of seconds.  */
@@ -4402,31 +4466,27 @@ print_long_format (const struct fileinfo *f)
     {
       p += s;
       *p++ = ' ';
-
-      /* NUL-terminate the string -- fputs (via DIRED_FPUTS) requires it.  */
-      *p = '\0';
     }
   else
     {
       /* The time cannot be converted using the desired format, so
          print it as a huge integer number of seconds.  */
       char hbuf[INT_BUFSIZE_BOUND (intmax_t)];
-      sprintf (p, "%*s ", long_time_expected_width (),
-               (! f->stat_ok || ! btime_ok
-                ? "?"
-                : timetostr (when_timespec.tv_sec, hbuf)));
+      p += sprintf (p, "%*s ", long_time_expected_width (),
+                    (! f->stat_ok || ! btime_ok
+                     ? "?"
+                     : timetostr (when_timespec.tv_sec, hbuf)));
       /* FIXME: (maybe) We discarded when_timespec.tv_nsec. */
-      p += strlen (p);
     }
 
-  DIRED_FPUTS (buf, stdout, p - buf);
+  dired_outbuf (buf, p - buf);
   size_t w = print_name_with_quoting (f, false, &dired_obstack, p - buf);
 
   if (f->filetype == symbolic_link)
     {
       if (f->linkname)
         {
-          DIRED_FPUTS_LITERAL (" -> ", stdout);
+          dired_outstring (" -> ");
           print_name_with_quoting (f, true, NULL, (p - buf) + w + 4);
           if (indicator_style != none)
             print_type_indicator (true, f->linkmode, unknown);
@@ -4638,7 +4698,7 @@ quote_name_buf (char **inbuf, size_t bufsize, char *name,
 }
 
 static size_t
-quote_name_width (const char *name, struct quoting_options const *options,
+quote_name_width (char const *name, struct quoting_options const *options,
                   int needs_general_quoting)
 {
   char smallbuf[BUFSIZ];
@@ -4660,7 +4720,7 @@ quote_name_width (const char *name, struct quoting_options const *options,
 /* %XX escape any input out of range as defined in RFC3986,
    and also if PATH, convert all path separators to '/'.  */
 static char *
-file_escape (const char *str, bool path)
+file_escape (char const *str, bool path)
 {
   char *esc = xnmalloc (3, strlen (str) + 1);
   char *p = esc;
@@ -4694,7 +4754,7 @@ quote_name (char const *name, struct quoting_options const *options,
                         needs_general_quoting, NULL, &pad);
 
   if (pad && allow_pad)
-      DIRED_PUTCHAR (' ');
+    dired_outbyte (' ');
 
   if (color)
     print_color_indicator (color);
@@ -4723,14 +4783,14 @@ quote_name (char const *name, struct quoting_options const *options,
     }
 
   if (stack)
-    PUSH_CURRENT_DIRED_POS (stack);
+    push_current_dired_pos (stack);
 
   fwrite (buf + skip_quotes, 1, len - (skip_quotes * 2), stdout);
 
   dired_pos += len;
 
   if (stack)
-    PUSH_CURRENT_DIRED_POS (stack);
+    push_current_dired_pos (stack);
 
   if (absolute_name)
     {
@@ -4751,7 +4811,7 @@ print_name_with_quoting (const struct fileinfo *f,
                          struct obstack *stack,
                          size_t start_col)
 {
-  const char* name = symlink_target ? f->linkname : f->name;
+  char const *name = symlink_target ? f->linkname : f->name;
 
   const struct bin_str *color = print_with_color ?
                                 get_color_indicator (f, symlink_target) : NULL;
@@ -4865,7 +4925,7 @@ print_type_indicator (bool stat_ok, mode_t mode, enum filetype type)
 {
   char c = get_type_indicator (stat_ok, mode, type);
   if (c)
-    DIRED_PUTCHAR (c);
+    dired_outbyte (c);
   return !!c;
 }
 
@@ -4887,14 +4947,15 @@ print_color_indicator (const struct bin_str *ind)
 }
 
 /* Returns color indicator or NULL if none.  */
-static const struct bin_str* _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static const struct bin_str*
 get_color_indicator (const struct fileinfo *f, bool symlink_target)
 {
   enum indicator_no type;
   struct color_ext_type *ext;	/* Color extension */
   size_t len;			/* Length of name */
 
-  const char* name;
+  char const *name;
   mode_t mode;
   int linkok;
   if (symlink_target)
@@ -4906,7 +4967,7 @@ get_color_indicator (const struct fileinfo *f, bool symlink_target)
   else
     {
       name = f->name;
-      mode = FILE_OR_LINK_MODE (f);
+      mode = file_or_link_mode (f);
       linkok = f->linkok;
     }
 
@@ -5040,7 +5101,7 @@ length_of_file_name_and_frills (const struct fileinfo *f)
   if (print_scontext)
     len += 1 + (format == with_commas ? strlen (f->scontext) : scontext_width);
 
-  len += quote_name_width (f->name, filename_quoting_options, f->quoted);
+  len += fileinfo_name_width (f);
 
   if (indicator_style != none)
     {
@@ -5069,7 +5130,7 @@ print_many_per_line (void)
       size_t pos = 0;
 
       /* Print the next row.  */
-      while (1)
+      while (true)
         {
           struct fileinfo const *f = sorted_file[filesno];
           size_t name_length = length_of_file_name_and_frills (f);
@@ -5083,7 +5144,7 @@ print_many_per_line (void)
           indent (pos + name_length, pos + max_name_length);
           pos += max_name_length;
         }
-      putchar ('\n');
+      putchar (eolbyte);
     }
 }
 
@@ -5108,7 +5169,7 @@ print_horizontal (void)
 
       if (col == 0)
         {
-          putchar ('\n');
+          putchar (eolbyte);
           pos = 0;
         }
       else
@@ -5123,7 +5184,7 @@ print_horizontal (void)
       name_length = length_of_file_name_and_frills (f);
       max_name_length = line_fmt->col_arr[col];
     }
-  putchar ('\n');
+  putchar (eolbyte);
 }
 
 /* Output name + SEP + ' '.  */
@@ -5153,7 +5214,7 @@ print_with_separator (char sep)
           else
             {
               pos = 0;
-              separator = '\n';
+              separator = eolbyte;
             }
 
           putchar (sep);
@@ -5163,7 +5224,7 @@ print_with_separator (char sep)
       print_file_name_and_frills (f, pos);
       pos += len;
     }
-  putchar ('\n');
+  putchar (eolbyte);
 }
 
 /* Assuming cursor is at position FROM, indent up to position TO.
@@ -5192,9 +5253,9 @@ indent (size_t from, size_t to)
    non-malloc'ing version of file_name_concat.  */
 
 static void
-attach (char *dest, const char *dirname, const char *name)
+attach (char *dest, char const *dirname, char const *name)
 {
-  const char *dirnamep = dirname;
+  char const *dirnamep = dirname;
 
   /* Copy dirname if it is not ".".  */
   if (dirname[0] != '.' || dirname[1] != 0)
@@ -5215,10 +5276,9 @@ attach (char *dest, const char *dirname, const char *name)
    narrowest possible columns.  */
 
 static void
-init_column_info (void)
+init_column_info (size_t max_cols)
 {
   size_t i;
-  size_t max_cols = MIN (max_idx, cwd_n_used);
 
   /* Currently allocated columns in column_info.  */
   static size_t column_info_alloc;
@@ -5228,7 +5288,7 @@ init_column_info (void)
       size_t new_column_info_alloc;
       size_t *p;
 
-      if (max_cols < max_idx / 2)
+      if (!max_idx || max_cols < max_idx / 2)
         {
           /* The number of columns is far less than the display width
              allows.  Grow the allocation, but only so that it's
@@ -5291,9 +5351,9 @@ calculate_columns (bool by_columns)
   /* Normally the maximum number of columns is determined by the
      screen width.  But if few files are available this might limit it
      as well.  */
-  size_t max_cols = MIN (max_idx, cwd_n_used);
+  size_t max_cols = 0 < max_idx && max_idx < cwd_n_used ? max_idx : cwd_n_used;
 
-  init_column_info ();
+  init_column_info (max_cols);
 
   /* Compute the maximum number of possible columns.  */
   for (filesno = 0; filesno < cwd_n_used; ++filesno)
@@ -5355,30 +5415,36 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
 "), stdout);
       fputs (_("\
       --block-size=SIZE      with -l, scale sizes by SIZE when printing them;\n\
-                               e.g., '--block-size=M'; see SIZE format below\n\
+                             e.g., '--block-size=M'; see SIZE format below\n\
+\n\
 "), stdout);
       fputs (_("\
   -B, --ignore-backups       do not list implied entries ending with ~\n\
+"), stdout);
+      fputs (_("\
   -c                         with -lt: sort by, and show, ctime (time of last\n\
-                               modification of file status information);\n\
-                               with -l: show ctime and sort by name;\n\
-                               otherwise: sort by ctime, newest first\n\
+                             modification of file status information);\n\
+                             with -l: show ctime and sort by name;\n\
+                             otherwise: sort by ctime, newest first\n\
+\n\
 "), stdout);
       fputs (_("\
   -C                         list entries by columns\n\
-      --color[=WHEN]         colorize the output; WHEN can be 'always' (default\
-\n\
-                               if omitted), 'auto', or 'never'; more info below\
-\n\
+      --color[=WHEN]         color the output WHEN; more info below\n\
   -d, --directory            list directories themselves, not their contents\n\
   -D, --dired                generate output designed for Emacs' dired mode\n\
 "), stdout);
       fputs (_("\
-  -f                         do not sort, enable -aU, disable -ls --color\n\
-  -F, --classify             append indicator (one of */=>@|) to entries\n\
+  -f                         list all entries in directory order\n\
+  -F, --classify[=WHEN]      append indicator (one of */=>@|) to entries WHEN\n\
       --file-type            likewise, except do not append '*'\n\
+"), stdout);
+      fputs (_("\
       --format=WORD          across -x, commas -m, horizontal -x, long -l,\n\
-                               single-column -1, verbose -l, vertical -C\n\
+                             single-column -1, verbose -l, vertical -C\n\
+\n\
+"), stdout);
+      fputs (_("\
       --full-time            like -l --time-style=full-iso\n\
 "), stdout);
       fputs (_("\
@@ -5387,8 +5453,9 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
       fputs (_("\
       --group-directories-first\n\
                              group directories before files;\n\
-                               can be augmented with a --sort option, but any\n\
-                               use of --sort=none (-U) disables grouping\n\
+                             can be augmented with a --sort option, but any\n\
+                             use of --sort=none (-U) disables grouping\n\
+\n\
 "), stdout);
       fputs (_("\
   -G, --no-group             in a long listing, don't print group names\n\
@@ -5400,35 +5467,50 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
       fputs (_("\
   -H, --dereference-command-line\n\
                              follow symbolic links listed on the command line\n\
+"), stdout);
+      fputs (_("\
       --dereference-command-line-symlink-to-dir\n\
                              follow each command line symbolic link\n\
-                               that points to a directory\n\
+                             that points to a directory\n\
+\n\
+"), stdout);
+      fputs (_("\
       --hide=PATTERN         do not list implied entries matching shell PATTERN\
 \n\
-                               (overridden by -a or -A)\n\
-"), stdout);
-      fputs (_("\
-      --hyperlink[=WHEN]     hyperlink file names; WHEN can be 'always'\n\
-                               (default if omitted), 'auto', or 'never'\n\
-"), stdout);
-      fputs (_("\
-      --indicator-style=WORD  append indicator with style WORD to entry names:\
+                             (overridden by -a or -A)\n\
 \n\
-                               none (default), slash (-p),\n\
-                               file-type (--file-type), classify (-F)\n\
+"), stdout);
+      fputs (_("\
+      --hyperlink[=WHEN]     hyperlink file names WHEN\n\
+"), stdout);
+      fputs (_("\
+      --indicator-style=WORD\n\
+                             append indicator with style WORD to entry names:\n\
+                             none (default), slash (-p),\n\
+                             file-type (--file-type), classify (-F)\n\
+\n\
+"), stdout);
+      fputs (_("\
   -i, --inode                print the index number of each file\n\
   -I, --ignore=PATTERN       do not list implied entries matching shell PATTERN\
 \n\
 "), stdout);
       fputs (_("\
-  -k, --kibibytes            default to 1024-byte blocks for disk usage;\n\
-                               used only with -s and per directory totals\n\
+  -k, --kibibytes            default to 1024-byte blocks for file system usage;\
+\n\
+                             used only with -s and per directory totals\n\
+\n\
 "), stdout);
       fputs (_("\
   -l                         use a long listing format\n\
+"), stdout);
+      fputs (_("\
   -L, --dereference          when showing file information for a symbolic\n\
-                               link, show information for the file the link\n\
-                               references rather than for the link itself\n\
+                             link, show information for the file the link\n\
+                             references rather than for the link itself\n\
+\n\
+"), stdout);
+      fputs (_("\
   -m                         fill width with a comma separated list of entries\
 \n\
 "), stdout);
@@ -5441,14 +5523,22 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
 "), stdout);
       fputs (_("\
   -q, --hide-control-chars   print ? instead of nongraphic characters\n\
+"), stdout);
+      fputs (_("\
       --show-control-chars   show nongraphic characters as-is (the default,\n\
-                               unless program is 'ls' and output is a terminal)\
+                             unless program is 'ls' and output is a terminal)\
 \n\
+\n\
+"), stdout);
+      fputs (_("\
   -Q, --quote-name           enclose entry names in double quotes\n\
+"), stdout);
+      fputs (_("\
       --quoting-style=WORD   use quoting style WORD for entry names:\n\
-                               literal, locale, shell, shell-always,\n\
-                               shell-escape, shell-escape-always, c, escape\n\
-                               (overrides QUOTING_STYLE environment variable)\n\
+                             literal, locale, shell, shell-always,\n\
+                             shell-escape, shell-escape-always, c, escape\n\
+                             (overrides QUOTING_STYLE environment variable)\n\
+\n\
 "), stdout);
       fputs (_("\
   -r, --reverse              reverse order while sorting\n\
@@ -5457,18 +5547,25 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
 "), stdout);
       fputs (_("\
   -S                         sort by file size, largest first\n\
+"), stdout);
+      fputs (_("\
       --sort=WORD            sort by WORD instead of name: none (-U), size (-S)\
 ,\n\
-                               time (-t), version (-v), extension (-X)\n\
+                             time (-t), version (-v), extension (-X), width\n\
+\n\
+"), stdout);
+      fputs (_("\
       --time=WORD            change the default of using modification times;\n\
                                access time (-u): atime, access, use;\n\
                                change time (-c): ctime, status;\n\
                                birth time: birth, creation;\n\
                              with -l, WORD determines which time to show;\n\
                              with --sort=time, sort by WORD (newest first)\n\
+\n\
 "), stdout);
       fputs (_("\
-      --time-style=TIME_STYLE  time/date format with -l; see TIME_STYLE below\n\
+      --time-style=TIME_STYLE\n\
+                             time/date format with -l; see TIME_STYLE below\n\
 "), stdout);
       fputs (_("\
   -t                         sort by time, newest first; see --time\n\
@@ -5476,9 +5573,14 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
 "), stdout);
       fputs (_("\
   -u                         with -lt: sort by, and show, access time;\n\
-                               with -l: show access time and sort by name;\n\
-                               otherwise: sort by access time, newest first\n\
+                             with -l: show access time and sort by name;\n\
+                             otherwise: sort by access time, newest first\n\
+\n\
+"), stdout);
+      fputs (_("\
   -U                         do not sort; list entries in directory order\n\
+"), stdout);
+      fputs (_("\
   -v                         natural sort of (version) numbers within text\n\
 "), stdout);
       fputs (_("\
@@ -5486,8 +5588,8 @@ Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.\n\
   -x                         list entries by lines instead of by columns\n\
   -X                         sort alphabetically by entry extension\n\
   -Z, --context              print any security context of each file\n\
-  -1                         list one file per line.  Avoid '\\n' with -q or -b\
-\n\
+      --zero                 end each output line with NUL, not newline\n\
+  -1                         list one file per line\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -5502,10 +5604,14 @@ Also the TIME_STYLE environment variable sets the default style to use.\n\
 "), stdout);
       fputs (_("\
 \n\
+The WHEN argument defaults to 'always' and can also be 'auto' or 'never'.\n\
+"), stdout);
+      fputs (_("\
+\n\
 Using color to distinguish file types is disabled both by default and\n\
 with --color=never.  With --color=auto, ls emits color codes only when\n\
 standard output is connected to a terminal.  The LS_COLORS environment\n\
-variable can change the settings.  Use the dircolors command to set it.\n\
+variable can change the settings.  Use the dircolors(1) command to set it.\n\
 "), stdout);
       fputs (_("\
 \n\

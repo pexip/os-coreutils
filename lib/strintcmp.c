@@ -1,6 +1,6 @@
 /* Compare integer strings.
 
-   Copyright (C) 2005-2020 Free Software Foundation, Inc.
+   Copyright (C) 2005-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 
 #include "strnumcmp-in.h"
 
+#include <limits.h>
+
 /* Compare strings A and B as integers without explicitly converting
    them to machine numbers, to avoid overflow problems and perhaps
    improve performance.  */
@@ -28,5 +30,5 @@
 int
 strintcmp (char const *a, char const *b)
 {
-  return numcompare (a, b, -1, -1);
+  return numcompare (a, b, CHAR_MAX + 1, CHAR_MAX + 1);
 }

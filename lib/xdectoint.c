@@ -1,6 +1,6 @@
 /* Convert decimal strings with bounds checking and exit on error.
 
-   Copyright (C) 2014-2020 Free Software Foundation, Inc.
+   Copyright (C) 2014-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include "error.h"
 #include "quote.h"
+#include "verify.h"
 #include "xstrtol.h"
 
 /* Parse numeric string N_STR of base BASE, and return the value.
@@ -33,8 +35,8 @@
    ERR is printed along with N_STR on error.  */
 
 __xdectoint_t
-__xnumtoint (const char *n_str, int base, __xdectoint_t min, __xdectoint_t max,
-             const char *suffixes, const char *err, int err_exit)
+__xnumtoint (char const *n_str, int base, __xdectoint_t min, __xdectoint_t max,
+             char const *suffixes, char const *err, int err_exit)
 {
   strtol_error s_err;
 
@@ -48,10 +50,10 @@ __xnumtoint (const char *n_str, int base, __xdectoint_t min, __xdectoint_t max,
           s_err = LONGINT_OVERFLOW;
           /* Use have the INT range as a heuristic to distinguish
              type overflow rather than other min/max limits.  */
-          if (tnum > INT_MAX/2)
+          if (tnum > INT_MAX / 2)
             errno = EOVERFLOW;
 #if __xdectoint_signed
-          else if (tnum < INT_MIN/2)
+          else if (tnum < INT_MIN / 2)
             errno = EOVERFLOW;
 #endif
           else
@@ -68,6 +70,7 @@ __xnumtoint (const char *n_str, int base, __xdectoint_t min, __xdectoint_t max,
       /* EINVAL error message is redundant in this context.  */
       error (err_exit ? err_exit : EXIT_FAILURE, errno == EINVAL ? 0 : errno,
              "%s: %s", err, quote (n_str));
+      assume (false);
     }
 
   return tnum;
@@ -79,8 +82,8 @@ __xnumtoint (const char *n_str, int base, __xdectoint_t min, __xdectoint_t max,
    ERR is printed along with N_STR on error.  */
 
 __xdectoint_t
-__xdectoint (const char *n_str, __xdectoint_t min, __xdectoint_t max,
-             const char *suffixes, const char *err, int err_exit)
+__xdectoint (char const *n_str, __xdectoint_t min, __xdectoint_t max,
+             char const *suffixes, char const *err, int err_exit)
 {
   return __xnumtoint (n_str, 10, min, max, suffixes, err, err_exit);
 }

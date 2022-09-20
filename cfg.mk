@@ -1,5 +1,5 @@
 # Customize maint.mk                           -*- makefile -*-
-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
+# Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,8 @@ VC_LIST_ALWAYS_EXCLUDE_REGEX = src/blake2/.*$$
 
 # Tests not to run as part of "make distcheck".
 local-checks-to-skip = \
-  sc_proper_name_utf8_requires_ICONV
+  sc_proper_name_utf8_requires_ICONV \
+  sc_indent
 
 # Tools used to bootstrap this package, used for "announcement".
 bootstrap-tools = autoconf,automake,gnulib,bison
@@ -48,7 +49,7 @@ export VERBOSE = yes
 # 4914152 9e
 export XZ_OPT = -8e
 
-old_NEWS_hash = d914d8ae972de9e5f77e9398a39de945
+old_NEWS_hash = 612bad626bf28b1847ad0114cb2cd6fe
 
 # Add an exemption for sc_makefile_at_at_check.
 _makefile_at_at_check_exceptions = ' && !/^cu_install_prog/ && !/dynamic-dep/'
@@ -175,7 +176,7 @@ sc_system_h_headers: .re-list
 	  trap 'rc=$$?; rm -f .re-list; exit $$rc' 0;			\
 	  $(gl_trap_);							\
 	  grep -nE -f .re-list						\
-	      $$($(VC_LIST_EXCEPT) | grep '^\($(srcdir)/\)\?src/')	\
+	      $$($(VC_LIST_EXCEPT) | grep -E '^($(srcdir)/)?src/')	\
 	    && { echo '$(ME): the above are already included via system.h'\
 		  1>&2;  exit 1; } || :;				\
 	fi
@@ -191,7 +192,7 @@ sc_prohibit_quotes_notation:
 # Files in src/ should quote all strings in error() output, so that
 # unexpected input chars like \r etc. don't corrupt the error.
 # In edge cases this can be avoided by putting the format string
-# on a separate line to the following arguments.
+# on a separate line to the arguments, or the arguments in parenthesis.
 sc_error_quotes:
 	@cd $(srcdir)/src && GIT_PAGER= git grep -n 'error *(.*%s.*, [^(]*);$$'\
 	  *.c | grep -v ', q' \
@@ -235,7 +236,7 @@ sc_error_shell_always_quotes:
 # to the compiler that it doesn't return.
 sc_die_EXIT_FAILURE:
 	@cd $(srcdir)/src && GIT_PAGER= git grep -E \
-	    'error \(.*_(FAILURE|INVALID)' \
+	    'error \([^?]*EXIT_' \
 	  && { echo '$(ME): '"Use die() instead of error" 1>&2; \
 	       exit 1; }  \
 	  || :
@@ -325,13 +326,22 @@ sc_prohibit-gl-attributes:
 	halt='Use _GL... attribute macros'			\
 	  $(_sc_search_regexp)
 
+# Prefer the const declaration form, with const following the type
+sc_prohibit-const-char:
+	@prohibit='const char \*'				\
+	in_vc_files='\.[ch]$$'					\
+	halt='Use char const *, not const char *'		\
+	  $(_sc_search_regexp)
+
 # Look for lines longer than 80 characters, except omit:
 # - urls
+# - the fdl.texi file copied from gnulib,
 # - the help2man script copied from upstream,
 # - tests involving long checksum lines, and
 # - the 'pr' test cases.
 FILTER_LONG_LINES =						\
   \|^[^:]*NEWS:.*https\{,1\}://| d;					\
+  \|^[^:]*doc/fdl.texi:| d;					\
   \|^[^:]*man/help2man:| d;					\
   \|^[^:]*tests/misc/sha[0-9]*sum.*\.pl[-:]| d;			\
   \|^[^:]*tests/pr/|{ \|^[^:]*tests/pr/pr-tests:| !d; };
@@ -429,12 +439,6 @@ sc_prohibit_operator_at_end_of_line:
 	@prohibit='. ($(binop_re_))$$'					\
 	in_vc_files='\.[chly]$$'					\
 	halt='found operator at end of line'				\
-	  $(_sc_search_regexp)
-
-# Don't use "readlink" or "readlinkat" directly
-sc_prohibit_readlink:
-	@prohibit='\<readlink(at)? \('					\
-	halt='do not use readlink(at); use via xreadlink or areadlink*'	\
 	  $(_sc_search_regexp)
 
 # Don't use address of "stat" or "lstat" functions
@@ -605,14 +609,6 @@ sc_prohibit_test_backticks:
 sc_prohibit_test_empty:
 	@prohibit='test -s.*&&' in_vc_files='^tests/'			\
 	halt='use `compare /dev/null ...`, not `test -s ...` in tests/'	\
-	  $(_sc_search_regexp)
-
-# Ensure that expr doesn't work directly on various unsigned int types,
-# as that's not generally supported without GMP.
-sc_prohibit_expr_unsigned:
-	@prohibit='expr .*(UINT|ULONG|[^S]SIZE|[UGP]ID|UINTMAX)'	\
-	halt='avoid passing unsigned limits to `expr` (without GMP)'	\
-	in_vc_files='^tests/'						\
 	  $(_sc_search_regexp)
 
 # Programs like sort, ls, expr use PROG_FAILURE in place of EXIT_FAILURE.
@@ -833,13 +829,13 @@ update-copyright-env = \
 exclude_file_name_regexp--sc_space_tab = \
   ^(tests/pr/|tests/misc/nl\.sh$$|gl/.*\.diff$$|man/help2man$$)
 exclude_file_name_regexp--sc_bindtextdomain = \
-  ^(gl/.*|lib/euidaccess-stat|src/make-prime-list)\.c$$
+  ^(gl/.*|lib/euidaccess-stat|src/make-prime-list|src/cksum)\.c$$
 exclude_file_name_regexp--sc_trailing_blank = \
   ^(tests/pr/|gl/.*\.diff$$|man/help2man)
 exclude_file_name_regexp--sc_system_h_headers = \
-  ^src/((die|system|copy)\.h|make-prime-list\.c)$$
+  ^src/((die|system|copy|chown-core|find-mount-point)\.h|make-prime-list\.c)$$
 
-_src = (false|lbracket|ls-(dir|ls|vdir)|tac-pipe|uname-(arch|uname))
+_src = (crctab|false|lbracket|ls-(dir|ls|vdir)|tac-pipe|uname-(arch|uname))
 _gl_src = (xdecto.max|cl-strtold)
 exclude_file_name_regexp--sc_require_config_h_first = \
   (^lib/buffer-lcm\.c|gl/lib/$(_gl_src)\.c|src/$(_src)\.c)$$

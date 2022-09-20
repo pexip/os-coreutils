@@ -1,7 +1,7 @@
 #!/bin/sh
 # test diagnostics are printed immediately when seeking beyond device.
 
-# Copyright (C) 2008-2020 Free Software Foundation, Inc.
+# Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,8 +39,7 @@ dev_size=$(get_device_size "$device") ||
   skip_ "failed to determine size of $device"
 
 # Don't use shell arithmetic as older versions of dash use longs
-DEV_OFLOW=$(expr $dev_size + 1) ||
-  skip_ "failed to adjust device size $dev_size"
+DEV_OFLOW=$(expr $dev_size + 1) || framework_failure_
 
 timeout 10 dd bs=1 skip=$DEV_OFLOW count=0 status=noxfer < "$device" 2> err
 test "$?" = "1" || fail=1

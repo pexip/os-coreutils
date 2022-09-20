@@ -1,5 +1,5 @@
 /* printf - format and print data
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <wchar.h>
 
 #include "system.h"
 #include "cl-strtod.h"
@@ -142,7 +143,7 @@ ARGUMENTs converted to proper type first.  Variable widths are handled.\n\
 }
 
 static void
-verify_numeric (const char *s, const char *end)
+verify_numeric (char const *s, char const *end)
 {
   if (errno)
     {
@@ -170,6 +171,21 @@ FUNC_NAME (char const *s)						 \
     {									 \
       unsigned char ch = *++s;						 \
       val = ch;								 \
+                                                                         \
+      if (MB_CUR_MAX > 1 && *(s + 1))					 \
+        {								 \
+          mbstate_t mbstate = { 0, };					 \
+          wchar_t wc;							 \
+          size_t slen = strlen (s);					 \
+          ssize_t bytes;						 \
+          bytes = mbrtowc (&wc, s, slen, &mbstate);			 \
+          if (0 < bytes)						 \
+            {								 \
+              val = wc;							 \
+              s += bytes - 1;						 \
+            }								 \
+        }								 \
+                                                                         \
       /* If POSIXLY_CORRECT is not set, then give a warning that there	 \
          are characters following the character constant and that GNU	 \
          printf is ignoring those characters.  If POSIXLY_CORRECT *is*	 \
@@ -237,9 +253,9 @@ print_esc_char (char c)
    is an octal digit; otherwise they are of the form \ooo.  */
 
 static int
-print_esc (const char *escstart, bool octal_0)
+print_esc (char const *escstart, bool octal_0)
 {
-  const char *p = escstart + 1;
+  char const *p = escstart + 1;
   int esc_value = 0;		/* Value of \nnn escape. */
   int esc_length;		/* Length of \nnn escape. */
 
@@ -310,7 +326,7 @@ print_esc (const char *escstart, bool octal_0)
 /* Print string STR, evaluating \ escapes. */
 
 static void
-print_esc_string (const char *str)
+print_esc_string (char const *str)
 {
   for (; *str; str++)
     if (*str == '\\')
@@ -328,7 +344,7 @@ print_esc_string (const char *str)
    be formatted.  */
 
 static void
-print_direc (const char *start, size_t length, char conversion,
+print_direc (char const *start, size_t length, char conversion,
              bool have_field_width, int field_width,
              bool have_precision, int precision,
              char const *argument)
@@ -475,11 +491,11 @@ print_direc (const char *start, size_t length, char conversion,
    Return the number of elements of ARGV used.  */
 
 static int
-print_formatted (const char *format, int argc, char **argv)
+print_formatted (char const *format, int argc, char **argv)
 {
   int save_argc = argc;		/* Preserve original value.  */
-  const char *f;		/* Pointer into 'format'.  */
-  const char *direc_start;	/* Start of % directive.  */
+  char const *f;		/* Pointer into 'format'.  */
+  char const *direc_start;	/* Start of % directive.  */
   size_t direc_length;		/* Length of % directive.  */
   bool have_field_width;	/* True if FIELD_WIDTH is valid.  */
   int field_width = 0;		/* Arg to first '*'.  */

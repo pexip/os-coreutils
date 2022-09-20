@@ -1,10 +1,10 @@
 /* Unicode character output to streams with locale dependent encoding.
 
-   Copyright (C) 2000-2003, 2006, 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2000-2003, 2006, 2008-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -129,10 +129,27 @@ unicode_to_mb (unsigned int code,
       res = iconv (utf8_to_local,
                    (ICONV_CONST char **)&inptr, &inbytesleft,
                    &outptr, &outbytesleft);
+      /* Analyze what iconv() actually did and distinguish replacements
+         that are OK (no need to invoke the FAILURE callback), such as
+           - replacing GREEK SMALL LETTER MU with MICRO SIGN, or
+           - replacing FULLWIDTH COLON with ':', or
+           - replacing a Unicode TAG character (U+E00xx) with an empty string,
+         from replacements that are worse than the FAILURE callback, such as
+           - replacing 'ç' with '?' (NetBSD, Solaris 11) or '*' (musl) or
+             NUL (IRIX).  */
       if (inbytesleft > 0 || res == (size_t)(-1)
-          /* Irix iconv() inserts a NUL byte if it cannot convert. */
+          /* Irix iconv() inserts a NUL byte if it cannot convert.  */
 # if !defined _LIBICONV_VERSION && (defined sgi || defined __sgi)
           || (res > 0 && code != 0 && outptr - outbuf == 1 && *outbuf == '\0')
+# endif
+          /* FreeBSD iconv(), NetBSD iconv(), and Solaris 11 iconv() insert
+             a '?' if they cannot convert.  */
+# if !defined _LIBICONV_VERSION
+          || (res > 0 && outptr - outbuf == 1 && *outbuf == '?')
+# endif
+          /* musl libc iconv() inserts a '*' if it cannot convert.  */
+# if !defined _LIBICONV_VERSION && MUSL_LIBC
+          || (res > 0 && outptr - outbuf == 1 && *outbuf == '*')
 # endif
          )
         return failure (code, NULL, callback_arg);
@@ -175,7 +192,7 @@ fwrite_success_callback (const char *buf, size_t buflen, void *callback_arg)
 /* Simple failure callback that displays an error and exits.  */
 static long
 exit_failure_callback (unsigned int code, const char *msg,
-                       void *callback_arg _GL_UNUSED)
+                       _GL_UNUSED void *callback_arg)
 {
   if (msg == NULL)
     error (1, 0, _("cannot convert U+%04X to local character set"), code);
@@ -189,7 +206,7 @@ exit_failure_callback (unsigned int code, const char *msg,
    ASCII, using the same notation as ISO C99 strings.  */
 static long
 fallback_failure_callback (unsigned int code,
-                           const char *msg _GL_UNUSED,
+                           _GL_UNUSED const char *msg,
                            void *callback_arg)
 {
   FILE *stream = (FILE *) callback_arg;

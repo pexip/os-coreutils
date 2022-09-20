@@ -1,9 +1,9 @@
 /* Test that dup_safer leaves standard fds alone.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -42,7 +42,7 @@
 #endif
 
 #if !O_BINARY
-# define setmode(f,m) zero ()
+# define set_binary_mode(f,m) zero ()
 static int zero (void) { return 0; }
 #endif
 
@@ -100,8 +100,8 @@ is_inheritable (int fd)
 static bool
 is_mode (int fd, int mode)
 {
-  int value = setmode (fd, O_BINARY);
-  setmode (fd, value);
+  int value = set_binary_mode (fd, O_BINARY);
+  set_binary_mode (fd, value);
   return mode == value;
 }
 
@@ -143,14 +143,14 @@ main (void)
       ASSERT (errno == EBADF);
 
       /* Preserve text vs. binary.  */
-      setmode (fd, O_BINARY);
+      set_binary_mode (fd, O_BINARY);
       ASSERT (dup (fd) == fd + 1);
       ASSERT (is_open (fd + 1));
       ASSERT (is_inheritable (fd + 1));
       ASSERT (is_mode (fd + 1, O_BINARY));
 
       ASSERT (close (fd + 1) == 0);
-      setmode (fd, O_TEXT);
+      set_binary_mode (fd, O_TEXT);
       ASSERT (dup (fd) == fd + 1);
       ASSERT (is_open (fd + 1));
       ASSERT (is_inheritable (fd + 1));

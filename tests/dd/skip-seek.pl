@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test dd's skip and seek options.
 
-# Copyright (C) 2000-2020 Free Software Foundation, Inc.
+# Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,6 +67,16 @@ my @Tests =
       {IN_PIPE=> "abc\n"},
       {OUT=> "bc\n"},
       {ERR=> "3+0 records in\n3+0 records out\n"},
+     ],
+     [
+      # Check that iseek and oseek aliases work too.
+      'sk-seek5',
+      qw (bs=1 iseek=1 oseek=2 conv=notrunc count=3 status=noxfer of=@AUX@ < ),
+      {IN=> '0123456789abcdef'},
+      {AUX=> 'zyxwvutsrqponmlkji'},
+      {OUT=> ''},
+      {ERR=> "3+0 records in\n3+0 records out\n"},
+      {CMP=> ['zy123utsrqponmlkji', {'@AUX@'=> undef}]},
      ],
     );
 

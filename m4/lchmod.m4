@@ -1,6 +1,6 @@
-#serial 7
+#serial 8
 
-dnl Copyright (C) 2005-2006, 2008-2020 Free Software Foundation, Inc.
+dnl Copyright (C) 2005-2006, 2008-2022 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -26,6 +26,5 @@ AC_DEFUN([gl_FUNC_LCHMOD],
 # Prerequisites of lib/lchmod.c.
 AC_DEFUN([gl_PREREQ_LCHMOD],
 [
-  AC_REQUIRE([AC_C_INLINE])
   :
 ])

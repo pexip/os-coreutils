@@ -1,6 +1,6 @@
 /* Convert decimal strings with bounds checking and exit on error.
 
-   Copyright (C) 2014-2020 Free Software Foundation, Inc.
+   Copyright (C) 2014-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,11 +21,13 @@
 # include <inttypes.h>
 
 # define _DECLARE_XDECTOINT(name, type) \
-  type name (const char *n_str, type min, type max, \
-             const char *suffixes, const char *err, int err_exit);
+  type name (char const *n_str, type min, type max, \
+             char const *suffixes, char const *err, int err_exit) \
+    _GL_ATTRIBUTE_NONNULL ((1, 5));
 # define _DECLARE_XNUMTOINT(name, type) \
-  type name (const char *n_str, int base, type min, type max, \
-             const char *suffixes, const char *err, int err_exit);
+  type name (char const *n_str, int base, type min, type max, \
+             char const *suffixes, char const *err, int err_exit) \
+    _GL_ATTRIBUTE_NONNULL ((1, 6));
 
 _DECLARE_XDECTOINT (xdectoimax, intmax_t)
 _DECLARE_XDECTOINT (xdectoumax, uintmax_t)

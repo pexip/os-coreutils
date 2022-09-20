@@ -1,5 +1,5 @@
-/* du -- summarize disk usage
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+/* du -- summarize device usage
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -130,7 +130,7 @@ struct dulevel
 /* If true, display counts for all files, not just directories.  */
 static bool opt_all = false;
 
-/* If true, rather than using the disk usage of each file,
+/* If true, rather than using the device usage of each file,
    use the apparent size (a la stat.st_size).  */
 static bool apparent_size = false;
 
@@ -287,7 +287,7 @@ Usage: %s [OPTION]... [FILE]...\n\
   or:  %s [OPTION]... --files0-from=F\n\
 "), program_name, program_name);
       fputs (_("\
-Summarize disk usage of the set of FILEs, recursively for directories.\n\
+Summarize device usage of the set of FILEs, recursively for directories.\n\
 "), stdout);
 
       emit_mandatory_arg_note ();
@@ -295,7 +295,7 @@ Summarize disk usage of the set of FILEs, recursively for directories.\n\
       fputs (_("\
   -0, --null            end each output line with NUL, not newline\n\
   -a, --all             write counts for all files, not just directories\n\
-      --apparent-size   print apparent sizes, rather than disk usage; although\
+      --apparent-size   print apparent sizes rather than device usage; although\
 \n\
                           the apparent size is usually smaller, it may be\n\
                           larger due to holes in ('sparse') files, internal\n\
@@ -315,7 +315,7 @@ Summarize disk usage of the set of FILEs, recursively for directories.\n\
                           --summarize\n\
 "), stdout);
       fputs (_("\
-      --files0-from=F   summarize disk usage of the\n\
+      --files0-from=F   summarize device usage of the\n\
                           NUL-terminated file names specified in file F;\n\
                           if F is -, then read names from standard input\n\
   -H                    equivalent to --dereference-args (-D)\n\
@@ -377,7 +377,7 @@ hash_ins (struct di_set *di_set, ino_t ino, dev_t dev)
    in FORMAT.  */
 
 static void
-show_date (const char *format, struct timespec when, timezone_t tz)
+show_date (char const *format, struct timespec when, timezone_t tz)
 {
   struct tm tm;
   if (localtime_rz (tz, &when.tv_sec, &tm))
@@ -407,7 +407,7 @@ print_only_size (uintmax_t n_bytes)
 /* Print size (and optionally time) indicated by *PDUI, followed by STRING.  */
 
 static void
-print_size (const struct duinfo *pdui, const char *string)
+print_size (const struct duinfo *pdui, char const *string)
 {
   print_only_size (opt_inodes
                    ? pdui->inodes
@@ -503,7 +503,7 @@ process_file (FTS *fts, FTSENT *ent)
      directory at the specified level.  */
   static struct dulevel *dulvl;
 
-  const char *file = ent->fts_path;
+  char const *file = ent->fts_path;
   const struct stat *sb = ent->fts_statp;
   int info = ent->fts_info;
 
@@ -684,7 +684,7 @@ du_files (char **files, int bit_flags)
     {
       FTS *fts = xfts_open (files, bit_flags, NULL);
 
-      while (1)
+      while (true)
         {
           FTSENT *ent;
 

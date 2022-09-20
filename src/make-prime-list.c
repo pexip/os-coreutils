@@ -3,7 +3,7 @@
    Contributed to the GNU project by Torbjörn Granlund and Niels Möller
    Contains code from GNU MP.
 
-Copyright 2012-2020 Free Software Foundation, Inc.
+Copyright 2012-2022 Free Software Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -19,16 +19,19 @@ this program.  If not, see https://www.gnu.org/licenses/.  */
 
 #include <config.h>
 
+#include <attribute.h>
+#include <inttypes.h>
+
 #include <limits.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 
-/* Deactivate config.h's "rpl_"-prefixed definitions of these symbols.  */
+/* Deactivate "rpl_"-prefixed definitions of these symbols.  */
 #undef fclose
+#undef free
 #undef malloc
 #undef strerror
 
@@ -53,13 +56,14 @@ struct prime
   wide_uint lim; /* floor ((wide_uint) -1 / p) */
 };
 
-static wide_uint _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static wide_uint
 binvert (wide_uint a)
 {
-  wide_uint x = 0xf5397db1 >> (4*((a/2) & 0x7));
+  wide_uint x = 0xf5397db1 >> (4 * ((a / 2) & 0x7));
   for (;;)
     {
-      wide_uint y = 2*x - x*x*a;
+      wide_uint y = 2 * x - x * x * a;
       if (y == x)
         return x;
       x = y;
@@ -157,7 +161,8 @@ output_primes (const struct prime *primes, unsigned nprimes)
   printf ("#define FIRST_OMITTED_PRIME %u\n", p);
 }
 
-static void * _GL_ATTRIBUTE_MALLOC
+ATTRIBUTE_MALLOC
+static void *
 xalloc (size_t s)
 {
   void *p = malloc (s);
@@ -193,7 +198,7 @@ main (int argc, char **argv)
   if ( !(limit & 1))
     limit--;
 
-  size = (limit-1)/2;
+  size = (limit - 1) / 2;
   /* sieve[i] represents 3+2*i */
   sieve = xalloc (size);
   memset (sieve, 1, size);
@@ -203,12 +208,12 @@ main (int argc, char **argv)
 
   for (i = 0; i < size;)
     {
-      unsigned p = 3+2*i;
+      unsigned p = 3 + 2 * i;
       unsigned j;
 
       process_prime (&prime_list[nprimes++], p);
 
-      for (j = (p*p - 3)/2; j < size; j+= p)
+      for (j = (p * p - 3) / 2; j < size; j += p)
         sieve[j] = 0;
 
       while (++i < size && sieve[i] == 0)

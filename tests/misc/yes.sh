@@ -1,7 +1,7 @@
 #!/bin/sh
 # Validate yes buffer handling
 
-# Copyright (C) 2015-2020 Free Software Foundation, Inc.
+# Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ if test -w /dev/full && test -c /dev/full; then
   printf '%s\n' "yes: standard output" > exp
 
   for size in 1 16384; do
-    returns_ 1 yes "$(printf %${size}s '')" >/dev/full 2>errt
+    returns_ 1 yes "$(printf %${size}s '')" >/dev/full 2>errt || fail=1
     sed 's/\(yes:.*\):.*/\1/' errt > err
     compare exp err || fail=1
   done

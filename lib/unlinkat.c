@@ -1,10 +1,10 @@
 /* Work around unlinkat bugs on Solaris 9 and Hurd.
 
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -28,7 +28,7 @@
 
 #include <stdlib.h>
 
-#include "dosname.h"
+#include "filename.h"
 #include "openat.h"
 
 #if HAVE_UNLINKAT
@@ -58,8 +58,8 @@ rpl_unlinkat (int fd, char const *name, int flag)
          rule of letting unlink("link-to-dir/") attempt to unlink a
          directory.  */
       struct stat st;
-      result = lstatat (fd, name, &st);
-      if (result == 0)
+      result = fstatat (fd, name, &st, AT_SYMLINK_NOFOLLOW);
+      if (result == 0 || errno == EOVERFLOW)
         {
           /* Trailing NUL will overwrite the trailing slash.  */
           char *short_name = malloc (len);
@@ -71,13 +71,15 @@ rpl_unlinkat (int fd, char const *name, int flag)
           memcpy (short_name, name, len);
           while (len && ISSLASH (short_name[len - 1]))
             short_name[--len] = '\0';
-          if (len && (lstatat (fd, short_name, &st) || S_ISLNK (st.st_mode)))
+          if (len && (fstatat (fd, short_name, &st, AT_SYMLINK_NOFOLLOW)
+                      || S_ISLNK (st.st_mode)))
             {
               free (short_name);
               errno = EPERM;
               return -1;
             }
           free (short_name);
+          result = 0;
         }
     }
   if (!result)

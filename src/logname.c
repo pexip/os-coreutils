@@ -1,5 +1,5 @@
 /* logname -- print user's login name
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ usage (int status)
     {
       printf (_("Usage: %s [OPTION]\n"), program_name);
       fputs (_("\
-Print the name of the current user.\n\
+Print the user's login name.\n\
 \n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);

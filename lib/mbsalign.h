@@ -1,5 +1,5 @@
 /* Align/Truncate a string in a given screen width
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
+#include <stdlib.h>
 
 typedef enum { MBS_ALIGN_LEFT, MBS_ALIGN_RIGHT, MBS_ALIGN_CENTER } mbs_align_t;
 
@@ -52,8 +53,11 @@ enum {
 };
 
 size_t
-mbsalign (const char *src, char *dest, size_t dest_size,
-          size_t *width, mbs_align_t align, int flags);
+mbsalign (char const *src, char *dest, size_t dest_size,
+          size_t *width, mbs_align_t align, int flags)
+  _GL_ATTRIBUTE_NONNULL ();
 
 char *
-ambsalign (const char *src, size_t *width, mbs_align_t align, int flags);
+ambsalign (char const *src, size_t *width, mbs_align_t align, int flags)
+  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC_FREE
+  _GL_ATTRIBUTE_NONNULL ();

@@ -2,7 +2,7 @@
 
 /* Modified to run with the GNU shell by bfox. */
 
-/* Copyright (C) 1987-2020 Free Software Foundation, Inc.
+/* Copyright (C) 1987-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -83,11 +83,10 @@ static bool term (void);
 static bool and (void);
 static bool or (void);
 
-static void test_syntax_error (char const *format, ...)
-     ATTRIBUTE_NORETURN;
-static void beyond (void) ATTRIBUTE_NORETURN;
+static void beyond (void);
 
-static void
+ATTRIBUTE_FORMAT ((printf, 1, 2))
+static _Noreturn void
 test_syntax_error (char const *format, ...)
 {
   va_list ap;
@@ -169,10 +168,6 @@ get_mtime (char const *filename, struct timespec *mtime)
 {
   struct stat finfo;
   bool ok = (stat (filename, &finfo) == 0);
-#ifdef lint
-  static struct timespec const zero;
-  *mtime = zero;
-#endif
   if (ok)
     *mtime = get_stat_mtime (&finfo);
   return ok;
@@ -325,7 +320,7 @@ binary_operator (bool l_is_l)
               bool le, re;
               pos += 3;
               if (l_is_l || r_is_l)
-                test_syntax_error (_("-nt does not accept -l"), NULL);
+                test_syntax_error (_("-nt does not accept -l"));
               le = get_mtime (argv[op - 1], &lt);
               re = get_mtime (argv[op + 1], &rt);
               return le && (!re || timespec_cmp (lt, rt) > 0);
@@ -338,7 +333,7 @@ binary_operator (bool l_is_l)
               /* ef - hard link? */
               pos += 3;
               if (l_is_l || r_is_l)
-                test_syntax_error (_("-ef does not accept -l"), NULL);
+                test_syntax_error (_("-ef does not accept -l"));
               return (stat (argv[op - 1], &stat_buf) == 0
                       && stat (argv[op + 1], &stat_spare) == 0
                       && stat_buf.st_dev == stat_spare.st_dev
@@ -354,7 +349,7 @@ binary_operator (bool l_is_l)
               bool le, re;
               pos += 3;
               if (l_is_l || r_is_l)
-                test_syntax_error (_("-ot does not accept -l"), NULL);
+                test_syntax_error (_("-ot does not accept -l"));
               le = get_mtime (argv[op - 1], &lt);
               re = get_mtime (argv[op + 1], &rt);
               return re && (!le || timespec_cmp (lt, rt) < 0);
@@ -629,7 +624,8 @@ three_arguments (void)
   else if (STREQ (argv[pos + 1], "-a") || STREQ (argv[pos + 1], "-o"))
     value = expr ();
   else
-    test_syntax_error (_("%s: binary operator expected"), quote (argv[pos+1]));
+    test_syntax_error (_("%s: binary operator expected"),
+                       quote (argv[pos + 1]));
   return (value);
 }
 
@@ -754,15 +750,15 @@ EXPRESSION is true or false and sets exit status.  It is one of:\n\
   -N FILE     FILE exists and has been modified since it was last read\n\
   -O FILE     FILE exists and is owned by the effective user ID\n\
   -p FILE     FILE exists and is a named pipe\n\
-  -r FILE     FILE exists and read permission is granted\n\
+  -r FILE     FILE exists and the user has read access\n\
   -s FILE     FILE exists and has a size greater than zero\n\
 "), stdout);
       fputs (_("\
   -S FILE     FILE exists and is a socket\n\
   -t FD       file descriptor FD is opened on a terminal\n\
   -u FILE     FILE exists and its set-user-ID bit is set\n\
-  -w FILE     FILE exists and write permission is granted\n\
-  -x FILE     FILE exists and execute (or search) permission is granted\n\
+  -w FILE     FILE exists and the user has write access\n\
+  -x FILE     FILE exists and the user has execute (or search) access\n\
 "), stdout);
       fputs (_("\
 \n\

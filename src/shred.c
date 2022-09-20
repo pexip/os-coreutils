@@ -1,6 +1,6 @@
 /* shred.c - overwrite files and devices to make it harder to recover data
 
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
    Copyright (C) 1997, 1998, 1999 Colin Plumb.
 
    This program is free software: you can redistribute it and/or modify
@@ -85,6 +85,7 @@
 #endif
 
 #include "system.h"
+#include "alignalloc.h"
 #include "argmatch.h"
 #include "xdectoint.h"
 #include "die.h"
@@ -203,7 +204,7 @@ and those files usually should not be removed.\n\
 The optional HOW parameter indicates how to remove a directory entry:\n\
 'unlink' => use a standard unlink call.\n\
 'wipe' => also first obfuscate bytes in the name.\n\
-'wipesync' => also sync each obfuscated byte to disk.\n\
+'wipesync' => also sync each obfuscated byte to the device.\n\
 The default mode is 'wipesync', but note it can be expensive.\n\
 \n\
 "), stdout);
@@ -412,11 +413,8 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
   verify (PERIODIC_OUTPUT_SIZE % 3 == 0);
   size_t output_size = periodic_pattern (type)
                        ? PERIODIC_OUTPUT_SIZE : NONPERIODIC_OUTPUT_SIZE;
-#define PAGE_ALIGN_SLOP (page_size - 1)                /* So directio works */
 #define FILLPATTERN_SIZE (((output_size + 2) / 3) * 3) /* Multiple of 3 */
-#define PATTERNBUF_SIZE (PAGE_ALIGN_SLOP + FILLPATTERN_SIZE)
-  void *fill_pattern_mem = xmalloc (PATTERNBUF_SIZE);
-  unsigned char *pbuf = ptr_align (fill_pattern_mem, page_size);
+  unsigned char *pbuf = xalignalloc (page_size, FILLPATTERN_SIZE);
 
   char pass_string[PASS_NAME_SIZE];	/* Name of current pass */
   bool write_error = false;
@@ -424,7 +422,7 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
 
   /* Printable previous offset into the file */
   char previous_offset_buf[LONGEST_HUMAN_READABLE + 1];
-  char const *previous_human_offset IF_LINT ( = 0);
+  char const *previous_human_offset;
 
   /* As a performance tweak, avoid direct I/O for small sizes,
      as it's just a performance rather then security consideration,
@@ -620,7 +618,7 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
     }
 
 free_pattern_mem:
-  free (fill_pattern_mem);
+  alignfree (pbuf);
 
   return other_error ? -1 : write_error;
 }
@@ -629,7 +627,7 @@ free_pattern_mem:
  * The passes start and end with a random pass, and the passes in between
  * are done in random order.  The idea is to deprive someone trying to
  * reverse the process of knowledge of the overwrite patterns, so they
- * have the additional step of figuring out what was done to the disk
+ * have the additional step of figuring out what was done to the device
  * before they can try to reverse or cancel it.
  *
  * First, all possible 1-bit patterns.  There are two of them.
@@ -770,7 +768,7 @@ genpattern (int *dest, size_t num, struct randint_source *s)
         }
     }
   top = num - randpasses;	/* Top of initialized data */
-  /* assert (d == dest+top); */
+  /* assert (d == dest + top); */
 
   /*
    * We now have fixed patterns in the dest buffer up to
@@ -1018,7 +1016,7 @@ incname (char *name, size_t len)
 /*
  * Repeatedly rename a file with shorter and shorter names,
  * to obliterate all traces of the file name (and length) on any system
- * that adds a trailing delimiter to on-disk file names and reuses
+ * that adds a trailing delimiter to on-device file names and reuses
  * the same directory slot.  Finally, unlink it.
  * The passed-in filename is modified in place to the new filename.
  * (Which is unlinked if this function succeeds, but is still present if
@@ -1254,7 +1252,8 @@ main (int argc, char **argv)
 
   randint_source = randint_all_new (random_source, SIZE_MAX);
   if (! randint_source)
-    die (EXIT_FAILURE, errno, "%s", quotef (random_source));
+    die (EXIT_FAILURE, errno, "%s",
+         quotef (random_source ? random_source : "getrandom"));
   atexit (clear_random_data);
 
   for (i = 0; i < n_files; i++)

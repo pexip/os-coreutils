@@ -1,9 +1,9 @@
 /* Test of getcwd() function.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -27,9 +27,10 @@
 #include <sys/stat.h>
 
 #include "pathmax.h"
+#include "qemu.h"
 #include "macros.h"
 
-#if ! HAVE_GETPAGESIZE
+#if !(HAVE_GETPAGESIZE || defined getpagesize)
 # define getpagesize() 0
 #endif
 
@@ -138,6 +139,13 @@ test_long_name (void)
      this should be done in a compile test.  */
   return 0;
 #else
+  /* For a process running under QEMU user-mode, the "/" directory is not
+     really the root directory, but the value of the QEMU_LD_PREFIX environment
+     variable or of the -L command-line option.  This causes the logic from
+     glibc/sysdeps/posix/getcwd.c to fail.  In this case, skip the test.  */
+  if (is_running_under_qemu_user ())
+    return 77;
+
   char buf[PATH_MAX * (DIR_NAME_SIZE / DOTDOTSLASH_LEN + 1)
            + DIR_NAME_SIZE + BUF_SLOP];
   char *cwd = getcwd (buf, PATH_MAX);
@@ -256,5 +264,7 @@ test_long_name (void)
 int
 main (int argc, char **argv)
 {
-  return test_abort_bug () * 10 + test_long_name ();
+  int err1 = test_abort_bug ();
+  int err2 = test_long_name ();
+  return err1 * 10 + (err1 != 0 && err2 == 77 ? 0 : err2);
 }

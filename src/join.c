@@ -1,5 +1,5 @@
 /* join - join lines of two files on a common field
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -204,28 +204,32 @@ When FILE1 or FILE2 (not both) is -, read standard input.\n\
 "), stdout);
       fputs (_("\
 \n\
-  -a FILENUM        also print unpairable lines from file FILENUM, where\n\
-                      FILENUM is 1 or 2, corresponding to FILE1 or FILE2\n\
-  -e EMPTY          replace missing input fields with EMPTY\n\
+  -a FILENUM             also print unpairable lines from file FILENUM, where\n\
+                           FILENUM is 1 or 2, corresponding to FILE1 or FILE2\n\
 "), stdout);
       fputs (_("\
-  -i, --ignore-case  ignore differences in case when comparing fields\n\
-  -j FIELD          equivalent to '-1 FIELD -2 FIELD'\n\
-  -o FORMAT         obey FORMAT while constructing output line\n\
-  -t CHAR           use CHAR as input and output field separator\n\
+  -e STRING              replace missing (empty) input fields with STRING;\n\
+                           I.e., missing fields specified with '-12jo' options\
+\n\
 "), stdout);
       fputs (_("\
-  -v FILENUM        like -a FILENUM, but suppress joined output lines\n\
-  -1 FIELD          join on this FIELD of file 1\n\
-  -2 FIELD          join on this FIELD of file 2\n\
-  --check-order     check that the input is correctly sorted, even\n\
-                      if all input lines are pairable\n\
-  --nocheck-order   do not check that the input is correctly sorted\n\
-  --header          treat the first line in each file as field headers,\n\
-                      print them without trying to pair them\n\
+  -i, --ignore-case      ignore differences in case when comparing fields\n\
+  -j FIELD               equivalent to '-1 FIELD -2 FIELD'\n\
+  -o FORMAT              obey FORMAT while constructing output line\n\
+  -t CHAR                use CHAR as input and output field separator\n\
 "), stdout);
       fputs (_("\
-  -z, --zero-terminated     line delimiter is NUL, not newline\n\
+  -v FILENUM             like -a FILENUM, but suppress joined output lines\n\
+  -1 FIELD               join on this FIELD of file 1\n\
+  -2 FIELD               join on this FIELD of file 2\n\
+      --check-order      check that the input is correctly sorted, even\n\
+                           if all input lines are pairable\n\
+      --nocheck-order    do not check that the input is correctly sorted\n\
+      --header           treat the first line in each file as field headers,\n\
+                           print them without trying to pair them\n\
+"), stdout);
+      fputs (_("\
+  -z, --zero-terminated  line delimiter is NUL, not newline\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -398,7 +402,7 @@ check_order (const struct line *prev,
   if (check_input_order != CHECK_ORDER_DISABLED
       && ((check_input_order == CHECK_ORDER_ENABLED) || seen_unpairable))
     {
-      if (!issued_disorder_warning[whatfile-1])
+      if (!issued_disorder_warning[whatfile - 1])
         {
           size_t join_field = whatfile == 1 ? join_field_1 : join_field_2;
           if (keycmp (prev, current, join_field, join_field) > 0)
@@ -420,7 +424,7 @@ check_order (const struct line *prev,
 
               /* If we get to here, the message was merely a warning.
                  Arrange to issue it only once per file.  */
-              issued_disorder_warning[whatfile-1] = true;
+              issued_disorder_warning[whatfile - 1] = true;
             }
         }
     }
@@ -598,7 +602,7 @@ prjoin (struct line const *line1, struct line const *line2)
       const struct outlist *o;
 
       o = outlist;
-      while (1)
+      while (true)
         {
           if (o->file == 0)
             {
@@ -857,7 +861,7 @@ string_to_join_field (char const *str)
    If S is valid, return true.  Otherwise, give a diagnostic and exit.  */
 
 static void
-decode_field_spec (const char *s, int *file_index, size_t *field_index)
+decode_field_spec (char const *s, int *file_index, size_t *field_index)
 {
   /* The first character must be 0, 1, or 2.  */
   switch (s[0])

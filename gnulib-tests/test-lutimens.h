@@ -1,9 +1,9 @@
 /* Test of file timestamp modification functions.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -194,7 +194,7 @@ test_lutimens (int (*func) (char const *, struct timespec const *), bool print)
       }
     ASSERT (st3.st_mtime == st2.st_mtime);
     ASSERT (get_stat_mtime_ns (&st3) == get_stat_mtime_ns (&st2));
-    if (check_ctime)
+    if (check_ctime > 0)
       ASSERT (ctime_compare (&st3, &st2) < 0);
   }
 

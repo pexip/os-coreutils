@@ -1,5 +1,5 @@
 /* uniq -- remove duplicate lines from a sorted file
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -252,7 +252,8 @@ size_opt (char const *opt, char const *msgid)
 /* Given a linebuffer LINE,
    return a pointer to the beginning of the line's field to be compared. */
 
-static char * _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static char *
 find_field (struct linebuffer const *line)
 {
   size_t count;
@@ -317,7 +318,7 @@ writeline (struct linebuffer const *line,
    If either is "-", use the standard I/O stream for it instead. */
 
 static void
-check_file (const char *infile, const char *outfile, char delimiter)
+check_file (char const *infile, char const *outfile, char delimiter)
 {
   struct linebuffer lb1, lb2;
   struct linebuffer *thisline, *prevline;
@@ -352,8 +353,8 @@ check_file (const char *infile, const char *outfile, char delimiter)
   */
   if (output_unique && output_first_repeated && countmode == count_none)
     {
-      char *prevfield IF_LINT ( = NULL);
-      size_t prevlen IF_LINT ( = 0);
+      char *prevfield = NULL;
+      size_t prevlen;
       bool first_group_printed = false;
 
       while (!feof (stdin))
@@ -368,7 +369,7 @@ check_file (const char *infile, const char *outfile, char delimiter)
           thisfield = find_field (thisline);
           thislen = thisline->length - 1 - (thisfield - thisline->buffer);
 
-          new_group = (prevline->length == 0
+          new_group = (!prevfield
                        || different (thisfield, prevfield, thislen, prevlen));
 
           if (new_group && grouping != GM_NONE

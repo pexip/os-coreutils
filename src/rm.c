@@ -1,5 +1,5 @@
 /* 'rm' file deletion utility for GNU.
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -180,7 +180,7 @@ use one of these commands:\n\
 \n\
 Note that if you use rm to remove a file, it might be possible to recover\n\
 some of its contents, given sufficient expertise and/or time.  For greater\n\
-assurance that the contents are truly unrecoverable, consider using shred.\n\
+assurance that the contents are truly unrecoverable, consider using shred(1).\n\
 "), stdout);
       emit_ancillary_info (PROGRAM_NAME);
     }

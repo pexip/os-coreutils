@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-if [ "$1" = 'remove' -a -L '/usr/bin/touch' ]; then
-  rm /usr/bin/touch
+if [ "$1" = 'remove' -a -L "$DPKG_ROOT/usr/bin/touch" ]; then
+  rm "$DPKG_ROOT/usr/bin/touch"
 fi
 
 #DEBHELPER#

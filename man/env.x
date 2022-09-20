@@ -1,4 +1,4 @@
-'\" Copyright (C) 1998-2020 Free Software Foundation, Inc.
+'\" Copyright (C) 1998-2022 Free Software Foundation, Inc.
 '\"
 '\" This is free software.  You may redistribute copies of it under the terms
 '\" of the GNU General Public License <https://www.gnu.org/licenses/gpl.html>.
@@ -54,7 +54,7 @@ sh \-c 'env \-\-default-signal=PIPE seq inf | head \-n1'
 .PP
 
 [NOTES]
-POSIX's exec(2) pages says:
+POSIX's exec(3p) pages says:
 .RS
 "many existing applications wrongly assume that they start with certain
 signals set to the default action and/or unblocked.... Therefore, it is best

@@ -1,17 +1,17 @@
 /* Work around platform bugs in utime.
-   Copyright (C) 2017-2020 Free Software Foundation, Inc.
+   Copyright (C) 2017-2022 Free Software Foundation, Inc.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+   This file is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   This file is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GNU Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
+   You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Bruno Haible.  */
@@ -28,6 +28,12 @@
 # include <windows.h>
 # include "filename.h"
 # include "malloca.h"
+
+/* Don't assume that UNICODE is not defined.  */
+# undef CreateFile
+# define CreateFile CreateFileA
+# undef GetFileAttributes
+# define GetFileAttributes GetFileAttributesA
 
 int
 _gl_utimens_windows (const char *name, struct timespec ts[2])
@@ -251,6 +257,32 @@ utime (const char *name, const struct utimbuf *ts)
       ts_with_nanoseconds[1].tv_nsec = 0;
       return _gl_utimens_windows (name, ts_with_nanoseconds);
     }
+}
+
+#else
+
+# include <errno.h>
+# include <sys/stat.h>
+# include "filename.h"
+
+int
+utime (const char *name, const struct utimbuf *ts)
+#undef utime
+{
+# if REPLACE_FUNC_UTIME_FILE
+  /* macOS 10.13 mistakenly succeeds when given a symbolic link to a
+     non-directory with a trailing slash.  */
+  size_t len = strlen (name);
+  if (len > 0 && ISSLASH (name[len - 1]))
+    {
+      struct stat buf;
+
+      if (stat (name, &buf) == -1 && errno != EOVERFLOW)
+        return -1;
+    }
+# endif /* REPLACE_FUNC_UTIME_FILE */
+
+  return utime (name, ts);
 }
 
 #endif

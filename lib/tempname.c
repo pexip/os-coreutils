@@ -1,35 +1,30 @@
-/* tempname.c - generate the name of a temporary file.
+/* Copyright (C) 1991-2022 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
 
-   Copyright (C) 1991-2003, 2005-2007, 2009-2020 Free Software Foundation, Inc.
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
+   The GNU C Library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
-
-/* Extracted from glibc sysdeps/posix/tempname.c.  See also tmpdir.c.  */
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, see
+   <https://www.gnu.org/licenses/>.  */
 
 #if !_LIBC
-# include <config.h>
+# include <libc-config.h>
 # include "tempname.h"
-# include "randint.h"
 #endif
 
 #include <sys/types.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include <errno.h>
-#ifndef __set_errno
-# define __set_errno(Val) errno = (Val)
-#endif
 
 #include <stdio.h>
 #ifndef P_tmpdir
@@ -48,58 +43,55 @@
 # error report this to bug-gnulib@gnu.org
 #endif
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <fcntl.h>
-#include <sys/time.h>
+#include <stdalign.h>
 #include <stdint.h>
-#include <unistd.h>
-
+#include <sys/random.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #if _LIBC
 # define struct_stat64 struct stat64
+# define __secure_getenv __libc_secure_getenv
 #else
 # define struct_stat64 struct stat
-# define __try_tempname try_tempname
 # define __gen_tempname gen_tempname
-# define __getpid getpid
-# define __gettimeofday gettimeofday
 # define __mkdir mkdir
 # define __open open
-# define __lxstat64(version, file, buf) lstat (file, buf)
+# define __lstat64(file, buf) lstat (file, buf)
+# define __stat64(file, buf) stat (file, buf)
+# define __getrandom getrandom
+# define __clock_gettime64 clock_gettime
+# define __timespec64 timespec
 #endif
 
-#ifdef _LIBC
-# include <hp-timing.h>
-# if HP_TIMING_AVAIL
-#  define RANDOM_BITS(Var) \
-  if (__builtin_expect (value == UINT64_C (0), 0))                            \
-    {                                                                         \
-      /* If this is the first time this function is used initialize           \
-         the variable we accumulate the value in to some somewhat             \
-         random value.  If we'd not do this programs at startup time          \
-         might have a reduced set of possible names, at least on slow         \
-         machines.  */                                                        \
-      struct timeval tv;                                                      \
-      __gettimeofday (&tv, NULL);                                             \
-      value = ((uint64_t) tv.tv_usec << 16) ^ tv.tv_sec;                      \
-    }                                                                         \
-  HP_TIMING_NOW (Var)
-# endif
-#endif
+/* Use getrandom if it works, falling back on a 64-bit linear
+   congruential generator that starts with Var's value
+   mixed in with a clock's low-order bits if available.  */
+typedef uint_fast64_t random_value;
+#define RANDOM_VALUE_MAX UINT_FAST64_MAX
+#define BASE_62_DIGITS 10 /* 62**10 < UINT_FAST64_MAX */
+#define BASE_62_POWER (62LL * 62 * 62 * 62 * 62 * 62 * 62 * 62 * 62 * 62)
 
-/* Use the widest available unsigned type if uint64_t is not
-   available.  The algorithm below extracts a number less than 62**6
-   (approximately 2**35.725) from uint64_t, so ancient hosts where
-   uintmax_t is only 32 bits lose about 3.725 bits of randomness,
-   which is better than not having mkstemp at all.  */
-#if !defined UINT64_MAX && !defined uint64_t
-# define uint64_t uintmax_t
+static random_value
+random_bits (random_value var, bool use_getrandom)
+{
+  random_value r;
+  /* Without GRND_NONBLOCK it can be blocked for minutes on some systems.  */
+  if (use_getrandom && __getrandom (&r, sizeof r, GRND_NONBLOCK) == sizeof r)
+    return r;
+#if _LIBC || (defined CLOCK_MONOTONIC && HAVE_CLOCK_GETTIME)
+  /* Add entropy if getrandom did not work.  */
+  struct __timespec64 tv;
+  __clock_gettime64 (CLOCK_MONOTONIC, &tv);
+  var ^= tv.tv_nsec;
 #endif
+  return 2862933555777941757 * var + 3037000493;
+}
 
 #if _LIBC
 /* Return nonzero if DIR is an existent directory.  */
@@ -107,7 +99,7 @@ static int
 direxists (const char *dir)
 {
   struct_stat64 buf;
-  return __xstat64 (_STAT_VER, dir, &buf) == 0 && S_ISDIR (buf.st_mode);
+  return __stat64 (dir, &buf) == 0 && S_ISDIR (buf.st_mode);
 }
 
 /* Path search algorithm, for tmpnam, tmpfile, etc.  If DIR is
@@ -174,16 +166,74 @@ __path_search (char *tmpl, size_t tmpl_len, const char *dir, const char *pfx,
 }
 #endif /* _LIBC */
 
-static inline bool _GL_ATTRIBUTE_PURE
-check_x_suffix (char const *s, size_t len)
+#if _LIBC
+static int try_tempname_len (char *, int, void *, int (*) (char *, void *),
+                             size_t);
+#endif
+
+static int
+try_file (char *tmpl, void *flags)
 {
-  return len <= strspn (s, "X");
+  int *openflags = flags;
+  return __open (tmpl,
+                 (*openflags & ~O_ACCMODE)
+                 | O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+}
+
+static int
+try_dir (char *tmpl, _GL_UNUSED void *flags)
+{
+  return __mkdir (tmpl, S_IRUSR | S_IWUSR | S_IXUSR);
+}
+
+static int
+try_nocreate (char *tmpl, _GL_UNUSED void *flags)
+{
+  struct_stat64 st;
+
+  if (__lstat64 (tmpl, &st) == 0 || errno == EOVERFLOW)
+    __set_errno (EEXIST);
+  return errno == ENOENT ? 0 : -1;
 }
 
 /* These are the characters used in temporary file names.  */
 static const char letters[] =
 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
+/* Generate a temporary file name based on TMPL.  TMPL must match the
+   rules for mk[s]temp (i.e., end in at least X_SUFFIX_LEN "X"s,
+   possibly with a suffix).
+   The name constructed does not exist at the time of the call to
+   this function.  TMPL is overwritten with the result.
+
+   KIND may be one of:
+   __GT_NOCREATE:       simply verify that the name does not exist
+                        at the time of the call.
+   __GT_FILE:           create the file using open(O_CREAT|O_EXCL)
+                        and return a read-write fd.  The file is mode 0600.
+   __GT_DIR:            create a directory, which will be mode 0700.
+
+   We use a clever algorithm to get hard-to-predict names. */
+#ifdef _LIBC
+static
+#endif
+int
+gen_tempname_len (char *tmpl, int suffixlen, int flags, int kind,
+                  size_t x_suffix_len)
+{
+  static int (*const tryfunc[]) (char *, void *) =
+    {
+      [__GT_FILE] = try_file,
+      [__GT_DIR] = try_dir,
+      [__GT_NOCREATE] = try_nocreate
+    };
+  return try_tempname_len (tmpl, suffixlen, &flags, tryfunc[kind],
+                           x_suffix_len);
+}
+
+#ifdef _LIBC
+static
+#endif
 int
 try_tempname_len (char *tmpl, int suffixlen, void *args,
                   int (*tryfunc) (char *, void *), size_t x_suffix_len)
@@ -193,7 +243,6 @@ try_tempname_len (char *tmpl, int suffixlen, void *args,
   unsigned int count;
   int fd = -1;
   int save_errno = errno;
-  struct randint_source *rand_src;
 
   /* A lower bound on the number of temporary files to attempt to
      generate.  The maximum total number of temporary file names that
@@ -212,10 +261,30 @@ try_tempname_len (char *tmpl, int suffixlen, void *args,
   unsigned int attempts = ATTEMPTS_MIN;
 #endif
 
+  /* A random variable.  The initial value is used only the for fallback path
+     on 'random_bits' on 'getrandom' failure.  Its initial value tries to use
+     some entropy from the ASLR and ignore possible bits from the stack
+     alignment.  */
+  random_value v = ((uintptr_t) &v) / alignof (max_align_t);
+
+  /* How many random base-62 digits can currently be extracted from V.  */
+  int vdigits = 0;
+
+  /* Whether to consume entropy when acquiring random bits.  On the
+     first try it's worth the entropy cost with __GT_NOCREATE, which
+     is inherently insecure and can use the entropy to make it a bit
+     less secure.  On the (rare) second and later attempts it might
+     help against DoS attacks.  */
+  bool use_getrandom = tryfunc == try_nocreate;
+
+  /* Least unfair value for V.  If V is less than this, V can generate
+     BASE_62_DIGITS digits fairly.  Otherwise it might be biased.  */
+  random_value const unfair_min
+    = RANDOM_VALUE_MAX - RANDOM_VALUE_MAX % BASE_62_POWER;
+
   len = strlen (tmpl);
   if (len < x_suffix_len + suffixlen
-      || ! check_x_suffix (&tmpl[len - x_suffix_len - suffixlen],
-                           x_suffix_len))
+      || strspn (&tmpl[len - x_suffix_len - suffixlen], "X") < x_suffix_len)
     {
       __set_errno (EINVAL);
       return -1;
@@ -224,110 +293,40 @@ try_tempname_len (char *tmpl, int suffixlen, void *args,
   /* This is where the Xs start.  */
   XXXXXX = &tmpl[len - x_suffix_len - suffixlen];
 
-  /* Get some more or less random data.  */
-  rand_src = randint_all_new (NULL, x_suffix_len);
-  if (! rand_src)
-    return -1;
-
   for (count = 0; count < attempts; ++count)
     {
-      size_t i;
+      for (size_t i = 0; i < x_suffix_len; i++)
+        {
+          if (vdigits == 0)
+            {
+              do
+                {
+                  v = random_bits (v, use_getrandom);
+                  use_getrandom = true;
+                }
+              while (unfair_min <= v);
 
-      for (i = 0; i < x_suffix_len; i++)
-        XXXXXX[i] = letters[randint_genmax (rand_src, sizeof letters - 2)];
+              vdigits = BASE_62_DIGITS;
+            }
+
+          XXXXXX[i] = letters[v % 62];
+          v /= 62;
+          vdigits--;
+        }
 
       fd = tryfunc (tmpl, args);
       if (fd >= 0)
         {
           __set_errno (save_errno);
-          goto done;
+          return fd;
         }
       else if (errno != EEXIST)
-        {
-          fd = -1;
-          goto done;
-        }
+        return -1;
     }
-
-  randint_all_free (rand_src);
 
   /* We got out of the loop because we ran out of combinations to try.  */
   __set_errno (EEXIST);
   return -1;
-
- done:
-  {
-    int saved_errno = errno;
-    randint_all_free (rand_src);
-    __set_errno (saved_errno);
-  }
-  return fd;
-}
-
-static int
-try_file (char *tmpl, void *flags)
-{
-  int *openflags = flags;
-  return __open (tmpl,
-                 (*openflags & ~O_ACCMODE)
-                 | O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-}
-
-static int
-try_dir (char *tmpl, void *flags _GL_UNUSED)
-{
-  return __mkdir (tmpl, S_IRUSR | S_IWUSR | S_IXUSR);
-}
-
-static int
-try_nocreate (char *tmpl, void *flags _GL_UNUSED)
-{
-  struct_stat64 st;
-
-  if (__lxstat64 (_STAT_VER, tmpl, &st) == 0 || errno == EOVERFLOW)
-    __set_errno (EEXIST);
-  return errno == ENOENT ? 0 : -1;
-}
-
-/* Generate a temporary file name based on TMPL.  TMPL must match the
-   rules for mk[s]temp (i.e., end in at least X_SUFFIX_LEN "X"s,
-   possibly with a suffix).
-   The name constructed does not exist at the time of the call to
-   this function.  TMPL is overwritten with the result.
-
-   KIND may be one of:
-   __GT_NOCREATE:       simply verify that the name does not exist
-                        at the time of the call.
-   __GT_FILE:           create the file using open(O_CREAT|O_EXCL)
-                        and return a read-write fd.  The file is mode 0600.
-   __GT_DIR:            create a directory, which will be mode 0700.
-
-   We use a clever algorithm to get hard-to-predict names. */
-int
-gen_tempname_len (char *tmpl, int suffixlen, int flags, int kind,
-                  size_t x_suffix_len)
-{
-  int (*tryfunc) (char *, void *);
-
-  switch (kind)
-    {
-    case __GT_FILE:
-      tryfunc = try_file;
-      break;
-
-    case __GT_DIR:
-      tryfunc = try_dir;
-      break;
-
-    case __GT_NOCREATE:
-      tryfunc = try_nocreate;
-      break;
-
-    default:
-      assert (! "invalid KIND in __gen_tempname");
-      abort ();
-    }
-  return try_tempname_len (tmpl, suffixlen, &flags, tryfunc, x_suffix_len);
 }
 
 int
@@ -336,9 +335,11 @@ __gen_tempname (char *tmpl, int suffixlen, int flags, int kind)
   return gen_tempname_len (tmpl, suffixlen, flags, kind, 6);
 }
 
+#if !_LIBC
 int
-__try_tempname (char *tmpl, int suffixlen, void *args,
-                int (*tryfunc) (char *, void *))
+try_tempname (char *tmpl, int suffixlen, void *args,
+              int (*tryfunc) (char *, void *))
 {
   return try_tempname_len (tmpl, suffixlen, args, tryfunc, 6);
 }
+#endif

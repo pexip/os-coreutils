@@ -1,6 +1,6 @@
 /* Generate random integers.
 
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,11 +32,17 @@ typedef uintmax_t randint;
 
 struct randint_source;
 
-struct randint_source *randint_new (struct randread_source *);
-struct randint_source *randint_all_new (char const *, size_t);
+void randint_free (struct randint_source *) _GL_ATTRIBUTE_NONNULL ();
+int randint_all_free (struct randint_source *) _GL_ATTRIBUTE_NONNULL ();
+struct randint_source *randint_new (struct randread_source *)
+  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC (randint_free, 1)
+  _GL_ATTRIBUTE_NONNULL () _GL_ATTRIBUTE_RETURNS_NONNULL;
+struct randint_source *randint_all_new (char const *, size_t)
+  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC (randint_all_free, 1);
 struct randread_source *randint_get_source (struct randint_source const *)
-  _GL_ATTRIBUTE_PURE;
-randint randint_genmax (struct randint_source *, randint genmax);
+  _GL_ATTRIBUTE_NONNULL () _GL_ATTRIBUTE_PURE;
+randint randint_genmax (struct randint_source *, randint genmax)
+  _GL_ATTRIBUTE_NONNULL ();
 
 /* Consume random data from *S to generate a random number in the range
    0 .. CHOICES-1.  CHOICES must be nonzero.  */
@@ -45,8 +51,5 @@ randint_choose (struct randint_source *s, randint choices)
 {
   return randint_genmax (s, choices - 1);
 }
-
-void randint_free (struct randint_source *);
-int randint_all_free (struct randint_source *);
 
 #endif

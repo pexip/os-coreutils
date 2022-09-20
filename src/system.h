@@ -1,5 +1,5 @@
 /* system-dependent definitions for coreutils
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,16 +16,14 @@
 
 /* Include this file _after_ system headers if possible.  */
 
+#include <attribute.h>
+
 #include <alloca.h>
 
 #include <sys/stat.h>
 
 /* Commonly used file permission combination.  */
 #define MODE_RW_UGO (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
-
-#if !defined HAVE_MKFIFO
-# define mkfifo(name, mode) mknod (name, (mode) | S_IFIFO, 0)
-#endif
 
 #if HAVE_SYS_PARAM_H
 # include <sys/param.h>
@@ -103,6 +101,11 @@ initialize_exit_failure (int status)
 }
 
 #include <fcntl.h>
+#ifdef O_PATH
+enum { O_PATHSEARCH = O_PATH };
+#else
+enum { O_PATHSEARCH = O_SEARCH };
+#endif
 
 #include <dirent.h>
 #ifndef _D_EXACT_NAMLEN
@@ -277,7 +280,7 @@ dot_or_dotdot (char const *file_name)
 static inline struct dirent const *
 readdir_ignoring_dot_and_dotdot (DIR *dirp)
 {
-  while (1)
+  while (true)
     {
       struct dirent const *dp = readdir (dirp);
       if (dp == NULL || ! dot_or_dotdot (dp->d_name))
@@ -350,9 +353,9 @@ enum
 "for details about the options it supports.\n")
 
 #define HELP_OPTION_DESCRIPTION \
-  _("      --help     display this help and exit\n")
+  _("      --help        display this help and exit\n")
 #define VERSION_OPTION_DESCRIPTION \
-  _("      --version  output version information and exit\n")
+  _("      --version     output version information and exit\n")
 
 #include "closein.h"
 #include "closeout.h"
@@ -365,7 +368,7 @@ enum
 /* Define away proper_name (leaving proper_name_utf8, which affects far
    fewer programs), since it's not worth the cost of adding ~17KB to
    the x86_64 text size of every single program.  This avoids a 40%
-   (almost ~2MB) increase in the on-disk space utilization for the set
+   (almost ~2MB) increase in the file system space utilization for the set
    of the 100 binaries. */
 #define proper_name(x) (x)
 
@@ -378,14 +381,7 @@ enum
     exit (EXIT_SUCCESS);						\
     break;
 
-#ifndef MAX
-# define MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif
-
-#ifndef MIN
-# define MIN(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-
+#include "minmax.h"
 #include "intprops.h"
 
 #ifndef SSIZE_MAX
@@ -412,29 +408,23 @@ enum
 # define PID_T_MAX TYPE_MAXIMUM (pid_t)
 #endif
 
-/* Use this to suppress gcc's '...may be used before initialized' warnings. */
+/* Use this to suppress gcc warnings.  */
 #ifdef lint
 # define IF_LINT(Code) Code
 #else
 # define IF_LINT(Code) /* empty */
 #endif
 
-#ifndef __attribute__
-# if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 8)
-#  define __attribute__(x) /* empty */
-# endif
-#endif
-
-#ifndef ATTRIBUTE_NORETURN
-# define ATTRIBUTE_NORETURN __attribute__ ((__noreturn__))
-#endif
-
-/* The warn_unused_result attribute appeared first in gcc-3.4.0 */
-#undef ATTRIBUTE_WARN_UNUSED_RESULT
-#if __GNUC__ < 3 || (__GNUC__ == 3 && __GNUC_MINOR__ < 4)
-# define ATTRIBUTE_WARN_UNUSED_RESULT /* empty */
+/* main_exit should be called only from the main function.  It is
+   equivalent to 'exit'.  When checking for lint it calls 'exit', to
+   pacify gcc -fsanitize=lint which would otherwise have false alarms
+   for pointers in the main function's activation record.  Otherwise
+   it simply returns from 'main'; this used to be what gcc's static
+   checking preferred and may yet be again.  */
+#ifdef lint
+# define main_exit(status) exit (status)
 #else
-# define ATTRIBUTE_WARN_UNUSED_RESULT __attribute__ ((__warn_unused_result__))
+# define main_exit(status) return status
 #endif
 
 #ifdef __GNUC__
@@ -453,7 +443,7 @@ enum
 # define ASSIGN_STRDUPA(DEST, S)		\
   do						\
     {						\
-      const char *s_ = (S);			\
+      char const *s_ = (S);			\
       size_t len_ = strlen (s_) + 1;		\
       char *tmp_dest_ = alloca (len_);		\
       DEST = memcpy (tmp_dest_, s_, len_);	\
@@ -468,7 +458,8 @@ enum
 /* Compute the greatest common divisor of U and V using Euclid's
    algorithm.  U and V must be nonzero.  */
 
-static inline size_t _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static inline size_t
 gcd (size_t u, size_t v)
 {
   do
@@ -486,7 +477,8 @@ gcd (size_t u, size_t v)
    nonzero.  There is no overflow checking, so callers should not
    specify outlandish sizes.  */
 
-static inline size_t _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static inline size_t
 lcm (size_t u, size_t v)
 {
   return u * (v / gcd (u, v));
@@ -508,7 +500,8 @@ ptr_align (void const *ptr, size_t alignment)
 /* Return whether the buffer consists entirely of NULs.
    Based on memeqzero in CCAN by Rusty Russell under CC0 (Public domain).  */
 
-static inline bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static inline bool
 is_nul (void const *buf, size_t length)
 {
   const unsigned char *p = buf;
@@ -656,7 +649,7 @@ emit_ancillary_info (char const *program)
 
   /* Don't output this redundant message for English locales.
      Note we still output for 'C' so that it gets included in the man page.  */
-  const char *lc_messages = setlocale (LC_MESSAGES, NULL);
+  char const *lc_messages = setlocale (LC_MESSAGES, NULL);
   if (lc_messages && STRNCMP_LIT (lc_messages, "en_"))
     {
       /* TRANSLATORS: Replace LANG_CODE in this URL with your language code
@@ -666,8 +659,12 @@ emit_ancillary_info (char const *program)
       fputs (_("Report any translation bugs to "
                "<https://translationproject.org/team/>\n"), stdout);
     }
+  /* .htaccess on the coreutils web site maps programs to the appropriate page,
+     however we explicitly handle "[" -> "test" here as the "[" is not
+     recognized as part of a URL by default in terminals.  */
+  char const *url_program = STREQ (program, "[") ? "test" : program;
   printf (_("Full documentation <%s%s>\n"),
-          PACKAGE_URL, program);
+          PACKAGE_URL, url_program);
   printf (_("or available locally via: info '(coreutils) %s%s'\n"),
           node, node == program ? " invocation" : "");
 }
@@ -708,7 +705,7 @@ usable_st_size (struct stat const *sb)
           || S_TYPEISSHM (sb) || S_TYPEISTMO (sb));
 }
 
-void usage (int status) ATTRIBUTE_NORETURN;
+_Noreturn void usage (int status);
 
 /* Like error(0, 0, ...), but without an implicit newline.
    Also a noop unless the global DEV_DEBUG is set.  */
@@ -751,12 +748,6 @@ stzncpy (char *restrict dest, char const *restrict src, size_t len)
 # define ARRAY_CARDINALITY(Array) (sizeof (Array) / sizeof *(Array))
 #endif
 
-/* Avoid const warnings by casting to more portable type.
-   This is to cater for the incorrect const function declarations
-   in selinux.h before libselinux-2.3 (May 2014).
-   When version >= 2.3 is ubiquitous remove this function.  */
-static inline char * se_const (char const * sctx) { return (char *) sctx; }
-
 /* Return true if ERR is ENOTSUP or EOPNOTSUPP, otherwise false.
    This wrapper function avoids the redundant 'or'd comparison on
    systems like Linux for which they have the same value.  It also
@@ -785,11 +776,3 @@ is_ENOTSUP (int err)
   quotearg_style (shell_escape_always_quoting_style, arg)
 #define quoteaf_n(n, arg) \
   quotearg_n_style (n, shell_escape_always_quoting_style, arg)
-
-#ifndef FALLTHROUGH
-# if __GNUC__ < 7
-#  define FALLTHROUGH ((void) 0)
-# else
-#  define FALLTHROUGH __attribute__ ((__fallthrough__))
-# endif
-#endif

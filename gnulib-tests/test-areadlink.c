@@ -1,9 +1,9 @@
 /* Tests of areadlink.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -38,7 +38,7 @@
 
 /* Wrapper for testing areadlink.  */
 static char *
-do_areadlink (char const *name, size_t ignored _GL_UNUSED)
+do_areadlink (char const *name, _GL_UNUSED size_t ignored)
 {
   return areadlink (name);
 }

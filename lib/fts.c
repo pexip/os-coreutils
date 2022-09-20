@@ -1,10 +1,10 @@
 /* Traverse a file hierarchy.
 
-   Copyright (C) 2004-2020 Free Software Foundation, Inc.
+   Copyright (C) 2004-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -70,6 +70,7 @@ static char sccsid[] = "@(#)fts.c       8.6 (Berkeley) 8/14/94";
 #include <unistd.h>
 
 #if ! _LIBC
+# include "attribute.h"
 # include "fcntl--.h"
 # include "flexmember.h"
 # include "openat.h"
@@ -199,11 +200,11 @@ enum Fts_stat
     while (false)
 #endif
 
-#ifndef FALLTHROUGH
-# if __GNUC__ < 7
-#  define FALLTHROUGH ((void) 0)
-# else
+#ifdef _LIBC
+# if __GNUC__ >= 7
 #  define FALLTHROUGH __attribute__ ((__fallthrough__))
+# else
+#  define FALLTHROUGH ((void) 0)
 # endif
 #endif
 
@@ -401,7 +402,7 @@ fts_open (char * const *argv,
                early, doing it here saves us the trouble of ensuring
                later (where it'd be messier) that "." can in fact
                be opened.  If not, revert to FTS_NOCHDIR mode.  */
-            int fd = open (".", O_SEARCH);
+            int fd = open (".", O_SEARCH | O_CLOEXEC);
             if (fd < 0)
               {
                 /* Even if "." is unreadable, don't revert to FTS_NOCHDIR mode
@@ -445,7 +446,6 @@ fts_open (char * const *argv,
                 if ((parent = fts_alloc(sp, "", 0)) == NULL)
                         goto mem2;
                 parent->fts_level = FTS_ROOTPARENTLEVEL;
-                parent->fts_n_dirs_remaining = -1;
           }
 
         /* The classic fts implementation would call fts_stat with
@@ -634,9 +634,8 @@ fts_close (FTS *sp)
 }
 
 /* Minimum link count of a traditional Unix directory.  When leaf
-   optimization is OK and MIN_DIR_NLINK <= st_nlink, then st_nlink is
-   an upper bound on the number of subdirectories (counting "." and
-   "..").  */
+   optimization is OK and a directory's st_nlink == MIN_DIR_NLINK,
+   then the directory has no subdirectories.  */
 enum { MIN_DIR_NLINK = 2 };
 
 /* Whether leaf optimization is OK for a directory.  */
@@ -645,12 +644,8 @@ enum leaf_optimization
     /* st_nlink is not reliable for this directory's subdirectories.  */
     NO_LEAF_OPTIMIZATION,
 
-    /* Leaf optimization is OK, but is not useful for avoiding stat calls.  */
-    OK_LEAF_OPTIMIZATION,
-
-    /* Leaf optimization is not only OK: it is useful for avoiding
-       stat calls, because dirent.d_type does not work.  */
-    NOSTAT_LEAF_OPTIMIZATION
+    /* st_nlink == 2 means the directory lacks subdirectories.  */
+    OK_LEAF_OPTIMIZATION
   };
 
 #if (defined __linux__ || defined __ANDROID__) \
@@ -663,9 +658,7 @@ enum leaf_optimization
 # define S_MAGIC_CIFS 0xFF534D42
 # define S_MAGIC_NFS 0x6969
 # define S_MAGIC_PROC 0x9FA0
-# define S_MAGIC_REISERFS 0x52654973
 # define S_MAGIC_TMPFS 0x1021994
-# define S_MAGIC_XFS 0x58465342
 
 # ifdef HAVE___FSWORD_T
 typedef __fsword_t fsword;
@@ -782,23 +775,15 @@ dirent_inode_sort_may_be_useful (FTSENT const *p, int dir_fd)
 }
 
 /* Given an FTS entry P for a directory with descriptor DIR_FD,
-   return true if it is both useful and valid to apply leaf optimization.
-   The optimization is useful only for file systems that lack usable
-   dirent.d_type info.  The optimization is valid if an st_nlink value
-   of at least MIN_DIR_NLINK is an upper bound on the number of
-   subdirectories of D, counting "." and ".."  as subdirectories.
+   return whether it is valid to apply leaf optimization.
+   The optimization is valid if a directory's st_nlink value equal
+   to MIN_DIR_NLINK means the directory has no subdirectories.
    DIR_FD is negative if unavailable.  */
 static enum leaf_optimization
 leaf_optimization (FTSENT const *p, int dir_fd)
 {
   switch (filesystem_type (p, dir_fd))
     {
-      /* List here the file system types that may lack usable dirent.d_type
-         info, yet for which the optimization does apply.  */
-    case S_MAGIC_REISERFS:
-    case S_MAGIC_XFS: /* XFS lacked it until 2013-08-22 commit.  */
-      return NOSTAT_LEAF_OPTIMIZATION;
-
     case 0:
       /* Leaf optimization is unsafe if the file system type is unknown.  */
       FALLTHROUGH;
@@ -828,13 +813,13 @@ leaf_optimization (FTSENT const *p, int dir_fd)
 
 #else
 static bool
-dirent_inode_sort_may_be_useful (FTSENT const *p _GL_UNUSED,
-                                 int dir_fd _GL_UNUSED)
+dirent_inode_sort_may_be_useful (_GL_UNUSED FTSENT const *p,
+                                 _GL_UNUSED int dir_fd)
 {
   return true;
 }
 static enum leaf_optimization
-leaf_optimization (FTSENT const *p _GL_UNUSED, int dir_fd _GL_UNUSED)
+leaf_optimization (_GL_UNUSED FTSENT const *p, _GL_UNUSED int dir_fd)
 {
   return NO_LEAF_OPTIMIZATION;
 }
@@ -1023,26 +1008,7 @@ check_for_dir:
                 if (p->fts_info == FTS_NSOK)
                   {
                     if (p->fts_statp->st_size == FTS_STAT_REQUIRED)
-                      {
-                        FTSENT *parent = p->fts_parent;
-                        if (parent->fts_n_dirs_remaining == 0
-                            && ISSET(FTS_NOSTAT)
-                            && ISSET(FTS_PHYSICAL)
-                            && (leaf_optimization (parent, sp->fts_cwd_fd)
-                                == NOSTAT_LEAF_OPTIMIZATION))
-                          {
-                            /* nothing more needed */
-                          }
-                        else
-                          {
-                            p->fts_info = fts_stat(sp, p, false);
-                            if (S_ISDIR(p->fts_statp->st_mode)
-                                && p->fts_level != FTS_ROOTLEVEL
-                                && 0 < parent->fts_n_dirs_remaining
-                                && parent->fts_n_dirs_remaining != (nlink_t) -1)
-                                  parent->fts_n_dirs_remaining--;
-                          }
-                      }
+                      p->fts_info = fts_stat(sp, p, false);
                     else
                       fts_assert (p->fts_statp->st_size == FTS_NO_STAT_REQUIRED);
                   }
@@ -1127,7 +1093,7 @@ cd_dot_dot:
  */
 /* ARGSUSED */
 int
-fts_set(FTS *sp _GL_UNUSED, FTSENT *p, int instr)
+fts_set(_GL_UNUSED FTS *sp, FTSENT *p, int instr)
 {
         if (instr != 0 && instr != FTS_AGAIN && instr != FTS_FOLLOW &&
             instr != FTS_NOINSTR && instr != FTS_SKIP) {
@@ -1224,8 +1190,7 @@ fts_children (register FTS *sp, int instr)
 static int
 fts_compare_ino (struct _ftsent const **a, struct _ftsent const **b)
 {
-  return (a[0]->fts_statp->st_ino < b[0]->fts_statp->st_ino ? -1
-          : b[0]->fts_statp->st_ino < a[0]->fts_statp->st_ino ? 1 : 0);
+  return _GL_CMP (a[0]->fts_statp->st_ino, b[0]->fts_statp->st_ino);
 }
 
 /* Map the dirent.d_type value, DTYPE, to the corresponding stat.st_mode
@@ -1546,10 +1511,11 @@ mem1:                           saved_errno = errno;
                            inode numbers.  Some day we might optimize that
                            away, too, for directories where d_ino is known to
                            be valid.  */
-                        bool skip_stat = (ISSET(FTS_PHYSICAL)
-                                          && ISSET(FTS_NOSTAT)
+                        bool skip_stat = (ISSET(FTS_NOSTAT)
                                           && DT_IS_KNOWN(dp)
-                                          && ! DT_MUST_BE(dp, DT_DIR));
+                                          && ! DT_MUST_BE(dp, DT_DIR)
+                                          && (ISSET(FTS_PHYSICAL)
+                                              || ! DT_MUST_BE(dp, DT_LNK)));
                         p->fts_info = FTS_NSOK;
                         /* Propagate dirent.d_type information back
                            to caller, when possible.  */
@@ -1800,7 +1766,8 @@ fts_stat(FTS *sp, register FTSENT *p, bool follow)
 {
         struct stat *sbp = p->fts_statp;
 
-        if (p->fts_level == FTS_ROOTLEVEL && ISSET(FTS_COMFOLLOW))
+        if (ISSET (FTS_LOGICAL)
+            || (ISSET (FTS_COMFOLLOW) && p->fts_level == FTS_ROOTLEVEL))
                 follow = true;
 
         /*
@@ -1808,29 +1775,23 @@ fts_stat(FTS *sp, register FTSENT *p, bool follow)
          * a stat(2).  If that fails, check for a non-existent symlink.  If
          * fail, set the errno from the stat call.
          */
-        if (ISSET(FTS_LOGICAL) || follow) {
-                if (stat(p->fts_accpath, sbp)) {
-                        if (errno == ENOENT
-                            && lstat(p->fts_accpath, sbp) == 0) {
-                                __set_errno (0);
-                                return (FTS_SLNONE);
-                        }
-                        p->fts_errno = errno;
-                        goto err;
-                }
-        } else if (fstatat(sp->fts_cwd_fd, p->fts_accpath, sbp,
-                           AT_SYMLINK_NOFOLLOW)) {
-                p->fts_errno = errno;
-err:            memset(sbp, 0, sizeof(struct stat));
-                return (FTS_NS);
-        }
+        int flags = follow ? 0 : AT_SYMLINK_NOFOLLOW;
+        if (fstatat (sp->fts_cwd_fd, p->fts_accpath, sbp, flags) < 0)
+          {
+            if (follow && errno == ENOENT
+                && 0 <= fstatat (sp->fts_cwd_fd, p->fts_accpath, sbp,
+                                 AT_SYMLINK_NOFOLLOW))
+              {
+                __set_errno (0);
+                return FTS_SLNONE;
+              }
+
+            p->fts_errno = errno;
+            memset (sbp, 0, sizeof *sbp);
+            return FTS_NS;
+          }
 
         if (S_ISDIR(sbp->st_mode)) {
-                p->fts_n_dirs_remaining
-                  = ((sbp->st_nlink < MIN_DIR_NLINK
-                      || p->fts_level <= FTS_ROOTLEVEL)
-                     ? -1
-                     : sbp->st_nlink - (ISSET (FTS_SEEDOT) ? 0 : MIN_DIR_NLINK));
                 if (ISDOT(p->fts_name)) {
                         /* Command-line "." and ".." are real directories. */
                         return (p->fts_level == FTS_ROOTLEVEL ? FTS_D : FTS_DOT);

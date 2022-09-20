@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Basic tests for "md5sum".
 
-# Copyright (C) 1998-2020 Free Software Foundation, Inc.
+# Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,22 +44,24 @@ my @Tests =
                                 {OUT=>"\\$degenerate  .\\nfoo\n"}],
      ['backslash-2', {IN=> {".\\foo"=> ''}},
                                 {OUT=>"\\$degenerate  .\\\\foo\n"}],
+     ['backslash-3', {IN=> {".\rfoo"=> ''}},
+                                {OUT=>"\\$degenerate  .\\rfoo\n"}],
      ['check-1', '--check', {AUX=> {f=> ''}},
                                 {IN=> {'f.md5' => "$degenerate  f\n"}},
                                 {OUT=>"f: OK\n"}],
+     ['check-windows', '--check', {AUX=> {f=> ''}},
+                                {IN=> {'f.md5' => "$degenerate  f\r\n"}},
+                                {OUT=>"f: OK\n"}],
 
-     # Same as above, but with an added empty line, to provoke --strict.
+     # Same as above, but with an added empty line, to test --strict.
      ['ck-strict-1', '--check --strict', {AUX=> {f=> ''}},
                                 {IN=> {'f.md5' => "$degenerate  f\n\n"}},
-                                {OUT=>"f: OK\n"},
-                                {ERR=>"md5sum: "
-                                 . "WARNING: 1 line is improperly formatted\n"},
-                                {EXIT=> 1}],
+                                {OUT=>"f: OK\n"}],
 
      # As above, but with the invalid line first, to ensure that following
      # lines are processed in spite of the preceding invalid input line.
      ['ck-strict-2', '--check --strict', {AUX=> {f=> ''}},
-                                {IN=> {'in.md5' => "\n$degenerate  f\n"}},
+                                {IN=> {'in.md5' => "ERR\n$degenerate  f\n"}},
                                 {OUT=>"f: OK\n"},
                                 {ERR=>"md5sum: "
                                  . "WARNING: 1 line is improperly formatted\n"},
@@ -105,7 +107,7 @@ my @Tests =
      ['check-bsd', '--check', {IN=> {'f.sha1' => "SHA1 (f) = $degenerate\n"}},
                                 {AUX=> {f=> ''}},
                                 {ERR=>"md5sum: f.sha1: no properly formatted "
-                                       . "MD5 checksum lines found\n"},
+                                       . "checksum lines found\n"},
                                 {EXIT=> 1}],
      ['check-bsd2', '--check', {IN=> {'f.md5' => "MD5 (f) = $degenerate\n"}},
                                 {AUX=> {f=> ''}}, {OUT=>"f: OK\n"}],
@@ -115,7 +117,7 @@ my @Tests =
      ['check-openssl', '--check', {IN=> {'f.sha1' => "SHA1(f)= $degenerate\n"}},
                                 {AUX=> {f=> ''}},
                                 {ERR=>"md5sum: f.sha1: no properly formatted "
-                                       . "MD5 checksum lines found\n"},
+                                       . "checksum lines found\n"},
                                 {EXIT=> 1}],
      ['check-openssl2', '--check', {IN=> {'f.md5' => "MD5(f)= $degenerate\n"}},
                                 {AUX=> {f=> ''}}, {OUT=>"f: OK\n"}],
@@ -157,7 +159,7 @@ my @Tests =
                                     "006999e6df389641adf1fa3a74801d9d  f\n"}},
                                 {OUT=>"f: OK\n"}],
      ['bsd-segv', '--check', {IN=> {'z' => "MD5 ("}}, {EXIT=> 1},
-      {ERR=> "$prog: z: no properly formatted MD5 checksum lines found\n"}],
+      {ERR=> "$prog: z: no properly formatted checksum lines found\n"}],
 
      # Ensure that when there's a NUL byte among the checksum hex digits
      # we detect the invalid formatting and don't even open the file.
@@ -165,7 +167,7 @@ my @Tests =
      #   h: FAILED
      #   md5sum: WARNING: 1 of 1 computed checksum did NOT match
      ['nul-in-cksum', '--check', {IN=> {'h'=>("\0"x32)."  h\n"}}, {EXIT=> 1},
-      {ERR=> "$prog: h: no properly formatted MD5 checksum lines found\n"}],
+      {ERR=> "$prog: h: no properly formatted checksum lines found\n"}],
     );
 
 # Insert the '--text' argument for each test.

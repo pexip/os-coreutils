@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2011-2020 Free Software Foundation, Inc.
+ * Copyright (C) 2011-2022 Free Software Foundation, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -176,6 +176,68 @@ main (void)
       ASSERT (ptr == input + 10);
       ASSERT (errno == 0);
     }
+
+  /* Hexadecimal integer syntax.  */
+  {
+    const char input[] = "0x2A";
+    char *ptr;
+    long long result;
+    errno = 0;
+    result = strtoll (input, &ptr, 10);
+    ASSERT (result == 0LL);
+    ASSERT (ptr == input + 1);
+    ASSERT (errno == 0);
+  }
+  {
+    const char input[] = "0x2A";
+    char *ptr;
+    long long result;
+    errno = 0;
+    result = strtoll (input, &ptr, 16);
+    ASSERT (result == 42LL);
+    ASSERT (ptr == input + 4);
+    ASSERT (errno == 0);
+  }
+  {
+    const char input[] = "0x2A";
+    char *ptr;
+    long long result;
+    errno = 0;
+    result = strtoll (input, &ptr, 0);
+    ASSERT (result == 42LL);
+    ASSERT (ptr == input + 4);
+    ASSERT (errno == 0);
+  }
+  {
+    const char input[] = "0x";
+    char *ptr;
+    long long result;
+    errno = 0;
+    result = strtoll (input, &ptr, 10);
+    ASSERT (result == 0LL);
+    ASSERT (ptr == input + 1);
+    ASSERT (errno == 0);
+  }
+  {
+    const char input[] = "0x";
+    char *ptr;
+    long long result;
+    errno = 0;
+    result = strtoll (input, &ptr, 16);
+    ASSERT (result == 0LL);
+    ASSERT (ptr == input + 1);
+    ASSERT (errno == 0);
+  }
+  {
+    const char input[] = "0x";
+    char *ptr;
+    long long result;
+    errno = 0;
+    result = strtoll (input, &ptr, 0);
+    ASSERT (result == 0LL);
+    ASSERT (ptr == input + 1);
+    ASSERT (errno == 0);
+  }
 
   return 0;
 }

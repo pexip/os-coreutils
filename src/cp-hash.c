@@ -1,5 +1,5 @@
 /* cp-hash.c  -- file copying (hash search routines)
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ forget_created (ino_t ino, dev_t dev)
   probe.st_dev = dev;
   probe.name = NULL;
 
-  ent = hash_delete (src_to_dest, &probe);
+  ent = hash_remove (src_to_dest, &probe);
   if (ent)
     src_to_dest_free (ent);
 }
@@ -112,7 +112,7 @@ src_to_dest_lookup (ino_t ino, dev_t dev)
    Return NULL if inserted, otherwise non-NULL. */
 
 extern char *
-remember_copied (const char *name, ino_t ino, dev_t dev)
+remember_copied (char const *name, ino_t ino, dev_t dev)
 {
   struct Src_to_dest *ent;
   struct Src_to_dest *ent_from_table;
@@ -152,13 +152,4 @@ hash_init (void)
                                  src_to_dest_free);
   if (src_to_dest == NULL)
     xalloc_die ();
-}
-
-/* Reset the hash structure in the global variable 'htab' to
-   contain no entries.  */
-
-extern void
-forget_all (void)
-{
-  hash_free (src_to_dest);
 }

@@ -1,5 +1,5 @@
 /* pathchk -- check whether file names are valid or portable
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -204,7 +204,8 @@ portable_chars_only (char const *file, size_t filelen)
 
 /* Return the address of the start of the next file name component in F.  */
 
-static char * _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static char *
 component_start (char *f)
 {
   while (*f == '/')
@@ -214,7 +215,8 @@ component_start (char *f)
 
 /* Return the size of the file name component F.  F must be nonempty.  */
 
-static size_t _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static size_t
 component_len (char const *f)
 {
   size_t len;

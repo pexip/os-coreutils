@@ -1,10 +1,10 @@
 /* Case-insensitive buffer comparator.
-   Copyright (C) 1996-1997, 2000, 2003, 2006, 2009-2020 Free Software
+   Copyright (C) 1996-1997, 2000, 2003, 2006, 2009-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -40,8 +40,7 @@ memcasecmp (const void *vs1, const void *vs2, size_t n)
       unsigned char u2 = s2[i];
       int U1 = toupper (u1);
       int U2 = toupper (u2);
-      int diff = (UCHAR_MAX <= INT_MAX ? U1 - U2
-                  : U1 < U2 ? -1 : U2 < U1);
+      int diff = (UCHAR_MAX <= INT_MAX ? U1 - U2 : _GL_CMP (U1, U2));
       if (diff)
         return diff;
     }

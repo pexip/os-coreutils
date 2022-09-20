@@ -1,5 +1,5 @@
-# localename.m4 serial 7
-dnl Copyright (C) 2007, 2009-2020 Free Software Foundation, Inc.
+# localename.m4 serial 8
+dnl Copyright (C) 2007, 2009-2022 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -33,7 +33,7 @@ AC_DEFUN([gl_LOCALENAME],
   if test $gl_func_freelocale != yes; then
     HAVE_FREELOCALE=0
   fi
-  if test $gt_nameless_locales = yes; then
+  if test $gt_localename_enhances_locale_funcs = yes; then
     REPLACE_NEWLOCALE=1
     REPLACE_DUPLOCALE=1
     REPLACE_FREELOCALE=1

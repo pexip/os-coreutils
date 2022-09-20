@@ -1,5 +1,5 @@
 /* mkdir -- make directories
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/types.h>
-#include <selinux/selinux.h>
+#include <selinux/label.h>
 
 #include "system.h"
 #include "die.h"
@@ -65,7 +65,8 @@ Create the DIRECTORY(ies), if they do not already exist.\n\
 
       fputs (_("\
   -m, --mode=MODE   set file mode (as in chmod), not a=rwx - umask\n\
-  -p, --parents     no error if existing, make parent directories as needed\n\
+  -p, --parents     no error if existing, make parent directories as needed,\n\
+                    with their file modes unaffected by any -m option.\n\
   -v, --verbose     print a message for each created directory\n\
 "), stdout);
       fputs (_("\
@@ -88,8 +89,11 @@ struct mkdir_options
      made.  */
   int (*make_ancestor_function) (char const *, char const *, void *);
 
-  /* Umask value in effect.  */
-  mode_t umask_value;
+  /* Umask value for when making an ancestor.  */
+  mode_t umask_ancestor;
+
+  /* Umask value for when making the directory itself.  */
+  mode_t umask_self;
 
   /* Mode for directory itself.  */
   mode_t mode;
@@ -98,7 +102,7 @@ struct mkdir_options
   mode_t mode_bits;
 
   /* Set the SELinux File Context.  */
-  bool set_security_context;
+  struct selabel_handle *set_security_context;
 
   /* If not null, format to use when reporting newly made directories.  */
   char const *created_directory_format;
@@ -123,25 +127,24 @@ make_ancestor (char const *dir, char const *component, void *options)
 {
   struct mkdir_options const *o = options;
 
-  if (o->set_security_context && defaultcon (component, S_IFDIR) < 0
+  if (o->set_security_context
+      && defaultcon (o->set_security_context, component, S_IFDIR) < 0
       && ! ignorable_ctx_err (errno))
     error (0, errno, _("failed to set default creation context for %s"),
            quoteaf (dir));
 
-  mode_t user_wx = S_IWUSR | S_IXUSR;
-  bool self_denying_umask = (o->umask_value & user_wx) != 0;
-  if (self_denying_umask)
-    umask (o->umask_value & ~user_wx);
+  if (o->umask_ancestor != o->umask_self)
+    umask (o->umask_ancestor);
   int r = mkdir (component, S_IRWXUGO);
-  if (self_denying_umask)
+  if (o->umask_ancestor != o->umask_self)
     {
       int mkdir_errno = errno;
-      umask (o->umask_value);
+      umask (o->umask_self);
       errno = mkdir_errno;
     }
   if (r == 0)
     {
-      r = (o->umask_value & S_IRUSR) != 0;
+      r = (o->umask_ancestor & S_IRUSR) != 0;
       announce_mkdir (dir, options);
     }
   return r;
@@ -156,7 +159,8 @@ process_dir (char *dir, struct savewd *wd, void *options)
   /* If possible set context before DIR created.  */
   if (o->set_security_context)
     {
-      if (! o->make_ancestor_function && defaultcon (dir, S_IFDIR) < 0
+      if (! o->make_ancestor_function
+          && defaultcon (o->set_security_context, dir, S_IFDIR) < 0
           && ! ignorable_ctx_err (errno))
         error (0, errno, _("failed to set default creation context for %s"),
                quoteaf (dir));
@@ -176,7 +180,7 @@ process_dir (char *dir, struct savewd *wd, void *options)
   if (ret == EXIT_SUCCESS && o->set_security_context
       && o->make_ancestor_function)
     {
-      if (! restorecon (last_component (dir), false, false)
+      if (! restorecon (o->set_security_context, last_component (dir), false)
           && ! ignorable_ctx_err (errno))
         error (0, errno, _("failed to restore context for %s"),
                quoteaf (dir));
@@ -188,7 +192,7 @@ process_dir (char *dir, struct savewd *wd, void *options)
 int
 main (int argc, char **argv)
 {
-  const char *specified_mode = NULL;
+  char const *specified_mode = NULL;
   int optc;
   char const *scontext = NULL;
   struct mkdir_options options;
@@ -197,7 +201,7 @@ main (int argc, char **argv)
   options.mode = S_IRWXUGO;
   options.mode_bits = 0;
   options.created_directory_format = NULL;
-  options.set_security_context = false;
+  options.set_security_context = NULL;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -231,7 +235,12 @@ main (int argc, char **argv)
               if (optarg)
                 scontext = optarg;
               else
-                options.set_security_context = true;
+                {
+                  options.set_security_context = selabel_open (SELABEL_CTX_FILE,
+                                                               NULL, 0);
+                  if (! options.set_security_context)
+                    error (0, errno, _("warning: ignoring --context"));
+                }
             }
           else if (optarg)
             {
@@ -255,14 +264,14 @@ main (int argc, char **argv)
 
   /* FIXME: This assumes mkdir() is done in the same process.
      If that's not always the case we would need to call this
-     like we do when options.set_security_context == true.  */
+     like we do when options.set_security_context.  */
   if (scontext)
     {
       int ret = 0;
       if (is_smack_enabled ())
         ret = smack_set_label_for_self (scontext);
       else
-        ret = setfscreatecon (se_const (scontext));
+        ret = setfscreatecon (scontext);
 
       if (ret < 0)
         die (EXIT_FAILURE, errno,
@@ -274,8 +283,7 @@ main (int argc, char **argv)
   if (options.make_ancestor_function || specified_mode)
     {
       mode_t umask_value = umask (0);
-      umask (umask_value);
-      options.umask_value = umask_value;
+      options.umask_ancestor = umask_value & ~(S_IWUSR | S_IXUSR);
 
       if (specified_mode)
         {
@@ -285,10 +293,16 @@ main (int argc, char **argv)
                  quote (specified_mode));
           options.mode = mode_adjust (S_IRWXUGO, true, umask_value, change,
                                       &options.mode_bits);
+          options.umask_self = umask_value & ~options.mode;
           free (change);
         }
       else
-        options.mode = S_IRWXUGO;
+        {
+          options.mode = S_IRWXUGO;
+          options.umask_self = umask_value;
+        }
+
+      umask (options.umask_self);
     }
 
   return savewd_process_files (argc - optind, argv + optind,
