@@ -1,5 +1,5 @@
 /* GNU's users.
-   Copyright (C) 1992-2020 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ list_entries_users (size_t n, const STRUCT_UTMP *this)
    Use read_utmp OPTIONS to read FILENAME.  */
 
 static void
-users (const char *filename, int options)
+users (char const *filename, int options)
 {
   size_t n_users;
   STRUCT_UTMP *utmp_buf;

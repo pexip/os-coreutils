@@ -1,6 +1,6 @@
 /* Bob Jenkins's cryptographic random number generators, ISAAC and ISAAC64.
 
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
    Copyright (C) 1997, 1998, 1999 Colin Plumb.
 
    This program is free software: you can redistribute it and/or modify
@@ -59,7 +59,8 @@ struct isaac_state
     isaac_word a, b, c;		/* Extra variables */
   };
 
-void isaac_seed (struct isaac_state *);
-void isaac_refill (struct isaac_state *, isaac_word[ISAAC_WORDS]);
+void isaac_seed (struct isaac_state *) _GL_ATTRIBUTE_NONNULL ();
+void isaac_refill (struct isaac_state *, isaac_word[ISAAC_WORDS])
+  _GL_ATTRIBUTE_NONNULL ();
 
 #endif

@@ -1,11 +1,11 @@
 /* getusershell.c -- Return names of valid user shells.
 
-   Copyright (C) 1991, 1997, 2000-2001, 2003-2006, 2008-2020 Free Software
+   Copyright (C) 1991, 1997, 2000-2001, 2003-2006, 2008-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -39,11 +39,11 @@
 #include "stdio--.h"
 #include "xalloc.h"
 
-#if USE_UNLOCKED_IO
+#if GNULIB_GETUSERSHELL_SINGLE_THREAD
 # include "unlocked-io.h"
 #endif
 
-static size_t readname (char **, size_t *, FILE *);
+static idx_t readname (char **, idx_t *, FILE *);
 
 #if ! defined ADDITIONAL_DEFAULT_SHELLS && defined __MSDOS__
 # define ADDITIONAL_DEFAULT_SHELLS \
@@ -70,7 +70,7 @@ static FILE *shellstream = NULL;
 static char *line = NULL;
 
 /* Number of bytes allocated for 'line'. */
-static size_t line_size = 0;
+static idx_t line_size = 0;
 
 /* Return an entry from the shells file, ignoring comment lines.
    If the file doesn't exist, use the list in DEFAULT_SHELLS (above).
@@ -137,8 +137,8 @@ endusershell (void)
    Return the number of bytes placed in *NAME
    if some nonempty sequence was found, otherwise 0.  */
 
-static size_t
-readname (char **name, size_t *size, FILE *stream)
+static idx_t
+readname (char **name, idx_t *size, FILE *stream)
 {
   int c;
   size_t name_index = 0;
@@ -150,7 +150,7 @@ readname (char **name, size_t *size, FILE *stream)
   for (;;)
     {
       if (*size <= name_index)
-        *name = x2nrealloc (*name, size, sizeof **name);
+        *name = xpalloc (*name, size, 1, -1, sizeof **name);
       if (c == EOF || isspace (c))
         break;
       (*name)[name_index++] = c;

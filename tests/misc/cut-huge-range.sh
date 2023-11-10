@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure that cut does not allocate mem for large ranges
 
-# Copyright (C) 2012-2020 Free Software Foundation, Inc.
+# Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,30 +23,10 @@ getlimits_
 vm=$(get_min_ulimit_v_ returns_ 0 cut -b1 /dev/null) \
   || skip_ "this shell lacks ulimit support"
 
-# sed script to subtract one from the input.
-# Each input line should consist of a positive decimal number.
-# Each output line's number is one less than the input's.
-# There's no limit (other than line length) on the number's magnitude.
-subtract_one='
-  s/$/@/
-  : again
-  s/0@/@9/
-  s/1@/0/
-  s/2@/1/
-  s/3@/2/
-  s/4@/3/
-  s/5@/4/
-  s/6@/5/
-  s/7@/6/
-  s/8@/7/
-  s/9@/8/
-  t again
-'
-
 # Ensure we can cut up to our sentinel value.
 # Don't use expr to subtract one,
 # since UINTMAX_MAX may exceed its maximum value.
-CUT_MAX=$(echo $UINTMAX_MAX | sed "$subtract_one")
+CUT_MAX=$(expr $UINTMAX_MAX - 1) || framework_failure_
 
 # From coreutils-8.10 through 8.20, this would make cut try to allocate
 # a 256MiB bit vector.

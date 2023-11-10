@@ -1,6 +1,6 @@
 /* Root device and inode number checking.
 
-   Copyright (C) 2003-2020 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 # include "same-inode.h"
 
 struct dev_ino *
-get_root_dev_ino (struct dev_ino *root_d_i);
+get_root_dev_ino (struct dev_ino *root_d_i) _GL_ATTRIBUTE_NONNULL ();
 
 /* These macros are common to the programs that support the
    --preserve-root and --no-preserve-root options.  */

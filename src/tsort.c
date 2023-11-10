@@ -1,5 +1,5 @@
 /* tsort - topological sort.
-   Copyright (C) 1998-2020 Free Software Foundation, Inc.
+   Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,12 +49,13 @@ struct successor
   struct successor *next;
 };
 
-/* Each string is held in core as the head of a list of successors.  */
+/* Each string is held in memory as the head of a list of successors.  */
 struct item
 {
-  const char *str;
+  char const *str;
   struct item *left, *right;
-  int balance; /* -1, 0, or +1 */
+  signed char balance; /* -1, 0, or +1 */
+  bool printed;
   size_t count;
   struct item *qlink;
   struct successor *top;
@@ -99,19 +100,12 @@ Write totally ordered list consistent with the partial ordering in FILE.\n\
 
 /* Create a new item/node for STR.  */
 static struct item *
-new_item (const char *str)
+new_item (char const *str)
 {
-  struct item *k = xmalloc (sizeof *k);
-
-  k->str = (str ? xstrdup (str): NULL);
-  k->left = k->right = NULL;
-  k->balance = 0;
-
   /* T1. Initialize (COUNT[k] <- 0 and TOP[k] <- ^).  */
-  k->count = 0;
-  k->qlink = NULL;
-  k->top = NULL;
-
+  struct item *k = xzalloc (sizeof *k);
+  if (str)
+    k->str = xstrdup (str);
   return k;
 }
 
@@ -124,7 +118,7 @@ new_item (const char *str)
    Volume 3/Searching and Sorting, pages 455--457.  */
 
 static struct item *
-search_item (struct item *root, const char *str)
+search_item (struct item *root, char const *str)
 {
   struct item *p, *q, *r, *s, *t;
   int a;
@@ -143,6 +137,7 @@ search_item (struct item *root, const char *str)
   while (true)
     {
       /* A2. Compare.  */
+      assert (str && p && p->str);
       a = strcmp (str, p->str);
       if (a == 0)
         return p;
@@ -165,7 +160,7 @@ search_item (struct item *root, const char *str)
             p->right = q;
 
           /* A6. Adjust balance factors.  */
-          assert (!STREQ (str, s->str));
+          assert (str && s && s->str && !STREQ (str, s->str));
           if (strcmp (str, s->str) < 0)
             {
               r = p = s->left;
@@ -179,7 +174,7 @@ search_item (struct item *root, const char *str)
 
           while (p != q)
             {
-              assert (!STREQ (str, p->str));
+              assert (str && p && p->str && !STREQ (str, p->str));
               if (strcmp (str, p->str) < 0)
                 {
                   p->balance = -1;
@@ -284,7 +279,7 @@ record_relation (struct item *j, struct item *k)
 }
 
 static bool
-count_items (struct item *unused _GL_UNUSED)
+count_items (MAYBE_UNUSED struct item *unused)
 {
   n_strings++;
   return false;
@@ -294,7 +289,7 @@ static bool
 scan_zeros (struct item *k)
 {
   /* Ignore strings that have already been printed.  */
-  if (k->count == 0 && k->str)
+  if (k->count == 0 && !k->printed)
     {
       if (head == NULL)
         head = k;
@@ -357,8 +352,10 @@ detect_loop (struct item *k)
                           if (loop == k)
                             {
                               /* Remove relation.  */
-                              (*p)->suc->count--;
-                              *p = (*p)->next;
+                              struct successor *s = *p;
+                              s->suc->count--;
+                              *p = s->next;
+                              IF_LINT (free (s));
                               break;
                             }
 
@@ -429,10 +426,10 @@ walk_tree (struct item *root, bool (*action) (struct item *))
     recurse_tree (root->right, action);
 }
 
-/* Do a topological sort on FILE.   Return true if successful.  */
+/* Do a topological sort on FILE.  Exit with appropriate exit status.  */
 
-static bool
-tsort (const char *file)
+static _Noreturn void
+tsort (char const *file)
 {
   bool ok = true;
   struct item *root;
@@ -451,7 +448,7 @@ tsort (const char *file)
 
   init_tokenbuffer (&tokenbuffer);
 
-  while (1)
+  while (true)
     {
       /* T2. Next Relation.  */
       size_t len = readtoken (stdin, DELIM, sizeof (DELIM) - 1, &tokenbuffer);
@@ -489,12 +486,7 @@ tsort (const char *file)
 
           /* T5. Output front of queue.  */
           puts (head->str);
-#ifdef lint
-          /* suppress valgrind "definitely lost" warnings.  */
-          void *head_str = (void *) head->str;
-          free (head_str);
-#endif
-          head->str = NULL;	/* Avoid printing the same string twice.  */
+          head->printed = true;
           n_strings--;
 
           /* T6. Erase relations.  */
@@ -528,20 +520,16 @@ tsort (const char *file)
         }
     }
 
-  IF_LINT (free (root));
-
   if (fclose (stdin) != 0)
     die (EXIT_FAILURE, errno, "%s",
          is_stdin ? _("standard input") : quotef (file));
 
-  return ok;
+  exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 int
 main (int argc, char **argv)
 {
-  bool ok;
-
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
   setlocale (LC_ALL, "");
@@ -560,7 +548,5 @@ main (int argc, char **argv)
       usage (EXIT_FAILURE);
     }
 
-  ok = tsort (optind == argc ? "-" : argv[optind]);
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  tsort (optind == argc ? "-" : argv[optind]);
 }

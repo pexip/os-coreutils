@@ -1,5 +1,5 @@
 /* chgrp -- change group ownership of files
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ static struct option const long_options[] =
 /* Return the group ID of NAME, or -1 if no name was specified.  */
 
 static gid_t
-parse_group (const char *name)
+parse_group (char const *name)
 {
   gid_t gid = -1;
 
@@ -313,7 +313,5 @@ main (int argc, char **argv)
                     (uid_t) -1, gid,
                     (uid_t) -1, (gid_t) -1, &chopt);
 
-  IF_LINT (chopt_free (&chopt));
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

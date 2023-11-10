@@ -1,7 +1,7 @@
 #!/bin/sh
 # stat --format tests
 
-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
+# Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,5 +40,8 @@ cat <<\EOF >exp
 EOF
 compare exp out || fail=1
 
+# ensure %H and %L modifiers are handled
+stat -c '%r %R %Hd,%Ld %Hr,%Lr' . > out || fail=1
+grep -F '?' out && fail=1
 
 Exit $fail

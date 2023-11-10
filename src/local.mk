@@ -1,7 +1,7 @@
 # Make coreutils programs.                             -*-Makefile-*-
 # This is included by the top-level Makefile.am.
 
-## Copyright (C) 1990-2020 Free Software Foundation, Inc.
+## Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -46,7 +46,6 @@ noinst_HEADERS =		\
   src/die.h			\
   src/dircolors.h		\
   src/expand-common.h		\
-  src/fiemap.h			\
   src/find-mount-point.h	\
   src/fs.h			\
   src/fs-is-local.h		\
@@ -91,7 +90,9 @@ remove_ldadd =
 # must precede $(LIBINTL) in order to ensure we use GNU getopt.
 # But libcoreutils.a must also follow $(LIBINTL), since libintl uses
 # replacement functions defined in libcoreutils.a.
-LDADD = src/libver.a lib/libcoreutils.a $(LIBINTL) lib/libcoreutils.a
+# Similarly for $(LIB_MBRTOWC).
+LDADD = src/libver.a lib/libcoreutils.a $(LIBINTL) $(LIB_MBRTOWC) \
+  lib/libcoreutils.a
 
 # First, list all programs, to make listing per-program libraries easier.
 # See [ below.
@@ -250,12 +251,15 @@ src_stat_LDADD += $(LIB_SELINUX)
 # for nvlist_lookup_uint64_array
 src_stat_LDADD += $(LIB_NVPAIR)
 
-# for gettime, settime, utimecmp, utimens
+# for gettime, settime, tempname, utimecmp, utimens
 copy_ldadd += $(LIB_CLOCK_GETTIME)
 src_date_LDADD += $(LIB_CLOCK_GETTIME)
 src_ginstall_LDADD += $(LIB_CLOCK_GETTIME)
+src_ln_LDADD += $(LIB_CLOCK_GETTIME)
 src_ls_LDADD += $(LIB_CLOCK_GETTIME)
+src_mktemp_LDADD += $(LIB_CLOCK_GETTIME)
 src_pr_LDADD += $(LIB_CLOCK_GETTIME)
+src_tac_LDADD += $(LIB_CLOCK_GETTIME)
 src_timeout_LDADD += $(LIB_TIMER_TIME)
 src_touch_LDADD += $(LIB_CLOCK_GETTIME)
 
@@ -276,8 +280,8 @@ src_sort_LDADD += $(LIB_NANOSLEEP)
 src_tail_LDADD += $(LIB_NANOSLEEP)
 
 # for various GMP functions
-src_expr_LDADD += $(LIB_GMP)
-src_factor_LDADD += $(LIB_GMP)
+src_expr_LDADD += $(LIBGMP)
+src_factor_LDADD += $(LIBGMP)
 
 # for getloadavg
 src_uptime_LDADD += $(GETLOADAVG_LIBS)
@@ -302,6 +306,7 @@ src_sha224sum_LDADD += $(LIB_CRYPTO)
 src_sha256sum_LDADD += $(LIB_CRYPTO)
 src_sha384sum_LDADD += $(LIB_CRYPTO)
 src_sha512sum_LDADD += $(LIB_CRYPTO)
+src_cksum_LDADD += $(LIB_CRYPTO)
 
 # for canon_host
 src_pinky_LDADD += $(GETADDRINFO_LIB)
@@ -314,8 +319,11 @@ src_uname_LDADD += $(GETHOSTNAME_LIB)
 # for strsignal
 src_kill_LDADD += $(LIBTHREAD)
 
-# for pthread
-src_sort_LDADD += $(LIB_PTHREAD)
+# for pthread-cond, pthread-mutex, pthread-thread
+src_sort_LDADD += $(LIBPMULTITHREAD)
+
+# for pthread_sigmask
+src_sort_LDADD += $(LIB_PTHREAD_SIGMASK)
 
 # Get the release year from lib/version-etc.c.
 RELEASE_YEAR = \
@@ -329,8 +337,6 @@ selinux_sources = \
 copy_sources = \
   src/copy.c \
   src/cp-hash.c \
-  src/extent-scan.c \
-  src/extent-scan.h \
   src/force-link.c \
   src/force-link.h
 
@@ -389,22 +395,37 @@ src_arch_SOURCES = src/uname.c src/uname-arch.c
 src_cut_SOURCES = src/cut.c src/set-fields.c
 src_numfmt_SOURCES = src/numfmt.c src/set-fields.c
 
+src_sum_SOURCES = src/sum.c src/sum.h src/digest.c
+src_sum_CPPFLAGS = -DHASH_ALGO_SUM=1 $(AM_CPPFLAGS)
+
+src_md5sum_SOURCES = src/digest.c
 src_md5sum_CPPFLAGS = -DHASH_ALGO_MD5=1 $(AM_CPPFLAGS)
-src_sha1sum_SOURCES = src/md5sum.c
+src_sha1sum_SOURCES = src/digest.c
 src_sha1sum_CPPFLAGS = -DHASH_ALGO_SHA1=1 $(AM_CPPFLAGS)
-src_sha224sum_SOURCES = src/md5sum.c
+src_sha224sum_SOURCES = src/digest.c
 src_sha224sum_CPPFLAGS = -DHASH_ALGO_SHA224=1 $(AM_CPPFLAGS)
-src_sha256sum_SOURCES = src/md5sum.c
+src_sha256sum_SOURCES = src/digest.c
 src_sha256sum_CPPFLAGS = -DHASH_ALGO_SHA256=1 $(AM_CPPFLAGS)
-src_sha384sum_SOURCES = src/md5sum.c
+src_sha384sum_SOURCES = src/digest.c
 src_sha384sum_CPPFLAGS = -DHASH_ALGO_SHA384=1 $(AM_CPPFLAGS)
-src_sha512sum_SOURCES = src/md5sum.c
+src_sha512sum_SOURCES = src/digest.c
 src_sha512sum_CPPFLAGS = -DHASH_ALGO_SHA512=1 $(AM_CPPFLAGS)
 src_b2sum_CPPFLAGS = -DHASH_ALGO_BLAKE2=1 -DHAVE_CONFIG_H $(AM_CPPFLAGS)
-src_b2sum_SOURCES = src/md5sum.c \
+src_b2sum_SOURCES = src/digest.c \
 		    src/blake2/blake2.h src/blake2/blake2-impl.h \
 		    src/blake2/blake2b-ref.c \
 		    src/blake2/b2sum.c src/blake2/b2sum.h
+
+src_cksum_SOURCES = $(src_b2sum_SOURCES) src/sum.c src/sum.h \
+		    src/cksum.c src/cksum.h src/crctab.c
+src_cksum_CPPFLAGS = -DHASH_ALGO_CKSUM=1 -DHAVE_CONFIG_H $(AM_CPPFLAGS)
+if USE_PCLMUL_CRC32
+noinst_LIBRARIES += src/libcksum_pclmul.a
+src_libcksum_pclmul_a_SOURCES = src/cksum_pclmul.c src/cksum.h
+cksum_pclmul_ldadd = src/libcksum_pclmul.a
+src_cksum_LDADD += $(cksum_pclmul_ldadd)
+src_libcksum_pclmul_a_CFLAGS = -mavx -mpclmul $(AM_CFLAGS)
+endif
 
 src_base64_SOURCES = src/basenc.c
 src_base64_CPPFLAGS = -DBASE_TYPE=64 $(AM_CPPFLAGS)
@@ -413,10 +434,17 @@ src_base32_CPPFLAGS = -DBASE_TYPE=32 $(AM_CPPFLAGS)
 src_basenc_SOURCES = src/basenc.c
 src_basenc_CPPFLAGS = -DBASE_TYPE=42 $(AM_CPPFLAGS)
 
-src_ginstall_CPPFLAGS = -DENABLE_MATCHPATHCON=1 $(AM_CPPFLAGS)
-
 src_expand_SOURCES = src/expand.c src/expand-common.c
 src_unexpand_SOURCES = src/unexpand.c src/expand-common.c
+
+src_wc_SOURCES = src/wc.c
+if USE_AVX2_WC_LINECOUNT
+noinst_LIBRARIES += src/libwc_avx2.a
+src_libwc_avx2_a_SOURCES = src/wc_avx2.c
+wc_avx2_ldadd = src/libwc_avx2.a
+src_wc_LDADD += $(wc_avx2_ldadd)
+src_libwc_avx2_a_CFLAGS = -mavx2 $(AM_CFLAGS)
+endif
 
 # Ensure we don't link against libcoreutils.a as that lib is
 # not compiled with -fPIC which causes issues on 64 bit at least
@@ -511,7 +539,7 @@ src/fs-magic-compare: src/fs-magic src/fs-kernel-magic src/fs-def
 
 CLEANFILES += src/fs-def
 src/fs-def: src/fs.h
-	grep '^# *define ' src/fs.h | $(ASSORT) > $@-t && mv $@-t $@
+	@grep '^# *define ' src/fs.h | $(ASSORT) > $@-t && mv $@-t $@
 
 # Massage bits of the statfs man page and definitions from
 # /usr/include/linux/magic.h to be in a form consistent with what's in fs.h.
@@ -525,6 +553,7 @@ fs_normalize_perl_subst =			\
   -e 's/AFS_FS/KAFS/;'				\
   -e 's/(_SUPER)?_MAGIC//;'			\
   -e 's/\s+0x(\S+)/" 0x" . uc $$1/e;'		\
+  -e 's/(\s+0x)(\X{2})\b/$${1}00$$2/;'		\
   -e 's/(\s+0x)(\X{3})\b/$${1}0$$2/;'		\
   -e 's/(\s+0x)(\X{6})\b/$${1}00$$2/;'		\
   -e 's/(\s+0x)(\X{7})\b/$${1}0$$2/;'		\

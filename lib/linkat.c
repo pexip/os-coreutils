@@ -1,9 +1,9 @@
 /* Create a hard link relative to open directories.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -29,19 +29,9 @@
 
 #include "areadlink.h"
 #include "dirname.h"
+#include "eloop-threshold.h"
 #include "filenamecat.h"
 #include "openat-priv.h"
-
-#if HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#endif
-#ifndef MAXSYMLINKS
-# ifdef SYMLOOP_MAX
-#  define MAXSYMLINKS SYMLOOP_MAX
-# else
-#  define MAXSYMLINKS 20
-# endif
-#endif
 
 #if !HAVE_LINKAT || LINKAT_SYMLINK_NOTSUP
 
@@ -74,10 +64,8 @@ link_immediate (char const *file1, char const *file2)
           if (st1.st_dev == st2.st_dev)
             {
               int result = symlink (target, file2);
-              int saved_errno = errno;
               free (target);
               free (dir);
-              errno = saved_errno;
               return result;
             }
           free (target);
@@ -105,7 +93,7 @@ link_follow (char const *file1, char const *file2)
   char *name = (char *) file1;
   char *target;
   int result;
-  int i = MAXSYMLINKS;
+  int i = __eloop_threshold ();
 
   /* Using realpath or canonicalize_file_name is too heavy-handed: we
      don't need an absolute name, and we don't need to resolve
@@ -147,20 +135,12 @@ link_follow (char const *file1, char const *file2)
   if (!target && errno != EINVAL)
     {
       if (name != file1)
-        {
-          int saved_errno = errno;
-          free (name);
-          errno = saved_errno;
-        }
+        free (name);
       return -1;
     }
   result = link (name, file2);
   if (name != file1)
-    {
-      int saved_errno = errno;
-      free (name);
-      errno = saved_errno;
-    }
+    free (name);
   return result;
 }
 # endif /* 0 < LINK_FOLLOWS_SYMLINKS */
@@ -231,7 +211,7 @@ linkat_follow (int fd1, char const *file1, int fd2, char const *file2)
   char *name = (char *) file1;
   char *target;
   int result;
-  int i = MAXSYMLINKS;
+  int i = __eloop_threshold ();
 
   /* There is no realpathat.  */
   while (i-- && (target = areadlinkat (fd1, name)))
@@ -271,20 +251,12 @@ linkat_follow (int fd1, char const *file1, int fd2, char const *file2)
   if (!target && errno != EINVAL)
     {
       if (name != file1)
-        {
-          int saved_errno = errno;
-          free (name);
-          errno = saved_errno;
-        }
+        free (name);
       return -1;
     }
   result = linkat (fd1, name, fd2, file2, 0);
   if (name != file1)
-    {
-      int saved_errno = errno;
-      free (name);
-      errno = saved_errno;
-    }
+    free (name);
   return result;
 }
 

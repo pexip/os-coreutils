@@ -1,5 +1,5 @@
 /* echo.c, derived from code echo.c in Bash.
-   Copyright (C) 1987-2020 Free Software Foundation, Inc.
+   Copyright (C) 1987-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -80,6 +80,10 @@ If -e is in effect, the following sequences are recognized:\n\
   \\xHH    byte with hexadecimal value HH (1 to 2 digits)\n\
 "), stdout);
   printf (USAGE_BUILTIN_WARNING, PROGRAM_NAME);
+  fputs (_("\n\
+NOTE: printf(1) is a preferred alternative,\n\
+which does not have issues outputting option-like strings.\n\
+"), stdout);
   emit_ancillary_info (PROGRAM_NAME);
   exit (status);
 }
@@ -108,7 +112,7 @@ int
 main (int argc, char **argv)
 {
   bool display_return = true;
-  bool posixly_correct = getenv ("POSIXLY_CORRECT");
+  bool posixly_correct = !!getenv ("POSIXLY_CORRECT");
   bool allow_options =
     (! posixly_correct
      || (! DEFAULT_ECHO_TO_XPG && 1 < argc && STREQ (argv[1], "-n")));

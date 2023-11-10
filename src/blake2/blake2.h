@@ -18,18 +18,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __has_attribute
-# if __has_attribute (packed)
-#  define BLAKE2_PACKED(x) x __attribute__ ((packed))
-# endif
-#endif
-#if !defined BLAKE2_PACKED && defined _MSC_VER
+/* Pack a structure if possible.  This might save space, and is not
+   needed for correctness.  */
+#ifdef _MSC_VER
 # define BLAKE2_PACKED(x) __pragma (pack (push, 1)) x __pragma (pack (pop))
-#endif
-#ifndef BLAKE2_PACKED
-/* This should be good enough on other platforms.
-   If it's not good on yours, please file a bug report.  */
-# define BLAKE2_PACKED(x) x
+#else
+# define BLAKE2_PACKED(x) x _GL_ATTRIBUTE_PACKED
 #endif
 
 #if defined(__cplusplus)
@@ -145,8 +139,8 @@ extern "C" {
 
   /* Padded structs result in a compile-time error */
   enum {
-    BLAKE2_DUMMY_1 = 1/(sizeof(blake2s_param) == BLAKE2S_OUTBYTES),
-    BLAKE2_DUMMY_2 = 1/(sizeof(blake2b_param) == BLAKE2B_OUTBYTES)
+    BLAKE2_DUMMY_1 = 1 / (sizeof (blake2s_param) == BLAKE2S_OUTBYTES),
+    BLAKE2_DUMMY_2 = 1 / (sizeof (blake2b_param) == BLAKE2B_OUTBYTES)
   };
 
   /* Streaming API */
@@ -158,7 +152,8 @@ extern "C" {
 
   int blake2b_init( blake2b_state *S, size_t outlen );
   int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t keylen );
-  int blake2b_init_param( blake2b_state *S, const blake2b_param *P );
+  int blake2b_init_param (blake2b_state *S, const blake2b_param *P)
+    _GL_ATTRIBUTE_NONNULL ();
   int blake2b_update( blake2b_state *S, const void *in, size_t inlen );
   int blake2b_final( blake2b_state *S, void *out, size_t outlen );
 

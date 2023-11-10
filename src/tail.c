@@ -1,5 +1,5 @@
 /* tail -- output the last part of file(s)
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,9 +31,6 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <signal.h>
-#ifdef _AIX
-# include <poll.h>
-#endif
 
 #include "system.h"
 #include "argmatch.h"
@@ -56,6 +53,10 @@
 #if HAVE_INOTIFY
 # include "hash.h"
 # include <sys/inotify.h>
+#endif
+
+#if defined _AIX || defined __sun || HAVE_INOTIFY
+# include <poll.h>
 #endif
 
 /* Linux can optimize the handling of local files.  */
@@ -336,7 +337,7 @@ named file in a way that accommodates renaming, removal and creation.\n\
 }
 
 /* Ensure exit, either with SIGPIPE or EXIT_FAILURE status.  */
-static void ATTRIBUTE_NORETURN
+static void
 die_pipe (void)
 {
   raise (SIGPIPE);
@@ -351,13 +352,16 @@ check_output_alive (void)
   if (! monitor_output)
     return;
 
-#ifdef _AIX
-  /* select on AIX was seen to give a readable event immediately.  */
+  /* Use 'poll' on AIX (where 'select' was seen to give a readable
+     event immediately) or if using inotify (which relies on 'poll'
+     anyway).  Otherwise, use 'select' as it's more portable;
+     'poll' doesn't work for this application on macOS.  */
+#if defined _AIX || defined __sun || HAVE_INOTIFY
   struct pollfd pfd;
   pfd.fd = STDOUT_FILENO;
-  pfd.events = POLLERR;
+  pfd.events = pfd.revents = 0;
 
-  if (poll (&pfd, 1, 0) >= 0 && (pfd.revents & POLLERR))
+  if (poll (&pfd, 1, 0) >= 0 && (pfd.revents & (POLLERR | POLLHUP)))
     die_pipe ();
 #else
   struct timeval delay;
@@ -372,6 +376,7 @@ check_output_alive (void)
   if (select (STDOUT_FILENO + 1, &rfd, NULL, NULL, &delay) == 1)
     die_pipe ();
 #endif
+
 }
 
 static bool
@@ -409,7 +414,7 @@ record_open_fd (struct File_spec *f, int fd,
 /* Close the file with descriptor FD and name FILENAME.  */
 
 static void
-close_fd (int fd, const char *filename)
+close_fd (int fd, char const *filename)
 {
   if (fd != -1 && fd != STDIN_FILENO && close (fd))
     {
@@ -418,7 +423,7 @@ close_fd (int fd, const char *filename)
 }
 
 static void
-write_header (const char *pretty_filename)
+write_header (char const *pretty_filename)
 {
   static bool first_file = true;
 
@@ -446,14 +451,14 @@ xwrite_stdout (char const *buffer, size_t n_bytes)
    Return the number of bytes read from the file.  */
 
 static uintmax_t
-dump_remainder (bool want_header, const char *pretty_filename, int fd,
+dump_remainder (bool want_header, char const *pretty_filename, int fd,
                 uintmax_t n_bytes)
 {
   uintmax_t n_written;
   uintmax_t n_remaining = n_bytes;
 
   n_written = 0;
-  while (1)
+  while (true)
     {
       char buffer[BUFSIZ];
       size_t n = MIN (n_remaining, BUFSIZ);
@@ -532,7 +537,7 @@ xlseek (int fd, off_t offset, int whence, char const *filename)
    Return true if successful.  */
 
 static bool
-file_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
+file_lines (char const *pretty_filename, int fd, uintmax_t n_lines,
             off_t start_pos, off_t end_pos, uintmax_t *read_pos)
 {
   char buffer[BUFSIZ];
@@ -579,8 +584,7 @@ file_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
             {
               /* If this newline isn't the last character in the buffer,
                  output the part that is after it.  */
-              if (n != bytes_read - 1)
-                xwrite_stdout (nl + 1, bytes_read - (n + 1));
+              xwrite_stdout (nl + 1, bytes_read - (n + 1));
               *read_pos += dump_remainder (false, pretty_filename, fd,
                                            end_pos - (pos + bytes_read));
               return true;
@@ -620,7 +624,7 @@ file_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
    Return true if successful.  */
 
 static bool
-pipe_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
+pipe_lines (char const *pretty_filename, int fd, uintmax_t n_lines,
             uintmax_t *read_pos)
 {
   struct linebuffer
@@ -642,7 +646,7 @@ pipe_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
   tmp = xmalloc (sizeof (LBUFFER));
 
   /* Input is always read into a fresh buffer.  */
-  while (1)
+  while (true)
     {
       n_read = safe_read (fd, tmp->buffer, BUFSIZ);
       if (n_read == 0 || n_read == SAFE_READ_ERROR)
@@ -732,8 +736,7 @@ pipe_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
         size_t j;
         for (j = total_lines - n_lines; j; --j)
           {
-            beg = memchr (beg, line_end, buffer_end - beg);
-            assert (beg);
+            beg = rawmemchr (beg, line_end);
             ++beg;
           }
       }
@@ -759,7 +762,7 @@ free_lbuffers:
    Return true if successful.  */
 
 static bool
-pipe_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
+pipe_bytes (char const *pretty_filename, int fd, uintmax_t n_bytes,
             uintmax_t *read_pos)
 {
   struct charbuffer
@@ -781,7 +784,7 @@ pipe_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
   tmp = xmalloc (sizeof (CBUFFER));
 
   /* Input is always read into a fresh buffer.  */
-  while (1)
+  while (true)
     {
       n_read = safe_read (fd, tmp->buffer, BUFSIZ);
       if (n_read == 0 || n_read == SAFE_READ_ERROR)
@@ -860,7 +863,7 @@ free_cbuffers:
    Return 1 on error, 0 if ok, -1 if EOF.  */
 
 static int
-start_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
+start_bytes (char const *pretty_filename, int fd, uintmax_t n_bytes,
              uintmax_t *read_pos)
 {
   char buffer[BUFSIZ];
@@ -881,8 +884,8 @@ start_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
       else
         {
           size_t n_remaining = bytes_read - n_bytes;
-          if (n_remaining)
-            xwrite_stdout (&buffer[n_bytes], n_remaining);
+          /* Print extra characters if there are any.  */
+          xwrite_stdout (&buffer[n_bytes], n_remaining);
           break;
         }
     }
@@ -895,13 +898,13 @@ start_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
    Return 1 on error, 0 if ok, -1 if EOF.  */
 
 static int
-start_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
+start_lines (char const *pretty_filename, int fd, uintmax_t n_lines,
              uintmax_t *read_pos)
 {
   if (n_lines == 0)
     return 0;
 
-  while (1)
+  while (true)
     {
       char buffer[BUFSIZ];
       size_t bytes_read = safe_read (fd, buffer, BUFSIZ);
@@ -935,7 +938,7 @@ start_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
    If fstatfs fails, give a diagnostic and return true.
    If fstatfs cannot be called, return true.  */
 static bool
-fremote (int fd, const char *name)
+fremote (int fd, char const *name)
 {
   bool remote = true;           /* be conservative (poll by default).  */
 
@@ -1161,7 +1164,7 @@ tail_forever (struct File_spec *f, size_t n_files, double sleep_interval)
 
   last = n_files - 1;
 
-  while (1)
+  while (true)
     {
       size_t i;
       bool any_input = false;
@@ -1448,10 +1451,10 @@ check_fspec (struct File_spec *fspec, struct File_spec **prev_fspec)
 
 /* Attempt to tail N_FILES files forever, or until killed.
    Check modifications using the inotify events system.
-   Return false on error, or true to revert to polling.  */
-static bool
+   Exit if finished or on fatal error; return to revert to polling.  */
+static void
 tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
-                      double sleep_interval)
+                      double sleep_interval, Hash_table **wd_to_namep)
 {
 # if TAIL_TEST_SLEEP
   /* Delay between open() and inotify_add_watch()
@@ -1477,6 +1480,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
   wd_to_name = hash_initialize (n_files, NULL, wd_hasher, wd_comparator, NULL);
   if (! wd_to_name)
     xalloc_die ();
+  *wd_to_namep = wd_to_name;
 
   /* The events mask used with inotify on files (not directories).  */
   uint32_t inotify_wd_mask = IN_MODIFY;
@@ -1561,14 +1565,9 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
      tailed but unwatchable due rename/unlink race, should also revert.  */
   if (no_inotify_resources || found_unwatchable_dir
       || (follow_mode == Follow_descriptor && tailed_but_unwatchable))
-    {
-      hash_free (wd_to_name);
-
-      errno = 0;
-      return true;
-    }
+    return;
   if (follow_mode == Follow_descriptor && !found_watchable_file)
-    return false;
+    exit (EXIT_FAILURE);
 
   prev_fspec = &(f[n_files - 1]);
 
@@ -1594,10 +1593,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
                 {
                   error (0, errno, _("%s was replaced"),
                          quoteaf (pretty_name (&(f[i]))));
-                  hash_free (wd_to_name);
-
-                  errno = 0;
-                  return true;
+                  return;
                 }
             }
 
@@ -1612,8 +1608,8 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
   /* Wait for inotify events and handle them.  Events on directories
      ensure that watched files can be re-added when following by name.
      This loop blocks on the 'safe_read' call until a new event is notified.
-     But when --pid=P is specified, tail usually waits via the select.  */
-  while (1)
+     But when --pid=P is specified, tail usually waits via poll.  */
+  while (true)
     {
       struct File_spec *fspec;
       struct inotify_event *ev;
@@ -1624,59 +1620,53 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
       if (follow_mode == Follow_name
           && ! reopen_inaccessible_files
           && hash_get_n_entries (wd_to_name) == 0)
-        {
-          error (0, 0, _("no files remaining"));
-          return false;
-        }
-
-      /* When watching a PID, ensure that a read from WD will not block
-         indefinitely.  */
-      while (len <= evbuf_off)
-        {
-          struct timeval delay; /* how long to wait for file changes.  */
-
-          if (pid)
-            {
-              if (writer_is_dead)
-                exit (EXIT_SUCCESS);
-
-              writer_is_dead = (kill (pid, 0) != 0 && errno != EPERM);
-
-              if (writer_is_dead)
-                delay.tv_sec = delay.tv_usec = 0;
-              else
-                {
-                  delay.tv_sec = (time_t) sleep_interval;
-                  delay.tv_usec = 1000000 * (sleep_interval - delay.tv_sec);
-                }
-            }
-
-           fd_set rfd;
-           FD_ZERO (&rfd);
-           FD_SET (wd, &rfd);
-           if (monitor_output)
-             FD_SET (STDOUT_FILENO, &rfd);
-
-           int file_change = select (MAX (wd, STDOUT_FILENO) + 1,
-                                     &rfd, NULL, NULL, pid ? &delay: NULL);
-
-           if (file_change == 0)
-             continue;
-           else if (file_change == -1)
-             die (EXIT_FAILURE, errno,
-                  _("error waiting for inotify and output events"));
-           else if (FD_ISSET (STDOUT_FILENO, &rfd))
-             {
-               /* readable event on STDOUT is equivalent to POLLERR,
-                  and implies an error on output like broken pipe.  */
-               die_pipe ();
-             }
-           else
-             break;
-        }
+        die (EXIT_FAILURE, 0, _("no files remaining"));
 
       if (len <= evbuf_off)
         {
+          /* Poll for inotify events.  When watching a PID, ensure
+             that a read from WD will not block indefinitely.
+             If MONITOR_OUTPUT, also poll for a broken output pipe.  */
+
+          int file_change;
+          struct pollfd pfd[2];
+          do
+            {
+              /* How many ms to wait for changes.  -1 means wait forever.  */
+              int delay = -1;
+
+              if (pid)
+                {
+                  if (writer_is_dead)
+                    exit (EXIT_SUCCESS);
+
+                  writer_is_dead = (kill (pid, 0) != 0 && errno != EPERM);
+
+                  if (writer_is_dead || sleep_interval <= 0)
+                    delay = 0;
+                  else if (sleep_interval < INT_MAX / 1000 - 1)
+                    {
+                      /* delay = ceil (sleep_interval * 1000), sans libm.  */
+                      double ddelay = sleep_interval * 1000;
+                      delay = ddelay;
+                      delay += delay < ddelay;
+                    }
+                }
+
+              pfd[0].fd = wd;
+              pfd[0].events = POLLIN;
+              pfd[1].fd = STDOUT_FILENO;
+              pfd[1].events = pfd[1].revents = 0;
+              file_change = poll (pfd, monitor_output + 1, delay);
+            }
+          while (file_change == 0);
+
+          if (file_change < 0)
+            die (EXIT_FAILURE, errno,
+                 _("error waiting for inotify and output events"));
+          if (pfd[1].revents)
+            die_pipe ();
+
           len = safe_read (wd, evbuf, evlen);
           evbuf_off = 0;
 
@@ -1709,11 +1699,9 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
             {
               if (ev->wd == f[i].parent_wd)
                 {
-                  hash_free (wd_to_name);
                   error (0, 0,
                       _("directory containing watched file was removed"));
-                  errno = 0;  /* we've already diagnosed enough errno detail. */
-                  return true;
+                  return;
                 }
             }
         }
@@ -1750,9 +1738,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
               if (errno == ENOSPC || errno == ENOMEM)
                 {
                   error (0, 0, _("inotify resources exhausted"));
-                  hash_free (wd_to_name);
-                  errno = 0;
-                  return true; /* revert to polling.  */
+                  return; /* revert to polling.  */
                 }
               else
                 {
@@ -1771,7 +1757,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
               if (0 <= fspec->wd)
                 {
                   inotify_rm_watch (wd, fspec->wd);
-                  hash_delete (wd_to_name, fspec);
+                  hash_remove (wd_to_name, fspec);
                 }
 
               fspec->wd = new_wd;
@@ -1782,7 +1768,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
               /* If the file was moved then inotify will use the source file wd
                 for the destination file.  Make sure the key is not present in
                 the table.  */
-              struct File_spec *prev = hash_delete (wd_to_name, fspec);
+              struct File_spec *prev = hash_remove (wd_to_name, fspec);
               if (prev && prev != fspec)
                 {
                   if (follow_mode == Follow_name)
@@ -1817,7 +1803,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
           if (ev->mask & IN_DELETE_SELF)
             {
               inotify_rm_watch (wd, fspec->wd);
-              hash_delete (wd_to_name, fspec);
+              hash_remove (wd_to_name, fspec);
             }
 
           /* Note we get IN_ATTRIB for unlink() as st_nlink decrements.
@@ -1841,7 +1827,7 @@ tail_forever_inotify (int wd, struct File_spec *f, size_t n_files,
    Return true if successful.  */
 
 static bool
-tail_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
+tail_bytes (char const *pretty_filename, int fd, uintmax_t n_bytes,
             uintmax_t *read_pos)
 {
   struct stat stats;
@@ -1904,7 +1890,7 @@ tail_bytes (const char *pretty_filename, int fd, uintmax_t n_bytes,
    Return true if successful.  */
 
 static bool
-tail_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
+tail_lines (char const *pretty_filename, int fd, uintmax_t n_lines,
             uintmax_t *read_pos)
 {
   struct stat stats;
@@ -1966,7 +1952,7 @@ tail_lines (const char *pretty_filename, int fd, uintmax_t n_lines,
    Return true if successful.  */
 
 static bool
-tail (const char *filename, int fd, uintmax_t n_units,
+tail (char const *filename, int fd, uintmax_t n_units,
       uintmax_t *read_pos)
 {
   *read_pos = 0;
@@ -2089,9 +2075,9 @@ tail_file (struct File_spec *f, uintmax_t n_units)
 static bool
 parse_obsolete_option (int argc, char * const *argv, uintmax_t *n_units)
 {
-  const char *p;
-  const char *n_string;
-  const char *n_string_end;
+  char const *p;
+  char const *n_string;
+  char const *n_string_end;
   int default_count = DEFAULT_N_LINES;
   bool t_from_start;
   bool t_count_lines = true;
@@ -2374,8 +2360,6 @@ main (int argc, char **argv)
         --n_units;
     }
 
-  IF_LINT (assert (0 <= argc));
-
   if (optind < argc)
     {
       n_files = argc - optind;
@@ -2437,8 +2421,7 @@ main (int argc, char **argv)
   if (forever && ignore_fifo_and_pipe (F, n_files))
     {
       /* If stdout is a fifo or pipe, then monitor it
-         so that we exit if the reader goes away.
-         Note select() on a regular file is always readable.  */
+         so that we exit if the reader goes away.  */
       struct stat out_stat;
       if (fstat (STDOUT_FILENO, &out_stat) < 0)
         die (EXIT_FAILURE, errno, _("standard output"));
@@ -2479,10 +2462,6 @@ main (int argc, char **argv)
          recheck it and follow the new file, or ignore it if the
          file has changed to being remote.
 
-         FIXME: when using inotify, and a directory for a watched file
-         is recreated, then we don't recheck any new file when
-         follow_mode == Follow_name.
-
          FIXME-maybe: inotify has a watch descriptor per inode, and hence with
          our current hash implementation will only --follow data for one
          of the names when multiple hardlinked files are specified, or
@@ -2506,32 +2485,20 @@ main (int argc, char **argv)
               if (fflush (stdout) != 0)
                 die (EXIT_FAILURE, errno, _("write error"));
 
-              if (! tail_forever_inotify (wd, F, n_files, sleep_interval))
-                return EXIT_FAILURE;
+              Hash_table *ht;
+              tail_forever_inotify (wd, F, n_files, sleep_interval, &ht);
+              hash_free (ht);
+              close (wd);
+              errno = 0;
             }
           error (0, errno, _("inotify cannot be used, reverting to polling"));
-
-          /* Free resources as this process can be long lived,
-            and we may have exhausted system resources above.  */
-
-          for (i = 0; i < n_files; i++)
-            {
-              /* It's OK to remove the same watch multiple times,
-                ignoring the EINVAL from redundant calls.  */
-              if (F[i].wd != -1)
-                inotify_rm_watch (wd, F[i].wd);
-              if (F[i].parent_wd != -1)
-                inotify_rm_watch (wd, F[i].parent_wd);
-            }
         }
 #endif
       disable_inotify = true;
       tail_forever (F, n_files, sleep_interval);
     }
 
-  IF_LINT (free (F));
-
   if (have_read_stdin && close (STDIN_FILENO) < 0)
     die (EXIT_FAILURE, errno, "-");
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

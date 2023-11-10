@@ -1,5 +1,5 @@
 /* pr -- convert text files for printing.
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -426,8 +426,8 @@ static bool skip_to_page (uintmax_t page);
 static void print_header (void);
 static void pad_across_to (int position);
 static void add_line_number (COLUMN *p);
-static void getoptnum (const char *n_str, int min, int *num,
-                       const char *errfmt);
+static void getoptnum (char const *n_str, int min, int *num,
+                       char const *errfmt);
 static void getoptarg (char *arg, char switch_char, char *character,
                        int *number);
 static void print_files (int number_of_files, char **av);
@@ -445,7 +445,7 @@ static void skip_read (COLUMN *p, int column_number);
 static void print_char (char c);
 static void cleanup (void);
 static void print_sep_string (void);
-static void separator_string (const char *optarg_S);
+static void separator_string (char const *optarg_S);
 
 /* All of the columns to print.  */
 static COLUMN *column_vector;
@@ -781,7 +781,8 @@ integer_overflow (void)
 /* Return the number of columns that have either an open file or
    stored lines. */
 
-static unsigned int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static unsigned int
 cols_ready_to_print (void)
 {
   COLUMN *q;
@@ -845,7 +846,7 @@ parse_column_count (char const *s)
 /* Estimate length of col_sep_string with option -S.  */
 
 static void
-separator_string (const char *optarg_S)
+separator_string (char const *optarg_S)
 {
   size_t len = strlen (optarg_S);
   if (INT_MAX < len)
@@ -1143,17 +1144,16 @@ main (int argc, char **argv)
     }
 
   cleanup ();
-  IF_LINT (free (file_names));
 
   if (have_read_stdin && fclose (stdin) == EOF)
     die (EXIT_FAILURE, errno, _("standard input"));
-  return failed_opens ? EXIT_FAILURE : EXIT_SUCCESS;
+  main_exit (failed_opens ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 /* Parse numeric arguments, ensuring MIN <= number <= INT_MAX.  */
 
 static void
-getoptnum (const char *n_str, int min, int *num, const char *err)
+getoptnum (char const *n_str, int min, int *num, char const *err)
 {
   intmax_t tnum = xdectoimax (n_str, min, INT_MAX, "", err, 0);
   *num = tnum;
@@ -1237,6 +1237,8 @@ init_parameters (int number_of_files)
         col_sep_string = column_separator;
 
       truncate_lines = true;
+      if (! (col_sep_length == 1 && *col_sep_string == '\t'))
+        untabify_input = true;
       tabify_output = true;
     }
   else
@@ -1504,10 +1506,16 @@ close_file (COLUMN *p)
 
   if (p->status == CLOSED)
     return;
-  if (ferror (p->fp))
-    die (EXIT_FAILURE, errno, "%s", quotef (p->name));
-  if (fileno (p->fp) != STDIN_FILENO && fclose (p->fp) != 0)
-    die (EXIT_FAILURE, errno, "%s", quotef (p->name));
+
+  int err = errno;
+  if (!ferror (p->fp))
+    err = 0;
+  if (fileno (p->fp) == STDIN_FILENO)
+    clearerr (p->fp);
+  else if (fclose (p->fp) != 0 && !err)
+    err = errno;
+  if (err)
+    die (EXIT_FAILURE, err, "%s", quotef (p->name));
 
   if (!parallel_files)
     {
@@ -2407,7 +2415,7 @@ static bool
 read_line (COLUMN *p)
 {
   int c;
-  int chars IF_LINT ( = 0);
+  int chars;
   int last_input_position;
   int j, k;
   COLUMN *q;

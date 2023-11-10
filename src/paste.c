@@ -1,5 +1,5 @@
 /* paste - merge lines of files
-   Copyright (C) 1997-2020 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
    Copyright (C) 1984 David M. Ihnat
 
    This program is free software: you can redistribute it and/or modify
@@ -156,7 +156,6 @@ collapse_escapes (char const *strptr)
 
 /* Report a write error and exit.  */
 
-static void write_error (void) ATTRIBUTE_NORETURN;
 static void
 write_error (void)
 {
@@ -234,8 +233,8 @@ paste_parallel (size_t nfiles, char **fnamptr)
 
       for (size_t i = 0; i < nfiles && files_open; i++)
         {
-          int chr IF_LINT ( = 0);	/* Input character. */
-          int err IF_LINT ( = 0);	/* Input errno value.  */
+          int chr;			/* Input character. */
+          int err;			/* Input errno value.  */
           bool sometodo = false;	/* Input chars to process.  */
 
           if (fileptr[i])
@@ -266,16 +265,15 @@ paste_parallel (size_t nfiles, char **fnamptr)
                  If an EOF or error, close the file.  */
               if (fileptr[i])
                 {
-                  if (ferror (fileptr[i]))
-                    {
-                      error (0, err, "%s", quotef (fnamptr[i]));
-                      ok = false;
-                    }
+                  if (!ferror (fileptr[i]))
+                    err = 0;
                   if (fileptr[i] == stdin)
                     clearerr (fileptr[i]); /* Also clear EOF. */
-                  else if (fclose (fileptr[i]) == EOF)
+                  else if (fclose (fileptr[i]) == EOF && !err)
+                    err = errno;
+                  if (err)
                     {
-                      error (0, errno, "%s", quotef (fnamptr[i]));
+                      error (0, err, "%s", quotef (fnamptr[i]));
                       ok = false;
                     }
 
@@ -410,16 +408,15 @@ paste_serial (size_t nfiles, char **fnamptr)
       if (charold != line_delim)
         xputchar (line_delim);
 
-      if (ferror (fileptr))
-        {
-          error (0, saved_errno, "%s", quotef (*fnamptr));
-          ok = false;
-        }
+      if (!ferror (fileptr))
+        saved_errno = 0;
       if (is_stdin)
         clearerr (fileptr);	/* Also clear EOF. */
-      else if (fclose (fileptr) == EOF)
+      else if (fclose (fileptr) != 0 && !saved_errno)
+        saved_errno = errno;
+      if (saved_errno)
         {
-          error (0, errno, "%s", quotef (*fnamptr));
+          error (0, saved_errno, "%s", quotef (*fnamptr));
           ok = false;
         }
     }

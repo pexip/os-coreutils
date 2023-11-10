@@ -1,5 +1,5 @@
 /* chcon -- change security context of files
-   Copyright (C) 2005-2020 Free Software Foundation, Inc.
+   Copyright (C) 2005-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -182,8 +182,8 @@ change_file_context (int fd, char const *file)
   if (file_context == NULL || ! STREQ (context_string, file_context))
     {
       int fail = (affect_symlink_referent
-                  ?  setfileconat (fd, file, se_const (context_string))
-                  : lsetfileconat (fd, file, se_const (context_string)));
+                  ?  setfileconat (fd, file, context_string)
+                  : lsetfileconat (fd, file, context_string));
 
       if (fail)
         {
@@ -315,7 +315,7 @@ process_files (char **files, int bit_flags)
 
   FTS *fts = xfts_open (files, bit_flags, NULL);
 
-  while (1)
+  while (true)
     {
       FTSENT *ent;
 
@@ -559,7 +559,7 @@ main (int argc, char **argv)
     {
       specified_context = argv[optind++];
       if (0 < is_selinux_enabled ()
-          && security_check_context (se_const (specified_context)) < 0)
+          && security_check_context (specified_context) < 0)
         die (EXIT_FAILURE, errno, _("invalid context: %s"),
              quote (specified_context));
     }

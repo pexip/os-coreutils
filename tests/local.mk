@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in -*-Makefile-*-.
 
-## Copyright (C) 2007-2020 Free Software Foundation, Inc.
+## Copyright (C) 2007-2022 Free Software Foundation, Inc.
 
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ EXTRA_DIST +=			\
   tests/factor/run.sh		\
   tests/factor/create-test.sh	\
   tests/filefrag-extent-compare \
-  tests/fiemap-capable		\
+  tests/seek-data-capable	\
   tests/init.sh			\
   tests/lang-default		\
   tests/no-perl			\
@@ -113,7 +113,7 @@ all_root_tests =				\
   tests/cp/special-bits.sh			\
   tests/cp/cp-mv-enotsup-xattr.sh		\
   tests/cp/capability.sh			\
-  tests/cp/sparse-fiemap.sh			\
+  tests/cp/sparse-extents-2.sh			\
   tests/cp/cross-dev-symlink.sh			\
   tests/dd/skip-seek-past-dev.sh		\
   tests/df/problematic-chars.sh			\
@@ -136,6 +136,7 @@ all_root_tests =				\
   tests/rm/no-give-up.sh			\
   tests/rm/one-file-system.sh			\
   tests/rm/read-only.sh				\
+  tests/rm/empty-immutable-skip.sh		\
   tests/tail-2/append-only.sh			\
   tests/tail-2/end-of-device.sh			\
   tests/touch/now-owned-by-other.sh
@@ -236,8 +237,9 @@ all_tests =					\
   tests/chgrp/posix-H.sh			\
   tests/chgrp/recurse.sh			\
   tests/fmt/base.pl				\
-  tests/fmt/long-line.sh			\
   tests/fmt/goal-option.sh			\
+  tests/fmt/long-line.sh			\
+  tests/fmt/non-space.sh			\
   tests/misc/echo.sh				\
   tests/misc/env.sh				\
   tests/misc/env-signal-handler.sh		\
@@ -278,6 +280,7 @@ all_tests =					\
   tests/misc/wc-nbsp.sh				\
   tests/misc/wc-parallel.sh			\
   tests/misc/wc-proc.sh				\
+  tests/misc/cat-E.sh				\
   tests/misc/cat-proc.sh			\
   tests/misc/cat-buf.sh				\
   tests/misc/cat-self.sh			\
@@ -286,6 +289,9 @@ all_tests =					\
   tests/misc/basenc.pl				\
   tests/misc/close-stdout.sh			\
   tests/misc/chroot-fail.sh			\
+  tests/misc/cksum.sh				\
+  tests/misc/cksum-a.sh				\
+  tests/misc/cksum-c.sh				\
   tests/misc/comm.pl				\
   tests/misc/csplit.sh				\
   tests/misc/csplit-1000.sh			\
@@ -338,6 +344,7 @@ all_tests =					\
   tests/misc/printf.sh				\
   tests/misc/printf-cov.pl			\
   tests/misc/printf-hex.sh			\
+  tests/misc/printf-mb.sh			\
   tests/misc/printf-surprise.sh			\
   tests/misc/printf-quote.sh			\
   tests/misc/pwd-long.sh			\
@@ -358,6 +365,7 @@ all_tests =					\
   tests/misc/shuf.sh				\
   tests/misc/shuf-reservoir.sh			\
   tests/misc/sleep.sh				\
+  tests/misc/sm3sum.pl				\
   tests/misc/sort.pl				\
   tests/misc/sort-benchmark-random.sh		\
   tests/misc/sort-compress.sh			\
@@ -450,6 +458,7 @@ all_tests =					\
   tests/chmod/c-option.sh			\
   tests/chmod/equal-x.sh			\
   tests/chmod/equals.sh				\
+  tests/chmod/ignore-symlink.sh			\
   tests/chmod/inaccessible.sh			\
   tests/chmod/octal.sh				\
   tests/chmod/setgid.sh				\
@@ -478,10 +487,10 @@ all_tests =					\
   tests/cp/existing-perm-dir.sh			\
   tests/cp/existing-perm-race.sh		\
   tests/cp/fail-perm.sh				\
-  tests/cp/fiemap-extents.sh			\
-  tests/cp/fiemap-FMR.sh			\
-  tests/cp/fiemap-perf.sh			\
-  tests/cp/fiemap-2.sh				\
+  tests/cp/sparse-extents.sh			\
+  tests/cp/copy-FMR.sh				\
+  tests/cp/sparse-perf.sh			\
+  tests/cp/sparse-2.sh				\
   tests/cp/file-perm-race.sh			\
   tests/cp/into-self.sh				\
   tests/cp/link.sh				\
@@ -593,6 +602,7 @@ all_tests =					\
   tests/ls/abmon-align.sh			\
   tests/ls/birthtime.sh				\
   tests/ls/block-size.sh			\
+  tests/ls/classify.sh				\
   tests/ls/color-clear-to-eol.sh		\
   tests/ls/color-dtype-dir.sh			\
   tests/ls/color-norm.sh			\
@@ -605,6 +615,7 @@ all_tests =					\
   tests/ls/getxattr-speedup.sh			\
   tests/ls/group-dirs.sh			\
   tests/ls/hex-option.sh			\
+  tests/ls/hyperlink.sh				\
   tests/ls/infloop.sh				\
   tests/ls/inode.sh				\
   tests/ls/m-option.sh				\
@@ -612,7 +623,7 @@ all_tests =					\
   tests/ls/multihardlink.sh			\
   tests/ls/no-arg.sh				\
   tests/ls/no-cap.sh				\
-  tests/ls/proc-selinux-segfault.sh		\
+  tests/ls/selinux-segfault.sh			\
   tests/ls/quote-align.sh			\
   tests/ls/readdir-mountpoint-inode.sh		\
   tests/ls/recursive.sh				\
@@ -628,8 +639,9 @@ all_tests =					\
   tests/ls/symlink-quote.sh			\
   tests/ls/symlink-slash.sh			\
   tests/ls/time-style-diag.sh			\
+  tests/ls/sort-width-option.sh			\
   tests/ls/x-option.sh				\
-  tests/ls/hyperlink.sh				\
+  tests/ls/zero-option.sh			\
   tests/mkdir/p-1.sh				\
   tests/mkdir/p-2.sh				\
   tests/mkdir/p-3.sh				\
@@ -691,6 +703,7 @@ all_tests =					\
   tests/readlink/rl-1.sh			\
   tests/rmdir/fail-perm.sh			\
   tests/rmdir/ignore.sh				\
+  tests/rmdir/symlink-errors.sh			\
   tests/rmdir/t-slash.sh			\
   tests/tail-2/assert-2.sh			\
   tests/tail-2/big-4gb.sh			\

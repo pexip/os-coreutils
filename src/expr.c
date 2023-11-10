@@ -1,5 +1,5 @@
 /* expr -- evaluate expressions.
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include "system.h"
 
+#include <gmp.h>
 #include <regex.h>
 #include "die.h"
 #include "error.h"
@@ -44,105 +45,6 @@
 /* Various parts of this code assume size_t fits into unsigned long
    int, the widest unsigned type that GMP supports.  */
 verify (SIZE_MAX <= ULONG_MAX);
-
-#ifndef HAVE_GMP
-# define HAVE_GMP 0
-#endif
-
-#if HAVE_GMP
-# include <gmp.h>
-#else
-static void integer_overflow (char) ATTRIBUTE_NORETURN;
-/* Approximate gmp.h well enough for expr.c's purposes.  */
-typedef intmax_t mpz_t[1];
-static void mpz_clear (mpz_t z) { (void) z; }
-static void mpz_init_set_ui (mpz_t z, unsigned long int i) { z[0] = i; }
-static int
-mpz_init_set_str (mpz_t z, char *s, int base)
-{
-  return xstrtoimax (s, NULL, base, z, "") == LONGINT_OK ? 0 : -1;
-}
-static void
-mpz_add (mpz_t r, mpz_t a0, mpz_t b0)
-{
-  intmax_t a = a0[0];
-  intmax_t b = b0[0];
-  intmax_t val = a + b;
-  if ((val < a) != (b < 0))
-    integer_overflow ('+');
-  r[0] = val;
-}
-static void
-mpz_sub (mpz_t r, mpz_t a0, mpz_t b0)
-{
-  intmax_t a = a0[0];
-  intmax_t b = b0[0];
-  intmax_t val = a - b;
-  if ((a < val) != (b < 0))
-    integer_overflow ('-');
-  r[0] = val;
-}
-static void
-mpz_mul (mpz_t r, mpz_t a0, mpz_t b0)
-{
-  intmax_t a = a0[0];
-  intmax_t b = b0[0];
-  intmax_t val = a * b;
-  if (! (a == 0 || b == 0
-         || ((val < 0) == ((a < 0) ^ (b < 0)) && val / a == b)))
-    integer_overflow ('*');
-  r[0] = val;
-}
-static void
-mpz_tdiv_q (mpz_t r, mpz_t a0, mpz_t b0)
-{
-  intmax_t a = a0[0];
-  intmax_t b = b0[0];
-
-  /* Some x86-style hosts raise an exception for INT_MIN / -1.  */
-  if (a < - INTMAX_MAX && b == -1)
-    integer_overflow ('/');
-  r[0] = a / b;
-}
-static void
-mpz_tdiv_r (mpz_t r, mpz_t a0, mpz_t b0)
-{
-  intmax_t a = a0[0];
-  intmax_t b = b0[0];
-
-  /* Some x86-style hosts raise an exception for INT_MIN % -1.  */
-  r[0] = a < - INTMAX_MAX && b == -1 ? 0 : a % b;
-}
-static char * _GL_ATTRIBUTE_MALLOC
-mpz_get_str (char const *str, int base, mpz_t z)
-{
-  (void) str; (void) base;
-  char buf[INT_BUFSIZE_BOUND (intmax_t)];
-  return xstrdup (imaxtostr (z[0], buf));
-}
-static int
-mpz_sgn (mpz_t z)
-{
-  return z[0] < 0 ? -1 : 0 < z[0];
-}
-static int
-mpz_fits_ulong_p (mpz_t z)
-{
-  return 0 <= z[0] && z[0] <= ULONG_MAX;
-}
-static unsigned long int
-mpz_get_ui (mpz_t z)
-{
-  return z[0];
-}
-static int
-mpz_out_str (FILE *stream, int base, mpz_t z)
-{
-  (void) base;
-  char buf[INT_BUFSIZE_BOUND (intmax_t)];
-  return fputs (imaxtostr (z[0], buf), stream) != EOF;
-}
-#endif
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "expr"
@@ -212,7 +114,7 @@ static void printv (VALUE *v);
      mbs_logical_cspn ('\xCE\xB1bc','\xCE\xB1') => 1
      mbs_logical_cspn ('\xCE\xB1bc','c') => 3 */
 static size_t
-mbs_logical_cspn (const char *s, const char *accept)
+mbs_logical_cspn (char const *s, char const *accept)
 {
   size_t idx = 0;
 
@@ -264,7 +166,7 @@ mbs_logical_cspn (const char *s, const char *accept)
    Upon exit, sets v->s to the new string.
    The new string might be empty if POS/LEN are invalid. */
 static char *
-mbs_logical_substr (const char *s, size_t pos, size_t len)
+mbs_logical_substr (char const *s, size_t pos, size_t len)
 {
   char *v, *vlim;
 
@@ -310,7 +212,7 @@ mbs_logical_substr (const char *s, size_t pos, size_t len)
   return v;
 }
 
-/* Return the number of logical characteres (possibly multibyte)
+/* Return the number of logical characters (possibly multibyte)
    that are in string S in the first OFS octets.
 
    Example in UTF-8:
@@ -319,7 +221,7 @@ mbs_logical_substr (const char *s, size_t pos, size_t len)
    up to the first 4 bytes (The U+2767 which occupies 3 bytes and 'x'):
       mbs_count_to_offset ("\xE2\x9D\xA7xyz", 4) => 2  */
 static size_t
-mbs_offset_to_chars (const char *s, size_t ofs)
+mbs_offset_to_chars (char const *s, size_t ofs)
 {
   mbui_iterator_t iter;
   size_t c = 0;
@@ -414,15 +316,6 @@ or 0, 2 if EXPRESSION is syntactically invalid, and 3 if an error occurred.\n\
 }
 
 
-#if ! HAVE_GMP
-/* Report an integer overflow for operation OP and exit.  */
-static void
-integer_overflow (char op)
-{
-  die (EXPR_FAILURE, ERANGE, "%c", op);
-}
-#endif
-
 int
 main (int argc, char **argv)
 {
@@ -464,7 +357,7 @@ main (int argc, char **argv)
 
   printv (v);
 
-  return null (v);
+  main_exit (null (v));
 }
 
 /* Return a VALUE for I.  */
@@ -522,7 +415,8 @@ printv (VALUE *v)
 
 /* Return true if V is a null-string or zero-number.  */
 
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 null (VALUE *v)
 {
   switch (v->type)
@@ -553,7 +447,8 @@ null (VALUE *v)
 
 /* Return true if CP takes the form of an integer.  */
 
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 looks_like_integer (char const *cp)
 {
   cp += (*cp == '-');
@@ -603,7 +498,7 @@ toarith (VALUE *v)
 
         if (! looks_like_integer (s))
           return false;
-        if (mpz_init_set_str (v->u.i, s, 10) != 0 && !HAVE_GMP)
+        if (mpz_init_set_str (v->u.i, s, 10) != 0)
           die (EXPR_FAILURE, ERANGE, "%s", (s));
         free (s);
         v->type = integer;
@@ -663,7 +558,7 @@ require_more_args (void)
 {
   if (nomoreargs ())
     die (EXPR_INVALID, 0, _("syntax error: missing argument after %s"),
-         quotearg_n_style (0, locale_quoting_style, *(args-1)));
+         quotearg_n_style (0, locale_quoting_style, *(args - 1)));
 }
 
 
@@ -690,8 +585,8 @@ trace (fxn)
 static VALUE *
 docolon (VALUE *sv, VALUE *pv)
 {
-  VALUE *v IF_LINT ( = NULL);
-  const char *errmsg;
+  VALUE *v;
+  char const *errmsg;
   struct re_pattern_buffer re_buffer;
   char fastmap[UCHAR_MAX + 1];
   struct re_registers re_regs;
@@ -721,8 +616,13 @@ docolon (VALUE *sv, VALUE *pv)
       /* Were \(...\) used? */
       if (re_buffer.re_nsub > 0)
         {
-          sv->u.s[re_regs.end[1]] = '\0';
-          v = str_value (sv->u.s + re_regs.start[1]);
+          if (re_regs.end[1] < 0)
+            v = str_value ("");
+          else
+            {
+              sv->u.s[re_regs.end[1]] = '\0';
+              v = str_value (sv->u.s + re_regs.start[1]);
+            }
         }
       else
         {
@@ -774,7 +674,7 @@ eval7 (bool evaluate)
       v = eval (evaluate);
       if (nomoreargs ())
         die (EXPR_INVALID, 0, _("syntax error: expecting ')' after %s"),
-             quotearg_n_style (0, locale_quoting_style, *(args-1)));
+             quotearg_n_style (0, locale_quoting_style, *(args - 1)));
       if (!nextarg (")"))
         die (EXPR_INVALID, 0, _("syntax error: expecting ')' instead of %s"),
              quotearg_n_style (0, locale_quoting_style, *args));
@@ -883,7 +783,7 @@ eval5 (bool evaluate)
   trace ("eval5");
 #endif
   l = eval6 (evaluate);
-  while (1)
+  while (true)
     {
       if (nextarg (":"))
         {
@@ -914,7 +814,7 @@ eval4 (bool evaluate)
   trace ("eval4");
 #endif
   l = eval5 (evaluate);
-  while (1)
+  while (true)
     {
       if (nextarg ("*"))
         fxn = multiply;
@@ -953,7 +853,7 @@ eval3 (bool evaluate)
   trace ("eval3");
 #endif
   l = eval4 (evaluate);
-  while (1)
+  while (true)
     {
       if (nextarg ("+"))
         fxn = plus;
@@ -983,7 +883,7 @@ eval2 (bool evaluate)
   trace ("eval2");
 #endif
   l = eval3 (evaluate);
-  while (1)
+  while (true)
     {
       VALUE *r;
       enum
@@ -1062,7 +962,7 @@ eval1 (bool evaluate)
   trace ("eval1");
 #endif
   l = eval2 (evaluate);
-  while (1)
+  while (true)
     {
       if (nextarg ("&"))
         {
@@ -1093,7 +993,7 @@ eval (bool evaluate)
   trace ("eval");
 #endif
   l = eval1 (evaluate);
-  while (1)
+  while (true)
     {
       if (nextarg ("|"))
         {

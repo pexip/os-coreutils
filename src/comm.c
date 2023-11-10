@@ -1,5 +1,5 @@
 /* comm -- compare two sorted files line by line.
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -128,24 +128,24 @@ and column three contains lines common to both files.\n\
 "), stdout);
       fputs (_("\
 \n\
-  -1              suppress column 1 (lines unique to FILE1)\n\
-  -2              suppress column 2 (lines unique to FILE2)\n\
-  -3              suppress column 3 (lines that appear in both files)\n\
+  -1                      suppress column 1 (lines unique to FILE1)\n\
+  -2                      suppress column 2 (lines unique to FILE2)\n\
+  -3                      suppress column 3 (lines that appear in both files)\n\
 "), stdout);
       fputs (_("\
 \n\
-  --check-order     check that the input is correctly sorted, even\n\
-                      if all input lines are pairable\n\
-  --nocheck-order   do not check that the input is correctly sorted\n\
+      --check-order       check that the input is correctly sorted, even\n\
+                            if all input lines are pairable\n\
+      --nocheck-order     do not check that the input is correctly sorted\n\
 "), stdout);
       fputs (_("\
-  --output-delimiter=STR  separate columns with STR\n\
+      --output-delimiter=STR  separate columns with STR\n\
 "), stdout);
       fputs (_("\
-  --total           output a summary\n\
+      --total             output a summary\n\
 "), stdout);
       fputs (_("\
-  -z, --zero-terminated    line delimiter is NUL, not newline\n\
+  -z, --zero-terminated   line delimiter is NUL, not newline\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -248,9 +248,10 @@ check_order (struct linebuffer const *prev,
 /* Compare INFILES[0] and INFILES[1].
    If either is "-", use the standard input for that file.
    Assume that each input file is sorted;
-   merge them and output the result.  */
+   merge them and output the result.
+   Exit the program when done.  */
 
-static void
+static _Noreturn void
 compare_files (char **infiles)
 {
   /* For each file, we have four linebuffers in lba. */
@@ -401,6 +402,12 @@ compare_files (char **infiles)
               umaxtostr (total[2], buf3), col_sep,
               _("total"), delim);
     }
+
+  if (issued_disorder_warning[0] || issued_disorder_warning[1])
+    die (EXIT_FAILURE, 0, _("input is not in sorted order"));
+
+  /* Exit here to pacify gcc -fsanitizer=leak.  */
+  exit (EXIT_SUCCESS);
 }
 
 int
@@ -491,9 +498,4 @@ main (int argc, char **argv)
     }
 
   compare_files (argv + optind);
-
-  if (issued_disorder_warning[0] || issued_disorder_warning[1])
-    die (EXIT_FAILURE, 0, _("input is not in sorted order"));
-  else
-    return EXIT_SUCCESS;
 }

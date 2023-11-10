@@ -1,10 +1,10 @@
 /* backupfile.c -- make Emacs style backup file names
 
-   Copyright (C) 1990-2006, 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2006, 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -22,11 +22,7 @@
 
 #include "backup-internal.h"
 
-#include "dirname.h"
-#include "opendirat.h"
-#include "renameatu.h"
-#include "xalloc-oversized.h"
-
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -35,13 +31,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifndef FALLTHROUGH
-# if __GNUC__ < 7
-#  define FALLTHROUGH ((void) 0)
-# else
-#  define FALLTHROUGH __attribute__ ((__fallthrough__))
-# endif
-#endif
+#include "attribute.h"
+#include "basename-lgpl.h"
+#include "ialloc.h"
+#include "intprops.h"
+#include "opendirat.h"
+#include "renameatu.h"
 
 #ifndef _D_EXACT_NAMLEN
 # define _D_EXACT_NAMLEN(dp) strlen ((dp)->d_name)
@@ -49,6 +44,7 @@
 
 #if ! (HAVE_PATHCONF && defined _PC_NAME_MAX)
 # define pathconf(file, option) (errno = -1)
+# define fpathconf(fd, option) (errno = -1)
 #endif
 
 #ifndef _POSIX_NAME_MAX
@@ -95,19 +91,20 @@ set_simple_backup_suffix (char const *s)
 /* If FILE (which was of length FILELEN before an extension was
    appended to it) is too long, replace the extension with the single
    char E.  If the result is still too long, remove the char just
-   before E.
+   before E.  Return true if the extension was OK already, false
+   if it needed replacement.
 
    If DIR_FD is nonnegative, it is a file descriptor for FILE's parent.
-   *NAME_MAX is either 0, or the cached result of a previous call for
+   *BASE_MAX is either 0, or the cached result of a previous call for
    FILE's parent's _PC_NAME_MAX.  */
 
-static void
-check_extension (char *file, size_t filelen, char e,
-                 int dir_fd, size_t *base_max)
+static bool
+check_extension (char *file, idx_t filelen, char e,
+                 int dir_fd, idx_t *base_max)
 {
   char *base = last_component (file);
-  size_t baselen = base_len (base);
-  size_t baselen_max = HAVE_LONG_FILE_NAMES ? 255 : NAME_MAX_MINIMUM;
+  idx_t baselen = base_len (base);
+  idx_t baselen_max = HAVE_LONG_FILE_NAMES ? 255 : NAME_MAX_MINIMUM;
 
   if (HAVE_DOS_FILE_NAMES || NAME_MAX_MINIMUM < baselen)
     {
@@ -157,13 +154,16 @@ check_extension (char *file, size_t filelen, char e,
         }
     }
 
-  if (baselen_max < baselen)
+  if (baselen <= baselen_max)
+    return true;
+  else
     {
       baselen = file + filelen - base;
       if (baselen_max <= baselen)
         baselen = baselen_max - 1;
       base[baselen] = e;
       base[baselen + 1] = '\0';
+      return false;
     }
 }
 
@@ -191,9 +191,11 @@ enum numbered_backup_result
    Store into *BUFFER the next backup name for the named file,
    with a version number greater than all the
    existing numbered backups.  Reallocate *BUFFER as necessary; its
-   initial allocated size is BUFFER_SIZE, which must be at least 4
+   initial allocated size is BUFFER_SIZE, which must be at least 5
    bytes longer than the file name to make room for the initially
-   appended ".~1".  FILELEN is the length of the original file name.
+   appended ".~1~".  FILELEN is the length of the original file name.
+   (The original file name is not necessarily null-terminated;
+   FILELEN does not count trailing slashes after a non-slash.)
    BASE_OFFSET is the offset of the basename in *BUFFER.
    The returned value indicates what kind of backup was found.  If an
    I/O or other read error occurs, use the highest backup number that
@@ -204,16 +206,14 @@ enum numbered_backup_result
    and its file descriptor into *PNEW_FD without closing the stream.  */
 
 static enum numbered_backup_result
-numbered_backup (int dir_fd, char **buffer, size_t buffer_size, size_t filelen,
-                 ptrdiff_t base_offset, DIR **dirpp, int *pnew_fd)
+numbered_backup (int dir_fd, char **buffer, idx_t buffer_size, idx_t filelen,
+                 idx_t base_offset, DIR **dirpp, int *pnew_fd)
 {
   enum numbered_backup_result result = BACKUP_IS_NEW;
   DIR *dirp = *dirpp;
-  struct dirent *dp;
   char *buf = *buffer;
-  size_t versionlenmax = 1;
-  char *base = buf + base_offset;
-  size_t baselen = base_len (base);
+  idx_t versionlenmax = 1;
+  idx_t baselen = filelen - base_offset;
 
   if (dirp)
     rewinddir (dirp);
@@ -222,6 +222,7 @@ numbered_backup (int dir_fd, char **buffer, size_t buffer_size, size_t filelen,
       /* Temporarily modify the buffer into its parent directory name,
          open the directory, and then restore the buffer.  */
       char tmp[sizeof "."];
+      char *base = buf + base_offset;
       memcpy (tmp, base, sizeof ".");
       strcpy (base, ".");
       dirp = opendirat (dir_fd, buf, 0, pnew_fd);
@@ -234,20 +235,15 @@ numbered_backup (int dir_fd, char **buffer, size_t buffer_size, size_t filelen,
       *dirpp = dirp;
     }
 
-  while ((dp = readdir (dirp)) != NULL)
+  for (struct dirent *dp; (dp = readdir (dirp)) != NULL; )
     {
-      char const *p;
-      char *q;
-      bool all_9s;
-      size_t versionlen;
-
       if (_D_EXACT_NAMLEN (dp) < baselen + 4)
         continue;
 
       if (memcmp (buf + base_offset, dp->d_name, baselen + 2) != 0)
         continue;
 
-      p = dp->d_name + baselen + 2;
+      char const *p = dp->d_name + baselen + 2;
 
       /* Check whether this file has a version number and if so,
          whether it is larger.  Use string operations rather than
@@ -255,7 +251,8 @@ numbered_backup (int dir_fd, char **buffer, size_t buffer_size, size_t filelen,
 
       if (! ('1' <= *p && *p <= '9'))
         continue;
-      all_9s = (*p == '9');
+      bool all_9s = (*p == '9');
+      idx_t versionlen;
       for (versionlen = 1; ISDIGIT (p[versionlen]); versionlen++)
         all_9s &= (p[versionlen] == '9');
 
@@ -271,12 +268,13 @@ numbered_backup (int dir_fd, char **buffer, size_t buffer_size, size_t filelen,
 
       versionlenmax = all_9s + versionlen;
       result = (all_9s ? BACKUP_IS_LONGER : BACKUP_IS_SAME_LENGTH);
-      size_t new_buffer_size = filelen + 2 + versionlenmax + 2;
+      idx_t new_buffer_size = filelen + 2 + versionlenmax + 2;
       if (buffer_size < new_buffer_size)
         {
-          if (! xalloc_oversized (new_buffer_size, 2))
-            new_buffer_size *= 2;
-          char *new_buf = realloc (buf, new_buffer_size);
+          idx_t grown;
+          if (! INT_ADD_WRAPV (new_buffer_size, new_buffer_size >> 1, &grown))
+            new_buffer_size = grown;
+          char *new_buf = irealloc (buf, new_buffer_size);
           if (!new_buf)
             {
               *buffer = buf;
@@ -285,7 +283,7 @@ numbered_backup (int dir_fd, char **buffer, size_t buffer_size, size_t filelen,
           buf = new_buf;
           buffer_size = new_buffer_size;
         }
-      q = buf + filelen;
+      char *q = buf + filelen;
       *q++ = '.';
       *q++ = '~';
       *q = '0';
@@ -314,31 +312,32 @@ char *
 backupfile_internal (int dir_fd, char const *file,
                      enum backup_type backup_type, bool rename)
 {
-  ptrdiff_t base_offset = last_component (file) - file;
-  size_t filelen = base_offset + strlen (file + base_offset);
+  idx_t base_offset = last_component (file) - file;
+  idx_t filelen = base_offset + base_len (file + base_offset);
 
   if (! simple_backup_suffix)
     set_simple_backup_suffix (NULL);
 
   /* Allow room for simple or ".~N~" backups.  The guess must be at
      least sizeof ".~1~", but otherwise will be adjusted as needed.  */
-  size_t simple_backup_suffix_size = strlen (simple_backup_suffix) + 1;
-  size_t backup_suffix_size_guess = simple_backup_suffix_size;
+  idx_t simple_backup_suffix_size = strlen (simple_backup_suffix) + 1;
+  idx_t backup_suffix_size_guess = simple_backup_suffix_size;
   enum { GUESS = sizeof ".~12345~" };
   if (backup_suffix_size_guess < GUESS)
     backup_suffix_size_guess = GUESS;
 
-  ssize_t ssize = filelen + backup_suffix_size_guess + 1;
-  char *s = malloc (ssize);
+  idx_t ssize = filelen + backup_suffix_size_guess + 1;
+  char *s = imalloc (ssize);
   if (!s)
     return s;
 
   DIR *dirp = NULL;
-  int sdir = -1;
-  size_t base_max = 0;
+  int sdir = AT_FDCWD;
+  idx_t base_max = 0;
   while (true)
     {
-      memcpy (s, file, filelen + 1);
+      bool extended = true;
+      memcpy (s, file, filelen);
 
       if (backup_type == simple_backups)
         memcpy (s + filelen, simple_backup_suffix, simple_backup_suffix_size);
@@ -358,7 +357,7 @@ backupfile_internal (int dir_fd, char const *file,
               }
             FALLTHROUGH;
           case BACKUP_IS_LONGER:
-            check_extension (s, filelen, '~', sdir, &base_max);
+            extended = check_extension (s, filelen, '~', sdir, &base_max);
             break;
 
           case BACKUP_NOMEM:
@@ -372,16 +371,13 @@ backupfile_internal (int dir_fd, char const *file,
       if (! rename)
         break;
 
-      if (sdir < 0)
-        {
-          sdir = AT_FDCWD;
-          base_offset = 0;
-        }
+      int olddirfd = sdir < 0 ? dir_fd : sdir;
+      idx_t offset = sdir < 0 ? 0 : base_offset;
       unsigned flags = backup_type == simple_backups ? 0 : RENAME_NOREPLACE;
-      if (renameatu (AT_FDCWD, file, sdir, s + base_offset, flags) == 0)
+      if (renameatu (olddirfd, file + offset, sdir, s + offset, flags) == 0)
         break;
       int e = errno;
-      if (e != EEXIST)
+      if (! (e == EEXIST && extended))
         {
           if (dirp)
             closedir (dirp);

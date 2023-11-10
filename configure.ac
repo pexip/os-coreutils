@@ -1,7 +1,7 @@
 # -*- autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (C) 1991-2020 Free Software Foundation, Inc.
+# Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ m4_syscmd([test "${GNULIB_POSIXCHECK+set}" = set])
 m4_if(m4_sysval, [0], [], [dnl
 gl_ASSERT_NO_GNULIB_POSIXCHECK])
 
-AC_PROG_CC_STDC
+AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_PROG_GCC_TRADITIONAL
@@ -64,11 +64,7 @@ gl_INIT
 coreutils_MACROS
 
 # The test suite needs to know if we have a working perl.
-# FIXME: this is suboptimal.  Ideally, we would be able to call gl_PERL
-# with an ACTION-IF-NOT-FOUND argument ...
-cu_have_perl=yes
-case $PERL in *"/missing "*) cu_have_perl=no;; esac
-AM_CONDITIONAL([HAVE_PERL], [test $cu_have_perl = yes])
+AM_CONDITIONAL([HAVE_PERL], [test "$gl_cv_prog_perl" != no])
 
 # gl_GCC_VERSION_IFELSE([major], [minor], [run-if-found], [run-if-not-found])
 # ------------------------------------------------
@@ -88,11 +84,59 @@ AC_DEFUN([gl_GCC_VERSION_IFELSE],
   ]
 )
 
+AC_ARG_ENABLE([single-binary],
+  [AS_HELP_STRING([--enable-single-binary=[shebangs|symlinks]],
+     [Compile all the tools in a single binary, reducing the overall size.
+      When compiled this way, shebangs (default when enabled) or symlinks are
+      installed for each tool that points to the single binary.])],
+  [gl_single_binary=no ;
+   case $enableval in
+     yes) gl_single_binary=shebangs ;;
+     no|shebangs|symlinks) gl_single_binary=$enableval ;;
+     *)      AC_MSG_ERROR([bad value $enableval for single-binary option.
+                           Options are: symlinks, shebangs, no.]) ;;
+   esac],
+  [gl_single_binary=no]
+)
+AC_ARG_ENABLE([single-binary-exceptions],
+  [AS_HELP_STRING([--enable-single-binary-exceptions=PROG_LIST],
+     [When used with --enable-single-binary, exclude the PROG_LIST from
+      it, so these programs are compiled as separated files
+      (comma-separated, default none))])],
+  [gl_single_binary_exceptions=$enableval],
+  [gl_single_binary_exceptions=]
+)
+if test "$gl_single_binary" = 'symlinks'; then
+  if ! test "`echo ls | sed \"$program_transform_name\"`" = 'ls'; then
+    AC_MSG_ERROR([program name transformations are not currently supported
+                  with --enable-single-binary=symlinks.])
+  fi
+fi
+AM_CONDITIONAL([SINGLE_BINARY], [test "$gl_single_binary" != no])
+
+AC_ARG_ENABLE([bold-man-page-references],
+  [AS_HELP_STRING([--disable-bold-man-page-references],
+     [When generating man pages, do not apply bold style around any
+      references like name(1) etc.])],
+  [gl_bold_manpages=yes ;
+   case $enableval in
+     no|yes) gl_bold_manpages=$enableval ;;
+     *)      AC_MSG_ERROR([bad value $enableval for bold-man-page-references.
+                           Options are: yes, no.]) ;;
+   esac],
+  [gl_bold_manpages=yes]
+)
+AM_CONDITIONAL([BOLD_MAN_REFS], [test "$gl_bold_manpages" != no])
+
 AC_ARG_ENABLE([gcc-warnings],
-  [AS_HELP_STRING([--enable-gcc-warnings],
-     [turn on many GCC warnings (for developers; best with GNU make)])],
+  [AS_HELP_STRING([--enable-gcc-warnings@<:@=TYPE@:>@],
+    [control generation of GCC warnings.  The TYPE 'no' disables
+     warnings (default for non-developer builds); 'yes' generates
+     cheap warnings if available (default for developer builds);
+     'expensive' in addition generates expensive-to-compute warnings
+     if available.])],
   [case $enableval in
-     yes|no) ;;
+     no|yes|expensive) ;;
      *)      AC_MSG_ERROR([bad value $enableval for gcc-warnings option]) ;;
    esac
    gl_gcc_warnings=$enableval],
@@ -108,12 +152,18 @@ AC_ARG_ENABLE([gcc-warnings],
                           && gl_gcc_warnings=yes])]
 )
 
-if test "$gl_gcc_warnings" = yes; then
+if test $gl_gcc_warnings != no; then
   gl_WARN_ADD([-Werror], [WERROR_CFLAGS])
   AC_SUBST([WERROR_CFLAGS])
 
-  nw=
+  ew=
+  AS_IF([test $gl_gcc_warnings != expensive],
+    [# -fanalyzer and related options slow GCC considerably.
+     ew="$ew -fanalyzer -Wno-analyzer-double-free -Wno-analyzer-malloc-leak"
+     ew="$ew -Wno-analyzer-null-dereference -Wno-analyzer-use-after-free"])
+
   # This, $nw, is the list of warnings we disable.
+  nw=$ew
   nw="$nw -Wdeclaration-after-statement" # too useful to forbid
   nw="$nw -Waggregate-return"       # anachronistic
   nw="$nw -Wlong-long"              # C90 is anachronistic (lib/gethrxtime.h)
@@ -140,9 +190,14 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wmissing-format-attribute" # copy.c
   nw="$nw -Wunsafe-loop-optimizations" # a few src/*.c
   nw="$nw -Winline"                 # system.h's readdir_ignoring_dot_and_dotdot
-  nw="$nw -Wsuggest-attribute=format" # warns about copy.c and factor.c
   nw="$nw -Wvector-operation-performance" # warns about randperm.c
 
+  # Suppress noreturn warnings with single binaries; otherwise
+  # GCC complains about the renamed 'main' not being declared noreturn
+  # because 'main_exit' calls 'exit' when linting.
+  if test "$gl_single_binary" != no; then
+    nw="$nw -Wsuggest-attribute=noreturn"
+  fi
 
   # Using -Wstrict-overflow is a pain, but the alternative is worse.
   # For an example, see the code that provoked this report:
@@ -190,7 +245,7 @@ if test "$gl_gcc_warnings" = yes; then
 
   # We use a slightly smaller set of warning options for lib/.
   # Remove the following and save the result in GNULIB_WARN_CFLAGS.
-  nw=
+  nw=$ew
   nw="$nw -Wduplicated-branches"    # Too many false alarms
   nw="$nw -Wformat-truncation=2"
   nw="$nw -Wstrict-overflow"
@@ -214,41 +269,12 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wstrict-prototypes"
   # It's not worth being this picky about test programs.
   nw="$nw -Wsuggest-attribute=const"
+  nw="$nw -Wsuggest-attribute=format"
   nw="$nw -Wsuggest-attribute=pure"
   gl_MANYWARN_COMPLEMENT([GNULIB_TEST_WARN_CFLAGS],
                          [$GNULIB_WARN_CFLAGS], [$nw])
   AC_SUBST([GNULIB_TEST_WARN_CFLAGS])
 fi
-
-AC_ARG_ENABLE([single-binary],
-  [AS_HELP_STRING([--enable-single-binary=[shebangs|symlinks]],
-     [Compile all the tools in a single binary, reducing the overall size.
-      When compiled this way, shebangs (default when enabled) or symlinks are
-      installed for each tool that points to the single binary.])],
-  [gl_single_binary=no ;
-   case $enableval in
-     yes) gl_single_binary=shebangs ;;
-     no|shebangs|symlinks) gl_single_binary=$enableval ;;
-     *)      AC_MSG_ERROR([bad value $enableval for single-binary option.
-                           Options are: symlinks, shebangs, no.]) ;;
-   esac],
-  [gl_single_binary=no]
-)
-AC_ARG_ENABLE([single-binary-exceptions],
-  [AS_HELP_STRING([--enable-single-binary-exceptions=PROG_LIST],
-     [When used with --enable-single-binary, exclude the PROG_LIST from
-      it, so these programs are compiled as separated files
-      (comma-separated, default none))])],
-  [gl_single_binary_exceptions=$enableval],
-  [gl_single_binary_exceptions=]
-)
-if test "$gl_single_binary" = 'symlinks'; then
-  if ! test "`echo ls | sed \"$program_transform_name\"`" = 'ls'; then
-    AC_MSG_ERROR([program name transformations are not currently supported
-                  with --enable-single-binary=symlinks.])
-  fi
-fi
-AM_CONDITIONAL([SINGLE_BINARY], [test "$gl_single_binary" != no])
 
 AC_FUNC_FORK
 
@@ -277,7 +303,8 @@ void unset_TZ (void)
     if (! (to[0][0] == 'T' && to[0][1] == 'Z' && to[0][2] == '='))
       to++;
 }
-int main()
+int
+main ()
 {
   time_t now = time ((time_t *) 0);
   int hour_GMT0, hour_unset;
@@ -308,6 +335,9 @@ AC_MSG_RESULT([$utils_cv_localtime_cache])
 if test $utils_cv_localtime_cache = yes; then
   AC_DEFINE([LOCALTIME_CACHE], [1], [FIXME])
 fi
+
+# macOS >= 10.12
+AC_CHECK_FUNCS([fclonefileat])
 
 # Assume that if getattrat exists, it's compatible with Solaris 11.
 AC_CHECK_FUNCS([getattrat])
@@ -474,8 +504,6 @@ AC_CHECK_DECLS([strsignal, sys_siglist, _sys_siglist, __sys_siglist], , ,
   [AC_INCLUDES_DEFAULT
 #include <signal.h>])
 
-cu_GMP
-
 # Build df only if there's a point to it.
 if test $gl_cv_list_mounted_fs = yes && test $gl_cv_fs_space = yes; then
   gl_ADD_PROG([optional_bin_progs], [df])
@@ -515,6 +543,110 @@ fi
 CFLAGS=$ac_save_CFLAGS
 LDFLAGS=$ac_save_LDFLAGS
 ac_c_werror_flag=$cu_save_c_werror_flag
+
+AC_MSG_CHECKING([if __get_cpuid available])
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE([[
+    #include <cpuid.h>
+
+    int
+    main (void)
+    {
+      unsigned int eax, ebx, ecx, edx;
+      __get_cpuid (1, &eax, &ebx, &ecx, &edx);
+      return 1;
+    }
+  ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_CPUID], [1], [__get_cpuid available])
+    cpuid_exists=yes
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+
+ac_save_CFLAGS=$CFLAGS
+CFLAGS="-mavx -mpclmul $CFLAGS"
+AC_MSG_CHECKING([if pclmul intrinsic exists])
+AC_COMPILE_IFELSE(
+  [AC_LANG_SOURCE([[
+    #include <x86intrin.h>
+
+    int
+    main (void)
+    {
+      __m128i a, b;
+      a = _mm_clmulepi64_si128 (a, b, 0x00);
+      return 1;
+    }
+  ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_PCLMUL_INTRINSIC], [1], [pclmul intrinsic exists])
+    pclmul_intrinsic_exists=yes
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+if test "x$cpuid_exists" = "xyes" &&
+   test "x$pclmul_intrinsic_exists" = "xyes"; then
+  AC_DEFINE([USE_PCLMUL_CRC32], [1],
+            [CRC32 calculation by pclmul hardware instruction enabled])
+fi
+AM_CONDITIONAL([USE_PCLMUL_CRC32],
+               [test "x$cpuid_exists" = "xyes" &&
+                test "x$pclmul_intrinsic_exists" = "xyes"])
+CFLAGS=$ac_save_CFLAGS
+
+AC_MSG_CHECKING([if __get_cpuid_count exists])
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE([[
+    #include <cpuid.h>
+
+    int
+    main (void)
+    {
+      unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
+      __get_cpuid_count (7, 0, &eax, &ebx, &ecx, &edx);
+      return 1;
+    }
+  ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    get_cpuid_count_exists=yes
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+
+CFLAGS="-mavx2 $CFLAGS"
+AC_MSG_CHECKING([if avx2 intrinstics exists])
+AC_COMPILE_IFELSE(
+  [AC_LANG_SOURCE([[
+    #include <x86intrin.h>
+
+    int
+    main (void)
+    {
+      __m256i a, b;
+      a = _mm256_sad_epu8 (a, b);
+      return 1;
+    }
+  ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_AVX2_INTRINSIC], [1], [avx2 intrinsics exists])
+    avx2_intrinsic_exists=yes
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+if test "x$get_cpuid_count_exists" = "xyes" &&
+   test "x$avx2_intrinsic_exists" = "xyes"; then
+  AC_DEFINE([USE_AVX2_WC_LINECOUNT], [1], [Counting lines with AVX2 enabled])
+fi
+AM_CONDITIONAL([USE_AVX2_WC_LINECOUNT],
+               [test "x$get_cpuid_count_exists" = "xyes" &&
+                test "x$avx2_intrinsic_exists" = "xyes"])
+
+CFLAGS=$ac_save_CFLAGS
 
 ############################################################################
 

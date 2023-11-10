@@ -1,5 +1,5 @@
 /* factor -- print prime factors of n.
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,12 +35,6 @@
     The factoring code for two words will fall into the code for one word when
     progress allows that.
 
-    Using GMP is optional.  Define HAVE_GMP to make this code include GMP
-    factoring code.  The GMP factoring code is based on GMP's demos/factorize.c
-    (last synced 2012-09-07).  The GMP-based factoring code will stay in GMP
-    factoring code even if numbers get small enough for using the two-word
-    code.
-
   Algorithm:
 
     (1) Perform trial division using a small primes table, but without hardware
@@ -59,6 +53,11 @@
     trick of multiplying all n-residues by the word base, allowing cheap Hensel
     reductions mod n.
 
+    The GMP code uses an algorithm that can be considerably slower;
+    for example, on a circa-2017 Intel Xeon Silver 4116, factoring
+    2^{127}-3 takes about 50 ms with the two-word algorithm but would
+    take about 750 ms with the GMP code.
+
   Improvements:
 
     * Use modular inverses also for exact division in the Lucas code, and
@@ -66,7 +65,8 @@
       from a prime.  We might instead compute the inverse on-the-fly.
 
     * Tune trial division table size (not forgetting that this is a standalone
-      program where the table will be read from disk for each invocation).
+      program where the table will be read from secondary storage for
+      each invocation).
 
     * Implement less naive powm, using k-ary exponentiation for k = 3 or
       perhaps k = 4.
@@ -104,13 +104,7 @@
 #include <config.h>
 #include <getopt.h>
 #include <stdio.h>
-#if HAVE_GMP
-# include <gmp.h>
-# if !HAVE_DECL_MPZ_INITS
-#  include <stdarg.h>
-# endif
-#endif
-
+#include <gmp.h>
 #include <assert.h>
 
 #include "system.h"
@@ -246,14 +240,12 @@ struct factors
   unsigned char nfactors;
 };
 
-#if HAVE_GMP
 struct mp_factors
 {
   mpz_t             *p;
   unsigned long int *e;
   unsigned long int nfactors;
 };
-#endif
 
 static void factor (uintmax_t, uintmax_t, struct factors *);
 
@@ -274,10 +266,10 @@ static void factor (uintmax_t, uintmax_t, struct factors *);
     __x2 = (uintmax_t) __uh * __vl;                                     \
     __x3 = (uintmax_t) __uh * __vh;                                     \
                                                                         \
-    __x1 += __ll_highpart (__x0);/* this can't give carry */            \
-    __x1 += __x2;               /* but this indeed can */               \
-    if (__x1 < __x2)            /* did we get it? */                    \
-      __x3 += __ll_B;           /* yes, add it in the proper pos. */    \
+    __x1 += __ll_highpart (__x0);/* This can't give carry.  */		\
+    __x1 += __x2;		/* But this indeed can.  */		\
+    if (__x1 < __x2)		/* Did we get it?  */			\
+      __x3 += __ll_B;		/* Yes, add it in the proper pos.  */	\
                                                                         \
     (w1) = __x3 + __ll_highpart (__x1);                                 \
     (w0) = (__x1 << W_TYPE_SIZE / 2) + __ll_lowpart (__x0);             \
@@ -285,9 +277,9 @@ static void factor (uintmax_t, uintmax_t, struct factors *);
 #endif
 
 #if !defined udiv_qrnnd || defined UDIV_NEEDS_NORMALIZATION
-/* Define our own, not needing normalization. This function is
-   currently not performance critical, so keep it simple. Similar to
-   the mod macro below. */
+/* Define our own, not needing normalization.  This function is
+   currently not performance critical, so keep it simple.  Similar to
+   the mod macro below.  */
 # undef udiv_qrnnd
 # define udiv_qrnnd(q, r, n1, n0, d)                                    \
   do {                                                                  \
@@ -439,10 +431,11 @@ mod2 (uintmax_t *r1, uintmax_t a1, uintmax_t a0, uintmax_t d1, uintmax_t d0)
   return a0;
 }
 
-static uintmax_t _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static uintmax_t
 gcd_odd (uintmax_t a, uintmax_t b)
 {
-  if ( (b & 1) == 0)
+  if ((b & 1) == 0)
     {
       uintmax_t t = b;
       b = a;
@@ -482,7 +475,7 @@ gcd2_odd (uintmax_t *r1, uintmax_t a1, uintmax_t a0, uintmax_t b1, uintmax_t b0)
 {
   assert (b0 & 1);
 
-  if ( (a0 | a1) == 0)
+  if ((a0 | a1) == 0)
     {
       *r1 = b1;
       return b0;
@@ -570,12 +563,12 @@ factor_insert_large (struct factors *factors,
     factor_insert (factors, p0);
 }
 
-#if HAVE_GMP
+#ifndef mpz_inits
 
-# if !HAVE_DECL_MPZ_INITS
+# include <stdarg.h>
 
-#  define mpz_inits(...) mpz_va_init (mpz_init, __VA_ARGS__)
-#  define mpz_clears(...) mpz_va_init (mpz_clear, __VA_ARGS__)
+# define mpz_inits(...) mpz_va_init (mpz_init, __VA_ARGS__)
+# define mpz_clears(...) mpz_va_init (mpz_clear, __VA_ARGS__)
 
 static void
 mpz_va_init (void (*mpz_single_init)(mpz_t), ...)
@@ -590,7 +583,7 @@ mpz_va_init (void (*mpz_single_init)(mpz_t), ...)
 
   va_end (ap);
 }
-# endif
+#endif
 
 static void mp_factor (mpz_t, struct mp_factors *);
 
@@ -660,7 +653,6 @@ mp_factor_insert_ui (struct mp_factors *factors, unsigned long int prime)
   mp_factor_insert (factors, pz);
   mpz_clear (pz);
 }
-#endif /* HAVE_GMP */
 
 
 /* Number of bits in an uintmax_t.  */
@@ -709,7 +701,7 @@ static bool dev_debug = false;
 /* Prove primality or run probabilistic tests.  */
 static bool flag_prove_primality = PROVE_PRIMALITY;
 
-/* Number of Miller-Rabin tests to run when not proving primality. */
+/* Number of Miller-Rabin tests to run when not proving primality.  */
 #define MR_REPS 25
 
 static void
@@ -723,22 +715,22 @@ factor_insert_refind (struct factors *factors, uintmax_t p, unsigned int i,
 
 /* Trial division with odd primes uses the following trick.
 
-   Let p be an odd prime, and B = 2^{W_TYPE_SIZE}. For simplicity,
+   Let p be an odd prime, and B = 2^{W_TYPE_SIZE}.  For simplicity,
    consider the case t < B (this is the second loop below).
 
    From our tables we get
 
      binv = p^{-1} (mod B)
-     lim = floor ( (B-1) / p ).
+     lim = floor ((B-1) / p).
 
-   First assume that t is a multiple of p, t = q * p. Then 0 <= q <= lim
+   First assume that t is a multiple of p, t = q * p.  Then 0 <= q <= lim
    (and all quotients in this range occur for some t).
 
    Then t = q * p is true also (mod B), and p is invertible we get
 
      q = t * binv (mod B).
 
-   Next, assume that t is *not* divisible by p. Since multiplication
+   Next, assume that t is *not* divisible by p.  Since multiplication
    by binv (mod B) is a one-to-one mapping,
 
      t * binv (mod B) > lim,
@@ -784,7 +776,8 @@ factor_using_division (uintmax_t *t1p, uintmax_t t1, uintmax_t t0,
     {
       for (;;)
         {
-          uintmax_t q1, q0, hi, lo _GL_UNUSED;
+          uintmax_t q1, q0, hi;
+          MAYBE_UNUSED uintmax_t lo;
 
           q0 = t0 * primes_dtab[i].binv;
           umul_ppmm (hi, lo, q0, p);
@@ -835,7 +828,6 @@ factor_using_division (uintmax_t *t1p, uintmax_t t1, uintmax_t t0,
   return t0;
 }
 
-#if HAVE_GMP
 static void
 mp_factor_using_division (mpz_t t, struct mp_factors *factors)
 {
@@ -847,7 +839,7 @@ mp_factor_using_division (mpz_t t, struct mp_factors *factors)
   mpz_init (q);
 
   p = mpz_scan1 (t, 0);
-  mpz_div_2exp (t, t, p);
+  mpz_fdiv_q_2exp (t, t, p);
   while (p)
     {
       mp_factor_insert_ui (factors, 2);
@@ -872,7 +864,6 @@ mp_factor_using_division (mpz_t t, struct mp_factors *factors)
 
   mpz_clear (q);
 }
-#endif
 
 /* Entry i contains (2i+1)^(-1) mod 2^8.  */
 static const unsigned char  binvert_table[128] =
@@ -926,7 +917,8 @@ static const unsigned char  binvert_table[128] =
     _q0 = (u0) * _di;                                                   \
     if ((u1) >= (d))                                                    \
       {                                                                 \
-        uintmax_t _p1, _p0 _GL_UNUSED;                            \
+        uintmax_t _p1;                                                  \
+        MAYBE_UNUSED intmax_t _p0;                                      \
         umul_ppmm (_p1, _p0, _q0, d);                                   \
         (q1) = ((u1) - _p1) * _di;                                      \
         (q0) = _q0;                                                     \
@@ -938,14 +930,14 @@ static const unsigned char  binvert_table[128] =
       }                                                                 \
   } while (0)
 
-/* x B (mod n). */
+/* x B (mod n).  */
 #define redcify(r_prim, r, n)                                           \
   do {                                                                  \
-    uintmax_t _redcify_q _GL_UNUSED;                              \
+    MAYBE_UNUSED uintmax_t _redcify_q;					\
     udiv_qrnnd (_redcify_q, r_prim, r, 0, n);                           \
   } while (0)
 
-/* x B^2 (mod n). Requires x > 0, n1 < B/2 */
+/* x B^2 (mod n).  Requires x > 0, n1 < B/2.  */
 #define redcify2(r1, r0, x, n1, n0)                                     \
   do {                                                                  \
     uintmax_t _r1, _r0, _i;                                             \
@@ -957,7 +949,7 @@ static const unsigned char  binvert_table[128] =
     else                                                                \
       {                                                                 \
         _r1 = 0; _r0 = (x);                                             \
-        _i = 2*W_TYPE_SIZE;                                             \
+        _i = 2 * W_TYPE_SIZE;                                           \
       }                                                                 \
     while (_i-- > 0)                                                    \
       {                                                                 \
@@ -970,11 +962,12 @@ static const unsigned char  binvert_table[128] =
   } while (0)
 
 /* Modular two-word multiplication, r = a * b mod m, with mi = m^(-1) mod B.
-   Both a and b must be in redc form, the result will be in redc form too. */
+   Both a and b must be in redc form, the result will be in redc form too.  */
 static inline uintmax_t
 mulredc (uintmax_t a, uintmax_t b, uintmax_t m, uintmax_t mi)
 {
-  uintmax_t rh, rl, q, th, tl _GL_UNUSED, xh;
+  uintmax_t rh, rl, q, th, xh;
+  MAYBE_UNUSED uintmax_t tl;
 
   umul_ppmm (rh, rl, a, b);
   q = rl * mi;
@@ -988,17 +981,18 @@ mulredc (uintmax_t a, uintmax_t b, uintmax_t m, uintmax_t mi)
 
 /* Modular two-word multiplication, r = a * b mod m, with mi = m^(-1) mod B.
    Both a and b must be in redc form, the result will be in redc form too.
-   For performance reasons, the most significant bit of m must be clear. */
+   For performance reasons, the most significant bit of m must be clear.  */
 static uintmax_t
 mulredc2 (uintmax_t *r1p,
           uintmax_t a1, uintmax_t a0, uintmax_t b1, uintmax_t b0,
           uintmax_t m1, uintmax_t m0, uintmax_t mi)
 {
-  uintmax_t r1, r0, q, p1, p0 _GL_UNUSED, t1, t0, s1, s0;
+  uintmax_t r1, r0, q, p1, t1, t0, s1, s0;
+  MAYBE_UNUSED uintmax_t p0;
   mi = -mi;
-  assert ( (a1 >> (W_TYPE_SIZE - 1)) == 0);
-  assert ( (b1 >> (W_TYPE_SIZE - 1)) == 0);
-  assert ( (m1 >> (W_TYPE_SIZE - 1)) == 0);
+  assert ((a1 >> (W_TYPE_SIZE - 1)) == 0);
+  assert ((b1 >> (W_TYPE_SIZE - 1)) == 0);
+  assert ((m1 >> (W_TYPE_SIZE - 1)) == 0);
 
   /* First compute a0 * <b1, b0> B^{-1}
         +-----+
@@ -1057,7 +1051,8 @@ mulredc2 (uintmax_t *r1p,
   return r0;
 }
 
-static uintmax_t _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static uintmax_t
 powm (uintmax_t b, uintmax_t e, uintmax_t n, uintmax_t ni, uintmax_t one)
 {
   uintmax_t y = one;
@@ -1118,13 +1113,14 @@ powm2 (uintmax_t *r1m,
   return r0;
 }
 
-static bool _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static bool
 millerrabin (uintmax_t n, uintmax_t ni, uintmax_t b, uintmax_t q,
              unsigned int k, uintmax_t one)
 {
   uintmax_t y = powm (b, q, n, ni, one);
 
-  uintmax_t nm1 = n - one;      /* -1, but in redc representation. */
+  uintmax_t nm1 = n - one;      /* -1, but in redc representation.  */
 
   if (y == one || y == nm1)
     return true;
@@ -1141,7 +1137,7 @@ millerrabin (uintmax_t n, uintmax_t ni, uintmax_t b, uintmax_t q,
   return false;
 }
 
-static bool
+ATTRIBUTE_PURE static bool
 millerrabin2 (const uintmax_t *np, uintmax_t ni, const uintmax_t *bp,
               const uintmax_t *qp, unsigned int k, const uintmax_t *one)
 {
@@ -1171,7 +1167,6 @@ millerrabin2 (const uintmax_t *np, uintmax_t ni, const uintmax_t *bp,
   return false;
 }
 
-#if HAVE_GMP
 static bool
 mp_millerrabin (mpz_srcptr n, mpz_srcptr nm1, mpz_ptr x, mpz_ptr y,
                 mpz_srcptr q, unsigned long int k)
@@ -1191,7 +1186,6 @@ mp_millerrabin (mpz_srcptr n, mpz_srcptr nm1, mpz_ptr x, mpz_ptr y,
     }
   return false;
 }
-#endif
 
 /* Lucas' prime test.  The number of iterations vary greatly, up to a few dozen
    have been observed.  The average seem to be about 2.  */
@@ -1206,7 +1200,7 @@ prime_p (uintmax_t n)
   if (n <= 1)
     return false;
 
-  /* We have already casted out small primes. */
+  /* We have already casted out small primes.  */
   if (n < (uintmax_t) FIRST_OMITTED_PRIME * FIRST_OMITTED_PRIME)
     return true;
 
@@ -1245,7 +1239,7 @@ prime_p (uintmax_t n)
         }
       else
         {
-          /* After enough Miller-Rabin runs, be content. */
+          /* After enough Miller-Rabin runs, be content.  */
           is_prime = (r == MR_REPS - 1);
         }
 
@@ -1264,7 +1258,7 @@ prime_p (uintmax_t n)
           a_prim = s0 % n;
         else
           {
-            uintmax_t dummy _GL_UNUSED;
+            MAYBE_UNUSED uintmax_t dummy;
             udiv_qrnnd (dummy, a_prim, s1, s0, n);
           }
       }
@@ -1312,7 +1306,7 @@ prime2_p (uintmax_t n1, uintmax_t n0)
   redcify2 (one[1], one[0], 1, n1, n0);
   addmod2 (a_prim[1], a_prim[0], one[1], one[0], one[1], one[0], n1, n0);
 
-  /* FIXME: Use scalars or pointers in arguments? Some consistency needed. */
+  /* FIXME: Use scalars or pointers in arguments?  Some consistency needed.  */
   na[0] = n0;
   na[1] = n1;
 
@@ -1346,9 +1340,9 @@ prime2_p (uintmax_t n1, uintmax_t n0)
             }
           for (unsigned int i = 0; i < factors.nfactors && is_prime; i++)
             {
-              /* FIXME: We always have the factor 2. Do we really need to
-                 handle it here? We have done the same powering as part
-                 of millerrabin. */
+              /* FIXME: We always have the factor 2.  Do we really need to
+                 handle it here?  We have done the same powering as part
+                 of millerrabin.  */
               if (factors.p[i] == 2)
                 rsh2 (e[1], e[0], nm1[1], nm1[0], 1);
               else
@@ -1359,7 +1353,7 @@ prime2_p (uintmax_t n1, uintmax_t n0)
         }
       else
         {
-          /* After enough Miller-Rabin runs, be content. */
+          /* After enough Miller-Rabin runs, be content.  */
           is_prime = (r == MR_REPS - 1);
         }
 
@@ -1377,7 +1371,6 @@ prime2_p (uintmax_t n1, uintmax_t n0)
   abort ();
 }
 
-#if HAVE_GMP
 static bool
 mp_prime_p (mpz_t n)
 {
@@ -1388,7 +1381,7 @@ mp_prime_p (mpz_t n)
   if (mpz_cmp_ui (n, 1) <= 0)
     return false;
 
-  /* We have already casted out small primes. */
+  /* We have already casted out small primes.  */
   if (mpz_cmp_ui (n, (long) FIRST_OMITTED_PRIME * FIRST_OMITTED_PRIME) < 0)
     return true;
 
@@ -1433,7 +1426,7 @@ mp_prime_p (mpz_t n)
         }
       else
         {
-          /* After enough Miller-Rabin runs, be content. */
+          /* After enough Miller-Rabin runs, be content.  */
           is_prime = (r == MR_REPS - 1);
         }
 
@@ -1460,7 +1453,6 @@ mp_prime_p (mpz_t n)
 
   return is_prime;
 }
-#endif
 
 static void
 factor_using_pollard_rho (uintmax_t n, unsigned long int a,
@@ -1479,7 +1471,7 @@ factor_using_pollard_rho (uintmax_t n, unsigned long int a,
     {
       assert (a < n);
 
-      binv (ni, n);             /* FIXME: when could we use old 'ni' value? */
+      binv (ni, n);             /* FIXME: when could we use old 'ni' value?  */
 
       for (;;)
         {
@@ -1614,7 +1606,7 @@ factor_using_pollard_rho2 (uintmax_t n1, uintmax_t n0, unsigned long int a,
 
       if (g1 == 0)
         {
-          /* The found factor is one word, and > 1. */
+          /* The found factor is one word, and > 1.  */
           divexact_21 (n1, n0, n1, n0, g0);     /* n = n / g */
 
           if (!prime_p (g0))
@@ -1635,9 +1627,12 @@ factor_using_pollard_rho2 (uintmax_t n1, uintmax_t n0, unsigned long int a,
               return;
             }
 
-          binv (ginv, g0);      /* Compute n = n / g.  Since the result will */
-          n0 = ginv * n0;       /* fit one word, we can compute the quotient */
-          n1 = 0;               /* modulo B, ignoring the high divisor word. */
+          /* Compute n = n / g.  Since the result will fit one word,
+             we can compute the quotient modulo B, ignoring the high
+             divisor word.  */
+          binv (ginv, g0);
+          n0 = ginv * n0;
+          n1 = 0;
 
           if (!prime2_p (g1, g0))
             factor_using_pollard_rho2 (g1, g0, a + 1, factors);
@@ -1669,7 +1664,6 @@ factor_using_pollard_rho2 (uintmax_t n1, uintmax_t n0, unsigned long int a,
     }
 }
 
-#if HAVE_GMP
 static void
 mp_factor_using_pollard_rho (mpz_t n, unsigned long int a,
                              struct mp_factors *factors)
@@ -1761,12 +1755,12 @@ mp_factor_using_pollard_rho (mpz_t n, unsigned long int a,
 
   mpz_clears (P, t2, t, z, x, y, NULL);
 }
-#endif
 
 #if USE_SQUFOF
 /* FIXME: Maybe better to use an iteration converging to 1/sqrt(n)?  If
-   algorithm is replaced, consider also returning the remainder. */
-static uintmax_t _GL_ATTRIBUTE_CONST
+   algorithm is replaced, consider also returning the remainder.  */
+ATTRIBUTE_CONST
+static uintmax_t
 isqrt (uintmax_t n)
 {
   uintmax_t x;
@@ -1776,12 +1770,12 @@ isqrt (uintmax_t n)
 
   count_leading_zeros (c, n);
 
-  /* Make x > sqrt(n). This will be invariant through the loop. */
+  /* Make x > sqrt(n).  This will be invariant through the loop.  */
   x = (uintmax_t) 1 << ((W_TYPE_SIZE + 1 - c) / 2);
 
   for (;;)
     {
-      uintmax_t y = (x + n/x) / 2;
+      uintmax_t y = (x + n / x) / 2;
       if (y >= x)
         return x;
 
@@ -1789,13 +1783,14 @@ isqrt (uintmax_t n)
     }
 }
 
-static uintmax_t _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST
+static uintmax_t
 isqrt2 (uintmax_t nh, uintmax_t nl)
 {
   unsigned int shift;
   uintmax_t x;
 
-  /* Ensures the remainder fits in an uintmax_t. */
+  /* Ensures the remainder fits in an uintmax_t.  */
   assert (nh < ((uintmax_t) 1 << (W_TYPE_SIZE - 2)));
 
   if (nh == 0)
@@ -1804,14 +1799,14 @@ isqrt2 (uintmax_t nh, uintmax_t nl)
   count_leading_zeros (shift, nh);
   shift &= ~1;
 
-  /* Make x > sqrt(n) */
-  x = isqrt ( (nh << shift) + (nl >> (W_TYPE_SIZE - shift))) + 1;
+  /* Make x > sqrt (n).  */
+  x = isqrt ((nh << shift) + (nl >> (W_TYPE_SIZE - shift))) + 1;
   x <<= (W_TYPE_SIZE - shift) / 2;
 
-  /* Do we need more than one iteration? */
+  /* Do we need more than one iteration?  */
   for (;;)
     {
-      uintmax_t r _GL_UNUSED;
+      MAYBE_UNUSED uintmax_t r;
       uintmax_t q, y;
       udiv_qrnnd (q, r, nh, nl, x);
       y = (x + q) / 2;
@@ -1834,32 +1829,33 @@ isqrt2 (uintmax_t nh, uintmax_t nl)
     }
 }
 
-/* MAGIC[N] has a bit i set iff i is a quadratic residue mod N. */
+/* MAGIC[N] has a bit i set iff i is a quadratic residue mod N.  */
 # define MAGIC64 0x0202021202030213ULL
 # define MAGIC63 0x0402483012450293ULL
 # define MAGIC65 0x218a019866014613ULL
 # define MAGIC11 0x23b
 
-/* Return the square root if the input is a square, otherwise 0. */
-static uintmax_t _GL_ATTRIBUTE_CONST
+/* Return the square root if the input is a square, otherwise 0.  */
+ATTRIBUTE_CONST
+static uintmax_t
 is_square (uintmax_t x)
 {
-  /* Uses the tests suggested by Cohen. Excludes 99% of the non-squares before
-     computing the square root. */
+  /* Uses the tests suggested by Cohen.  Excludes 99% of the non-squares before
+     computing the square root.  */
   if (((MAGIC64 >> (x & 63)) & 1)
       && ((MAGIC63 >> (x % 63)) & 1)
-      /* Both 0 and 64 are squares mod (65) */
+      /* Both 0 and 64 are squares mod (65).  */
       && ((MAGIC65 >> ((x % 65) & 63)) & 1)
       && ((MAGIC11 >> (x % 11) & 1)))
     {
       uintmax_t r = isqrt (x);
-      if (r*r == x)
+      if (r * r == x)
         return r;
     }
   return 0;
 }
 
-/* invtab[i] = floor(0x10000 / (0x100 + i) */
+/* invtab[i] = floor (0x10000 / (0x100 + i) */
 static const unsigned short invtab[0x81] =
   {
     0x200,
@@ -1901,12 +1897,12 @@ static const unsigned short invtab[0x81] =
             _dinv = invtab[((d) >> (W_TYPE_SIZE - 8 - _cnt)) - 0x7f];   \
             _q = _dinv * (_r >> (W_TYPE_SIZE - 3 - _cnt)) >> 11;        \
           }                                                             \
-        _r -= _q*(d);                                                   \
+        _r -= _q * (d);                                                 \
                                                                         \
         _mask = -(uintmax_t) (_r >= (d));                               \
         (r) = _r - (_mask & (d));                                       \
         (q) = _q - _mask;                                               \
-        assert ( (q) * (d) + (r) == u);                                 \
+        assert ((q) * (d) + (r) == u);					\
       }                                                                 \
     else                                                                \
       {                                                                 \
@@ -1916,12 +1912,12 @@ static const unsigned short invtab[0x81] =
       }                                                                 \
   } while (0)
 
-/* Notes: Example N = 22117019. After first phase we find Q1 = 6314, Q
-   = 3025, P = 1737, representing F_{18} = (-6314, 2* 1737, 3025),
+/* Notes: Example N = 22117019.  After first phase we find Q1 = 6314, Q
+   = 3025, P = 1737, representing F_{18} = (-6314, 2 * 1737, 3025),
    with 3025 = 55^2.
 
    Constructing the square root, we get Q1 = 55, Q = 8653, P = 4652,
-   representing G_0 = (-55, 2*4652, 8653).
+   representing G_0 = (-55, 2 * 4652, 8653).
 
    In the notation of the paper:
 
@@ -1958,12 +1954,11 @@ static const unsigned short invtab[0x81] =
 # define Q_FREQ_SIZE 50
 /* Element 0 keeps the total */
 static unsigned int q_freq[Q_FREQ_SIZE + 1];
-# define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 #if USE_SQUFOF
 /* Return true on success.  Expected to fail only for numbers
-   >= 2^{2*W_TYPE_SIZE - 2}, or close to that limit. */
+   >= 2^{2*W_TYPE_SIZE - 2}, or close to that limit.  */
 static bool
 factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
 {
@@ -2016,7 +2011,7 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
                 }
               /* Duplicate the new factors */
               for (unsigned int i = 0; i < f.nfactors; i++)
-                factor_insert_multiplicity (factors, f.p[i], 2*f.e[i]);
+                factor_insert_multiplicity (factors, f.p[i], 2 * f.e[i]);
             }
           return true;
         }
@@ -2034,7 +2029,7 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
       assert (mu * n0 % 4 == 3);
 
       /* In the notation of the paper, with mu * n == 3 (mod 4), we
-         get \Delta = 4 mu * n, and the paper's \mu is 2 mu. As far as
+         get \Delta = 4 mu * n, and the paper's \mu is 2 mu.  As far as
          I understand it, the necessary bound is 4 \mu^3 < n, or 32
          mu^3 < n.
 
@@ -2042,10 +2037,10 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
          105, we get a trivial factor, from the square 38809 = 197^2,
          without any corresponding Q earlier in the iteration.
 
-         Requiring 64 mu^3 < n seems sufficient. */
+         Requiring 64 mu^3 < n seems sufficient.  */
       if (n1 == 0)
         {
-          if ((uintmax_t) mu*mu*mu >= n0 / 64)
+          if ((uintmax_t) mu * mu * mu >= n0 / 64)
             continue;
         }
       else
@@ -2064,24 +2059,24 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
       Q1 = 1;
       P = S;
 
-      /* Square root remainder fits in one word, so ignore high part. */
-      Q = Dl - P*P;
-      /* FIXME: When can this differ from floor(sqrt(2 sqrt(D)))? */
-      L = isqrt (2*S);
-      B = 2*L;
+      /* Square root remainder fits in one word, so ignore high part.  */
+      Q = Dl - P * P;
+      /* FIXME: When can this differ from floor (sqrt (2 * sqrt (D)))?  */
+      L = isqrt (2 * S);
+      B = 2 * L;
       L1 = mu * 2 * L;
 
       /* The form is (+/- Q1, 2P, -/+ Q), of discriminant 4 (P^2 + Q Q1) =
-         4 D. */
+         4 D.  */
 
       for (i = 0; i <= B; i++)
         {
           uintmax_t q, P1, t, rem;
 
-          div_smallq (q, rem, S+P, Q);
+          div_smallq (q, rem, S + P, Q);
           P1 = S - rem; /* P1 = q*Q - P */
 
-          IF_LINT (assert (q > 0 && Q > 0));
+          assert (q > 0 && Q > 0);
 
 # if STAT_SQUFOF
           q_freq[0]++;
@@ -2092,7 +2087,7 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
             {
               uintmax_t g = Q;
 
-              if ( (Q & 1) == 0)
+              if ((Q & 1) == 0)
                 g /= 2;
 
               g /= gcd_odd (g, mu);
@@ -2108,13 +2103,13 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
             }
 
           /* I think the difference can be either sign, but mod
-             2^W_TYPE_SIZE arithmetic should be fine. */
+             2^W_TYPE_SIZE arithmetic should be fine.  */
           t = Q1 + q * (P - P1);
           Q1 = Q;
           Q = t;
           P = P1;
 
-          if ( (i & 1) == 0)
+          if ((i & 1) == 0)
             {
               uintmax_t r = is_square (Q);
               if (r)
@@ -2124,10 +2119,10 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
                       if (queue[j].Q == r)
                         {
                           if (r == 1)
-                            /* Traversed entire cycle. */
+                            /* Traversed entire cycle.  */
                             goto next_multiplier;
 
-                          /* Need the absolute value for divisibility test. */
+                          /* Need the absolute value for divisibility test.  */
                           if (P >= queue[j].P)
                             t = P - queue[j].P;
                           else
@@ -2135,7 +2130,7 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
                           if (t % r == 0)
                             {
                               /* Delete entries up to and including entry
-                                 j, which matched. */
+                                 j, which matched.  */
                               memmove (queue, queue + j + 1,
                                        (qpos - j - 1) * sizeof (queue[0]));
                               qpos -= (j + 1);
@@ -2145,15 +2140,15 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
                     }
 
                   /* We have found a square form, which should give a
-                     factor. */
+                     factor.  */
                   Q1 = r;
-                  assert (S >= P); /* What signs are possible? */
+                  assert (S >= P); /* What signs are possible?  */
                   P += r * ((S - P) / r);
 
                   /* Note: Paper says (N - P*P) / Q1, that seems incorrect
-                     for the case D = 2N. */
+                     for the case D = 2N.  */
                   /* Compute Q = (D - P*P) / Q1, but we need double
-                     precision. */
+                     precision.  */
                   uintmax_t hi, lo;
                   umul_ppmm (hi, lo, P, P);
                   sub_ddmmss (hi, lo, Dh, Dl, hi, lo);
@@ -2166,8 +2161,8 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
                          Step 4a in the algorithm description says q <--
                          floor([S+P]/\hat Q), but looking at the equations
                          in Sec. 3.1, it should be q <-- floor([S+P] / Q).
-                         (In this code, \hat Q is Q1). */
-                      div_smallq (q, rem, S+P, Q);
+                         (In this code, \hat Q is Q1).  */
+                      div_smallq (q, rem, S + P, Q);
                       P1 = S - rem;     /* P1 = q*Q - P */
 
 # if STAT_SQUFOF
@@ -2182,7 +2177,7 @@ factor_using_squfof (uintmax_t n1, uintmax_t n0, struct factors *factors)
                       P = P1;
                     }
 
-                  if ( (Q & 1) == 0)
+                  if ((Q & 1) == 0)
                     Q /= 2;
                   Q /= gcd_odd (Q, mu);
 
@@ -2251,7 +2246,6 @@ factor (uintmax_t t1, uintmax_t t0, struct factors *factors)
     }
 }
 
-#if HAVE_GMP
 /* Use Pollard-rho to compute the prime factors of
    arbitrary-precision T, and put the results in FACTORS.  */
 static void
@@ -2273,33 +2267,17 @@ mp_factor (mpz_t t, struct mp_factors *factors)
         }
     }
 }
-#endif
 
 static strtol_error
-strto2uintmax (uintmax_t *hip, uintmax_t *lop, const char *s)
+strto2uintmax (uintmax_t *hip, uintmax_t *lop, char const *s)
 {
   unsigned int lo_carry;
   uintmax_t hi = 0, lo = 0;
 
   strtol_error err = LONGINT_INVALID;
 
-  /* Skip initial spaces and '+'.  */
-  for (;;)
-    {
-      char c = *s;
-      if (c == ' ')
-        s++;
-      else if (c == '+')
-        {
-          s++;
-          break;
-        }
-      else
-        break;
-    }
-
   /* Initial scan for invalid digits.  */
-  const char *p = s;
+  char const *p = s;
   for (;;)
     {
       unsigned int c = *p++;
@@ -2315,7 +2293,7 @@ strto2uintmax (uintmax_t *hip, uintmax_t *lop, const char *s)
       err = LONGINT_OK;           /* we've seen at least one valid digit */
     }
 
-  for (;err == LONGINT_OK;)
+  while (err == LONGINT_OK)
     {
       unsigned int c = *s++;
       if (c == 0)
@@ -2496,15 +2474,21 @@ print_factors_single (uintmax_t t1, uintmax_t t0)
    has enough digits, because the algorithm is better.  The turnover point
    depends on the value.  */
 static bool
-print_factors (const char *input)
+print_factors (char const *input)
 {
+  /* Skip initial spaces and '+'.  */
+  char const *str = input;
+  while (*str == ' ')
+    str++;
+  str += *str == '+';
+
   uintmax_t t1, t0;
 
   /* Try converting the number to one or two words.  If it fails, use GMP or
      print an error message.  The 2nd condition checks that the most
      significant bit of the two-word number is clear, in a typesize neutral
      way.  */
-  strtol_error err = strto2uintmax (&t1, &t0, input);
+  strtol_error err = strto2uintmax (&t1, &t0, str);
 
   switch (err)
     {
@@ -2526,29 +2510,28 @@ print_factors (const char *input)
       return false;
     }
 
-#if HAVE_GMP
   devmsg ("[using arbitrary-precision arithmetic] ");
   mpz_t t;
   struct mp_factors factors;
 
-  mpz_init_set_str (t, input, 10);
+  mpz_init_set_str (t, str, 10);
 
-  gmp_printf ("%Zd:", t);
+  mpz_out_str (stdout, 10, t);
+  putchar (':');
   mp_factor (t, &factors);
 
   for (unsigned int j = 0; j < factors.nfactors; j++)
     for (unsigned int k = 0; k < factors.e[j]; k++)
-      gmp_printf (" %Zd", factors.p[j]);
+      {
+        putchar (' ');
+        mpz_out_str (stdout, 10, factors.p[j]);
+      }
 
   mp_factor_clear (&factors);
   mpz_clear (t);
   putchar ('\n');
   fflush (stdout);
   return true;
-#else
-  error (0, 0, _("%s is too large"), quote (input));
-  return false;
-#endif
 }
 
 void

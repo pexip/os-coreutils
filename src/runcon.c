@@ -1,5 +1,5 @@
 /* runcon -- run command with specified security context
-   Copyright (C) 2005-2020 Free Software Foundation, Inc.
+   Copyright (C) 2005-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,7 +93,6 @@ With neither CONTEXT nor COMMAND, print the current security context.\n\
   -u, --user=USER    user identity\n\
   -r, --role=ROLE    role\n\
   -l, --range=RANGE  levelrange\n\
-\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -125,7 +124,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while (1)
+  while (true)
     {
       int option_index = 0;
       int c = getopt_long (argc, argv, "+r:t:u:l:c", long_options,

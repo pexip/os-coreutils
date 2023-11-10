@@ -1,5 +1,5 @@
 /* relpath - print the relative path
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,6 @@
 # define _RELPATH_H
 
 extern bool
-relpath (const char *can_fname, const char *can_reldir, char *buf, size_t len);
+relpath (char const *can_fname, char const *can_reldir, char *buf, size_t len);
 
 #endif

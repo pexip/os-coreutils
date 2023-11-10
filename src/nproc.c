@@ -1,5 +1,5 @@
 /* nproc - print the number of processors.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ main (int argc, char **argv)
 
   enum nproc_query mode = NPROC_CURRENT_OVERRIDABLE;
 
-  while (1)
+  while (true)
     {
       int c = getopt_long (argc, argv, "", longopts, NULL);
       if (c == -1)

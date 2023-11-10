@@ -1,5 +1,5 @@
 /* Permuted index for GNU, with keywords in their context.
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
    François Pinard <pinard@iro.umontreal.ca>, 1988.
 
    This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@
 #include "die.h"
 #include <regex.h>
 #include "argmatch.h"
-#include "diacrit.h"
 #include "error.h"
 #include "fadvise.h"
 #include "quote.h"
@@ -79,16 +78,16 @@ static bool input_reference = false;	/* refs at beginning of input lines */
 static bool right_reference = false;	/* output refs after right context  */
 static ptrdiff_t line_width = 72;	/* output line width in characters */
 static ptrdiff_t gap_size = 3;	/* number of spaces between output fields */
-static const char *truncation_string = "/";
+static char const *truncation_string = "/";
                                 /* string used to mark line truncations */
-static const char *macro_name = "xx";	/* macro name for roff or TeX output */
+static char const *macro_name = "xx";	/* macro name for roff or TeX output */
 static enum Format output_format = UNKNOWN_FORMAT;
                                 /* output format */
 
 static bool ignore_case = false;	/* fold lower to upper for sorting */
-static const char *break_file = NULL;	/* name of the 'Break chars' file */
-static const char *only_file = NULL;	/* name of the 'Only words' file */
-static const char *ignore_file = NULL;	/* name of the 'Ignore words' file */
+static char const *break_file = NULL;	/* name of the 'Break chars' file */
+static char const *only_file = NULL;	/* name of the 'Only words' file */
+static char const *ignore_file = NULL;	/* name of the 'Ignore words' file */
 
 /* Options that use regular expressions.  */
 struct regex_data
@@ -163,7 +162,7 @@ static WORD_TABLE only_table;		/* table of words to select */
 
 static int number_input_files;	/* number of text input files */
 static intmax_t total_line_count;	/* total number of lines seen so far */
-static const char **input_file_name;	/* array of text input file names */
+static char const **input_file_name;	/* array of text input file names */
 static intmax_t *file_line_count;	/* array of line count values at end */
 
 static BLOCK *text_buffers;	/* files to study */
@@ -283,28 +282,22 @@ static BLOCK reference;		/* reference field for input reference mode */
 
 /* Diagnose an error in the regular expression matcher.  Then exit.  */
 
-static void ATTRIBUTE_NORETURN
+static void
 matcher_error (void)
 {
   die (EXIT_FAILURE, errno, _("error in regular expression matcher"));
 }
 
-/*------------------------------------------------------.
-| Duplicate string STRING, while evaluating \-escapes.  |
-`------------------------------------------------------*/
+/* Unescape STRING in-place.  */
 
-/* Loosely adapted from GNU sh-utils printf.c code.  */
-
-static char *
-copy_unescaped_string (const char *string)
+static void
+unescape_string (char *string)
 {
-  char *result;			/* allocated result */
   char *cursor;			/* cursor in result */
   int value;			/* value of \nnn escape */
   int length;			/* length of \nnn escape */
 
-  result = xmalloc (strlen (string) + 1);
-  cursor = result;
+  cursor = string;
 
   while (*string)
     {
@@ -400,7 +393,6 @@ copy_unescaped_string (const char *string)
     }
 
   *cursor = '\0';
-  return result;
 }
 
 /*--------------------------------------------------------------------------.
@@ -511,7 +503,7 @@ initialize_regex (void)
 `------------------------------------------------------------------------*/
 
 static void
-swallow_file_in_memory (const char *file_name, BLOCK *block)
+swallow_file_in_memory (char const *file_name, BLOCK *block)
 {
   size_t used_length;		/* used length in memory buffer */
 
@@ -520,12 +512,15 @@ swallow_file_in_memory (const char *file_name, BLOCK *block)
      its name.  */
   bool using_stdin = !file_name || !*file_name || STREQ (file_name, "-");
   if (using_stdin)
-    block->start = fread_file (stdin, &used_length);
+    block->start = fread_file (stdin, 0, &used_length);
   else
-    block->start = read_file (file_name, &used_length);
+    block->start = read_file (file_name, 0, &used_length);
 
   if (!block->start)
     die (EXIT_FAILURE, errno, "%s", quotef (using_stdin ? "-" : file_name));
+
+  if (using_stdin)
+    clearerr (stdin);
 
   block->end = block->start + used_length;
 }
@@ -600,7 +595,8 @@ compare_occurs (const void *void_first, const void *void_second)
 
 /* True if WORD appears in TABLE.  Uses a binary search.  */
 
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 search_table (WORD *word, WORD_TABLE *table)
 {
   ptrdiff_t lowest;		/* current lowest possible index */
@@ -649,7 +645,7 @@ sort_found_occurs (void)
 `----------------------------------------------------------------------*/
 
 static void
-digest_break_file (const char *file_name)
+digest_break_file (char const *file_name)
 {
   BLOCK file_contents;		/* to receive a copy of the file */
   char *cursor;			/* cursor in file copy */
@@ -689,7 +685,7 @@ digest_break_file (const char *file_name)
 `-----------------------------------------------------------------------*/
 
 static void
-digest_word_file (const char *file_name, WORD_TABLE *table)
+digest_word_file (char const *file_name, WORD_TABLE *table)
 {
   BLOCK file_contents;		/* to receive a copy of the file */
   char *cursor;			/* cursor in file copy */
@@ -838,7 +834,7 @@ find_occurs_in_text (int file_index)
       /* Read and process a single input line or sentence, one word at a
          time.  */
 
-      while (1)
+      while (true)
         {
           if (word_regex.string)
 
@@ -1033,8 +1029,6 @@ static void
 print_field (BLOCK field)
 {
   char *cursor;			/* Cursor in field to print */
-  int base;			/* Base character, without diacritic */
-  int diacritic;		/* Diacritic code for the character */
 
   /* Whitespace is not really compressed.  Instead, each white space
      character (tab, vt, ht etc.) is printed as one single space.  */
@@ -1044,140 +1038,44 @@ print_field (BLOCK field)
       unsigned char character = *cursor;
       if (edited_flag[character])
         {
+          /* Handle cases which are specific to 'roff' or TeX.  All
+             white space processing is done as the default case of
+             this switch.  */
 
-          /* First check if this is a diacriticized character.
-
-             This works only for TeX.  I do not know how diacriticized
-             letters work with 'roff'.  Please someone explain it to me!  */
-
-          diacritic = todiac (character);
-          if (diacritic != 0 && output_format == TEX_FORMAT)
+          switch (character)
             {
-              base = tobase (character);
-              switch (diacritic)
-                {
+            case '"':
+              /* In roff output format, double any quote.  */
+              putchar ('"');
+              putchar ('"');
+              break;
 
-                case 1:		/* Latin diphthongs */
-                  switch (base)
-                    {
-                    case 'o':
-                      fputs ("\\oe{}", stdout);
-                      break;
+            case '$':
+            case '%':
+            case '&':
+            case '#':
+            case '_':
+              /* In TeX output format, precede these with a backslash.  */
+              putchar ('\\');
+              putchar (character);
+              break;
 
-                    case 'O':
-                      fputs ("\\OE{}", stdout);
-                      break;
+            case '{':
+            case '}':
+              /* In TeX output format, precede these with a backslash and
+                 force mathematical mode.  */
+              printf ("$\\%c$", character);
+              break;
 
-                    case 'a':
-                      fputs ("\\ae{}", stdout);
-                      break;
+            case '\\':
+              /* In TeX output mode, request production of a backslash.  */
+              fputs ("\\backslash{}", stdout);
+              break;
 
-                    case 'A':
-                      fputs ("\\AE{}", stdout);
-                      break;
-
-                    default:
-                      putchar (' ');
-                    }
-                  break;
-
-                case 2:		/* Acute accent */
-                  printf ("\\'%s%c", (base == 'i' ? "\\" : ""), base);
-                  break;
-
-                case 3:		/* Grave accent */
-                  printf ("\\'%s%c", (base == 'i' ? "\\" : ""), base);
-                  break;
-
-                case 4:		/* Circumflex accent */
-                  printf ("\\^%s%c", (base == 'i' ? "\\" : ""), base);
-                  break;
-
-                case 5:		/* Diaeresis */
-                  printf ("\\\"%s%c", (base == 'i' ? "\\" : ""), base);
-                  break;
-
-                case 6:		/* Tilde accent */
-                  printf ("\\~%s%c", (base == 'i' ? "\\" : ""), base);
-                  break;
-
-                case 7:		/* Cedilla */
-                  printf ("\\c{%c}", base);
-                  break;
-
-                case 8:		/* Small circle beneath */
-                  switch (base)
-                    {
-                    case 'a':
-                      fputs ("\\aa{}", stdout);
-                      break;
-
-                    case 'A':
-                      fputs ("\\AA{}", stdout);
-                      break;
-
-                    default:
-                      putchar (' ');
-                    }
-                  break;
-
-                case 9:		/* Strike through */
-                  switch (base)
-                    {
-                    case 'o':
-                      fputs ("\\o{}", stdout);
-                      break;
-
-                    case 'O':
-                      fputs ("\\O{}", stdout);
-                      break;
-
-                    default:
-                      putchar (' ');
-                    }
-                  break;
-                }
+            default:
+              /* Any other flagged character produces a single space.  */
+              putchar (' ');
             }
-          else
-
-            /* This is not a diacritic character, so handle cases which are
-               really specific to 'roff' or TeX.  All white space processing
-               is done as the default case of this switch.  */
-
-            switch (character)
-              {
-              case '"':
-                /* In roff output format, double any quote.  */
-                putchar ('"');
-                putchar ('"');
-                break;
-
-              case '$':
-              case '%':
-              case '&':
-              case '#':
-              case '_':
-                /* In TeX output format, precede these with a backslash.  */
-                putchar ('\\');
-                putchar (character);
-                break;
-
-              case '{':
-              case '}':
-                /* In TeX output format, precede these with a backslash and
-                   force mathematical mode.  */
-                printf ("$\\%c$", character);
-                break;
-
-              case '\\':
-                /* In TeX output mode, request production of a backslash.  */
-                fputs ("\\backslash{}", stdout);
-                break;
-
-              default:
-                /* Any other flagged character produces a single space.  */
-                putchar (' ');
-              }
         }
       else
         putchar (*cursor);
@@ -1198,7 +1096,7 @@ fix_output_parameters (void)
   intmax_t line_ordinal;	/* line ordinal value for reference */
   ptrdiff_t reference_width;	/* width for the whole reference */
   int character;		/* character ordinal */
-  const char *cursor;		/* cursor in some constant strings */
+  char const *cursor;		/* cursor in some constant strings */
 
   /* In auto reference mode, the maximum width of this field is
      precomputed and subtracted from the overall line width.  Add one for
@@ -1331,11 +1229,6 @@ fix_output_parameters (void)
       for (cursor = "$%&#_{}\\"; *cursor; cursor++)
         edited_flag[to_uchar (*cursor)] = 1;
 
-      /* Any character with 8th bit set will print to a single space, unless
-         it is diacriticized.  */
-
-      for (character = 0200; character < CHAR_SET_SIZE; character++)
-        edited_flag[character] = todiac (character) != 0;
       break;
     }
 }
@@ -1354,10 +1247,10 @@ define_all_fields (OCCURS *occurs)
   char *left_context_start;	/* start of left context */
   char *right_context_end;	/* end of right context */
   char *left_field_start;	/* conservative start for 'head'/'before' */
-  const char *file_name;	/* file name for reference */
+  char const *file_name;	/* file name for reference */
   intmax_t line_ordinal;	/* line ordinal for reference */
-  const char *buffer_start;	/* start of buffered file for this occurs */
-  const char *buffer_end;	/* end of buffered file for this occurs */
+  char const *buffer_start;	/* start of buffered file for this occurs */
+  char const *buffer_end;	/* end of buffered file for this occurs */
 
   /* Define 'keyafter', start of left context and end of right context.
      'keyafter' starts at the saved position for keyword and extend to the
@@ -1886,7 +1779,7 @@ static struct option const long_options[] =
   {NULL, 0, NULL, 0},
 };
 
-static char const* const format_args[] =
+static char const *const format_args[] =
 {
   "roff", "tex", NULL
 };
@@ -1980,7 +1873,8 @@ main (int argc, char **argv)
           break;
 
         case 'F':
-          truncation_string = copy_unescaped_string (optarg);
+          truncation_string = optarg;
+          unescape_string (optarg);
           break;
 
         case 'M':
@@ -1996,7 +1890,8 @@ main (int argc, char **argv)
           break;
 
         case 'S':
-          context_regex.string = copy_unescaped_string (optarg);
+          context_regex.string = optarg;
+          unescape_string (optarg);
           break;
 
         case 'T':
@@ -2004,7 +1899,8 @@ main (int argc, char **argv)
           break;
 
         case 'W':
-          word_regex.string = copy_unescaped_string (optarg);
+          word_regex.string = optarg;
+          unescape_string (optarg);
           if (!*word_regex.string)
             word_regex.string = NULL;
           break;
@@ -2128,7 +2024,7 @@ main (int argc, char **argv)
     {
       BLOCK *text_buffer = text_buffers + file_index;
 
-      /* Read the file in core, then study it.  */
+      /* Read the file contents into memory, then study it.  */
 
       swallow_file_in_memory (input_file_name[file_index], text_buffer);
       find_occurs_in_text (file_index);

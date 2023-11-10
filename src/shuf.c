@@ -1,6 +1,6 @@
 /* Shuffle lines of text.
 
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -134,13 +134,13 @@ input_from_argv (char **operand, int n_operands, char eolbyte)
   operand[n_operands] = p;
 }
 
-/* Return the start of the next line after LINE.  The current line
-   ends in EOLBYTE, and is guaranteed to end before LINE + N.  */
+/* Return the start of the next line after LINE, which is guaranteed
+   to end in EOLBYTE.  */
 
 static char *
-next_line (char *line, char eolbyte, size_t n)
+next_line (char *line, char eolbyte)
 {
-  char *p = memchr (line, eolbyte, n);
+  char *p = rawmemchr (line, eolbyte);
   return p + 1;
 }
 
@@ -275,7 +275,7 @@ read_input (FILE *in, char eolbyte, char ***pline)
      or if none left, stdin.  Doing that would give better performance by
      avoiding the reservoir CPU overhead when reading < RESERVOIR_MIN_INPUT
      from a pipe, and allow us to dispense with the input_size() function.  */
-  if (!(buf = fread_file (in, &used)))
+  if (!(buf = fread_file (in, 0, &used)))
     die (EXIT_FAILURE, errno, _("read error"));
 
   if (used && buf[used - 1] != eolbyte)
@@ -284,14 +284,14 @@ read_input (FILE *in, char eolbyte, char ***pline)
   lim = buf + used;
 
   n_lines = 0;
-  for (p = buf; p < lim; p = next_line (p, eolbyte, lim - p))
+  for (p = buf; p < lim; p = next_line (p, eolbyte))
     n_lines++;
 
   *pline = line = xnmalloc (n_lines + 1, sizeof *line);
 
   line[0] = p = buf;
   for (size_t i = 1; i <= n_lines; i++)
-    line[i] = p = next_line (p, eolbyte, lim - p);
+    line[i] = p = next_line (p, eolbyte);
 
   return n_lines;
 }
@@ -541,7 +541,8 @@ main (int argc, char **argv)
                                      ? SIZE_MAX
                                      : randperm_bound (ahead_lines, n_lines)));
   if (! randint_source)
-    die (EXIT_FAILURE, errno, "%s", quotef (random_source));
+    die (EXIT_FAILURE, errno, "%s",
+         quotef (random_source ? random_source : "getrandom"));
 
   if (use_reservoir_sampling)
     {
@@ -594,22 +595,5 @@ main (int argc, char **argv)
   if (i != 0)
     die (EXIT_FAILURE, errno, _("write error"));
 
-#ifdef lint
-  free (permutation);
-  randint_all_free (randint_source);
-  if (input_lines)
-    {
-      free (input_lines[0]);
-      free (input_lines);
-    }
-  if (reservoir)
-    {
-      size_t j;
-      for (j = 0; j < n_lines; ++j)
-        freebuffer (&reservoir[j]);
-      free (reservoir);
-    }
-#endif
-
-  return EXIT_SUCCESS;
+  main_exit (EXIT_SUCCESS);
 }

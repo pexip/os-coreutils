@@ -1,9 +1,9 @@
 /* Test of <limits.h> substitute.
-   Copyright 2016-2020 Free Software Foundation, Inc.
+   Copyright 2016-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -109,6 +109,11 @@ verify_width (LONG_WIDTH, LONG_MIN, LONG_MAX);
 verify_width (ULONG_WIDTH, 0, ULONG_MAX);
 verify_width (LLONG_WIDTH, LLONG_MIN, LLONG_MAX);
 verify_width (ULLONG_WIDTH, 0, ULLONG_MAX);
+
+/* Macros specified by C2x.  */
+
+int bool_attrs[] = { BOOL_MAX, BOOL_WIDTH };
+verify (BOOL_MAX == (((1U << (BOOL_WIDTH - 1)) - 1) * 2) + 1);
 
 int
 main (void)

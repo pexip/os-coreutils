@@ -1,11 +1,11 @@
 /* Self tests for base32.
-   Copyright (C) 2004, 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2008-2022 Free Software Foundation, Inc.
    Based on the tests for base64 written by Simon Josefsson.
    Adapted for base32 by Gijs van Tulder.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -34,7 +34,7 @@ main (void)
   const char *in = "abcdefghijklmnop";
   const char *b32in = "MFRGGZDFMZTWQ2LKNNWG23TPOA======";
   char out[255];
-  size_t len;
+  idx_t len;
   bool ok;
   char *p;
 
@@ -150,7 +150,7 @@ main (void)
   ASSERT (strcmp (p, "MFRGGZDFMZTWQ2LKNNWG23TPOA======") == 0);
   free (p);
 
-  len = base32_encode_alloc (in, SIZE_MAX - 5, &p);
+  len = base32_encode_alloc (in, IDX_MAX - 5, &p);
   ASSERT (len == 0);
 
   /* Decode context function */

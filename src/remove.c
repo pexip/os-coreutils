@@ -1,5 +1,5 @@
 /* remove.c -- core functions for removing files and directories
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -385,8 +385,9 @@ excise (FTS *fts, FTSENT *ent, struct rm_options const *x, bool is_dir)
   if (errno == EROFS)
     {
       struct stat st;
-      if ( ! (lstatat (fts->fts_cwd_fd, ent->fts_accpath, &st)
-                       && errno == ENOENT))
+      if ( ! (fstatat (fts->fts_cwd_fd, ent->fts_accpath, &st,
+                       AT_SYMLINK_NOFOLLOW)
+              && errno == ENOENT))
         errno = EROFS;
     }
 
@@ -506,7 +507,8 @@ rm_fts (FTS *fts, FTSENT *ent, struct rm_options const *x)
             /* When we know (from prompt when in interactive mode)
                that this is an empty directory, don't prompt twice.  */
             s = excise (fts, ent, x, true);
-            fts_skip_tree (fts, ent);
+            if (s == RM_OK)
+              fts_skip_tree (fts, ent);
           }
 
         if (s != RM_OK)
@@ -589,7 +591,7 @@ rm (char *const *file, struct rm_options const *x)
 
       FTS *fts = xfts_open (file, bit_flags, NULL);
 
-      while (1)
+      while (true)
         {
           FTSENT *ent;
 

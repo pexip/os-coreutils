@@ -1,5 +1,5 @@
 /* date - print or set the system date and time
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 
 #define AUTHORS proper_name ("David MacKenzie")
 
-static bool show_date (const char *, struct timespec, timezone_t);
+static bool show_date (char const *, struct timespec, timezone_t);
 
 enum Time_spec
 {
@@ -79,8 +79,9 @@ static char const rfc_email_format[] = "%a, %d %b %Y %H:%M:%S %z";
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
 enum
 {
-  RFC_3339_OPTION = CHAR_MAX + 1,
-  DEBUG_DATE_PARSING
+  DEBUG_DATE_PARSING_OPTION = CHAR_MAX + 1,
+  RESOLUTION_OPTION,
+  RFC_3339_OPTION
 };
 
 static char const short_options[] = "d:f:I::r:Rs:u";
@@ -88,10 +89,11 @@ static char const short_options[] = "d:f:I::r:Rs:u";
 static struct option const long_options[] =
 {
   {"date", required_argument, NULL, 'd'},
-  {"debug", no_argument, NULL, DEBUG_DATE_PARSING},
+  {"debug", no_argument, NULL, DEBUG_DATE_PARSING_OPTION},
   {"file", required_argument, NULL, 'f'},
   {"iso-8601", optional_argument, NULL, 'I'},
   {"reference", required_argument, NULL, 'r'},
+  {"resolution", no_argument, NULL, RESOLUTION_OPTION},
   {"rfc-email", no_argument, NULL, 'R'},
   {"rfc-822", no_argument, NULL, 'R'},
   {"rfc-2822", no_argument, NULL, 'R'},
@@ -133,7 +135,8 @@ Usage: %s [OPTION]... [+FORMAT]\n\
 "),
               program_name, program_name);
       fputs (_("\
-Display the current time in the given FORMAT, or set the system date.\n\
+Display date and time in the given FORMAT.\n\
+With -s, or with [MMDDhhmm[[CC]YY][.ss]], set the date and time.\n\
 "), stdout);
 
       emit_mandatory_arg_note ();
@@ -154,6 +157,10 @@ Display the current time in the given FORMAT, or set the system date.\n\
                                'hours', 'minutes', 'seconds', or 'ns'\n\
                                for date and time to the indicated precision.\n\
                                Example: 2006-08-14T02:34:56-06:00\n\
+"), stdout);
+      fputs (_("\
+  --resolution               output the available resolution of timestamps\n\
+                               Example: 0.000000001\n\
 "), stdout);
       fputs (_("\
   -R, --rfc-email            output date and time in RFC 5322 format.\n\
@@ -218,7 +225,7 @@ FORMAT controls the output.  Interpreted sequences are:\n\
   %q   quarter of year (1..4)\n\
   %r   locale's 12-hour clock time (e.g., 11:11:04 PM)\n\
   %R   24-hour hour and minute; same as %H:%M\n\
-  %s   seconds since 1970-01-01 00:00:00 UTC\n\
+  %s   seconds since the Epoch (1970-01-01 00:00 UTC)\n\
 "), stdout);
       fputs (_("\
   %S   second (00..60)\n\
@@ -267,7 +274,7 @@ O to use the locale's alternate numeric symbols if available.\n\
       fputs (_("\
 \n\
 Examples:\n\
-Convert seconds since the epoch (1970-01-01 UTC) to a date\n\
+Convert seconds since the Epoch (1970-01-01 UTC) to a date\n\
   $ date --date='@2147483647'\n\
 \n\
 Show the time on the west coast of the US (use tzselect(1) to find TZ)\n\
@@ -281,13 +288,51 @@ Show the local time for 9AM next Friday on the west coast of the US\n\
   exit (status);
 }
 
+/* Yield the number of decimal digits needed to output a time with the
+   nanosecond resolution RES, without losing information.  */
+
+static int
+res_width (long int res)
+{
+  int i = 9;
+  for (long long int r = 1; (r *= 10) <= res; )
+    i--;
+  return i;
+}
+
+/* Return a newly allocated copy of FORMAT with each "%-N" adjusted to
+   be "%9N", "%6N", or whatever other resolution is appropriate for
+   the current platform.  If no "%-N" appears, return NULL.  */
+
+static char *
+adjust_resolution (char const *format)
+{
+  char *copy = NULL;
+
+  for (char const *f = format; *f; f++)
+    if (f[0] == '%')
+      {
+        if (f[1] == '-' && f[2] == 'N')
+          {
+            if (!copy)
+              copy = xstrdup (format);
+            copy[f + 1 - format] = '0' + res_width (gettime_res ());
+            f += 2;
+          }
+        else
+          f += f[1] == '%';
+      }
+
+  return copy;
+}
+
 /* Parse each line in INPUT_FILENAME as with --date and display each
    resulting time and date.  If the file cannot be opened, tell why
    then exit.  Issue a diagnostic for any lines that cannot be parsed.
    Return true if successful.  */
 
 static bool
-batch_convert (const char *input_filename, const char *format,
+batch_convert (char const *input_filename, char const *format,
                timezone_t tz, char const *tzstring)
 {
   bool ok;
@@ -313,7 +358,7 @@ batch_convert (const char *input_filename, const char *format,
   line = NULL;
   buflen = 0;
   ok = true;
-  while (1)
+  while (true)
     {
       ssize_t line_length = getline (&line, &buflen, in_stream);
       if (line_length < 0)
@@ -348,16 +393,16 @@ int
 main (int argc, char **argv)
 {
   int optc;
-  const char *datestr = NULL;
-  const char *set_datestr = NULL;
+  char const *datestr = NULL;
+  char const *set_datestr = NULL;
   struct timespec when;
   bool set_date = false;
   char const *format = NULL;
+  bool get_resolution = false;
   char *batch_file = NULL;
   char *reference = NULL;
   struct stat refstats;
   bool ok;
-  int option_specified_date;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -377,11 +422,14 @@ main (int argc, char **argv)
         case 'd':
           datestr = optarg;
           break;
-        case DEBUG_DATE_PARSING:
+        case DEBUG_DATE_PARSING_OPTION:
           parse_datetime_flags |= PARSE_DATETIME_DEBUG;
           break;
         case 'f':
           batch_file = optarg;
+          break;
+        case RESOLUTION_OPTION:
+          get_resolution = true;
           break;
         case RFC_3339_OPTION:
           {
@@ -446,9 +494,8 @@ main (int argc, char **argv)
         }
     }
 
-  option_specified_date = ((datestr ? 1 : 0)
-                           + (batch_file ? 1 : 0)
-                           + (reference ? 1 : 0));
+  int option_specified_date = (!!datestr + !!batch_file + !!reference
+                               + get_resolution);
 
   if (option_specified_date > 1)
     {
@@ -491,9 +538,12 @@ main (int argc, char **argv)
 
   if (!format)
     {
-      format = DATE_FMT_LANGINFO ();
-      if (! *format)
+      if (get_resolution)
+        format = "%s.%N";
+      else
         {
+          format = DATE_FMT_LANGINFO ();
+
           /* Do not wrap the following literal format string with _(...).
              For example, suppose LC_ALL is unset, LC_TIME=POSIX,
              and LANG="ko_KR".  In that case, POSIX says that LC_TIME
@@ -501,15 +551,18 @@ main (int argc, char **argv)
              written by date, which means "date" must generate output
              using the POSIX locale; but adding _() would cause "date"
              to use a Korean translation of the format.  */
-          format = "%a %b %e %H:%M:%S %Z %Y";
+          if (! *format)
+            format = "%a %b %e %H:%M:%S %Z %Y";
         }
     }
 
+  char *format_copy = adjust_resolution (format);
+  char const *format_res = format_copy ? format_copy : format;
   char const *tzstring = getenv ("TZ");
   timezone_t tz = tzalloc (tzstring);
 
   if (batch_file != NULL)
-    ok = batch_convert (batch_file, format, tz, tzstring);
+    ok = batch_convert (batch_file, format_res, tz, tzstring);
   else
     {
       bool valid_date = true;
@@ -544,6 +597,12 @@ main (int argc, char **argv)
                 die (EXIT_FAILURE, errno, "%s", quotef (reference));
               when = get_stat_mtime (&refstats);
             }
+          else if (get_resolution)
+            {
+              long int res = gettime_res ();
+              when.tv_sec = res / TIMESPEC_HZ;
+              when.tv_nsec = res % TIMESPEC_HZ;
+            }
           else
             {
               if (set_datestr)
@@ -568,21 +627,22 @@ main (int argc, char **argv)
             }
         }
 
-      ok &= show_date (format, when, tz);
+      ok &= show_date (format_res, when, tz);
     }
 
-  IF_LINT (tzfree (tz));
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 /* Display the date and/or time in WHEN according to the format specified
    in FORMAT, followed by a newline.  Return true if successful.  */
 
 static bool
-show_date (const char *format, struct timespec when, timezone_t tz)
+show_date (char const *format, struct timespec when, timezone_t tz)
 {
   struct tm tm;
+
+  if (parse_datetime_flags & PARSE_DATETIME_DEBUG)
+    error (0, 0, _("output format: %s"), quote (format));
 
   if (localtime_rz (tz, &when.tv_sec, &tm))
     {

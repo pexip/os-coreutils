@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test join.
 
-# Copyright (C) 2008-2020 Free Software Foundation, Inc.
+# Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ my @tv = (
  ["a\n", "b\n"], " a b\n", 0],
 
 # FIXME: change this to ensure the diagnostic makes sense
-['invalid-j', '-j x', {}, "", 1,
+['invalid-j', '-j x', ["", ""], "", 1,
  "$prog: invalid field number: 'x'\n"],
 
 # With ordering check, inputs in order

@@ -2,7 +2,7 @@
 # Verify that mkdir's '-m MODE' option works properly
 # with various umask settings.
 
-# Copyright (C) 2000-2020 Free Software Foundation, Inc.
+# Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ tests='
     050  :   -m 312   : drwx-w-rwx : d-wx--x-w- :
     160  :   empty    : drwx--xrwx : drw---xrwx :
     160  :   -m 743   : drwx--xrwx : drwxr---wx :
+    022  :   -m o-w   : drwxr-xr-x : drwxrwxr-x :
     027  :   -m =+x   : drwxr-x--- : d--x--x--- :
     027  :   -m =+X   : drwxr-x--- : d--x--x--- :
     -    :   -        : last       : last       :

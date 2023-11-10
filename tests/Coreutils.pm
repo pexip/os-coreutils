@@ -1,7 +1,7 @@
 package Coreutils;
 # This is a testing framework.
 
-# Copyright (C) 1998-2020 Free Software Foundation, Inc.
+# Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,6 +41,11 @@ my $Global_count = 1;
 # tests would fail.
 defined $ENV{DJDIR}
   and $ENV{SHELL} = "$ENV{DJDIR}/bin/bash.exe";
+
+# Perl 5.22.2 was seen to default to TERM=dumb on Solaris 11 OpenIndiana
+# So ensure this variable is unset.
+defined $ENV{TERM}
+  and delete $ENV{TERM};
 
 # A file spec: a scalar or a reference to a single-keyed hash
 # ================

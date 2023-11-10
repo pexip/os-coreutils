@@ -1,5 +1,5 @@
 /* sort - sort lines of text (with all kinds of options).
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -132,7 +132,7 @@ enum
   {
     /* The number of times we should try to fork a compression process
        (we retry if the fork call fails).  We don't _need_ to compress
-       temp files, this is just to reduce disk access, so this number
+       temp files, this is just to reduce file system access, so this number
        can be small.  Each retry doubles in duration.  */
     MAX_FORK_TRIES_COMPRESS = 4,
 
@@ -152,10 +152,12 @@ enum
   };
 
 /* The representation of the decimal point in the current locale.  */
-static int decimal_point;
+static char decimal_point;
 
-/* Thousands separator; if -1, then there isn't one.  */
+/* Thousands separator; if outside char range, there is no separator.  */
 static int thousands_sep;
+/* We currently ignore multi-byte grouping chars.  */
+static bool thousands_sep_ignored;
 
 /* Nonzero if the corresponding locales are hard.  */
 static bool hard_LC_COLLATE;
@@ -171,7 +173,7 @@ enum blanktype { bl_start, bl_end, bl_both };
 /* The character marking end of line. Default to \n. */
 static char eolchar = '\n';
 
-/* Lines are held in core as counted strings. */
+/* Lines are held in memory as counted strings. */
 struct line
 {
   char *text;			/* Text of the line. */
@@ -338,6 +340,9 @@ static bool reverse;
    they were read if all keys compare equal.  */
 static bool stable;
 
+/* An int value outside char range.  */
+enum { NON_CHAR = CHAR_MAX + 1 };
+
 /* If TAB has this value, blanks separate fields.  */
 enum { TAB_DEFAULT = CHAR_MAX + 1 };
 
@@ -370,9 +375,8 @@ static unsigned int nmerge = NMERGE_DEFAULT;
    This can be used safely from signal handlers,
    and between fork and exec of multithreaded processes.  */
 
-static void async_safe_die (int, const char *) ATTRIBUTE_NORETURN;
-static void
-async_safe_die (int errnum, const char *errstr)
+static _Noreturn void
+async_safe_die (int errnum, char const *errstr)
 {
   ignore_value (write (STDERR_FILENO, errstr, strlen (errstr)));
 
@@ -397,7 +401,6 @@ async_safe_die (int errnum, const char *errstr)
 /* Report MESSAGE for FILE, then clean up and exit.
    If FILE is null, it represents standard output.  */
 
-static void sort_die (char const *, char const *) ATTRIBUTE_NORETURN;
 static void
 sort_die (char const *message, char const *file)
 {
@@ -757,7 +760,7 @@ delete_proc (pid_t pid)
   struct tempnode test;
 
   test.pid = pid;
-  struct tempnode *node = hash_delete (proctab, &test);
+  struct tempnode *node = hash_remove (proctab, &test);
   if (! node)
     return false;
   node->state = REAPED;
@@ -1001,8 +1004,7 @@ xfclose (FILE *fp, char const *file)
     {
     case STDIN_FILENO:
       /* Allow reading stdin from tty more than once.  */
-      if (feof (fp))
-        clearerr (fp);
+      clearerr (fp);
       break;
 
     case STDOUT_FILENO:
@@ -1043,7 +1045,7 @@ pipe_fork (int pipefds[2], size_t tries)
   struct tempnode *saved_temphead;
   int saved_errno;
   double wait_retry = 0.25;
-  pid_t pid IF_LINT ( = -1);
+  pid_t pid;
   struct cs_status cs;
 
   if (pipe2 (pipefds, O_CLOEXEC) < 0)
@@ -1651,6 +1653,7 @@ begfield (struct line const *line, struct keyfield const *key)
 /* Return the limit of (a pointer to the first character after) the field
    in LINE specified by KEY. */
 
+ATTRIBUTE_PURE
 static char *
 limfield (struct line const *line, struct keyfield const *key)
 {
@@ -1903,12 +1906,12 @@ static char const unit_order[UCHAR_LIM] =
    decimal_point chars only.  Returns the highest digit found in the number,
    or '\0' if no digit has been found.  Upon return *number points at the
    character that immediately follows after the given number.  */
-static unsigned char
+static char
 traverse_raw_number (char const **number)
 {
   char const *p = *number;
-  unsigned char ch;
-  unsigned char max_digit = '\0';
+  char ch;
+  char max_digit = '\0';
   bool ends_with_thousands_sep = false;
 
   /* Scan to end of number.
@@ -1951,12 +1954,13 @@ traverse_raw_number (char const **number)
    separators and a decimal point, but it may not contain leading blanks.
    Negative numbers get negative orders; zero numbers have a zero order.  */
 
-static int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static int
 find_unit_order (char const *number)
 {
   bool minus_sign = (*number == '-');
   char const *p = number + minus_sign;
-  unsigned char max_digit = traverse_raw_number (&p);
+  char max_digit = traverse_raw_number (&p);
   if ('0' < max_digit)
     {
       unsigned char ch = *p;
@@ -1970,6 +1974,7 @@ find_unit_order (char const *number)
 /* Compare numbers A and B ending in units with SI or IEC prefixes
        <none/unknown> < K/k < M < G < T < P < E < Z < Y  */
 
+ATTRIBUTE_PURE
 static int
 human_numcompare (char const *a, char const *b)
 {
@@ -1986,6 +1991,7 @@ human_numcompare (char const *a, char const *b)
    machine numbers.  Comparatively slow for short strings, but asymptotically
    hideously fast. */
 
+ATTRIBUTE_PURE
 static int
 numcompare (char const *a, char const *b)
 {
@@ -2097,7 +2103,7 @@ random_md5_state_init (char const *random_source)
   unsigned char buf[MD5_DIGEST_SIZE];
   struct randread_source *r = randread_new (random_source, sizeof buf);
   if (! r)
-    sort_die (_("open failed"), random_source);
+    sort_die (_("open failed"), random_source ? random_source : "getrandom");
   randread (r, buf, sizeof buf);
   if (randread_free (r) != 0)
     sort_die (_("close failed"), random_source);
@@ -2337,7 +2343,7 @@ debug_key (struct line const *line, struct keyfield const *key)
           else if (key->numeric || key->human_numeric)
             {
               char const *p = beg + (beg < lim && *beg == '-');
-              unsigned char max_digit = traverse_raw_number (&p);
+              char max_digit = traverse_raw_number (&p);
               if ('0' <= max_digit)
                 {
                   unsigned char ch = *p;
@@ -2425,9 +2431,21 @@ key_warnings (struct keyfield const *gkey, bool gkey_only)
   struct keyfield const *key;
   struct keyfield ugkey = *gkey;
   unsigned long keynum = 1;
+  bool basic_numeric_field = false;
+  bool general_numeric_field = false;
+  bool basic_numeric_field_span = false;
+  bool general_numeric_field_span = false;
 
   for (key = keylist; key; key = key->next, keynum++)
     {
+      if (key_numeric (key))
+        {
+          if (key->general_numeric)
+            general_numeric_field = true;
+          else
+            basic_numeric_field = true;
+        }
+
       if (key->traditional_used)
         {
           size_t sword = key->sword;
@@ -2482,8 +2500,14 @@ key_warnings (struct keyfield const *gkey, bool gkey_only)
           if (!sword)
             sword++;
           if (!eword || sword < eword)
-            error (0, 0, _("key %lu is numeric and spans multiple fields"),
-                   keynum);
+            {
+              error (0, 0, _("key %lu is numeric and spans multiple fields"),
+                     keynum);
+              if (key->general_numeric)
+                general_numeric_field_span = true;
+              else
+                basic_numeric_field_span = true;
+            }
         }
 
       /* Flag global options not copied or specified in any key.  */
@@ -2500,6 +2524,69 @@ key_warnings (struct keyfield const *gkey, bool gkey_only)
       ugkey.random &= !key->random;
       ugkey.version &= !key->version;
       ugkey.reverse &= !key->reverse;
+    }
+
+  /* Explicitly warn if field delimiters in this locale
+     don't constrain numbers.  */
+  bool number_locale_warned = false;
+  if (basic_numeric_field_span)
+    {
+      if (tab == TAB_DEFAULT
+          ? thousands_sep != NON_CHAR && (isblank (to_uchar (thousands_sep)))
+          : tab == thousands_sep)
+        {
+          error (0, 0,
+                 _("field separator %s is treated as a "
+                   "group separator in numbers"),
+                 quote (((char []) {thousands_sep, 0})));
+          number_locale_warned = true;
+        }
+    }
+  if (basic_numeric_field_span || general_numeric_field_span)
+    {
+      if (tab == TAB_DEFAULT
+          ? thousands_sep != NON_CHAR && (isblank (to_uchar (decimal_point)))
+          : tab == decimal_point)
+        {
+          error (0, 0,
+                 _("field separator %s is treated as a "
+                   "decimal point in numbers"),
+                 quote (((char []) {decimal_point, 0})));
+          number_locale_warned = true;
+        }
+      else if (tab == '-')
+        {
+          error (0, 0,
+                 _("field separator %s is treated as a "
+                   "minus sign in numbers"),
+                 quote (((char []) {tab, 0})));
+        }
+      else if (general_numeric_field_span && tab == '+')
+        {
+          error (0, 0,
+                 _("field separator %s is treated as a "
+                   "plus sign in numbers"),
+                 quote (((char []) {tab, 0})));
+        }
+    }
+
+  /* Explicitly indicate the decimal point used in this locale,
+     as it suggests that robust scripts need to consider
+     setting the locale when comparing numbers.  */
+  if ((basic_numeric_field || general_numeric_field) && ! number_locale_warned)
+    {
+      error (0, 0,
+             _("%snumbers use %s as a decimal point in this locale"),
+             tab == decimal_point ? "" : _("note "),
+             quote (((char []) {decimal_point, 0})));
+
+    }
+
+  if (basic_numeric_field && thousands_sep_ignored)
+    {
+      error (0, 0,
+             _("the multi-byte number group separator "
+               "in this locale is not supported"));
     }
 
   /* Warn about ignored global options flagged above.
@@ -2561,9 +2648,9 @@ keycompare (struct line const *a, struct line const *b)
           size_t tlena;
           size_t tlenb;
 
-          char enda IF_LINT (= 0);
-          char endb IF_LINT (= 0);
-          void *allocated IF_LINT (= NULL);
+          char enda;
+          char endb;
+          void *allocated;
           char stackbuf[4000];
 
           if (ignore || translate)
@@ -2616,7 +2703,7 @@ keycompare (struct line const *a, struct line const *b)
           else if (key->random)
             diff = compare_random (ta, tlena, tb, tlenb);
           else if (key->version)
-            diff = filevercmp (ta, tb);
+            diff = filenvercmp (ta, tlena, tb, tlenb);
           else
             {
               /* Locale-dependent string sorting.  This is slower than
@@ -3036,7 +3123,7 @@ mergefps (struct sortfile *files, size_t ntemps, size_t nfiles,
       else
         write_line (smallest, ofp, output_file);
 
-      /* Check if we need to read more lines into core. */
+      /* Check if we need to read more lines into memory. */
       if (base[ord[0]] < smallest)
         cur[ord[0]] = smallest - 1;
       else
@@ -3552,7 +3639,7 @@ static void
 merge_loop (struct merge_node_queue *queue,
             size_t total_lines, FILE *tfp, char const *temp_output)
 {
-  while (1)
+  while (true)
     {
       struct merge_node *node = queue_pop (queue);
 
@@ -3908,7 +3995,6 @@ sort (char *const *files, size_t nfiles, char const *output_file,
       size_t nthreads)
 {
   struct buffer buf;
-  IF_LINT (buf.buf = NULL);
   size_t ntemps = 0;
   bool output_file_created = false;
 
@@ -3983,10 +4069,8 @@ sort (char *const *files, size_t nfiles, char const *output_file,
               sortlines (line, nthreads, buf.nlines, merge_tree + 1,
                          &queue, tfp, temp_output);
 
-#ifdef lint
               merge_tree_destroy (nthreads, merge_tree);
               queue_destroy (&queue);
-#endif
             }
           else
             write_unique (line - 1, tfp, temp_output);
@@ -4035,8 +4119,6 @@ insertkey (struct keyfield *key_arg)
 
 /* Report a bad field specification SPEC, with extra info MSGID.  */
 
-static void badfieldspec (char const *, char const *)
-     ATTRIBUTE_NORETURN;
 static void
 badfieldspec (char const *spec, char const *msgid)
 {
@@ -4046,7 +4128,6 @@ badfieldspec (char const *spec, char const *msgid)
 
 /* Report incompatible options.  */
 
-static void incompatible_options (char const *) ATTRIBUTE_NORETURN;
 static void
 incompatible_options (char const *opts)
 {
@@ -4235,14 +4316,16 @@ main (int argc, char **argv)
     /* If the locale doesn't define a decimal point, or if the decimal
        point is multibyte, use the C locale's decimal point.  FIXME:
        add support for multibyte decimal points.  */
-    decimal_point = to_uchar (locale->decimal_point[0]);
+    decimal_point = locale->decimal_point[0];
     if (! decimal_point || locale->decimal_point[1])
       decimal_point = '.';
 
     /* FIXME: add support for multibyte thousands separators.  */
-    thousands_sep = to_uchar (*locale->thousands_sep);
+    thousands_sep = locale->thousands_sep[0];
+    if (thousands_sep && locale->thousands_sep[1])
+      thousands_sep_ignored = true;
     if (! thousands_sep || locale->thousands_sep[1])
-      thousands_sep = -1;
+      thousands_sep = NON_CHAR;
   }
 
   have_read_stdin = false;
@@ -4733,7 +4816,7 @@ main (int argc, char **argv)
 
       /* POSIX requires that sort return 1 IFF invoked with -c or -C and the
          input is not properly sorted.  */
-      return check (files[0], checkonly) ? EXIT_SUCCESS : SORT_OUT_OF_ORDER;
+      exit (check (files[0], checkonly) ? EXIT_SUCCESS : SORT_OUT_OF_ORDER);
     }
 
   /* Check all inputs are accessible, or exit immediately.  */
@@ -4750,7 +4833,6 @@ main (int argc, char **argv)
         sortfiles[i].name = files[i];
 
       merge (sortfiles, 0, nfiles, outfile);
-      IF_LINT (free (sortfiles));
     }
   else
     {
@@ -4767,15 +4849,8 @@ main (int argc, char **argv)
       sort (files, nfiles, outfile, nthreads);
     }
 
-#ifdef lint
-  if (files_from)
-    readtokens0_free (&tok);
-  else
-    free (files);
-#endif
-
   if (have_read_stdin && fclose (stdin) == EOF)
     sort_die (_("close failed"), "-");
 
-  return EXIT_SUCCESS;
+  main_exit (EXIT_SUCCESS);
 }

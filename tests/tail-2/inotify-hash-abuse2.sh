@@ -2,7 +2,7 @@
 # Exercise an abort-inducing flaw in inotify-enabled tail -F.
 # Like inotify-hash-abuse, but without a hard-coded "9".
 
-# Copyright (C) 2009-2020 Free Software Foundation, Inc.
+# Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ for mode in '' '---disable-inotify'; do
 
   for i in $(seq 200); do
     kill -0 $pid || break;
-    mv f g
-    touch f
+    touch g
+    mv g f
   done
 
   # Ensure tail hasn't aborted

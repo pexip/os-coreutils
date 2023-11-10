@@ -1,5 +1,5 @@
 /* sleep - delay for a specified amount of time.
-   Copyright (C) 1984-2020 Free Software Foundation, Inc.
+   Copyright (C) 1984-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -120,12 +120,12 @@ main (int argc, char **argv)
   for (int i = optind; i < argc; i++)
     {
       double s;
-      const char *p;
+      char const *p;
       if (! (xstrtod (argv[i], &p, &s, cl_strtod) || errno == ERANGE)
           /* Nonnegative interval.  */
           || ! (0 <= s)
           /* No extra chars after the number and an optional s,m,h,d char.  */
-          || (*p && *(p+1))
+          || (*p && *(p + 1))
           /* Check any suffix char and update S based on the suffix.  */
           || ! apply_suffix (&s, *p))
         {

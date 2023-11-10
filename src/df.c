@@ -1,5 +1,5 @@
-/* df - summarize free disk space
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+/* df - summarize free file system space
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ struct devlist
   dev_t dev_num;
   struct mount_entry *me;
   struct devlist *next;
+  struct devlist *seen_last; /* valid for hashed devlist entries only */
 };
 
 /* Filled with device numbers of examined file systems to avoid
@@ -82,7 +83,7 @@ static bool file_systems_processed;
 
 /* If true, invoke the 'sync' system call before getting any usage data.
    Using this option can make df very slow, especially with many or very
-   busy disks.  Note that this may make a difference on some systems --
+   busy file systems.  This may make a difference on some systems --
    SunOS 4.1.3, for one.  It is *not* necessary on GNU/Linux.  */
 static bool require_sync;
 
@@ -170,7 +171,7 @@ struct field_data_t
   display_field_t field;
   char const *arg;
   field_type_t field_type;
-  const char *caption;/* NULL means to use the default header of this field.  */
+  char const *caption;/* NULL means to use the default header of this field.  */
   size_t width;       /* Auto adjusted (up) widths used to align columns.  */
   mbs_align_t align;  /* Alignment for this field.  */
   bool used;
@@ -274,6 +275,28 @@ static struct option const long_options[] =
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
 };
+
+/* Stat FILE and put the results into *ST.  Return 0 if successful, an
+   error number otherwise.  Try to open FILE before statting, to
+   trigger automounts.  */
+
+static int
+automount_stat_err (char const *file, struct stat *st)
+{
+  int fd = open (file, O_RDONLY | O_NOCTTY | O_NONBLOCK);
+  if (fd < 0)
+    {
+      if (errno == ENOENT || errno == ENOTDIR)
+        return errno;
+      return stat (file, st) == 0 ? 0 : errno;
+    }
+  else
+    {
+      int err = fstat (fd, st) == 0 ? 0 : errno;
+      close (fd);
+      return err;
+    }
+}
 
 /* Replace problematic chars with '?'.
    Since only control characters are currently considered,
@@ -381,21 +404,16 @@ print_table (void)
           /* When ambsalign fails, output unaligned data.  */
           fputs (cell ? cell : table[row][col], stdout);
           free (cell);
-
-          IF_LINT (free (table[row][col]));
         }
       putchar ('\n');
-      IF_LINT (free (table[row]));
     }
-
-  IF_LINT (free (table));
 }
 
 /* Dynamically allocate a struct field_t in COLUMNS, which
    can then be accessed with standard array notation.  */
 
 static void
-alloc_field (int f, const char *c)
+alloc_field (int f, char const *c)
 {
   ncolumns++;
   columns = xnrealloc (columns, ncolumns, sizeof (struct field_data_t *));
@@ -631,8 +649,9 @@ get_header (void)
 
 /* Is FSTYPE a type of file system that should be listed?  */
 
-static bool _GL_ATTRIBUTE_PURE
-selected_fstype (const char *fstype)
+ATTRIBUTE_PURE
+static bool
+selected_fstype (char const *fstype)
 {
   const struct fs_type_list *fsp;
 
@@ -646,8 +665,9 @@ selected_fstype (const char *fstype)
 
 /* Is FSTYPE a type of file system that should be omitted?  */
 
-static bool _GL_ATTRIBUTE_PURE
-excluded_fstype (const char *fstype)
+ATTRIBUTE_PURE
+static bool
+excluded_fstype (char const *fstype)
 {
   const struct fs_type_list *fsp;
 
@@ -681,13 +701,13 @@ devlist_for_dev (dev_t dev)
     return NULL;
   struct devlist dev_entry;
   dev_entry.dev_num = dev;
-  return hash_lookup (devlist_table, &dev_entry);
-}
 
-static void
-devlist_free (void *p)
-{
-  free (p);
+  struct devlist *found = hash_lookup (devlist_table, &dev_entry);
+  if (found == NULL)
+    return NULL;
+
+  /* Return the last devlist entry we have seen with this dev_num */
+  return found->seen_last;
 }
 
 /* Filter mount list by skipping duplicate entries.
@@ -710,9 +730,7 @@ filter_mount_list (bool devices_only)
     mount_list_size++;
 
   devlist_table = hash_initialize (mount_list_size, NULL,
-                                 devlist_hash,
-                                 devlist_compare,
-                                 devlist_free);
+                                   devlist_hash, devlist_compare, NULL);
   if (devlist_table == NULL)
     xalloc_die ();
 
@@ -799,8 +817,12 @@ filter_mount_list (bool devices_only)
           devlist->dev_num = buf.st_dev;
           devlist->next = device_list;
           device_list = devlist;
-          if (hash_insert (devlist_table, devlist) == NULL)
+
+          struct devlist *hash_entry = hash_insert (devlist_table, devlist);
+          if (hash_entry == NULL)
             xalloc_die ();
+          /* Ensure lookups use this latest devlist.  */
+          hash_entry->seen_last = devlist;
 
           me = me->me_next;
         }
@@ -815,7 +837,9 @@ filter_mount_list (bool devices_only)
         me = device_list->me;
         me->me_next = mount_list;
         mount_list = me;
-        device_list = device_list->next;
+        struct devlist *next = device_list->next;
+        free (device_list);
+        device_list = next;
       }
 
       hash_free (devlist_table);
@@ -827,7 +851,8 @@ filter_mount_list (bool devices_only)
 /* Search a mount entry list for device id DEV.
    Return the corresponding mount entry if found or NULL if not.  */
 
-static struct mount_entry const * _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static struct mount_entry const *
 me_for_dev (dev_t dev)
 {
   struct devlist *dl = devlist_for_dev (dev);
@@ -870,9 +895,6 @@ df_readable (bool negative, uintmax_t n, char *buf,
     }
 }
 
-/* Logical equivalence */
-#define LOG_EQ(a, b) (!(a) == !(b))
-
 /* Add integral value while using uintmax_t for value part and separate
    negation flag.  It adds value of SRC and SRC_NEG to DEST and DEST_NEG.
    The result will be in DEST and DEST_NEG.  See df_readable to understand
@@ -881,7 +903,7 @@ static void
 add_uint_with_neg_flag (uintmax_t *dest, bool *dest_neg,
                         uintmax_t src, bool src_neg)
 {
-  if (LOG_EQ (*dest_neg, src_neg))
+  if (*dest_neg == src_neg)
     {
       *dest += src;
       return;
@@ -908,7 +930,8 @@ add_uint_with_neg_flag (uintmax_t *dest, bool *dest_neg,
 /* Return true if S ends in a string that may be a 36-byte UUID,
    i.e., of the form HHHHHHHH-HHHH-HHHH-HHHH-HHHHHHHHHHHH, where
    each H is an upper or lower case hexadecimal digit.  */
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 has_uuid_suffix (char const *s)
 {
   size_t len = strlen (s);
@@ -975,23 +998,23 @@ add_to_grand_total (struct field_values_t *bv, struct field_values_t *iv)
                             bv->negate_available);
 }
 
-/* Obtain a space listing for the disk device with absolute file name DISK.
+/* Obtain a space listing for the device with absolute file name DEVICE.
    If MOUNT_POINT is non-NULL, it is the name of the root of the
-   file system on DISK.
+   file system on DEVICE.
    If STAT_FILE is non-null, it is the name of a file within the file
    system that the user originally asked for; this provides better
    diagnostics, and sometimes it provides better results on networked
    file systems that give different free-space results depending on
    where in the file system you probe.
-   If FSTYPE is non-NULL, it is the type of the file system on DISK.
-   If MOUNT_POINT is non-NULL, then DISK may be NULL -- certain systems may
+   If FSTYPE is non-NULL, it is the type of the file system on DEVICE.
+   If MOUNT_POINT is non-NULL, then DEVICE may be NULL -- certain systems may
    not be able to produce statistics in this case.
    ME_DUMMY and ME_REMOTE are the mount entry flags.
    Caller must set PROCESS_ALL to true when iterating over all entries, as
    when df is invoked with no non-option argument.  See below for details.  */
 
 static void
-get_dev (char const *disk, char const *mount_point, char const* file,
+get_dev (char const *device, char const *mount_point, char const *file,
          char const *stat_file, char const *fstype,
          bool me_dummy, bool me_remote,
          const struct fs_usage *force_fsu,
@@ -1016,12 +1039,12 @@ get_dev (char const *disk, char const *mount_point, char const* file,
      It would be better to report on the unmounted file system,
      but statfs doesn't do that on most systems.  */
   if (!stat_file)
-    stat_file = mount_point ? mount_point : disk;
+    stat_file = mount_point ? mount_point : device;
 
   struct fs_usage fsu;
   if (force_fsu)
     fsu = *force_fsu;
-  else if (get_fs_usage (stat_file, disk, &fsu))
+  else if (get_fs_usage (stat_file, device, &fsu))
     {
       /* If we can't access a system provided entry due
          to it not being present (now), or due to permissions,
@@ -1053,7 +1076,7 @@ get_dev (char const *disk, char const *mount_point, char const* file,
       if (stat (stat_file, &sb) == 0)
         {
           struct mount_entry const * dev_me = me_for_dev (sb.st_dev);
-          if (dev_me && ! STREQ (dev_me->me_devname, disk)
+          if (dev_me && ! STREQ (dev_me->me_devname, device)
               && (! dev_me->me_remote || ! me_remote))
             {
               fstype = "-";
@@ -1072,13 +1095,13 @@ get_dev (char const *disk, char const *mount_point, char const* file,
 
   alloc_table_row ();
 
-  if (! disk)
-    disk = "-";			/* unknown */
+  if (! device)
+    device = "-";		/* unknown */
 
   if (! file)
     file = "-";			/* unspecified */
 
-  char *dev_name = xstrdup (disk);
+  char *dev_name = xstrdup (device);
   char *resolved_dev;
 
   /* On some systems, dev_name is a long-named symlink like
@@ -1245,7 +1268,7 @@ get_dev (char const *disk, char const *mount_point, char const* file,
 /* Scan the mount list returning the _last_ device found for MOUNT.
    NULL is returned if MOUNT not found.  The result is malloced.  */
 static char *
-last_device_for_mount (char const* mount)
+last_device_for_mount (char const *mount)
 {
   struct mount_entry const *me;
   struct mount_entry const *le = NULL;
@@ -1269,20 +1292,20 @@ last_device_for_mount (char const* mount)
     return NULL;
 }
 
-/* If DISK corresponds to a mount point, show its usage
+/* If DEVICE corresponds to a mount point, show its usage
    and return true.  Otherwise, return false.  */
 static bool
-get_disk (char const *disk)
+get_device (char const *device)
 {
   struct mount_entry const *me;
   struct mount_entry const *best_match = NULL;
   bool best_match_accessible = false;
   bool eclipsed_device = false;
-  char const *file = disk;
+  char const *file = device;
 
-  char *resolved = canonicalize_file_name (disk);
+  char *resolved = canonicalize_file_name (device);
   if (resolved && IS_ABSOLUTE_FILE_NAME (resolved))
-    disk = resolved;
+    device = resolved;
 
   size_t best_match_len = SIZE_MAX;
   for (me = mount_list; me; me = me->me_next)
@@ -1293,7 +1316,7 @@ get_disk (char const *disk)
       if (canon_dev && IS_ABSOLUTE_FILE_NAME (canon_dev))
         devname = canon_dev;
 
-      if (STREQ (disk, devname))
+      if (STREQ (device, devname))
         {
           char *last_device = last_device_for_mount (me->me_mountdir);
           eclipsed_device = last_device && ! STREQ (last_device, devname);
@@ -1302,10 +1325,10 @@ get_disk (char const *disk)
           if (! eclipsed_device
               && (! best_match_accessible || len < best_match_len))
             {
-              struct stat disk_stats;
+              struct stat device_stats;
               bool this_match_accessible = false;
 
-              if (stat (me->me_mountdir, &disk_stats) == 0)
+              if (stat (me->me_mountdir, &device_stats) == 0)
                 best_match_accessible = this_match_accessible = true;
 
               if (this_match_accessible
@@ -1350,12 +1373,12 @@ get_disk (char const *disk)
 }
 
 /* Figure out which device file or directory POINT is mounted on
-   and show its disk usage.
+   and show its device usage.
    STATP must be the result of 'stat (POINT, STATP)'.  */
 static void
-get_point (const char *point, const struct stat *statp)
+get_point (char const *point, const struct stat *statp)
 {
-  struct stat disk_stats;
+  struct stat device_stats;
   struct mount_entry *me;
   struct mount_entry const *best_match = NULL;
 
@@ -1387,8 +1410,8 @@ get_point (const char *point, const struct stat *statp)
     }
   free (resolved);
   if (best_match
-      && (stat (best_match->me_mountdir, &disk_stats) != 0
-          || disk_stats.st_dev != statp->st_dev))
+      && (stat (best_match->me_mountdir, &device_stats) != 0
+          || device_stats.st_dev != statp->st_dev))
     best_match = NULL;
 
   if (! best_match)
@@ -1396,8 +1419,8 @@ get_point (const char *point, const struct stat *statp)
       {
         if (me->me_dev == (dev_t) -1)
           {
-            if (stat (me->me_mountdir, &disk_stats) == 0)
-              me->me_dev = disk_stats.st_dev;
+            if (stat (me->me_mountdir, &device_stats) == 0)
+              me->me_dev = device_stats.st_dev;
             else
               {
                 /* Report only I/O errors.  Other errors might be
@@ -1419,8 +1442,8 @@ get_point (const char *point, const struct stat *statp)
             && (!best_match || best_match->me_dummy || !me->me_dummy))
           {
             /* Skip bogus mtab entries.  */
-            if (stat (me->me_mountdir, &disk_stats) != 0
-                || disk_stats.st_dev != me->me_dev)
+            if (stat (me->me_mountdir, &device_stats) != 0
+                || device_stats.st_dev != me->me_dev)
               me->me_dev = (dev_t) -2;
             else
               best_match = me;
@@ -1447,14 +1470,14 @@ get_point (const char *point, const struct stat *statp)
     }
 }
 
-/* Determine what kind of node NAME is and show the disk usage
+/* Determine what kind of node NAME is and show the device usage
    for it.  STATP is the results of 'stat' on NAME.  */
 
 static void
 get_entry (char const *name, struct stat const *statp)
 {
   if ((S_ISBLK (statp->st_mode) || S_ISCHR (statp->st_mode))
-      && get_disk (name))
+      && get_device (name))
     return;
 
   get_point (name, statp);
@@ -1478,7 +1501,7 @@ get_all_entries (void)
 /* Add FSTYPE to the list of file system types to display.  */
 
 static void
-add_fs_type (const char *fstype)
+add_fs_type (char const *fstype)
 {
   struct fs_type_list *fsp;
 
@@ -1491,7 +1514,7 @@ add_fs_type (const char *fstype)
 /* Add FSTYPE to the list of file system types to be omitted.  */
 
 static void
-add_excluded_fs_type (const char *fstype)
+add_excluded_fs_type (char const *fstype)
 {
   struct fs_type_list *fsp;
 
@@ -1566,7 +1589,7 @@ field names are: 'source', 'fstype', 'itotal', 'iused', 'iavail', 'ipcent',\n\
 int
 main (int argc, char **argv)
 {
-  struct stat *stats IF_LINT ( = 0);
+  struct stat *stats = NULL;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -1590,7 +1613,7 @@ main (int argc, char **argv)
   /* If true, use the POSIX output format.  */
   bool posix_format = false;
 
-  const char *msg_mut_excl = _("options %s and %s are mutually exclusive");
+  char const *msg_mut_excl = _("options %s and %s are mutually exclusive");
 
   while (true)
     {
@@ -1761,18 +1784,12 @@ main (int argc, char **argv)
       stats = xnmalloc (argc - optind, sizeof *stats);
       for (int i = optind; i < argc; ++i)
         {
-          if (stat (argv[i], &stats[i - optind]))
+          int err = automount_stat_err (argv[i], &stats[i - optind]);
+          if (err != 0)
             {
-              error (0, errno, "%s", quotef (argv[i]));
+              error (0, err, "%s", quotef (argv[i]));
               exit_status = EXIT_FAILURE;
               argv[i] = NULL;
-            }
-          else if (! S_ISFIFO (stats[i - optind].st_mode))
-            {
-              /* open() is needed to automount in some cases.  */
-              int fd = open (argv[i], O_RDONLY | O_NOCTTY);
-              if (0 <= fd)
-                close (fd);
             }
         }
     }
@@ -1799,7 +1816,7 @@ main (int argc, char **argv)
         {
           status = EXIT_FAILURE;
         }
-      const char *warning = (status == 0 ? _("Warning: ") : "");
+      char const *warning = (status == 0 ? _("Warning: ") : "");
       error (status, errno, "%s%s", warning,
              _("cannot read table of mounted file systems"));
     }
@@ -1810,7 +1827,7 @@ main (int argc, char **argv)
   get_field_list ();
   get_header ();
 
-  if (optind < argc)
+  if (stats)
     {
       /* Display explicitly requested empty file systems.  */
       show_listed_fs = true;
@@ -1818,8 +1835,6 @@ main (int argc, char **argv)
       for (int i = optind; i < argc; ++i)
         if (argv[i])
           get_entry (argv[i], &stats[i - optind]);
-
-      IF_LINT (free (stats));
     }
   else
     get_all_entries ();
@@ -1841,7 +1856,5 @@ main (int argc, char **argv)
         die (EXIT_FAILURE, 0, _("no file systems processed"));
     }
 
-  IF_LINT (free (columns));
-
-  return exit_status;
+  main_exit (exit_status);
 }

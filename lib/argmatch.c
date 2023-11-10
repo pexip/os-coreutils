@@ -1,11 +1,11 @@
 /* argmatch.c -- find a match for a string in an array
 
-   Copyright (C) 1990, 1998-1999, 2001-2007, 2009-2020 Free Software
+   Copyright (C) 1990, 1998-1999, 2001-2007, 2009-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -62,7 +62,7 @@ __argmatch_die (void)
   ARGMATCH_DIE;
 }
 
-/* Used by XARGMATCH and XARGCASEMATCH.  See description in argmatch.h.
+/* Used by XARGMATCH.  See description in argmatch.h.
    Default to __argmatch_die, but allow caller to change this at run-time. */
 argmatch_exit_fn argmatch_die = __argmatch_die;
 
@@ -120,6 +120,21 @@ argmatch (const char *arg, const char *const *arglist,
     return matchind;
 }
 
+ptrdiff_t
+argmatch_exact (const char *arg, const char *const *arglist)
+{
+  size_t i;
+
+  /* Test elements for exact match.  */
+  for (i = 0; arglist[i]; i++)
+    {
+      if (!strcmp (arglist[i], arg))
+        return i;
+    }
+
+  return -1;
+}
+
 /* Error reporting for argmatch.
    CONTEXT is a description of the type of entity that was being matched.
    VALUE is the invalid value that was given.
@@ -174,9 +189,16 @@ ptrdiff_t
 __xargmatch_internal (const char *context,
                       const char *arg, const char *const *arglist,
                       const void *vallist, size_t valsize,
-                      argmatch_exit_fn exit_fn)
+                      argmatch_exit_fn exit_fn,
+                      bool allow_abbreviation)
 {
-  ptrdiff_t res = argmatch (arg, arglist, vallist, valsize);
+  ptrdiff_t res;
+
+  if (allow_abbreviation)
+    res = argmatch (arg, arglist, vallist, valsize);
+  else
+    res = argmatch_exact (arg, arglist);
+
   if (res >= 0)
     /* Success. */
     return res;
@@ -266,7 +288,7 @@ main (int argc, const char *const *argv)
                              backup_args, backup_vals);
 
   printf ("The version control is '%s'\n",
-          ARGMATCH_TO_ARGUMENT (backup_type, backup_args, backup_vals));
+          ARGMATCH_TO_ARGUMENT (&backup_type, backup_args, backup_vals));
 
   return 0;
 }

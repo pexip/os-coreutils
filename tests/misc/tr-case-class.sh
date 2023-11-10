@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test case conversion classes
 
-# Copyright (C) 2010-2020 Free Software Foundation, Inc.
+# Copyright (C) 2010-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -109,5 +109,8 @@ the latter string must not end with a character class' > exp
   echo '0' > exp
   compare exp out || fail=1
 fi
+
+# coreutils 8.6 - 8.32 inclusive, would abort trying to validate the following
+returns_ 1 tr -c '[:upper:]\000-\370' '[:lower:]' < /dev/null || fail=1
 
 Exit $fail

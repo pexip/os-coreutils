@@ -1,9 +1,9 @@
 /* Test of getting load average.
-   Copyright (C) 2011-2020 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -70,7 +70,7 @@ main (int argc, char **argv)
       if (loads > 1)
         check_avg (5, avg[1], argc > 1);
       if (loads > 2)
-        check_avg (15, avg[1], argc > 1);
+        check_avg (15, avg[2], argc > 1);
       if (loads > 0 && argc > 1)
         putchar ('\n');
 

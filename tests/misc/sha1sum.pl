@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test "sha1sum".
 
-# Copyright (C) 2000-2020 Free Software Foundation, Inc.
+# Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,13 +48,15 @@ my @Tests =
                         {OUT=>"\\$sha_degenerate  .\\nfoo\n"}],
      ['bs-sha-2', {IN=> {".\\foo"=> ''}},
                         {OUT=>"\\$sha_degenerate  .\\\\foo\n"}],
+     ['bs-sha-3', {IN=> {".\rfoo"=> ''}},
+                        {OUT=>"\\$sha_degenerate  .\\rfoo\n"}],
      # The sha1sum and md5sum drivers share a lot of code.
      # Ensure that sha1sum does *not* share the part that makes
      # md5sum accept BSD format.
      ['check-bsd', '--check', {IN=> {'f.md5' => "MD5 (f) = $sha_degenerate\n"}},
                         {AUX=> {f=> ''}},
                         {ERR=>"sha1sum: f.md5: no properly formatted "
-                          . "SHA1 checksum lines found\n"},
+                          . "checksum lines found\n"},
                         {EXIT=> 1}],
      ['check-bsd2', '--check',
                         {IN=> {'f.sha1' => "SHA1 (f) = $sha_degenerate\n"}},
@@ -66,7 +68,7 @@ my @Tests =
                         {IN=> {'f.md5' => "MD5(f)= $sha_degenerate\n"}},
                         {AUX=> {f=> ''}},
                         {ERR=>"sha1sum: f.md5: no properly formatted "
-                          . "SHA1 checksum lines found\n"},
+                          . "checksum lines found\n"},
                         {EXIT=> 1}],
      ['check-openssl2', '--check',
                         {IN=> {'f.sha1' => "SHA1(f)= $sha_degenerate\n"}},
@@ -75,7 +77,7 @@ my @Tests =
                         {IN=> {'f.sha1' => "SHA1(f)= $sha_degenerate\n"}},
                         {AUX=> {f=> 'bar'}}, {EXIT=> 1}],
      ['bsd-segv', '--check', {IN=> {'z' => "SHA1 ("}}, {EXIT=> 1},
-      {ERR=> "$prog: z: no properly formatted SHA1 checksum lines found\n"}],
+      {ERR=> "$prog: z: no properly formatted checksum lines found\n"}],
     );
 
 # Insert the '--text' argument for each test.

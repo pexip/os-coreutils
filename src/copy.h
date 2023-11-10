@@ -1,5 +1,5 @@
 /* core functions for copying files and directories
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 # include <stdbool.h>
 # include "hash.h"
 
+struct selabel_handle;
+
 /* Control creation of sparse files (files with holes).  */
 enum Sparse_type
 {
@@ -39,17 +41,17 @@ enum Sparse_type
      create a corresponding hole in DEST.  There is a performance penalty
      here because CP has to search for holes in SRC.  But if the holes are
      big enough, that penalty can be offset by the decrease in the amount
-     of data written to disk.   */
+     of data written to the file system.   */
   SPARSE_ALWAYS
 };
 
 /* Control creation of COW files.  */
 enum Reflink_type
 {
-  /* Default to a standard copy.  */
+  /* Do a standard copy.  */
   REFLINK_NEVER,
 
-  /* Try a COW copy and fall back to a standard copy.  */
+  /* Try a COW copy and fall back to a standard copy; this is the default.  */
   REFLINK_AUTO,
 
   /* Require a COW copy and fail if not available.  */
@@ -162,8 +164,8 @@ struct cp_options
   bool preserve_timestamps;
   bool explicit_no_preserve_mode;
 
-  /* If true, attempt to set specified security context */
-  bool set_security_context;
+  /* If non-null, attempt to set specified security context */
+  struct selabel_handle *set_security_context;
 
   /* Enabled for mv, and for cp by the --preserve=links option.
      If true, attempt to preserve in the destination files any
@@ -280,28 +282,35 @@ struct cp_options
    on systems with a rename function that fails for a source file name
    specified with a trailing slash.  */
 # if RENAME_TRAILING_SLASH_BUG
-int rpl_rename (const char *, const char *);
+int rpl_rename (char const *, char const *);
 #  undef rename
 #  define rename rpl_rename
 # endif
 
 bool copy (char const *src_name, char const *dst_name,
-           bool nonexistent_dst, const struct cp_options *options,
-           bool *copy_into_self, bool *rename_succeeded);
+           int dst_dirfd, char const *dst_relname,
+           int nonexistent_dst, const struct cp_options *options,
+           bool *copy_into_self, bool *rename_succeeded)
+  _GL_ATTRIBUTE_NONNULL ((1, 2, 4, 6, 7));
 
 extern bool set_process_security_ctx (char const *src_name,
                                       char const *dst_name,
                                       mode_t mode, bool new_dst,
-                                      const struct cp_options *x);
+                                      const struct cp_options *x)
+  _GL_ATTRIBUTE_NONNULL ();
 
-extern bool set_file_security_ctx (char const *dst_name, bool process_local,
-                                   bool recurse, const struct cp_options *x);
+extern bool set_file_security_ctx (char const *dst_name,
+                                   bool recurse, const struct cp_options *x)
+  _GL_ATTRIBUTE_NONNULL ();
 
-void dest_info_init (struct cp_options *);
-void src_info_init (struct cp_options *);
+void dest_info_init (struct cp_options *) _GL_ATTRIBUTE_NONNULL ();
+void dest_info_free (struct cp_options *) _GL_ATTRIBUTE_NONNULL ();
+void src_info_init (struct cp_options *) _GL_ATTRIBUTE_NONNULL ();
+void src_info_free (struct cp_options *) _GL_ATTRIBUTE_NONNULL ();
 
-void cp_options_default (struct cp_options *);
-bool chown_failure_ok (struct cp_options const *) _GL_ATTRIBUTE_PURE;
+void cp_options_default (struct cp_options *) _GL_ATTRIBUTE_NONNULL ();
+bool chown_failure_ok (struct cp_options const *)
+  _GL_ATTRIBUTE_NONNULL () _GL_ATTRIBUTE_PURE;
 mode_t cached_umask (void);
 
 #endif

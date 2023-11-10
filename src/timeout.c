@@ -1,5 +1,5 @@
 /* timeout -- run a command with bounded time
-   Copyright (C) 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ static double kill_after;
 static bool foreground;      /* whether to use another program group.  */
 static bool preserve_status; /* whether to use a timeout status or not.  */
 static bool verbose;         /* whether to diagnose timeouts or not.  */
-static char const* command;
+static char const *command;
 
 /* for long options with no corresponding short option, use enum */
 enum
@@ -114,14 +114,9 @@ static void
 settimeout (double duration, bool warn)
 {
 
-/* timer_settime() provides potentially nanosecond resolution.
-   setitimer() is more portable (to Darwin for example),
-   but only provides microsecond resolution and thus is
-   a little more awkward to use with timespecs, as well as being
-   deprecated by POSIX.  Instead we fallback to single second
-   resolution provided by alarm().  */
-
 #if HAVE_TIMER_SETTIME
+  /* timer_settime() provides potentially nanosecond resolution.  */
+
   struct timespec ts = dtotimespec (duration);
   struct itimerspec its = { {0, 0}, ts };
   timer_t timerid;
@@ -138,7 +133,36 @@ settimeout (double duration, bool warn)
     }
   else if (warn && errno != ENOSYS)
     error (0, errno, _("warning: timer_create"));
+
+#elif HAVE_SETITIMER
+  /* setitimer() is more portable (to Darwin for example),
+     but only provides microsecond resolution.  */
+
+  struct timeval tv;
+  struct timespec ts = dtotimespec (duration);
+  tv.tv_sec = ts.tv_sec;
+  tv.tv_usec = (ts.tv_nsec + 999) / 1000;
+  if (tv.tv_usec == 1000 * 1000)
+    {
+      if (tv.tv_sec != TYPE_MAXIMUM (time_t))
+        {
+          tv.tv_sec++;
+          tv.tv_usec = 0;
+        }
+      else
+        tv.tv_usec--;
+    }
+  struct itimerval it = { {0, 0}, tv };
+  if (setitimer (ITIMER_REAL, &it, NULL) == 0)
+    return;
+  else
+    {
+      if (warn && errno != ENOSYS)
+        error (0, errno, _("warning: setitimer"));
+    }
 #endif
+
+  /* fallback to single second resolution provided by alarm().  */
 
   unsigned int timeint;
   if (UINT_MAX <= duration)
@@ -269,12 +293,21 @@ DURATION is a floating point number with an optional suffix:\n\
 'd' for days.\nA duration of 0 disables the associated timeout.\n"), stdout);
 
       fputs (_("\n\
-If the command times out, and --preserve-status is not set, then exit with\n\
-status 124.  Otherwise, exit with the status of COMMAND.  If no signal\n\
-is specified, send the TERM signal upon timeout.  The TERM signal kills\n\
-any process that does not block or catch that signal.  It may be necessary\n\
-to use the KILL (9) signal, since this signal cannot be caught, in which\n\
-case the exit status is 128+9 rather than 124.\n"), stdout);
+Upon timeout, send the TERM signal to COMMAND, if no other SIGNAL specified.\n\
+The TERM signal kills any process that does not block or catch that signal.\n\
+It may be necessary to use the KILL signal, since this signal can't be caught.\
+\n"), stdout);
+
+      fputs (_("\n\
+EXIT status:\n\
+  124  if COMMAND times out, and --preserve-status is not specified\n\
+  125  if the timeout command itself fails\n\
+  126  if COMMAND is found but cannot be invoked\n\
+  127  if COMMAND cannot be found\n\
+  137  if COMMAND (or timeout itself) is sent the KILL (9) signal (128+9)\n\
+  -    the exit status of COMMAND otherwise\n\
+"), stdout);
+
       emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
@@ -316,10 +349,10 @@ apply_time_suffix (double *x, char suffix_char)
 }
 
 static double
-parse_duration (const char *str)
+parse_duration (char const *str)
 {
   double duration;
-  const char *ep;
+  char const *ep;
 
   if (! (xstrtod (str, &ep, &duration, cl_strtod) || errno == ERANGE)
       /* Nonnegative interval.  */
@@ -560,6 +593,11 @@ main (int argc, char **argv)
                   unblock_signal (sig);
                   raise (sig);
                 }
+              /* Allow users to distinguish if command was forcably killed.
+                 Needed with --foreground where we don't send SIGKILL to
+                 the timeout process itself.  */
+              if (timed_out && sig == SIGKILL)
+                preserve_status = true;
               status = sig + 128; /* what sh returns for signaled processes.  */
             }
           else

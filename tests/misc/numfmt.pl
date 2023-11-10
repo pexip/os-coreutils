@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Basic tests for "numfmt".
 
-# Copyright (C) 2012-2020 Free Software Foundation, Inc.
+# Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -177,6 +177,9 @@ my @Tests =
              {EXIT => '1'}],
      ['pad-3.1', '--padding=0 5',
              {ERR => "$prog: invalid padding value '0'\n"},
+             {EXIT => '1'}],
+     ['pad-3.2', "--padding=$limits->{LONG_MIN} 0",
+             {ERR => "$prog: invalid padding value '$limits->{LONG_MIN}'\n"},
              {EXIT => '1'}],
      ['pad-4', '--padding=10 --to=si 50000',             {OUT=>'       50K'}],
      ['pad-5', '--padding=-10 --to=si 50000',            {OUT=>'50K       '}],

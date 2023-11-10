@@ -1,5 +1,5 @@
 /* seq - print sequence of numbers to standard output.
-   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+   Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 
 /* Limit below which seq_fast has more throughput.
    Determined with: seq 0 200 inf | pv > /dev/null  */
-#define SEQ_FAST_STEP_LIMIT 200
+#define SEQ_FAST_STEP_LIMIT 200  /* Keep in sync with texinfo description.  */
 #define SEQ_FAST_STEP_LIMIT_DIGITS 3
 
 /* The official name of this program (e.g., no 'g' prefix).  */
@@ -146,7 +146,7 @@ struct layout
    Return if the string is correct else signal error.  */
 
 static operand
-scan_arg (const char *arg)
+scan_arg (char const *arg)
 {
   operand ret;
 
@@ -197,7 +197,7 @@ scan_arg (const char *arg)
         e = strchr (arg, 'E');
       if (e)
         {
-          long exponent = strtol (e + 1, NULL, 10);
+          long exponent = MAX (strtol (e + 1, NULL, 10), -LONG_MAX);
           ret.precision += exponent < 0 ? -exponent
                                         : - MIN (ret.precision, exponent);
           /* Don't account for e.... in the width since this is not output.  */
@@ -287,7 +287,7 @@ long_double_format (char const *fmt, struct layout *layout)
       }
 }
 
-static void ATTRIBUTE_NORETURN
+static void
 io_error (void)
 {
   /* FIXME: consider option to silently ignore errno=EPIPE */
@@ -441,7 +441,8 @@ cmp (char const *a, size_t a_len, char const *b, size_t b_len)
 
 /* Trim leading 0's from S, but if S is all 0's, leave one.
    Return a pointer to the trimmed string.  */
-static char const * _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static char const *
 trim_leading_zeros (char const *s)
 {
   char const *p = s;
@@ -455,9 +456,9 @@ trim_leading_zeros (char const *s)
 }
 
 /* Print all whole numbers from A to B, inclusive -- to stdout, each
-   followed by a newline.  If B < A, return false and print nothing.
-   Otherwise, return true.  */
-static bool
+   followed by a newline.  If B < A, return and print nothing.
+   Otherwise, do all the work and exit.  */
+static void
 seq_fast (char const *a, char const *b, uintmax_t step)
 {
   bool inf = STREQ (b, "inf");
@@ -548,17 +549,18 @@ seq_fast (char const *a, char const *b, uintmax_t step)
       *bufp++ = *terminator;
       if (fwrite (buf, bufp - buf, 1, stdout) != 1)
         io_error ();
-
-      IF_LINT (free (buf));
     }
+
+  if (ok)
+    exit (EXIT_SUCCESS);
 
   free (p0);
   free (q0);
-  return ok;
 }
 
 /* Return true if S consists of at least one digit and no non-digits.  */
-static bool _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static bool
 all_digits_p (char const *s)
 {
   size_t n = strlen (s);
@@ -672,8 +674,7 @@ main (int argc, char **argv)
     {
       char const *s1 = n_args == 1 ? "1" : argv[optind];
       char const *s2 = argv[optind + (n_args - 1)];
-      if (seq_fast (s1, s2, step.value))
-        return EXIT_SUCCESS;
+      seq_fast (s1, s2, step.value);
 
       /* Upon any failure, let the more general code deal with it.  */
     }
@@ -691,7 +692,7 @@ main (int argc, char **argv)
           if (step.value == 0)
             {
               error (0, 0, _("invalid Zero increment value: %s"),
-                     quote (argv[optind-1]));
+                     quote (argv[optind - 1]));
               usage (EXIT_FAILURE);
             }
 
@@ -715,12 +716,8 @@ main (int argc, char **argv)
       else if (asprintf (&s2, "%0.Lf", last.value) < 0)
         xalloc_die ();
 
-      if (*s1 != '-' && *s2 != '-' && seq_fast (s1, s2, step.value))
-        {
-          IF_LINT (free (s1));
-          IF_LINT (free (s2));
-          return EXIT_SUCCESS;
-        }
+      if (*s1 != '-' && *s2 != '-')
+        seq_fast (s1, s2, step.value);
 
       free (s1);
       free (s2);
@@ -732,5 +729,5 @@ main (int argc, char **argv)
 
   print_numbers (format_str, layout, first.value, step.value, last.value);
 
-  return EXIT_SUCCESS;
+  main_exit (EXIT_SUCCESS);
 }

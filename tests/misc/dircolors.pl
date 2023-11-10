@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Simple dircolors tests.
 
-# Copyright (C) 1998-2020 Free Software Foundation, Inc.
+# Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,8 +42,30 @@ my @Tests =
      ['term-4', '-b', {IN => "TERM N*match\nowt 40;33\n"},
       {OUT => "LS_COLORS='';\nexport LS_COLORS\n"}],
 
+     ['colorterm-1', '-b', {ENV => 'COLORTERM=any'},
+      {IN => "COLORTERM ?*\nowt 40;33\n"},
+      {OUT => "LS_COLORS='tw=40;33:';\nexport LS_COLORS\n"}],
+
+     ['colorterm-2', '-b', {ENV => 'COLORTERM='},
+      {IN => "COLORTERM ?*\nowt 40;33\n"},
+      {OUT => "LS_COLORS='';\nexport LS_COLORS\n"}],
+
+     ['print-clash1', '-p', '--print-ls',
+      {ERR => "dircolors: options --print-database and --print-ls-colors " .
+              "are mutually exclusive\n" .
+              "Try 'dircolors --help' for more information.\n"},
+      {EXIT => 1}],
+     ['print-clash2', '-b', '--print-database',
+      {ERR => "dircolors: the options to output non shell syntax,\n" .
+              "and to select a shell syntax are mutually exclusive\n" .
+              "Try 'dircolors --help' for more information.\n"},
+      {EXIT => 1}],
+
+     ['print-ls-colors', '--print-ls-colors', {IN => "OWT 40;33\n"},
+      {OUT => "\x1B[40;33mtw\t40;33\x1B[0m\n"}],
+
      # CAREFUL: always specify the -b option, unless explicitly testing
-     # for csh syntax output.
+     # for csh syntax output, or --print-ls-color output.
     );
 
 my $save_temps = $ENV{DEBUG};
