@@ -1,11 +1,11 @@
 /* A more useful interface to strtol.
 
-   Copyright (C) 1995-1996, 1998-1999, 2001-2004, 2006-2020 Free Software
+   Copyright (C) 1995-1996, 1998-1999, 2001-2004, 2006-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,7 +19,8 @@
 #ifndef XSTRTOL_H_
 # define XSTRTOL_H_ 1
 
-# include <inttypes.h>
+/* Get intmax_t, uintmax_t.  */
+# include <stdint.h>
 
 # ifndef _STRTOL_ERROR
 enum strtol_error

@@ -1,10 +1,10 @@
 /* userspec.c -- Parse a user and group string.
-   Copyright (C) 1989-1992, 1997-1998, 2000, 2002-2020 Free Software
+   Copyright (C) 1989-1992, 1997-1998, 2000, 2002-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -22,7 +22,6 @@
 /* Specification.  */
 #include "userspec.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -103,10 +102,6 @@ parse_with_separator (char const *spec, char const *separator,
                       uid_t *uid, gid_t *gid,
                       char **username, char **groupname)
 {
-  static const char *E_invalid_user = N_("invalid user");
-  static const char *E_invalid_group = N_("invalid group");
-  static const char *E_bad_spec = N_("invalid spec");
-
   const char *error_msg;
   struct passwd *pwd;
   struct group *grp;
@@ -134,10 +129,10 @@ parse_with_separator (char const *spec, char const *separator,
     }
   else
     {
-      size_t ulen = separator - spec;
+      idx_t ulen = separator - spec;
       if (ulen != 0)
         {
-          u = xmemdup (spec, ulen + 1);
+          u = ximemdup (spec, ulen + 1);
           u[ulen] = '\0';
         }
     }
@@ -161,12 +156,13 @@ parse_with_separator (char const *spec, char const *separator,
       pwd = (*u == '+' ? NULL : getpwnam (u));
       if (pwd == NULL)
         {
+          username = NULL;
           bool use_login_group = (separator != NULL && g == NULL);
           if (use_login_group)
             {
               /* If there is no group,
                  then there may not be a trailing ":", either.  */
-              error_msg = E_bad_spec;
+              error_msg = N_("invalid spec");
             }
           else
             {
@@ -175,7 +171,7 @@ parse_with_separator (char const *spec, char const *separator,
                   && tmp <= MAXUID && (uid_t) tmp != (uid_t) -1)
                 unum = tmp;
               else
-                error_msg = E_invalid_user;
+                error_msg = N_("invalid user");
             }
         }
       else
@@ -202,12 +198,13 @@ parse_with_separator (char const *spec, char const *separator,
       grp = (*g == '+' ? NULL : getgrnam (g));
       if (grp == NULL)
         {
+          groupname = NULL;
           unsigned long int tmp;
           if (xstrtoul (g, NULL, 10, &tmp, "") == LONGINT_OK
               && tmp <= MAXGID && (gid_t) tmp != (gid_t) -1)
             gnum = tmp;
           else
-            error_msg = E_invalid_group;
+            error_msg = N_("invalid group");
         }
       else
         gnum = grp->gr_gid;
@@ -253,15 +250,18 @@ parse_with_separator (char const *spec, char const *separator,
    Either one might be NULL instead, indicating that it was not
    given and the corresponding numeric ID was left unchanged.
 
-   Return NULL if successful, a static error message string if not.  */
+   Return NULL if successful, a static error message string if not.
+   If PWARN is null, return NULL instead of a warning;
+   otherwise, set *PWARN to true depending on whether returning a warning.  */
 
 char const *
-parse_user_spec (char const *spec, uid_t *uid, gid_t *gid,
-                 char **username, char **groupname)
+parse_user_spec_warn (char const *spec, uid_t *uid, gid_t *gid,
+                      char **username, char **groupname, bool *pwarn)
 {
   char const *colon = gid ? strchr (spec, ':') : NULL;
   char const *error_msg =
     parse_with_separator (spec, colon, uid, gid, username, groupname);
+  bool warn = false;
 
   if (gid && !colon && error_msg)
     {
@@ -274,10 +274,24 @@ parse_user_spec (char const *spec, uid_t *uid, gid_t *gid,
       char const *dot = strchr (spec, '.');
       if (dot
           && ! parse_with_separator (spec, dot, uid, gid, username, groupname))
-        error_msg = NULL;
+        {
+          warn = true;
+          error_msg = pwarn ? N_("warning: '.' should be ':'") : NULL;
+        }
     }
 
+  if (pwarn)
+    *pwarn = warn;
   return error_msg;
+}
+
+/* Like parse_user_spec_warn, but generate only errors; no warnings.  */
+
+char const *
+parse_user_spec (char const *spec, uid_t *uid, gid_t *gid,
+                 char **username, char **groupname)
+{
+  return parse_user_spec_warn (spec, uid, gid, username, groupname, NULL);
 }
 
 #ifdef TEST

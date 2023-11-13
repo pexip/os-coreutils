@@ -1,6 +1,6 @@
 # Make coreutils.					-*-Makefile-*-
 
-# Copyright (C) 1990-2020 Free Software Foundation, Inc.
+# Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ dist-hook: gen-ChangeLog
 	$(AM_V_at)touch $(distdir)/doc/constants.texi \
 	  $(distdir)/doc/coreutils.info
 
-gen_start_ver = 8.23
+gen_start_ver = 8.27
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d .git; then				\

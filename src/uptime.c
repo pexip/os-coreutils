@@ -1,5 +1,5 @@
 /* GNU's uptime.
-   Copyright (C) 1992-2020 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -173,8 +173,8 @@ print_uptime (size_t n, const STRUCT_UTMP *this)
    according to utmp file FILENAME.  Use read_utmp OPTIONS to read the
    utmp file.  */
 
-static void
-uptime (const char *filename, int options)
+static _Noreturn void
+uptime (char const *filename, int options)
 {
   size_t n_users;
   STRUCT_UTMP *utmp_buf = NULL;
@@ -186,7 +186,7 @@ uptime (const char *filename, int options)
 
   print_uptime (n_users, utmp_buf);
 
-  IF_LINT (free (utmp_buf));
+  exit (EXIT_SUCCESS);
 }
 
 void
@@ -252,6 +252,4 @@ main (int argc, char **argv)
       error (0, 0, _("extra operand %s"), quote (argv[optind + 1]));
       usage (EXIT_FAILURE);
     }
-
-  return EXIT_SUCCESS;
 }

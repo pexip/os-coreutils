@@ -1,9 +1,9 @@
 /* Assist in file system timestamp tests.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -23,6 +23,13 @@
 # include <stdbool.h>
 
 # include <intprops.h>
+
+/* Avoid a conflict with a function called nap() on UnixWare.  */
+# if defined _SCO_DS || (defined __SCO_VERSION__ || defined __sysv5__)  /* OpenServer, UnixWare */
+#  include <unistd.h>
+#  undef nap
+#  define nap gl_nap
+# endif
 
 /* Name of the witness file.  */
 #define TEMPFILE BASE "nap.tmp"

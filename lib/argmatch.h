@@ -1,11 +1,11 @@
 /* argmatch.h -- definitions and prototypes for argmatch.c
 
-   Copyright (C) 1990, 1998-1999, 2001-2002, 2004-2005, 2009-2020 Free Software
+   Copyright (C) 1990, 1998-1999, 2001-2002, 2004-2005, 2009-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -52,8 +52,14 @@ extern "C" {
 ptrdiff_t argmatch (char const *arg, char const *const *arglist,
                     void const *vallist, size_t valsize) _GL_ATTRIBUTE_PURE;
 
+ptrdiff_t argmatch_exact (char const *arg, char const *const *arglist)
+  _GL_ATTRIBUTE_PURE;
+
 # define ARGMATCH(Arg, Arglist, Vallist) \
   argmatch (Arg, Arglist, (void const *) (Vallist), sizeof *(Vallist))
+
+# define ARGMATCH_EXACT(Arg, Arglist) \
+  argmatch_exact (Arg, Arglist)
 
 /* xargmatch calls this function when it fails.  This function should not
    return.  By default, this is a function that calls ARGMATCH_DIE which
@@ -83,13 +89,14 @@ void argmatch_valid (char const *const *arglist,
 
 
 
-/* Same as argmatch, but upon failure, report an explanation of the
-   failure, and exit using the function EXIT_FN. */
+/* Like argmatch/argmatch_exact, but upon failure, report an explanation
+   of the failure, and exit using the function EXIT_FN. */
 
 ptrdiff_t __xargmatch_internal (char const *context,
                                 char const *arg, char const *const *arglist,
                                 void const *vallist, size_t valsize,
-                                argmatch_exit_fn exit_fn);
+                                argmatch_exit_fn exit_fn,
+                                bool allow_abbreviation);
 
 /* Programmer friendly interface to __xargmatch_internal. */
 
@@ -97,7 +104,15 @@ ptrdiff_t __xargmatch_internal (char const *context,
   ((Vallist) [__xargmatch_internal (Context, Arg, Arglist,      \
                                     (void const *) (Vallist),   \
                                     sizeof *(Vallist),          \
-                                    argmatch_die)])
+                                    argmatch_die,               \
+                                    true)])
+
+# define XARGMATCH_EXACT(Context, Arg, Arglist, Vallist)        \
+  ((Vallist) [__xargmatch_internal (Context, Arg, Arglist,      \
+                                    (void const *) (Vallist),   \
+                                    sizeof *(Vallist),          \
+                                    argmatch_die,               \
+                                    false)])
 
 /* Convert a value into a corresponding argument. */
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Newline tests for "md5sum".
 
-# Copyright (C) 1999-2020 Free Software Foundation, Inc.
+# Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ my $z = '--zero';
 my @Tests =
     (
      ['newline', $t, {IN=> {"a\nb"=> ''}}, {OUT=>"\\$degenerate  a\\nb\n"}],
-     ['zero', $z, {IN=> {"a\nb"=> ''}}, {OUT=>"$degenerate  a\nb\0"}],
+     ['zero', "$t $z", {IN=> {"a\nb"=> ''}}, {OUT=>"$degenerate  a\nb\0"}],
     );
 
 my $save_temps = $ENV{DEBUG};

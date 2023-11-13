@@ -1,12 +1,12 @@
-# select.m4 serial 11
-dnl Copyright (C) 2009-2020 Free Software Foundation, Inc.
+# select.m4 serial 13
+dnl Copyright (C) 2009-2022 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
 
 AC_DEFUN([gl_FUNC_SELECT],
 [
-  AC_REQUIRE([gl_HEADER_SYS_SELECT])
+  AC_REQUIRE([gl_SYS_SELECT_H])
   AC_REQUIRE([AC_C_RESTRICT])
   AC_REQUIRE([AC_CANONICAL_HOST]) dnl for cross-compiles
   AC_REQUIRE([gl_SOCKETS])
@@ -60,7 +60,8 @@ changequote([,])dnl
 #endif
 #include <unistd.h>
 #include <errno.h>
-]],[[
+]GL_MDA_DEFINES],
+[[
   fd_set set;
   dup2(0, 16);
   FD_ZERO(&set);

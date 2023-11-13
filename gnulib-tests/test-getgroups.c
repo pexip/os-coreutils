@@ -1,9 +1,9 @@
 /* Tests of getgroups.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -30,8 +30,17 @@ SIGNATURE_CHECK (getgroups, int, (int, gid_t[]));
 
 #include "macros.h"
 
+/* Tell GCC not to warn about the specific edge cases tested here.
+   GCC >= 10 with glibc >= 2.32 would otherwise trigger warnings, even without
+   any -W options, because getgroups() is declared with
+     __attribute__ ((__access__ (__write_only__, 2, 1)))
+ */
+#if __GNUC__ >= 7
+# pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+
 int
-main (int argc, char **argv _GL_UNUSED)
+main (int argc, _GL_UNUSED char **argv)
 {
   int result;
   gid_t *groups;

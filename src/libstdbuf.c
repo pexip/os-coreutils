@@ -1,5 +1,5 @@
 /* libstdbuf -- a shared lib to preload to setup stdio buffering for a command
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,18 +20,19 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "system.h"
-#include "minmax.h"
 
-/* Deactivate config.h's "rpl_"-prefixed definition of malloc,
-   since we don't link gnulib here, and the replacement isn't
-   needed in this case as we don't malloc(0).  */
+/* Deactivate config.h's "rpl_"-prefixed definitions, since we don't
+   link gnulib here, and the replacements aren't needed.  */
+#undef fprintf
+#undef free
 #undef malloc
+#undef strtoumax
 
 /* Note currently for glibc (2.3.5) the following call does not change
    the buffer size, and more problematically does not give any indication
    that the new size request was ignored:
 
-       setvbuf (stdout, (char*)NULL, _IOFBF, 8192);
+       setvbuf (stdout, NULL, _IOFBF, 8192);
 
    The ISO C99 standard section 7.19.5.6 on the setvbuf function says:
 
@@ -63,10 +64,10 @@
    However I think it's just a buggy implementation due to the various
    inconsistencies with write sizes and subsequent writes.  */
 
-static const char *
+static char const *
 fileno_to_name (const int fd)
 {
-  const char *ret = NULL;
+  char const *ret = NULL;
 
   switch (fd)
     {
@@ -88,7 +89,7 @@ fileno_to_name (const int fd)
 }
 
 static void
-apply_mode (FILE *stream, const char *mode)
+apply_mode (FILE *stream, char const *mode)
 {
   char *buf = NULL;
   int setvbuf_mode;

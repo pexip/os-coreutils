@@ -1,5 +1,5 @@
 /* cut - remove parts of lines of files
-   Copyright (C) 1997-2020 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
    Copyright (C) 1984 David M. Ihnat
 
    This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,6 @@
 #include "fadvise.h"
 #include "getndelim2.h"
 #include "hash.h"
-#include "xstrndup.h"
 
 #include "set-fields.h"
 
@@ -73,19 +72,6 @@ static char *field_1_buffer;
 /* The number of bytes allocated for FIELD_1_BUFFER.  */
 static size_t field_1_bufsize;
 
-enum operating_mode
-  {
-    undefined_mode,
-
-    /* Output characters that are in the given bytes. */
-    byte_mode,
-
-    /* Output the given delimiter-separated fields. */
-    field_mode
-  };
-
-static enum operating_mode operating_mode;
-
 /* If true do not output lines containing no delimiter characters.
    Otherwise, all such lines are printed.  This option is valid only
    with field mode.  */
@@ -101,15 +87,15 @@ static unsigned char delim;
 /* The delimiter for each line/record. */
 static unsigned char line_delim = '\n';
 
-/* True if the --output-delimiter=STRING option was specified.  */
-static bool output_delimiter_specified;
-
 /* The length of output_delimiter_string.  */
 static size_t output_delimiter_length;
 
 /* The output field separator string.  Defaults to the 1-character
    string consisting of the input delimiter.  */
 static char *output_delimiter_string;
+
+/* The output delimiter string contents, if the default.  */
+static char output_delimiter_default[1];
 
 /* True if we have ever read standard input. */
 static bool have_read_stdin;
@@ -264,7 +250,7 @@ cut_bytes (FILE *stream)
           next_item (&byte_idx);
           if (print_kth (byte_idx))
             {
-              if (output_delimiter_specified)
+              if (output_delimiter_string != output_delimiter_default)
                 {
                   if (print_delimiter && is_range_start_index (byte_idx))
                     {
@@ -307,7 +293,7 @@ cut_fields (FILE *stream)
      That is because a non-delimited line has exactly one field.  */
   buffer_first_field = (suppress_non_delimited ^ !print_kth (1));
 
-  while (1)
+  while (true)
     {
       if (field_idx == 1 && buffer_first_field)
         {
@@ -425,20 +411,11 @@ cut_fields (FILE *stream)
     }
 }
 
-static void
-cut_stream (FILE *stream)
-{
-  if (operating_mode == byte_mode)
-    cut_bytes (stream);
-  else
-    cut_fields (stream);
-}
-
-/* Process file FILE to standard output.
+/* Process file FILE to standard output, using CUT_STREAM.
    Return true if successful.  */
 
 static bool
-cut_file (char const *file)
+cut_file (char const *file, void (*cut_stream) (FILE *))
 {
   FILE *stream;
 
@@ -461,16 +438,16 @@ cut_file (char const *file)
 
   cut_stream (stream);
 
-  if (ferror (stream))
-    {
-      error (0, errno, "%s", quotef (file));
-      return false;
-    }
+  int err = errno;
+  if (!ferror (stream))
+    err = 0;
   if (STREQ (file, "-"))
     clearerr (stream);		/* Also clear EOF. */
   else if (fclose (stream) == EOF)
+    err = errno;
+  if (err)
     {
-      error (0, errno, "%s", quotef (file));
+      error (0, err, "%s", quotef (file));
       return false;
     }
   return true;
@@ -482,7 +459,8 @@ main (int argc, char **argv)
   int optc;
   bool ok;
   bool delim_specified = false;
-  char *spec_list_string IF_LINT ( = NULL);
+  bool byte_mode = false;
+  char *spec_list_string = NULL;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -491,8 +469,6 @@ main (int argc, char **argv)
   textdomain (PACKAGE);
 
   atexit (close_stdout);
-
-  operating_mode = undefined_mode;
 
   /* By default, all non-delimited lines are printed.  */
   suppress_non_delimited = false;
@@ -507,17 +483,12 @@ main (int argc, char **argv)
         case 'b':
         case 'c':
           /* Build the byte list. */
-          if (operating_mode != undefined_mode)
-            FATAL_ERROR (_("only one type of list may be specified"));
-          operating_mode = byte_mode;
-          spec_list_string = optarg;
-          break;
-
+          byte_mode = true;
+          FALLTHROUGH;
         case 'f':
           /* Build the field list. */
-          if (operating_mode != undefined_mode)
-            FATAL_ERROR (_("only one type of list may be specified"));
-          operating_mode = field_mode;
+          if (spec_list_string)
+            FATAL_ERROR (_("only one list may be specified"));
           spec_list_string = optarg;
           break;
 
@@ -531,12 +502,11 @@ main (int argc, char **argv)
           break;
 
         case OUTPUT_DELIMITER_OPTION:
-          output_delimiter_specified = true;
           /* Interpret --output-delimiter='' to mean
              'use the NUL byte as the delimiter.'  */
           output_delimiter_length = (optarg[0] == '\0'
                                      ? 1 : strlen (optarg));
-          output_delimiter_string = xstrdup (optarg);
+          output_delimiter_string = optarg;
           break;
 
         case 'n':
@@ -563,38 +533,40 @@ main (int argc, char **argv)
         }
     }
 
-  if (operating_mode == undefined_mode)
+  if (!spec_list_string)
     FATAL_ERROR (_("you must specify a list of bytes, characters, or fields"));
 
-  if (delim_specified && operating_mode != field_mode)
-    FATAL_ERROR (_("an input delimiter may be specified only\
+  if (byte_mode)
+    {
+      if (delim_specified)
+        FATAL_ERROR (_("an input delimiter may be specified only\
  when operating on fields"));
 
-  if (suppress_non_delimited && operating_mode != field_mode)
-    FATAL_ERROR (_("suppressing non-delimited lines makes sense\n\
+      if (suppress_non_delimited)
+        FATAL_ERROR (_("suppressing non-delimited lines makes sense\n\
 \tonly when operating on fields"));
+    }
 
   set_fields (spec_list_string,
-              ( (operating_mode == field_mode) ? 0 : SETFLD_ERRMSG_USE_POS)
-              | (complement ? SETFLD_COMPLEMENT : 0) );
+              ((byte_mode ? SETFLD_ERRMSG_USE_POS : 0)
+               | (complement ? SETFLD_COMPLEMENT : 0)));
 
   if (!delim_specified)
     delim = '\t';
 
   if (output_delimiter_string == NULL)
     {
-      static char dummy[2];
-      dummy[0] = delim;
-      dummy[1] = '\0';
-      output_delimiter_string = dummy;
+      output_delimiter_default[0] = delim;
+      output_delimiter_string = output_delimiter_default;
       output_delimiter_length = 1;
     }
 
+  void (*cut_stream) (FILE *) = byte_mode ? cut_bytes : cut_fields;
   if (optind == argc)
-    ok = cut_file ("-");
+    ok = cut_file ("-", cut_stream);
   else
     for (ok = true; optind < argc; optind++)
-      ok &= cut_file (argv[optind]);
+      ok &= cut_file (argv[optind], cut_stream);
 
 
   if (have_read_stdin && fclose (stdin) == EOF)
@@ -602,8 +574,6 @@ main (int argc, char **argv)
       error (0, errno, "-");
       ok = false;
     }
-
-  IF_LINT (reset_fields ());
 
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

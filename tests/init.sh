@@ -1,6 +1,6 @@
 # source this file; set up for tests
 
-# Copyright (C) 2009-2020 Free Software Foundation, Inc.
+# Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -389,7 +389,7 @@ setup_ ()
   if test "$VERBOSE" = yes; then
     # Test whether set -x may cause the selected shell to corrupt an
     # application's stderr.  Many do, including zsh-4.3.10 and the /bin/sh
-    # from SunOS 5.11, OpenBSD 4.7 and Irix 5.x and 6.5.
+    # from SunOS 5.11, OpenBSD 4.7 and Irix 6.5.
     # If enabling verbose output this way would cause trouble, simply
     # issue a warning and refrain.
     if $gl_set_x_corrupts_stderr_; then
@@ -426,6 +426,23 @@ setup_ ()
   for sig_ in 1 2 3 13 15; do
     eval "trap 'Exit $(expr $sig_ + 128)' $sig_"
   done
+
+  # Remove relative and non-accessible directories from PATH, including '.'
+  # and Zero-length entries.
+  saved_IFS="$IFS"
+  IFS=:
+  new_PATH=
+  sep_=
+  for dir in $PATH; do
+    case "$dir" in
+      /*) test -d "$dir/." || continue
+          new_PATH="${new_PATH}${sep_}${dir}"
+          sep_=':';;
+    esac
+  done
+  IFS="$saved_IFS"
+  PATH="$new_PATH"
+  export PATH
 }
 
 # This is a stub function that is run upon trap (upon regular exit and

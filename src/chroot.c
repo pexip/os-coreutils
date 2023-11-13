@@ -1,5 +1,5 @@
 /* chroot -- run command or shell with special root directory
-   Copyright (C) 1995-2020 Free Software Foundation, Inc.
+   Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ static struct option const long_opts[] =
 #if ! HAVE_SETGROUPS
 /* At least Interix lacks supplemental group support.  */
 static int
-setgroups (size_t size, gid_t const *list _GL_UNUSED)
+setgroups (size_t size, MAYBE_UNUSED gid_t const *list)
 {
   if (size == 0)
     {
@@ -169,7 +169,7 @@ parse_additional_groups (char const *groups, GETGROUPS_T **pgids,
    could be bind mounted to a separate location.  */
 
 static bool
-is_root (const char* dir)
+is_root (char const *dir)
 {
   char *resolved = canonicalize_file_name (dir);
   bool is_res_root = resolved && STREQ ("/", resolved);
@@ -195,13 +195,13 @@ Run COMMAND with root directory set to NEWROOT.\n\
 "), stdout);
 
       fputs (_("\
-  --groups=G_LIST        specify supplementary groups as g1,g2,..,gN\n\
+      --groups=G_LIST        specify supplementary groups as g1,g2,..,gN\n\
 "), stdout);
       fputs (_("\
-  --userspec=USER:GROUP  specify user and group (ID or name) to use\n\
+      --userspec=USER:GROUP  specify user and group (ID or name) to use\n\
 "), stdout);
       printf (_("\
-  --skip-chdir           do not change working directory to %s\n\
+      --skip-chdir           do not change working directory to %s\n\
 "), quoteaf ("/"));
 
       fputs (HELP_OPTION_DESCRIPTION, stdout);
@@ -354,10 +354,11 @@ main (int argc, char **argv)
      Diagnose any failures.  If any have failed, exit before execvp.  */
   if (userspec)
     {
-      char const *err = parse_user_spec (userspec, &uid, &gid, NULL, NULL);
-
-      if (err && uid_unset (uid) && gid_unset (gid))
-        die (EXIT_CANCELED, errno, "%s", (err));
+      bool warn;
+      char const *err = parse_user_spec_warn (userspec, &uid, &gid,
+                                              NULL, NULL, &warn);
+      if (err)
+        error (warn ? 0 : EXIT_CANCELED, 0, "%s", (err));
     }
 
   /* If no gid is supplied or looked up, do so now.

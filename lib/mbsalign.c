@@ -1,5 +1,5 @@
 /* Align/Truncate a string in a given screen width
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 #include <config.h>
 #include "mbsalign.h"
 
+#include "minmax.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -27,10 +29,6 @@
 #include <limits.h>
 #include <wchar.h>
 #include <wctype.h>
-
-#ifndef MIN
-# define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
 
 /* Replace non printable chars.
    Note \t and \n etc. are non printable.
@@ -84,8 +82,8 @@ wc_truncate (wchar_t *wc, size_t width)
    is always added to DEST.
    A pointer to the terminating NUL is returned.  */
 
-static char*
-mbs_align_pad (char *dest, const char* dest_end, size_t n_spaces)
+static char *
+mbs_align_pad (char *dest, char const *dest_end, size_t n_spaces)
 {
   /* FIXME: Should we pad with "figure space" (\u2007)
      if non ascii data present?  */
@@ -109,14 +107,14 @@ mbs_align_pad (char *dest, const char* dest_end, size_t n_spaces)
    Update *WIDTH to indicate how many columns were used before padding.  */
 
 size_t
-mbsalign (const char *src, char *dest, size_t dest_size,
+mbsalign (char const *src, char *dest, size_t dest_size,
           size_t *width, mbs_align_t align, int flags)
 {
   size_t ret = SIZE_MAX;
   size_t src_size = strlen (src) + 1;
   char *newstr = NULL;
   wchar_t *str_wc = NULL;
-  const char *str_to_print = src;
+  char const *str_to_print = src;
   size_t n_cols = src_size - 1;
   size_t n_used_bytes = n_cols; /* Not including NUL */
   size_t n_spaces = 0;
@@ -245,7 +243,7 @@ mbsalign_cleanup:
    Return NULL on failure.  */
 
 char *
-ambsalign (const char *src, size_t *width, mbs_align_t align, int flags)
+ambsalign (char const *src, size_t *width, mbs_align_t align, int flags)
 {
   size_t orig_width = *width;
   size_t size = *width;         /* Start with enough for unibyte mode.  */

@@ -1,9 +1,9 @@
 /* Test duplicating non-inheritable file descriptors.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -62,7 +62,7 @@ is_inheritable (int fd)
 }
 
 #if !O_BINARY
-# define setmode(f,m) zero ()
+# define set_binary_mode(f,m) zero ()
 static int zero (void) { return 0; }
 #endif
 
@@ -71,8 +71,8 @@ static int zero (void) { return 0; }
 static int
 is_mode (int fd, int mode)
 {
-  int value = setmode (fd, O_BINARY);
-  setmode (fd, value);
+  int value = set_binary_mode (fd, O_BINARY);
+  set_binary_mode (fd, value);
   return mode == value;
 }
 
@@ -107,13 +107,13 @@ main (void)
 
   /* On systems that distinguish between text and binary mode,
      dup_cloexec reuses the mode of the source.  */
-  setmode (fd, O_BINARY);
+  set_binary_mode (fd, O_BINARY);
   ASSERT (is_mode (fd, O_BINARY));
   fd2 = dup_cloexec (fd);
   ASSERT (fd < fd2);
   ASSERT (is_mode (fd2, O_BINARY));
   ASSERT (close (fd2) == 0);
-  setmode (fd, O_TEXT);
+  set_binary_mode (fd, O_TEXT);
   ASSERT (is_mode (fd, O_TEXT));
   fd2 = dup_cloexec (fd);
   ASSERT (fd < fd2);

@@ -1,5 +1,5 @@
 /* cp.c  -- file copying (main routines)
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <getopt.h>
-#include <selinux/selinux.h>
+#include <selinux/label.h>
 
 #include "system.h"
 #include "argmatch.h"
@@ -33,12 +33,9 @@
 #include "ignore-value.h"
 #include "quote.h"
 #include "stat-time.h"
+#include "targetdir.h"
 #include "utimens.h"
 #include "acl.h"
-
-#if ! HAVE_LCHOWN
-# define lchown(name, uid, gid) chown (name, uid, gid)
-#endif
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "cp"
@@ -255,13 +252,10 @@ regular file.\n\
   exit (status);
 }
 
-/* Ensure that the parent directories of CONST_DST_NAME have the
+/* Ensure that parents of CONST_DST_NAME aka DST_DIRFD+DST_RELNAME have the
    correct protections, for the --parents option.  This is done
    after all copying has been completed, to allow permissions
    that don't include user write/execute.
-
-   SRC_OFFSET is the index in CONST_DST_NAME of the beginning of the
-   source directory name.
 
    ATTR_LIST is a null-terminated linked list of structures that
    indicates the end of the filename of each intermediate directory
@@ -276,7 +270,7 @@ regular file.\n\
    when done.  */
 
 static bool
-re_protect (char const *const_dst_name, size_t src_offset,
+re_protect (char const *const_dst_name, int dst_dirfd, char const *dst_relname,
             struct dir_attr *attr_list, const struct cp_options *x)
 {
   struct dir_attr *p;
@@ -284,7 +278,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
   char *src_name;		/* The source name in 'dst_name'. */
 
   ASSIGN_STRDUPA (dst_name, const_dst_name);
-  src_name = dst_name + src_offset;
+  src_name = dst_name + (dst_relname - const_dst_name);
 
   for (p = attr_list; p; p = p->next)
     {
@@ -301,7 +295,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
           timespec[0] = get_stat_atime (&p->st);
           timespec[1] = get_stat_mtime (&p->st);
 
-          if (utimens (dst_name, timespec))
+          if (utimensat (dst_dirfd, src_name, timespec, 0))
             {
               error (0, errno, _("failed to preserve times for %s"),
                      quoteaf (dst_name));
@@ -311,7 +305,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
 
       if (x->preserve_ownership)
         {
-          if (lchown (dst_name, p->st.st_uid, p->st.st_gid) != 0)
+          if (lchownat (dst_dirfd, src_name, p->st.st_uid, p->st.st_gid) != 0)
             {
               if (! chown_failure_ok (x))
                 {
@@ -321,7 +315,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
                 }
               /* Failing to preserve ownership is OK. Still, try to preserve
                  the group, but ignore the possible error. */
-              ignore_value (lchown (dst_name, -1, p->st.st_gid));
+              ignore_value (lchownat (dst_dirfd, src_name, -1, p->st.st_gid));
             }
         }
 
@@ -332,7 +326,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
         }
       else if (p->restore_mode)
         {
-          if (lchmod (dst_name, p->st.st_mode) != 0)
+          if (lchmodat (dst_dirfd, src_name, p->st.st_mode) != 0)
             {
               error (0, errno, _("failed to preserve permissions for %s"),
                      quoteaf (dst_name));
@@ -351,6 +345,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
    SRC_OFFSET is the index in CONST_DIR (which is a destination
    directory) of the beginning of the source directory name.
    Create any leading directories that don't already exist.
+   DST_DIRFD is a file descriptor for the target directory.
    If VERBOSE_FMT_STRING is nonzero, use it as a printf format
    string for printing a message after successfully making a directory.
    The format should take two string arguments: the names of the
@@ -366,6 +361,7 @@ re_protect (char const *const_dst_name, size_t src_offset,
 
 static bool
 make_dir_parents_private (char const *const_dir, size_t src_offset,
+                          int dst_dirfd,
                           char const *verbose_fmt_string,
                           struct dir_attr **attr_list, bool *new_dst,
                           const struct cp_options *x)
@@ -374,22 +370,29 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
   char *dir;		/* A copy of CONST_DIR we can change.  */
   char *src;		/* Source name in DIR.  */
   char *dst_dir;	/* Leading directory of DIR.  */
-  size_t dirlen;	/* Length of DIR.  */
+  idx_t dirlen = dir_len (const_dir);
+
+  *attr_list = NULL;
+
+  /* Succeed immediately if the parent of CONST_DIR must already exist,
+     as the target directory has already been checked.  */
+  if (dirlen <= src_offset)
+    return true;
 
   ASSIGN_STRDUPA (dir, const_dir);
 
   src = dir + src_offset;
 
-  dirlen = dir_len (dir);
   dst_dir = alloca (dirlen + 1);
   memcpy (dst_dir, dir, dirlen);
   dst_dir[dirlen] = '\0';
-
-  *attr_list = NULL;
+  char const *dst_reldir = dst_dir + src_offset;
+  while (*dst_reldir == '/')
+    dst_reldir++;
 
   /* XXX: If all dirs are present at the destination,
      no permissions or security contexts will be updated.  */
-  if (stat (dst_dir, &stats) != 0)
+  if (fstatat (dst_dirfd, dst_reldir, &stats, 0) != 0)
     {
       /* A parent of CONST_DIR does not exist.
          Make all missing intermediate directories. */
@@ -398,13 +401,15 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
       slash = src;
       while (*slash == '/')
         slash++;
+      dst_reldir = slash;
+
       while ((slash = strchr (slash, '/')))
         {
-          struct dir_attr *new IF_LINT ( = NULL);
+          struct dir_attr *new;
           bool missing_dir;
 
           *slash = '\0';
-          missing_dir = (stat (dir, &stats) != 0);
+          missing_dir = fstatat (dst_dirfd, dst_reldir, &stats, 0) != 0;
 
           if (missing_dir || x->preserve_ownership || x->preserve_mode
               || x->preserve_timestamps)
@@ -468,7 +473,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
                  decide what to do with S_ISUID | S_ISGID | S_ISVTX.  */
               mkdir_mode = x->explicit_no_preserve_mode ? S_IRWXUGO : src_mode;
               mkdir_mode &= CHMOD_MODE_BITS & ~omitted_permissions;
-              if (mkdir (dir, mkdir_mode) != 0)
+              if (mkdirat (dst_dirfd, dst_reldir, mkdir_mode) != 0)
                 {
                   error (0, errno, _("cannot make directory %s"),
                          quoteaf (dir));
@@ -484,7 +489,7 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
                  for writing the directory's contents. Check if these
                  permissions are there.  */
 
-              if (lstat (dir, &stats))
+              if (fstatat (dst_dirfd, dst_reldir, &stats, AT_SYMLINK_NOFOLLOW))
                 {
                   error (0, errno, _("failed to get attributes of %s"),
                          quoteaf (dir));
@@ -504,12 +509,13 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
                     }
                 }
 
-              if ((stats.st_mode & S_IRWXU) != S_IRWXU)
+              mode_t accessible = stats.st_mode | S_IRWXU;
+              if (stats.st_mode != accessible)
                 {
                   /* Make the new directory searchable and writable.
                      The original permissions will be restored later.  */
 
-                  if (lchmod (dir, stats.st_mode | S_IRWXU) != 0)
+                  if (lchmodat (dst_dirfd, dst_reldir, accessible) != 0)
                     {
                       error (0, errno, _("setting permissions for %s"),
                              quoteaf (dir));
@@ -531,10 +537,9 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
           if (! *new_dst
               && (x->set_security_context || x->preserve_security_context))
             {
-              if (! set_file_security_ctx (dir, x->preserve_security_context,
-                                           false, x)
+              if (! set_file_security_ctx (dir, false, x)
                   && x->require_preserve_context)
-                  return false;
+                return false;
             }
 
           *slash++ = '/';
@@ -560,45 +565,16 @@ make_dir_parents_private (char const *const_dir, size_t src_offset,
   return true;
 }
 
-/* FILE is the last operand of this command.
-   Return true if FILE is a directory.
-
-   Without -f, report an error and exit if FILE exists
-   but can't be accessed.
-
-   If the file exists and is accessible store the file's status into *ST.
-   Otherwise, set *NEW_DST.  */
-
-static bool
-target_directory_operand (char const *file, struct stat *st,
-                          bool *new_dst, bool forcing)
-{
-  int err = (stat (file, st) == 0 ? 0 : errno);
-  bool is_a_dir = !err && S_ISDIR (st->st_mode);
-  if (err)
-    {
-      if (err == ENOENT)
-        *new_dst = true;
-      else if (forcing)
-        st->st_mode = 0;  /* clear so we don't enter --backup case below.  */
-      else
-        die (EXIT_FAILURE, err, _("failed to access %s"), quoteaf (file));
-    }
-  return is_a_dir;
-}
-
 /* Scan the arguments, and copy each by calling copy.
    Return true if successful.  */
 
 static bool
-do_copy (int n_files, char **file, const char *target_directory,
+do_copy (int n_files, char **file, char const *target_directory,
          bool no_target_directory, struct cp_options *x)
 {
   struct stat sb;
   bool new_dst = false;
   bool ok = true;
-  bool forcing = x->unlink_dest_before_opening
-                 || x->unlink_dest_after_failed_open;
 
   if (n_files <= !target_directory)
     {
@@ -610,6 +586,8 @@ do_copy (int n_files, char **file, const char *target_directory,
       usage (EXIT_FAILURE);
     }
 
+  sb.st_mode = 0;
+  int target_dirfd = AT_FDCWD;
   if (no_target_directory)
     {
       if (target_directory)
@@ -621,19 +599,45 @@ do_copy (int n_files, char **file, const char *target_directory,
           error (0, 0, _("extra operand %s"), quoteaf (file[2]));
           usage (EXIT_FAILURE);
         }
-      /* Update NEW_DST and SB, which may be checked below.  */
-      ignore_value (target_directory_operand (file[n_files -1], &sb, &new_dst,
-                                              forcing));
     }
-  else if (!target_directory)
+  else if (target_directory)
     {
-      if (2 <= n_files
-          && target_directory_operand (file[n_files - 1], &sb, &new_dst,
-                                       forcing))
-        target_directory = file[--n_files];
-      else if (2 < n_files)
-        die (EXIT_FAILURE, 0, _("target %s is not a directory"),
-             quoteaf (file[n_files - 1]));
+      target_dirfd = target_directory_operand (target_directory, &sb);
+      if (! target_dirfd_valid (target_dirfd))
+        die (EXIT_FAILURE, errno, _("target directory %s"),
+             quoteaf (target_directory));
+    }
+  else
+    {
+      char const *lastfile = file[n_files - 1];
+      int fd = target_directory_operand (lastfile, &sb);
+      if (target_dirfd_valid (fd))
+        {
+          target_dirfd = fd;
+          target_directory = lastfile;
+          n_files--;
+        }
+      else
+        {
+          int err = errno;
+          if (err == ENOENT)
+            new_dst = true;
+
+          /* The last operand LASTFILE cannot be opened as a directory.
+             If there are more than two operands, report an error.
+
+             Also, report an error if LASTFILE is known to be a directory
+             even though it could not be opened, which can happen if
+             opening failed with EACCES on a platform lacking O_PATH.
+             In this case use stat to test whether LASTFILE is a
+             directory, in case opening a non-directory with (O_SEARCH
+             | O_DIRECTORY) failed with EACCES not ENOTDIR.  */
+          if (2 < n_files
+              || (O_PATHSEARCH == O_SEARCH && err == EACCES
+                  && (sb.st_mode || stat (lastfile, &sb) == 0)
+                  && S_ISDIR (sb.st_mode)))
+            die (EXIT_FAILURE, err, _("target %s"), quoteaf (lastfile));
+        }
     }
 
   if (target_directory)
@@ -670,8 +674,7 @@ do_copy (int n_files, char **file, const char *target_directory,
 
               /* Use 'arg' without trailing slashes in constructing destination
                  file names.  Otherwise, we can end up trying to create a
-                 directory via 'mkdir ("dst/foo/"...', which is not portable.
-                 It fails, due to the trailing slash, on at least
+                 directory using a name with trailing slash, which fails on
                  NetBSD 1.[34] systems.  */
               ASSIGN_STRDUPA (arg_no_trailing_slash, arg);
               strip_trailing_slashes (arg_no_trailing_slash);
@@ -686,9 +689,12 @@ do_copy (int n_files, char **file, const char *target_directory,
                  leading directories. */
               parent_exists =
                 (make_dir_parents_private
-                 (dst_name, arg_in_concat - dst_name,
+                 (dst_name, arg_in_concat - dst_name, target_dirfd,
                   (x->verbose ? "%s -> %s\n" : NULL),
                   &attr_list, &new_dst, x));
+
+              while (*arg_in_concat == '/')
+                arg_in_concat++;
             }
           else
             {
@@ -697,10 +703,9 @@ do_copy (int n_files, char **file, const char *target_directory,
               ASSIGN_STRDUPA (arg_base, last_component (arg));
               strip_trailing_slashes (arg_base);
               /* For 'cp -R source/.. dest', don't copy into 'dest/..'. */
-              dst_name = (STREQ (arg_base, "..")
-                          ? xstrdup (target_directory)
-                          : file_name_concat (target_directory, arg_base,
-                                              NULL));
+              arg_base += STREQ (arg_base, "..");
+              dst_name = file_name_concat (target_directory, arg_base,
+                                           &arg_in_concat);
             }
 
           if (!parent_exists)
@@ -712,10 +717,11 @@ do_copy (int n_files, char **file, const char *target_directory,
           else
             {
               bool copy_into_self;
-              ok &= copy (arg, dst_name, new_dst, x, &copy_into_self, NULL);
+              ok &= copy (arg, dst_name, target_dirfd, arg_in_concat,
+                          new_dst, x, &copy_into_self, NULL);
 
               if (parents_option)
-                ok &= re_protect (dst_name, arg_in_concat - dst_name,
+                ok &= re_protect (dst_name, target_dirfd, arg_in_concat,
                                   attr_list, x);
             }
 
@@ -734,7 +740,6 @@ do_copy (int n_files, char **file, const char *target_directory,
     }
   else /* !target_directory */
     {
-      char const *new_dest;
       char const *source = file[0];
       char const *dest = file[1];
       bool unused;
@@ -755,11 +760,12 @@ do_copy (int n_files, char **file, const char *target_directory,
       if (x->unlink_dest_after_failed_open
           && x->backup_type != no_backups
           && STREQ (source, dest)
-          && !new_dst && S_ISREG (sb.st_mode))
+          && !new_dst
+          && (sb.st_mode != 0 || stat (dest, &sb) == 0) && S_ISREG (sb.st_mode))
         {
           static struct cp_options x_tmp;
 
-          new_dest = find_backup_file_name (AT_FDCWD, dest, x->backup_type);
+          dest = find_backup_file_name (AT_FDCWD, dest, x->backup_type);
           /* Set x->backup_type to 'no_backups' so that the normal backup
              mechanism is not used when performing the actual copy.
              backup_type must be set to 'no_backups' only *after* the above
@@ -769,12 +775,8 @@ do_copy (int n_files, char **file, const char *target_directory,
           x_tmp.backup_type = no_backups;
           x = &x_tmp;
         }
-      else
-        {
-          new_dest = dest;
-        }
 
-      ok = copy (source, new_dest, 0, x, &unused, NULL);
+      ok = copy (source, dest, AT_FDCWD, dest, -new_dst, x, &unused, NULL);
     }
 
   return ok;
@@ -793,7 +795,7 @@ cp_option_init (struct cp_options *x)
   x->move_mode = false;
   x->install_mode = false;
   x->one_file_system = false;
-  x->reflink_mode = REFLINK_NEVER;
+  x->reflink_mode = REFLINK_AUTO;
 
   x->preserve_ownership = false;
   x->preserve_links = false;
@@ -802,7 +804,7 @@ cp_option_init (struct cp_options *x)
   x->explicit_no_preserve_mode = false;
   x->preserve_security_context = false; /* -a or --preserve=context.  */
   x->require_preserve_context = false;  /* --preserve=context.  */
-  x->set_security_context = false;      /* -Z, set sys default context. */
+  x->set_security_context = NULL;       /* -Z, set sys default context. */
   x->preserve_xattr = false;
   x->reduce_diagnostics = false;
   x->require_preserve_xattr = false;
@@ -853,7 +855,7 @@ decode_preserve_arg (char const *arg, struct cp_options *x, bool on_off)
       PRESERVE_ALL
     };
   /* Valid arguments to the '--preserve' option. */
-  static char const* const preserve_args[] =
+  static char const *const preserve_args[] =
     {
       "mode", "timestamps",
       "ownership", "links", "context", "xattr", "all", NULL
@@ -1080,16 +1082,6 @@ main (int argc, char **argv)
           if (target_directory)
             die (EXIT_FAILURE, 0,
                  _("multiple target directories specified"));
-          else
-            {
-              struct stat st;
-              if (stat (optarg, &st) != 0)
-                die (EXIT_FAILURE, errno, _("failed to access %s"),
-                     quoteaf (optarg));
-              if (! S_ISDIR (st.st_mode))
-                die (EXIT_FAILURE, 0, _("target %s is not a directory"),
-                     quoteaf (optarg));
-            }
           target_directory = optarg;
           break;
 
@@ -1116,7 +1108,12 @@ main (int argc, char **argv)
               if (optarg)
                 scontext = optarg;
               else
-                x.set_security_context = true;
+                {
+                  x.set_security_context = selabel_open (SELABEL_CTX_FILE,
+                                                         NULL, 0);
+                  if (! x.set_security_context)
+                    error (0, errno, _("warning: ignoring --context"));
+                }
             }
           else if (optarg)
             {
@@ -1197,10 +1194,10 @@ main (int argc, char **argv)
   /* FIXME: This handles new files.  But what about existing files?
      I.e., if updating a tree, new files would have the specified context,
      but shouldn't existing files be updated for consistency like this?
-       if (scontext)
-         restorecon (dst_path, 0, true);
+       if (scontext && !restorecon (NULL, dst_path, 0))
+          error (...);
    */
-  if (scontext && setfscreatecon (se_const (scontext)) < 0)
+  if (scontext && setfscreatecon (scontext) < 0)
     die (EXIT_FAILURE, errno,
          _("failed to set default file creation context to %s"),
          quote (scontext));
@@ -1218,9 +1215,5 @@ main (int argc, char **argv)
   ok = do_copy (argc - optind, argv + optind,
                 target_directory, no_target_directory, &x);
 
-#ifdef lint
-  forget_all ();
-#endif
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

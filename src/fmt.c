@@ -1,5 +1,5 @@
 /* GNU fmt -- simple text formatter.
-   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+   Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,8 +26,10 @@
    it to be a type get syntax errors for the variable declaration below.  */
 #define word unused_word_type
 
+#include "c-ctype.h"
 #include "system.h"
 #include "error.h"
+#include "die.h"
 #include "fadvise.h"
 #include "xdectoint.h"
 
@@ -133,7 +135,7 @@ struct Word
 
     /* Static attributes determined during input.  */
 
-    const char *text;		/* the text of the word */
+    char const *text;		/* the text of the word */
     int length;			/* length of this word */
     int space;			/* the size of the following space */
     unsigned int paren:1;	/* starts with open paren */
@@ -151,7 +153,7 @@ struct Word
 /* Forward declarations.  */
 
 static void set_prefix (char *p);
-static void fmt (FILE *f);
+static bool fmt (FILE *f, char const *);
 static bool get_paragraph (FILE *f);
 static int get_line (FILE *f, int c);
 static int get_prefix (FILE *f);
@@ -183,7 +185,7 @@ static bool split;
 static bool uniform;
 
 /* Prefix minus leading and trailing spaces (default "").  */
-static const char *prefix;
+static char const *prefix;
 
 /* User-supplied maximum line width (default WIDTH).  The only output
    lines longer than this will each comprise a single word.  */
@@ -412,28 +414,29 @@ main (int argc, char **argv)
       goal_width = max_width * (2 * (100 - LEEWAY) + 1) / 200;
     }
 
+  bool have_read_stdin = false;
+
   if (optind == argc)
-    fmt (stdin);
+    {
+      have_read_stdin = true;
+      ok = fmt (stdin, "-");
+    }
   else
     {
       for (; optind < argc; optind++)
         {
           char *file = argv[optind];
           if (STREQ (file, "-"))
-            fmt (stdin);
+            {
+              ok &= fmt (stdin, file);
+              have_read_stdin = true;
+            }
           else
             {
               FILE *in_stream;
               in_stream = fopen (file, "r");
               if (in_stream != NULL)
-                {
-                  fmt (in_stream);
-                  if (fclose (in_stream) == EOF)
-                    {
-                      error (0, errno, "%s", quotef (file));
-                      ok = false;
-                    }
-                }
+                ok &= fmt (in_stream, file);
               else
                 {
                   error (0, errno, _("cannot open %s for reading"),
@@ -443,6 +446,9 @@ main (int argc, char **argv)
             }
         }
     }
+
+  if (have_read_stdin && fclose (stdin) != 0)
+    die (EXIT_FAILURE, errno, "%s", _("closing standard input"));
 
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
@@ -470,10 +476,13 @@ set_prefix (char *p)
   prefix_length = s - p;
 }
 
-/* read file F and send formatted output to stdout.  */
+/* Read F and send formatted output to stdout.
+   Close F when done, unless F is stdin.  Diagnose input errors, using FILE.
+   If !F, assume F resulted from an fopen failure and diagnose that.
+   Return true if successful.  */
 
-static void
-fmt (FILE *f)
+static bool
+fmt (FILE *f, char const *file)
 {
   fadvise (f, FADVISE_SEQUENTIAL);
   tabs = false;
@@ -484,6 +493,15 @@ fmt (FILE *f)
       fmt_paragraph ();
       put_paragraph (word_limit);
     }
+
+  int err = ferror (f) ? 0 : -1;
+  if (f == stdin)
+    clearerr (f);
+  else if (fclose (f) != 0 && err < 0)
+    err = errno;
+  if (0 <= err)
+    error (0, err, err ? "%s" : _("read error"), quotef (file));
+  return err < 0;
 }
 
 /* Set the global variable 'other_indent' according to SAME_PARAGRAPH
@@ -618,7 +636,7 @@ get_paragraph (FILE *f)
 static int
 copy_rest (FILE *f, int c)
 {
-  const char *s;
+  char const *s;
 
   out_column = 0;
   if (in_column > next_prefix_indent || (c != '\n' && c != EOF))
@@ -685,7 +703,7 @@ get_line (FILE *f, int c)
           *wptr++ = c;
           c = getc (f);
         }
-      while (c != EOF && !isspace (c));
+      while (c != EOF && !c_isspace (c));
       in_column += word_limit->length = wptr - word_limit->text;
       check_punctuation (word_limit);
 
@@ -725,7 +743,7 @@ get_prefix (FILE *f)
       prefix_lead_space : in_column;
   else
     {
-      const char *p;
+      char const *p;
       next_prefix_indent = in_column;
       for (p = prefix; *p != '\0'; p++)
         {
@@ -994,7 +1012,7 @@ put_line (WORD *w, int indent)
 static void
 put_word (WORD *w)
 {
-  const char *s;
+  char const *s;
   int n;
 
   s = w->text;

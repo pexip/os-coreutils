@@ -1,7 +1,7 @@
 #!/bin/sh
 # exercise nl functionality
 
-# Copyright (C) 2002-2020 Free Software Foundation, Inc.
+# Copyright (C) 2002-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ nl
-
+getlimits_
 
 echo a | nl > out || fail=1
 echo b | nl -s%n >> out || fail=1
@@ -52,6 +52,61 @@ cat <<\EOF > exp
      1	a
      2	b
      3	c
+EOF
+compare exp out || fail=1
+
+# Ensure we only indicate overflow when needing to output overflowed numbers
+returns_ 1 nl -v$INTMAX_OFLOW /dev/null || fail=1
+printf '%s\n' a \\:\\: b > in.txt || framework_failure_
+nl -v$INTMAX_MAX in.txt > out || fail=1
+cat <<EOF > exp
+$INTMAX_MAX	a
+
+$INTMAX_MAX	b
+EOF
+compare exp out || fail=1
+returns_ 1 nl -p -v$INTMAX_MAX in.txt > out || fail=1
+
+# Test negative iteration
+returns_ 1 nl -i$INTMAX_UFLOW /dev/null || fail=1
+printf '%s\n' a b > in.txt || framework_failure_
+nl -v$INTMAX_MAX -i$INTMAX_MIN in.txt > out || fail=1
+cat <<EOF > exp
+$INTMAX_MAX	a
+    -1	b
+EOF
+compare exp out || fail=1
+printf '%s\n' a b c > in.txt || framework_failure_
+returns_ 1 nl -v$INTMAX_MAX -i$INTMAX_MIN in.txt > out || fail=1
+
+# Test GNU extension to --section-delimiter, of disabling section matching
+printf '%s\n' a '\:\:' c > in.txt || framework_failure_
+nl -d '' in.txt > out || fail=1
+cat <<\EOF > exp
+     1	a
+     2	\:\:
+     3	c
+EOF
+compare exp out || fail=1
+
+# Test GNU extension to --section-delimiter, of supporting strings longer than 2
+printf '%s\n' a foofoo c > in.txt || framework_failure_
+nl -d 'foo' in.txt > out || fail=1
+cat <<EOF > exp
+     1	a
+
+     1	c
+EOF
+compare exp out || fail=1
+
+# Ensure single char delimiters assume a following ':' character (as per POSIX)
+# coreutils <= v8.32 didn't match single char delimiters at all
+printf '%s\n' a x:x: c > in.txt || framework_failure_
+nl -d 'x' in.txt > out || fail=1
+cat <<EOF > exp
+     1	a
+
+     1	c
 EOF
 compare exp out || fail=1
 

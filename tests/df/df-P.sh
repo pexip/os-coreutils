@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure that df -P is not affected by BLOCK_SIZE settings
 
-# Copyright (C) 2007-2020 Free Software Foundation, Inc.
+# Copyright (C) 2007-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ print_ver_ df
               df -P . > t1 || fail=1
 BLOCK_SIZE=1M df -P . > t2 || fail=1
 
-# Since disk utilization may be changing, compare only df's header line.
+# Since file system utilization may be changing, compare only df's header line.
 # That records the block size.  E.g., for "1M", it would be:
 # Filesystem         1048576-blocks      Used Available Capacity Mounted on
 # while for 1K, it would be

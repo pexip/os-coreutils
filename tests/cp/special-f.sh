@@ -2,7 +2,7 @@
 # Ensure that "cp -Rf fifo E" unlinks E and retries.
 # Up until coreutils-6.10.171, it would not.
 
-# Copyright (C) 2008-2020 Free Software Foundation, Inc.
+# Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,12 +24,10 @@ mkfifo_or_skip_ fifo
 
 touch e || framework-failure
 
-
-# Without -f, expect it to fail.
-cp -R fifo e || fail=1
-
-# With -f, it must succeed.
-cp -Rf fifo e || fail=1
-test -p fifo || fail=1
+for force in '' '-f'; do
+  # Second time through will need to unlink fifo e
+  timeout 10 cp -R $force fifo e || fail=1
+  test -p fifo || fail=1
+done
 
 Exit $fail

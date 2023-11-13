@@ -1,5 +1,5 @@
 /* stat.c -- display file or file system status
-   Copyright (C) 2001-2020 Free Software Foundation, Inc.
+   Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,7 +107,8 @@
 /* BeOS has a statvfs function, but it does not return sensible values
    for f_files, f_ffree and f_favail, and lacks f_type, f_basetype and
    f_fstypename.  Use 'struct fs_info' instead.  */
-static int ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static int
 statfs (char const *filename, struct fs_info *buf)
 {
   dev_t device = dev_for_path (filename);
@@ -247,7 +248,7 @@ static char const *decimal_point;
 static size_t decimal_point_len;
 
 static bool
-print_stat (char *pformat, size_t prefix_len, unsigned int m,
+print_stat (char *pformat, size_t prefix_len, char mod, char m,
             int fd, char const *filename, void const *data);
 
 /* Return the type of the specified file system.
@@ -256,7 +257,8 @@ print_stat (char *pformat, size_t prefix_len, unsigned int m,
    Others have statfs.f_fstypename[MFSNAMELEN] (NetBSD 1.5.2).
    Still others have neither and have to get by with f_type (GNU/Linux).
    But f_type may only exist in statfs (Cygwin).  */
-static char const * ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static char const *
 human_fstype (STRUCT_STATVFS const *statfsbuf)
 {
 #ifdef STATXFS_FILE_SYSTEM_TYPE_MEMBER_NAME
@@ -347,6 +349,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "debugfs";
     case S_MAGIC_DEVFS: /* 0x1373 local */
       return "devfs";
+    case S_MAGIC_DEVMEM: /* 0x454D444D local */
+      return "devmem";
     case S_MAGIC_DEVPTS: /* 0x1CD1 local */
       return "devpts";
     case S_MAGIC_DMA_BUF: /* 0x444D4142 local */
@@ -359,6 +363,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "efs";
     case S_MAGIC_EROFS_V1: /* 0xE0F5E1E2 local */
       return "erofs";
+    case S_MAGIC_EXFAT: /* 0x2011BAB0 local */
+      return "exfat";
     case S_MAGIC_EXFS: /* 0x45584653 local */
       return "exfs";
     case S_MAGIC_EXOFS: /* 0x5DF5 local */
@@ -489,6 +495,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "rpc_pipefs";
     case S_MAGIC_SDCARDFS: /* 0x5DCA2DF5 local */
       return "sdcardfs";
+    case S_MAGIC_SECRETMEM: /* 0x5345434D local */
+      return "secretmem";
     case S_MAGIC_SECURITYFS: /* 0x73636673 local */
       return "securityfs";
     case S_MAGIC_SELINUX: /* 0xF97CFF8C local */
@@ -527,6 +535,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "usbdevfs";
     case S_MAGIC_V9FS: /* 0x01021997 local */
       return "v9fs";
+    case S_MAGIC_VBOXSF: /* 0x786F4256 remote */
+      return "vboxsf";
     case S_MAGIC_VMHGFS: /* 0xBACBACBC remote */
       return "vmhgfs";
     case S_MAGIC_VXFS: /* 0xA501FCF5 remote */
@@ -549,6 +559,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "z3fold";
     case S_MAGIC_ZFS: /* 0x2FC12FC1 local */
       return "zfs";
+    case S_MAGIC_ZONEFS: /* 0x5A4F4653 local */
+      return "zonefs";
     case S_MAGIC_ZSMALLOC: /* 0x58295829 local */
       return "zsmallocfs";
 
@@ -621,7 +633,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
 #endif
 }
 
-static char * ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static char *
 human_access (struct stat const *statbuf)
 {
   static char modebuf[12];
@@ -630,7 +643,8 @@ human_access (struct stat const *statbuf)
   return modebuf;
 }
 
-static char * ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static char *
 human_time (struct timespec t)
 {
   /* STR must be at least INT_BUFSIZE_BOUND (intmax_t) big, either
@@ -820,7 +834,8 @@ out_epoch_sec (char *pformat, size_t prefix_len,
 
 /* Print the context information of FILENAME, and return true iff the
    context could not be obtained.  */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static bool
 out_file_context (char *pformat, size_t prefix_len, char const *filename)
 {
   char *scontext;
@@ -843,8 +858,9 @@ out_file_context (char *pformat, size_t prefix_len, char const *filename)
 }
 
 /* Print statfs info.  Return zero upon success, nonzero upon failure.  */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
-print_statfs (char *pformat, size_t prefix_len, unsigned int m,
+NODISCARD
+static bool
+print_statfs (char *pformat, size_t prefix_len, MAYBE_UNUSED char mod, char m,
               int fd, char const *filename,
               void const *data)
 {
@@ -931,7 +947,8 @@ print_statfs (char *pformat, size_t prefix_len, unsigned int m,
 /* Return any bind mounted source for a path.
    The caller should not free the returned buffer.
    Return NULL if no bind mount found.  */
-static char const * ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static char const *
 find_bind_mount (char const * name)
 {
   char const * bind_mount = NULL;
@@ -970,7 +987,8 @@ find_bind_mount (char const * name)
 }
 
 /* Print mount point.  Return zero upon success, nonzero upon failure.  */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static bool
 out_mount_point (char const *filename, char *pformat, size_t prefix_len,
                  const struct stat *statp)
 {
@@ -1095,8 +1113,9 @@ print_esc_char (char c)
   putchar (c);
 }
 
-static size_t _GL_ATTRIBUTE_PURE
-format_code_offset (char const* directive)
+ATTRIBUTE_PURE
+static size_t
+format_code_offset (char const *directive)
 {
   size_t len = strspn (directive + 1, printf_flags);
   char const *fmt_char = directive + len + 1;
@@ -1109,9 +1128,10 @@ format_code_offset (char const* directive)
 /* Print the information specified by the format string, FORMAT,
    calling PRINT_FUNC for each %-directive encountered.
    Return zero upon success, nonzero upon failure.  */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static bool
 print_it (char const *format, int fd, char const *filename,
-          bool (*print_func) (char *, size_t, unsigned int,
+          bool (*print_func) (char *, size_t, char, char,
                               int, char const *, void const *),
           void const *data)
 {
@@ -1136,11 +1156,12 @@ print_it (char const *format, int fd, char const *filename,
         case '%':
           {
             size_t len = format_code_offset (b);
-            char const *fmt_char = b + len;
+            char fmt_char = *(b + len);
+            char mod_char = 0;
             memcpy (dest, b, len);
             b += len;
 
-            switch (*fmt_char)
+            switch (fmt_char)
               {
               case '\0':
                 --b;
@@ -1148,15 +1169,30 @@ print_it (char const *format, int fd, char const *filename,
               case '%':
                 if (1 < len)
                   {
-                    dest[len] = *fmt_char;
+                    dest[len] = fmt_char;
                     dest[len + 1] = '\0';
                     die (EXIT_FAILURE, 0, _("%s: invalid directive"),
                          quote (dest));
                   }
                 putchar ('%');
                 break;
+              case 'H':
+              case 'L':
+                mod_char = fmt_char;
+                fmt_char = *(b + 1);
+                if (print_func == print_stat
+                    && (fmt_char == 'd' || fmt_char == 'r'))
+                  {
+                    b++;
+                  }
+                else
+                  {
+                    fmt_char = mod_char;
+                    mod_char = 0;
+                  }
+                FALLTHROUGH;
               default:
-                fail |= print_func (dest, len, to_uchar (*fmt_char),
+                fail |= print_func (dest, len, mod_char, fmt_char,
                                     fd, filename, data);
                 break;
               }
@@ -1221,7 +1257,8 @@ print_it (char const *format, int fd, char const *filename,
 }
 
 /* Stat the file system and print what we find.  */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static bool
 do_statfs (char const *filename, char const *format)
 {
   STRUCT_STATVFS statfsbuf;
@@ -1308,7 +1345,8 @@ fmt_to_mask (char fmt)
   return 0;
 }
 
-static unsigned int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static unsigned int
 format_to_mask (char const *format)
 {
   unsigned int mask = 0;
@@ -1328,14 +1366,15 @@ format_to_mask (char const *format)
 }
 
 /* statx the file and print what we find */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static bool
 do_stat (char const *filename, char const *format, char const *format2)
 {
   int fd = STREQ (filename, "-") ? 0 : AT_FDCWD;
   int flags = 0;
   struct stat st;
   struct statx stx = { 0, };
-  const char *pathname = filename;
+  char const *pathname = filename;
   struct print_args pa;
   pa.st = &st;
   pa.btime = (struct timespec) {-1, -1};
@@ -1354,6 +1393,9 @@ do_stat (char const *filename, char const *format, char const *format2)
     flags |= AT_STATX_DONT_SYNC;
   else if (force_sync)
     flags |= AT_STATX_FORCE_SYNC;
+
+  if (! force_sync)
+    flags |= AT_NO_AUTOMOUNT;
 
   fd = statx (fd, pathname, flags, format_to_mask (format), &stx);
   if (fd < 0)
@@ -1412,7 +1454,8 @@ get_birthtime (int fd, char const *filename, struct stat const *st)
 
 
 /* stat the file and print what we find */
-static bool ATTRIBUTE_WARN_UNUSED_RESULT
+NODISCARD
+static bool
 do_stat (char const *filename, char const *format,
          char const *format2)
 {
@@ -1452,7 +1495,7 @@ do_stat (char const *filename, char const *format,
 
 /* Print stat info.  Return zero upon success, nonzero upon failure.  */
 static bool
-print_stat (char *pformat, size_t prefix_len, unsigned int m,
+print_stat (char *pformat, size_t prefix_len, char mod, char m,
             int fd, char const *filename, void const *data)
 {
   struct print_args *parg = (struct print_args *) data;
@@ -1484,7 +1527,12 @@ print_stat (char *pformat, size_t prefix_len, unsigned int m,
         }
       break;
     case 'd':
-      out_uint (pformat, prefix_len, statbuf->st_dev);
+      if (mod == 'H')
+        out_uint (pformat, prefix_len, major (statbuf->st_dev));
+      else if (mod == 'L')
+        out_uint (pformat, prefix_len, minor (statbuf->st_dev));
+      else
+        out_uint (pformat, prefix_len, statbuf->st_dev);
       break;
     case 'D':
       out_uint_x (pformat, prefix_len, statbuf->st_dev);
@@ -1528,6 +1576,17 @@ print_stat (char *pformat, size_t prefix_len, unsigned int m,
       break;
     case 's':
       out_int (pformat, prefix_len, statbuf->st_size);
+      break;
+    case 'r':
+      if (mod == 'H')
+        out_uint (pformat, prefix_len, major (statbuf->st_rdev));
+      else if (mod == 'L')
+        out_uint (pformat, prefix_len, minor (statbuf->st_rdev));
+      else
+        out_uint (pformat, prefix_len, statbuf->st_rdev);
+      break;
+    case 'R':
+      out_uint_x (pformat, prefix_len, statbuf->st_rdev);
       break;
     case 't':
       out_uint_x (pformat, prefix_len, major (statbuf->st_rdev));
@@ -1637,7 +1696,7 @@ default_format (bool fs, bool terse, bool device)
               /* TRANSLATORS: This string uses format specifiers from
                  'stat --help' without --file-system, and NOT from printf.  */
               format = xasprintf ("%s%s", format, _("\
-" "Device: %Dh/%dd\tInode: %-10i  Links: %-5h Device type: %t,%T\n\
+" "Device: %Hd,%Ld\tInode: %-10i  Links: %-5h Device type: %Hr,%Lr\n\
 "));
             }
           else
@@ -1645,7 +1704,7 @@ default_format (bool fs, bool terse, bool device)
               /* TRANSLATORS: This string uses format specifiers from
                  'stat --help' without --file-system, and NOT from printf.  */
               format = xasprintf ("%s%s", format, _("\
-" "Device: %Dh/%dd\tInode: %-10i  Links: %h\n\
+" "Device: %Hd,%Ld\tInode: %-10i  Links: %h\n\
 "));
             }
           free (temp);
@@ -1715,10 +1774,10 @@ Display file or file system status.\n\
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
 
       fputs (_("\n\
-The --cached MODE argument can be; always, never, or default.\n\
-`always` will use cached attributes if available, while\n\
-`never` will try to synchronize with the latest attributes, and\n\
-`default` will leave it up to the underlying file system.\n\
+The MODE argument of --cached can be: always, never, or default.\n\
+'always' will use cached attributes if available, while\n\
+'never' will try to synchronize with the latest attributes, and\n\
+'default' will leave it up to the underlying file system.\n\
 "), stdout);
 
       fputs (_("\n\
@@ -1731,8 +1790,10 @@ The valid format sequences for files (without --file-system):\n\
   %C   SELinux security context string\n\
 "), stdout);
       fputs (_("\
-  %d   device number in decimal\n\
-  %D   device number in hex\n\
+  %d   device number in decimal (st_dev)\n\
+  %D   device number in hex (st_dev)\n\
+  %Hd  major device number in decimal\n\
+  %Ld  minor device number in decimal\n\
   %f   raw mode in hex\n\
   %F   file type\n\
   %g   group ID of owner\n\
@@ -1746,6 +1807,10 @@ The valid format sequences for files (without --file-system):\n\
   %N   quoted file name with dereference if symbolic link\n\
   %o   optimal I/O transfer size hint\n\
   %s   total size, in bytes\n\
+  %r   device type in decimal (st_rdev)\n\
+  %R   device type in hex (st_rdev)\n\
+  %Hr  major device type in decimal, for character/block device special files\n\
+  %Lr  minor device type in decimal, for character/block device special files\n\
   %t   major device type in hex, for character/block device special files\n\
   %T   minor device type in hex, for character/block device special files\n\
 "), stdout);
@@ -1903,5 +1968,5 @@ main (int argc, char *argv[])
            ? do_statfs (argv[i], format)
            : do_stat (argv[i], format, format2));
 
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

@@ -1,5 +1,5 @@
 /* pwd - print current directory
-   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+   Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -178,7 +178,7 @@ find_dir_entry (struct stat *dot_sb, struct file_name *file_name,
   use_lstat = (parent_sb.st_dev != dot_sb->st_dev);
 
   found = false;
-  while (1)
+  while (true)
     {
       struct dirent const *dp;
       struct stat ent_sb;
@@ -279,7 +279,7 @@ robust_getcwd (struct file_name *file_name)
   if (stat (".", &dot_sb) < 0)
     die (EXIT_FAILURE, errno, _("failed to stat %s"), quoteaf ("."));
 
-  while (1)
+  while (true)
     {
       /* If we've reached the root, we're done.  */
       if (SAME_INODE (dot_sb, *root_dev_ino))
@@ -340,7 +340,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while (1)
+  while (true)
     {
       int c = getopt_long (argc, argv, "LP", longopts, NULL);
       if (c == -1)

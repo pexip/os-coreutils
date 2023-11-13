@@ -2,7 +2,7 @@
 # Make sure all of these programs work properly
 # when invoked with --help or --version.
 
-# Copyright (C) 2000-2020 Free Software Foundation, Inc.
+# Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -83,8 +83,9 @@ for i in $built_programs; do
   env $i --help    >/dev/null || fail=1
   env $i --version >/dev/null || fail=1
 
-  # Make sure they fail upon 'disk full' error.
-  if test -w /dev/full && test -c /dev/full; then
+  # Make sure they fail upon 'file system full' error.
+  if test -w /dev/full && test -c /dev/full &&
+       ! printf x >/dev/full 2>/dev/null; then
     test $i = [ && prog=lbracket || prog=$(echo $i|sed "s/$EXEEXT$//")
     eval "expected=\$expected_failure_status_$prog"
     test x$expected = x && expected=1
@@ -139,16 +140,16 @@ cmp_setup () { args="$tmp_in $tmp_in2"; }
 dd_setup () { args=status=noxfer; }
 
 zdiff_setup () { args="$zin $zin2"; }
-zcmp_setup () { args="$zin $zin2"; }
-zcat_setup () { args=$zin; }
-gunzip_setup () { args=$zin; }
-zmore_setup () { args=$zin; }
-zless_setup () { args=$zin; }
+zcmp_setup () { zdiff_setup; }
+zcat_setup () { TERM=dumb; export TERM; args=$zin; }
+gunzip_setup () { zcat_setup; }
+zmore_setup () { zcat_setup; }
+zless_setup () { zcat_setup; }
 znew_setup () { args=$bigZ_in; }
-zforce_setup () { args=$zin; }
+zforce_setup () { zcat_setup; }
 zgrep_setup () { args="z $zin"; }
-zegrep_setup () { args="z $zin"; }
-zfgrep_setup () { args="z $zin"; }
+zegrep_setup () { zgrep_setup; }
+zfgrep_setup () { zgrep_setup; }
 gzexe_setup () { args=$tmp_in; }
 
 # We know that $tmp_in contains a "0"

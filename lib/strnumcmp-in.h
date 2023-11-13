@@ -1,6 +1,6 @@
 /* Compare numeric strings.  This is an internal include file.
 
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -106,8 +106,8 @@ fraccompare (char const *a, char const *b, char decimal_point)
 /* Compare strings A and B as numbers without explicitly converting
    them to machine numbers, to avoid overflow problems and perhaps
    improve performance.  DECIMAL_POINT is the decimal point and
-   THOUSANDS_SEP the thousands separator.  A DECIMAL_POINT of -1
-   causes comparisons to act as if there is no decimal point
+   THOUSANDS_SEP the thousands separator.  A DECIMAL_POINT outside
+   'char' range causes comparisons to act as if there is no decimal point
    character, and likewise for THOUSANDS_SEP.  */
 
 static inline int _GL_ATTRIBUTE_PURE

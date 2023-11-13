@@ -1,9 +1,9 @@
 /* Test of parse_datetime() function.
-   Copyright (C) 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3, or (at your option)
+   the Free Software Foundation, either version 3, or (at your option)
    any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -20,9 +20,11 @@
 
 #include "parse-datetime.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "macros.h"
 
@@ -109,7 +111,7 @@ gmt_offset (time_t s)
 }
 
 int
-main (int argc _GL_UNUSED, char **argv)
+main (_GL_UNUSED int argc, char **argv)
 {
   struct timespec result;
   struct timespec result2;
@@ -124,7 +126,7 @@ main (int argc _GL_UNUSED, char **argv)
      should disable any leap second support.  Otherwise, there will be
      a problem with glibc on sites that default to leap seconds; see
      <https://bugs.gnu.org/12206>.  */
-  setenv ("TZ", "EST5EDT,M3.2.0,M11.1.0", 1);
+  ASSERT (setenv ("TZ", "EST5EDT,M3.2.0,M11.1.0", 1) == 0);
 
   gmtoff = gmt_offset (ref_time);
 
@@ -373,8 +375,25 @@ main (int argc _GL_UNUSED, char **argv)
   ASSERT (result.tv_sec == result2.tv_sec
           && result.tv_nsec == result2.tv_nsec);
 
+  /* If this platform has TZDB, check for GNU Bug#48085.  */
+  ASSERT (setenv ("TZ", "America/Indiana/Indianapolis", 1) == 0);
+  now.tv_sec = 1619641490;
+  now.tv_nsec = 0;
+  struct tm *tm = localtime (&now.tv_sec);
+  if (tm && tm->tm_year == 2021 - 1900 && tm->tm_mon == 4 - 1
+      && tm->tm_mday == 28 && tm->tm_hour == 16 && tm->tm_min == 24
+      && 0 < tm->tm_isdst)
+    {
+      int has_leap_seconds = tm->tm_sec != now.tv_sec % 60;
+      p = "now - 35 years";
+      ASSERT (parse_datetime (&result, p, &now));
+      LOG (p, now, result);
+      ASSERT (result.tv_sec
+              == 515107490 - 60 * 60 + (has_leap_seconds ? 13 : 0));
+    }
+
   /* Check that some "next Monday", "last Wednesday", etc. are correct.  */
-  setenv ("TZ", "UTC0", 1);
+  ASSERT (setenv ("TZ", "UTC0", 1) == 0);
   for (i = 0; day_table[i]; i++)
     {
       unsigned int thur2 = 7 * 24 * 3600; /* 2nd thursday */
@@ -395,6 +414,14 @@ main (int argc _GL_UNUSED, char **argv)
       ASSERT (result.tv_nsec == 0);
       ASSERT (result.tv_sec == thur2 + ((i + 3) % 7 - 7) * 24 * 3600);
     }
+
+  p = "1970-12-31T23:59:59+00:00 - 1 year";  /* Bug#50115 */
+  now.tv_sec = -1;
+  now.tv_nsec = 0;
+  ASSERT (parse_datetime (&result, p, &now));
+  LOG (p, now, result);
+  ASSERT (result.tv_sec == now.tv_sec
+          && result.tv_nsec == now.tv_nsec);
 
   p = "THURSDAY UTC+00";  /* The epoch was on Thursday.  */
   now.tv_sec = 0;
@@ -429,19 +456,31 @@ main (int argc _GL_UNUSED, char **argv)
   ASSERT (   parse_datetime (&result, "TZ=\"\"", &now));
   ASSERT (   parse_datetime (&result, "TZ=\"\" ", &now));
   ASSERT (   parse_datetime (&result, " TZ=\"\"", &now));
+  /* Exercise patterns which may be valid or invalid, depending on the
+     platform.  */
+#if !defined __NetBSD__
   ASSERT (   parse_datetime (&result, "TZ=\"\\\\\"", &now));
   ASSERT (   parse_datetime (&result, "TZ=\"\\\"\"", &now));
+#endif
 
   /* Outlandishly-long time zone abbreviations should not cause problems.  */
   {
     static char const bufprefix[] = "TZ=\"";
-    enum { tzname_len = 2000 };
+    long int tzname_max = -1;
+    errno = 0;
+#ifdef _SC_TZNAME_MAX
+    tzname_max = sysconf (_SC_TZNAME_MAX);
+#endif
+    enum { tzname_alloc = 2000 };
+    if (tzname_max < 0)
+      tzname_max = errno ? 6 : tzname_alloc;
+    int tzname_len = tzname_alloc < tzname_max ? tzname_alloc : tzname_max;
     static char const bufsuffix[] = "0\" 1970-01-01 01:02:03.123456789";
-    enum { bufsize = sizeof bufprefix - 1 + tzname_len + sizeof bufsuffix };
+    enum { bufsize = sizeof bufprefix - 1 + tzname_alloc + sizeof bufsuffix };
     char buf[bufsize];
     memcpy (buf, bufprefix, sizeof bufprefix - 1);
     memset (buf + sizeof bufprefix - 1, 'X', tzname_len);
-    strcpy (buf + bufsize - sizeof bufsuffix, bufsuffix);
+    strcpy (buf + sizeof bufprefix - 1 + tzname_len, bufsuffix);
     ASSERT (parse_datetime (&result, buf, &now));
     LOG (buf, now, result);
     ASSERT (result.tv_sec == 1 * 60 * 60 + 2 * 60 + 3

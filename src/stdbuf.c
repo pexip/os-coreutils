@@ -1,5 +1,5 @@
 /* stdbuf -- setup the standard streams for a command
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -133,7 +133,7 @@ and are thus unaffected by 'stdbuf' settings.\n\
    dladdr(), pstat_getpathname(), etc.  */
 
 static void
-set_program_path (const char *arg)
+set_program_path (char const *arg)
 {
   if (strchr (arg, '/'))        /* Use absolute or relative paths directly.  */
     {

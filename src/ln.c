@@ -1,5 +1,5 @@
 /* 'ln' program to create links between files.
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,12 +37,6 @@
 #include "unlinkdir.h"
 #include "yesno.h"
 #include "canonicalize.h"
-
-#ifdef O_PATH
-enum { O_PATHSEARCH = O_PATH };
-#else
-enum { O_PATHSEARCH = O_SEARCH };
-#endif
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "ln"
@@ -129,7 +123,7 @@ errnoize (int status)
    The result is malloced.  */
 
 static char *
-convert_abs_rel (const char *from, const char *target)
+convert_abs_rel (char const *from, char const *target)
 {
   /* Get dirname to generate paths relative to.  We don't resolve
      the full TARGET as the last component could be an existing symlink.  */
@@ -229,14 +223,14 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
               if (errno != ENOENT)
                 {
                   error (0, errno, _("failed to access %s"), quoteaf (dest));
-                  return false;
+                  goto fail;
                 }
               force = false;
             }
           else if (S_ISDIR (dest_stats.st_mode))
             {
               error (0, 0, _("%s: cannot overwrite directory"), quotef (dest));
-              return false;
+              goto fail;
             }
           else if (seen_file (dest_set, dest, &dest_stats))
             {
@@ -245,7 +239,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
               error (0, 0,
                      _("will not overwrite just-created %s with %s"),
                      quoteaf_n (0, dest), quoteaf_n (1, source));
-              return false;
+              goto fail;
             }
           else
             {
@@ -274,7 +268,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
                     {
                       error (0, 0, _("%s and %s are the same file"),
                              quoteaf_n (0, source), quoteaf_n (1, dest));
-                      return false;
+                      goto fail;
                     }
                 }
 
@@ -285,7 +279,10 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
                       fprintf (stderr, _("%s: replace %s? "),
                                program_name, quoteaf (dest));
                       if (!yesno ())
-                        return true;
+                        {
+                          free (rel_source);
+                          return true;
+                        }
                     }
 
                   if (backup_type != no_backups)
@@ -301,10 +298,10 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
                           free (backup_base);
                           backup_base = NULL;
                           if (rename_errno != ENOENT)
-                           {
+                            {
                               error (0, rename_errno, _("cannot backup %s"),
                                      quoteaf (dest));
-                              return false;
+                              goto fail;
                             }
                           force = false;
                         }
@@ -397,6 +394,10 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
   free (backup_base);
   free (rel_source);
   return link_errno <= 0;
+
+fail:
+  free (rel_source);
+  return false;
 }
 
 void
@@ -440,7 +441,7 @@ interpreted in relation to its parent directory.\n\
   -n, --no-dereference        treat LINK_NAME as a normal file if\n\
                                 it is a symbolic link to a directory\n\
   -P, --physical              make hard links directly to symbolic links\n\
-  -r, --relative              create symbolic links relative to link location\n\
+  -r, --relative              with -s, create links relative to link location\n\
   -s, --symbolic              make symbolic links instead of hard links\n\
 "), stdout);
       fputs (_("\
@@ -677,5 +678,5 @@ main (int argc, char **argv)
   else
     ok = do_link (file[0], AT_FDCWD, file[1], file[1], link_errno);
 
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Basic tests for "expr".
 
-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
+# Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -83,6 +83,9 @@ my @Tests =
 
      # In 5.94 and earlier, anchors incorrectly matched newlines.
      ['anchor', "'a\nb' : 'a\$'", {OUT => '0'}, {EXIT => 1}],
+
+     # In 8.32, \( ... \) that did not match caused memory errors.
+     ['emptysub', '"a" : "\\(b\\)*"', {OUT => ''}, {EXIT => 1}],
 
      # These tests are taken from grep/tests/bre.tests.
      ['bre1', '"abc" : "a\\(b\\)c"', {OUT => 'b'}],
@@ -192,10 +195,6 @@ my @Tests =
      ['se6', "'(' 2 a", {EXIT=>2},
       {ERR=>"$prog: syntax error: expecting ')' instead of 'a'\n"}],
     );
-
-# If using big numbers fails, remove all /^bignum-/ tests
-qx!expr $big_prod '*' $big_prod '*' $big_prod!
-  or @Tests = grep {$_->[0] !~ /^bignum-/} @Tests;
 
 # Append a newline to end of each expected 'OUT' string.
 my $t;

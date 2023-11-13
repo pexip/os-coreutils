@@ -1,9 +1,9 @@
 /* Test of exact or abbreviated match search.
-   Copyright (C) 1990, 1998-1999, 2001-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990, 1998-1999, 2001-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,6 +18,13 @@
    by David MacKenzie <djm@gnu.ai.mit.edu>.  */
 
 #include <config.h>
+
+/* As of GCC 11.2.1, gcc -Wanalyzer-too-complex reports that main's
+   use of CHECK macros expands to code that is too complicated for gcc
+   -fanalyzer.  Suppress the resulting bogus warnings.  */
+#if 10 <= __GNUC__
+# pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#endif
 
 #include "argmatch.h"
 
@@ -61,7 +68,7 @@ static const enum backup_type backup_vals[] =
   numbered_backups, numbered_backups, numbered_backups
 };
 
-ARGMATCH_DEFINE_GROUP(backup, enum backup_type);
+ARGMATCH_DEFINE_GROUP(backup, enum backup_type)
 
 static const argmatch_backup_doc argmatch_backup_docs[] =
 {
@@ -109,7 +116,8 @@ main (int argc, char *argv[])
     ASSERT (argmatch_backup_choice (Input) == Output);                  \
     if (0 <= Output)                                                    \
       {                                                                 \
-        enum backup_type val = argmatch_backup_args[Output].val;        \
+        enum backup_type val                                            \
+          = argmatch_backup_args[Output < 0 ? 0 : Output].val;          \
         ASSERT (*argmatch_backup_value ("test", Input) == val);         \
         ASSERT (*argmatch_backup_value ("test",                         \
                                         argmatch_backup_argument (&val)) \
@@ -117,38 +125,63 @@ main (int argc, char *argv[])
       }                                                                 \
   } while (0)
 
+#define CHECK_EXACT(Input, Output)                                      \
+  do {                                                                  \
+    ASSERT (ARGMATCH_EXACT (Input, backup_args) == Output);             \
+  } while (0)
+
   /* Not found.  */
   CHECK ("klingon", -1);
+  CHECK_EXACT ("klingon", -1);
 
   /* Exact match.  */
   CHECK ("none", 1);
+  CHECK_EXACT ("none", 1);
   CHECK ("nil", 7);
+  CHECK_EXACT ("nil", 7);
 
   /* Too long.  */
   CHECK ("nilpotent", -1);
+  CHECK_EXACT ("nilpotent", -1);
 
   /* Abbreviated.  */
   CHECK ("simpl", 3);
+  CHECK_EXACT ("simpl", -1);
   CHECK ("simp", 3);
+  CHECK_EXACT ("simp", -1);
   CHECK ("sim", 3);
+  CHECK_EXACT ("sim", -1);
 
   /* Exact match and abbreviated.  */
   CHECK ("numbered", 9);
+  CHECK_EXACT ("numbered", 9);
   CHECK ("numbere", -2);
+  CHECK_EXACT ("numbere", -1);
   CHECK ("number", -2);
+  CHECK_EXACT ("number", -1);
   CHECK ("numbe", -2);
+  CHECK_EXACT ("numbe", -1);
   CHECK ("numb", -2);
+  CHECK_EXACT ("numb", -1);
   CHECK ("num", -2);
+  CHECK_EXACT ("num", -1);
   CHECK ("nu", -2);
+  CHECK_EXACT ("nu", -1);
   CHECK ("n", -2);
+  CHECK_EXACT ("n", -1);
 
   /* Ambiguous abbreviated.  */
   CHECK ("ne", -2);
+  CHECK_EXACT ("ne", -1);
 
   /* Ambiguous abbreviated, but same value ("single" and "simple").  */
   CHECK ("si", 3);
+  CHECK_EXACT ("si", -1);
   CHECK ("s", 3);
+  CHECK_EXACT ("s", -1);
+
 #undef CHECK
+#undef CHECK_EXACT
 
   argmatch_backup_usage (stdout);
 

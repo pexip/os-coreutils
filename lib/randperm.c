@@ -1,6 +1,6 @@
 /* Generate random permutations.
 
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "attribute.h"
 #include "count-leading-zeros.h"
 #include "hash.h"
 #include "verify.h"
@@ -32,7 +33,7 @@
 
 /* Return the floor of the log base 2 of N.  If N is zero, return -1.  */
 
-static int _GL_ATTRIBUTE_CONST
+ATTRIBUTE_CONST static int
 floor_lg (size_t n)
 {
   verify (SIZE_WIDTH <= ULLONG_WIDTH);
@@ -117,10 +118,10 @@ sparse_new (size_t size_hint)
    index I in array V.  */
 
 static void
-sparse_swap (sparse_map *sv, size_t* v, size_t i, size_t j)
+sparse_swap (sparse_map *sv, size_t *v, size_t i, size_t j)
 {
-  struct sparse_ent_ *v1 = hash_delete (sv, &(struct sparse_ent_) {i,0});
-  struct sparse_ent_ *v2 = hash_delete (sv, &(struct sparse_ent_) {j,0});
+  struct sparse_ent_ *v1 = hash_remove (sv, &(struct sparse_ent_) {i,0});
+  struct sparse_ent_ *v2 = hash_remove (sv, &(struct sparse_ent_) {j,0});
 
   /* FIXME: reduce the frequency of these mallocs.  */
   if (!v1)

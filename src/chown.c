@@ -1,5 +1,5 @@
 /* chown -- change user and group ownership of files
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -227,11 +227,12 @@ main (int argc, char **argv)
 
         case FROM_OPTION:
           {
-            const char *e = parse_user_spec (optarg,
-                                             &required_uid, &required_gid,
-                                             NULL, NULL);
+            bool warn;
+            char const *e = parse_user_spec_warn (optarg,
+                                                  &required_uid, &required_gid,
+                                                  NULL, NULL, &warn);
             if (e)
-              die (EXIT_FAILURE, 0, "%s: %s", e, quote (optarg));
+              error (warn ? 0 : EXIT_FAILURE, 0, "%s: %s", e, quote (optarg));
             break;
           }
 
@@ -297,10 +298,12 @@ main (int argc, char **argv)
     }
   else
     {
-      const char *e = parse_user_spec (argv[optind], &uid, &gid,
-                                       &chopt.user_name, &chopt.group_name);
+      bool warn;
+      char const *e = parse_user_spec_warn (argv[optind], &uid, &gid,
+                                            &chopt.user_name,
+                                            &chopt.group_name, &warn);
       if (e)
-        die (EXIT_FAILURE, 0, "%s: %s", e, quote (argv[optind]));
+        error (warn ? 0 : EXIT_FAILURE, 0, "%s: %s", e, quote (argv[optind]));
 
       /* If a group is specified but no user, set the user name to the
          empty string so that diagnostics say "ownership :GROUP"
@@ -325,7 +328,5 @@ main (int argc, char **argv)
                     uid, gid,
                     required_uid, required_gid, &chopt);
 
-  IF_LINT (chopt_free (&chopt));
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

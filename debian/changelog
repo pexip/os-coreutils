@@ -1,3 +1,17 @@
+coreutils (9.1-1) unstable; urgency=low
+
+  * New upstream version (Closes: #1017354)
+    - Corrects printf single quote behavior (Closes: #1017110)
+    - Works around broken fuse.portal (Closes: #991378)
+    - split --number=K/N fixed (Closes: #982300)
+    - Supersedes restore-ls-behavior patch
+  * Use DPKG_ROOT in postinst/postrm (Closes: #983565)
+  * Update debhelper compat to 13
+  * Update copyright file (Closes: #1012665)
+  * remove old kfbsd patches 85 (timer_settime) and 99 (fstat)
+
+ -- Michael Stone <mstone@debian.org>  Tue, 20 Sep 2022 11:27:27 -0400
+
 coreutils (8.32-4+b1pexip2) pexip-bullseye; urgency=medium
 
   * Bullseye rebuild for ARM64 inclusion

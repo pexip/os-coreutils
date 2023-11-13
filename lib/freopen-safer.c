@@ -1,10 +1,10 @@
 /* Invoke freopen, but avoid some glitches.
 
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -21,18 +21,12 @@
 
 #include "stdio-safer.h"
 
+#include "attribute.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <unistd.h>
-
-#ifndef FALLTHROUGH
-# if __GNUC__ < 7
-#  define FALLTHROUGH ((void) 0)
-# else
-#  define FALLTHROUGH __attribute__ ((__fallthrough__))
-# endif
-#endif
 
 /* Guarantee that FD is open; all smaller FDs must already be open.
    Return true if successful.  */

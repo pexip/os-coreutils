@@ -1,5 +1,5 @@
-# freopen.m4 serial 6
-dnl Copyright (C) 2007-2020 Free Software Foundation, Inc.
+# freopen.m4 serial 7
+dnl Copyright (C) 2007-2022 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -19,7 +19,7 @@ AC_DEFUN([gl_FUNC_FREOPEN],
            [AC_LANG_PROGRAM(
               [[#include <stdio.h>
                 #include <unistd.h>
-              ]],
+              ]GL_MDA_DEFINES],
               [[close (0);
                 return !(freopen ("/dev/null", "r", stdin)
                          && getchar () == EOF

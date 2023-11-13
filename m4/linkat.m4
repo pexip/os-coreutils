@@ -1,7 +1,7 @@
-# serial 10
+# serial 14
 # See if we need to provide linkat replacement.
 
-dnl Copyright (C) 2009-2020 Free Software Foundation, Inc.
+dnl Copyright (C) 2009-2022 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -16,7 +16,6 @@ AC_DEFUN([gl_FUNC_LINKAT],
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
   AC_REQUIRE([AC_CANONICAL_HOST]) dnl for cross-compiles
   AC_CHECK_FUNCS_ONCE([linkat symlink])
-  AC_CHECK_HEADERS_ONCE([sys/param.h])
   if test $ac_cv_func_linkat = no; then
     HAVE_LINKAT=0
   else
@@ -32,9 +31,9 @@ AC_DEFUN([gl_FUNC_LINKAT],
                         [[#include <fcntl.h>
                           #include <unistd.h>
                         ]],
-                        [return linkat (AT_FDCWD, "conftest.l1", AT_FDCWD,
-                                            "conftest.l2", 0);
-                        ])],
+                        [[return linkat (AT_FDCWD, "conftest.l1", AT_FDCWD,
+                                         "conftest.l2", 0);
+                        ]])],
          [gl_cv_func_linkat_nofollow=yes],
          [gl_cv_func_linkat_nofollow=no],
          [case "$host_os" in
@@ -58,7 +57,7 @@ AC_DEFUN([gl_FUNC_LINKAT],
               #include <fcntl.h>
               #include <errno.h>
               #include <stdio.h>
-            ]],
+            ]GL_MDA_DEFINES],
             [[int result;
               int fd;
               /* Create a regular file.  */
@@ -83,7 +82,7 @@ AC_DEFUN([gl_FUNC_LINKAT],
                           AT_SYMLINK_FOLLOW) == 0)
                 result |= 8;
 
-              /* On OS X 10.10 a trailing "/" will cause the second path to be
+              /* On Mac OS X 10.13 a trailing "/" will cause the second path to be
                  dereferenced, and thus will succeed on a dangling symlink.  */
               if (symlink ("conftest.e", "conftest.s") == 0)
                 {

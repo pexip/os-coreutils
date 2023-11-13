@@ -1,6 +1,6 @@
 /* expand-common - common functionality for expand/unexapnd
 
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,15 +22,6 @@ extern bool convert_entire_line;
 /* The maximum distance between tab stops.  */
 extern size_t max_column_width;
 
-/* Null-terminated array of input filenames.  */
-//extern char **file_list;
-
-/* Default for 'file_list' if no files are given on the command line.  */
-//extern char *stdin_argv[];
-
-/* True if we have ever read standard input.  */
-//extern bool have_read_stdin;
-
 /* The desired exit status.  */
 extern int exit_status;
 
@@ -41,12 +32,13 @@ add_tab_stop (uintmax_t tabval);
 /* Add the comma or blank separated list of tab stops STOPS
    to the list of tab stops.  */
 extern void
-parse_tab_stops (char const *stops);
+parse_tab_stops (char const *stops) _GL_ATTRIBUTE_NONNULL ();
 
 /* TODO: Document */
 extern uintmax_t
-get_next_tab_column (const uintmax_t column, size_t* tab_index,
-                     bool* last_tab);
+get_next_tab_column (const uintmax_t column, size_t *tab_index,
+                     bool *last_tab)
+  _GL_ATTRIBUTE_NONNULL ((3));
 
 /* Called after all command-line options have been parsed,
    sets the final tab-stops values */

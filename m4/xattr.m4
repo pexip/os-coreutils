@@ -1,7 +1,7 @@
 # xattr.m4 - check for Extended Attributes (Linux)
-# serial 3
+# serial 4
 
-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
+# Copyright (C) 2003-2022 Free Software Foundation, Inc.
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -11,7 +11,7 @@
 AC_DEFUN([gl_FUNC_XATTR],
 [
   AC_ARG_ENABLE([xattr],
-        AC_HELP_STRING([--disable-xattr],
+        AS_HELP_STRING([--disable-xattr],
                        [do not support extended attributes]),
         [use_xattr=$enableval], [use_xattr=yes])
 

@@ -1,9 +1,9 @@
 /* Test of opening a file descriptor.
-   Copyright (C) 2007-2020 Free Software Foundation, Inc.
+   Copyright (C) 2007-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -87,6 +87,26 @@ test_open (int (*func) (char const *, int, ...), bool print)
   fd = func (BASE "file", O_NONBLOCK | O_RDONLY);
   ASSERT (0 <= fd);
   ASSERT (close (fd) == 0);
+
+  /* O_CLOEXEC must be honoured.  */
+  if (O_CLOEXEC)
+    {
+      /* Since the O_CLOEXEC handling goes through a special code path at its
+         first invocation, test it twice.  */
+      int i;
+
+      for (i = 0; i < 2; i++)
+        {
+          int flags;
+
+          fd = func (BASE "file", O_CLOEXEC | O_RDONLY);
+          ASSERT (0 <= fd);
+          flags = fcntl (fd, F_GETFD);
+          ASSERT (flags >= 0);
+          ASSERT ((flags & FD_CLOEXEC) != 0);
+          ASSERT (close (fd) == 0);
+        }
+    }
 
   /* Symlink handling, where supported.  */
   if (symlink (BASE "file", BASE "link") != 0)

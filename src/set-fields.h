@@ -1,6 +1,6 @@
 /* set-fields.h -- parse field list argument
 
-   Copyright (C) 2015-2020 Free Software Foundation, Inc.
+   Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,9 +39,6 @@ enum
 };
 
 /* allocates and initializes the FRP array and N_FRP count */
-extern void set_fields (const char *fieldstr, unsigned int options);
-
-/* frees memory allocated by set_fields() */
-extern void reset_fields (void);
+extern void set_fields (char const *fieldstr, unsigned int options);
 
 #endif

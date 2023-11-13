@@ -3,7 +3,7 @@
 # items which compared equal with strcoll()
 # So ensure we avoid strcoll() for the following cases.
 
-# Copyright (C) 2020 Free Software Foundation, Inc.
+# Copyright (C) 2020-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,17 +28,17 @@ gen_input()
 
 # strcoll() used to return 0 comparing the following strings
 # which was fixed somewhere between glibc-2.22 and glibc-2.30
-gen_input '%s\n' 'ⁿᵘˡˡ' 'ܥܝܪܐܩ' > in || framework_failure_
+gen_input '%s\n' 'ⁿᵘˡˡ' 'ܥܝܪܐܩ'
 test $(LC_ALL=$LOCALE_FR_UTF8 uniq < in | wc -l) = 2 || fail=1
 
 # normalization in strcoll is inconsistent across platforms.
 # glibc based systems at least do _not_ normalize in strcoll,
 # while cygwin systems for example may do so.
 # á composed and decomposed, are generally not compared equal
-gen_input '\u00E1\na\u0301\n' > in || framework_failure_
+gen_input '\u00E1\na\u0301\n'
 test $(LC_ALL=$LOCALE_FR_UTF8 uniq < in | wc -l) = 2 || fail=1
 # Similarly with the following equivalent hangul characters
-gen_input '\uAC01\n\u1100\u1161\u11A8\n' > in || framework_failure_
+gen_input '\uAC01\n\u1100\u1161\u11A8\n'
 test $(LC_ALL=ko_KR.utf8 uniq < in | wc -l) = 2 || fail=1
 
 # Note if running in the wrong locale,
@@ -46,10 +46,10 @@ test $(LC_ALL=ko_KR.utf8 uniq < in | wc -l) = 2 || fail=1
 # I.e., cjk and hangul will now work even if
 # uniq is running in the wrong locale
 # hangul (ko_KR.utf8)
-gen_input '\uAC00\n\uAC01\n' > in || framework_failure_
+gen_input '\uAC00\n\uAC01\n'
 test $(LC_ALL=en_US.utf8 uniq < in | wc -l) = 2 || fail=1
 # CJK (zh_CN.utf8)
-gen_input '\u3400\n\u3401\n' > in || framework_failure_
+gen_input '\u3400\n\u3401\n'
 test $(LC_ALL=en_US.utf8 uniq < in | wc -l) = 2 || fail=1
 
 # Note strcoll() ignores certain characters,
@@ -57,7 +57,7 @@ test $(LC_ALL=en_US.utf8 uniq < in | wc -l) = 2 || fail=1
 # I.e., the following on glibc-2.30 at least,
 # as expected, does not print a single item,
 # but testing here for illustration
-gen_input ',a\n.a\n' > in || framework_failure_
+gen_input ',a\n.a\n'
 test $(LC_ALL=$LOCALE_FR_UTF8 uniq < in | wc -l) = 2 || fail=1
 
 Exit $fail

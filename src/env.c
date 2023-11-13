@@ -1,5 +1,5 @@
 /* env - run a program in a modified environment
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,10 +23,10 @@
 #include <c-ctype.h>
 #include <signal.h>
 
-#include <assert.h>
 #include "system.h"
 #include "die.h"
 #include "error.h"
+#include "idx.h"
 #include "operand2sig.h"
 #include "quote.h"
 #include "sig2str.h"
@@ -39,25 +39,25 @@
   proper_name ("David MacKenzie"), \
   proper_name ("Assaf Gordon")
 
-/* array of envvars to unset. */
-static const char** usvars;
+/* Array of envvars to unset.  */
+static char const **usvars;
 static size_t usvars_alloc;
-static size_t usvars_used;
+static idx_t usvars_used;
 
 /* Annotate the output with extra info to aid the user.  */
 static bool dev_debug;
 
-/* buffer and length of extracted envvars in -S strings. */
+/* Buffer and length of extracted envvars in -S strings.  */
 static char *varname;
-static size_t vnlen;
+static idx_t vnlen;
 
 /* Possible actions on each signal.  */
 enum SIGNAL_MODE {
   UNCHANGED = 0,
-  DEFAULT,       /* Set to default handler (SIG_DFL). */
-  DEFAULT_NOERR, /* ditto, but ignore sigaction(2) errors.  */
-  IGNORE,        /* Set to ignore (SIG_IGN). */
-  IGNORE_NOERR   /* ditto, but ignore sigaction(2) errors.  */
+  DEFAULT,       /* Set to default handler (SIG_DFL).  */
+  DEFAULT_NOERR, /* Ditto, but ignore sigaction(2) errors.  */
+  IGNORE,        /* Set to ignore (SIG_IGN).  */
+  IGNORE_NOERR   /* Ditto, but ignore sigaction(2) errors.  */
 };
 static enum SIGNAL_MODE *signals;
 
@@ -73,7 +73,10 @@ static bool sig_mask_changed;
 /* Whether to list non default handling.  */
 static bool report_signal_handling;
 
-static char const shortopts[] = "+C:iS:u:v0 \t";
+/* The isspace characters in the C locale.  */
+#define C_ISSPACE_CHARS " \t\n\v\f\r"
+
+static char const shortopts[] = "+C:iS:u:v0" C_ISSPACE_CHARS;
 
 /* For long options that have no equivalent short option, use a
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
@@ -137,7 +140,7 @@ Set each NAME to VALUE in the environment and run COMMAND.\n\
       --default-signal[=SIG]  reset handling of SIG signal(s) to the default\n\
 "), stdout);
       fputs (_("\
-      --ignore-signal[=SIG]   set handling of SIG signals(s) to do nothing\n\
+      --ignore-signal[=SIG]   set handling of SIG signal(s) to do nothing\n\
 "), stdout);
       fputs (_("\
       --list-signal-handling  list non default signal handling to stderr\n\
@@ -163,7 +166,7 @@ comma-separated.\n\
 }
 
 static void
-append_unset_var (const char *var)
+append_unset_var (char const *var)
 {
   if (usvars_used == usvars_alloc)
     usvars = x2nrealloc (usvars, &usvars_alloc, sizeof *usvars);
@@ -173,7 +176,7 @@ append_unset_var (const char *var)
 static void
 unset_envvars (void)
 {
-  for (size_t i = 0; i < usvars_used; ++i)
+  for (idx_t i = 0; i < usvars_used; ++i)
     {
       devmsg ("unset:    %s\n", usvars[i]);
 
@@ -181,47 +184,20 @@ unset_envvars (void)
         die (EXIT_CANCELED, errno, _("cannot unset %s"),
              quote (usvars[i]));
     }
-
-  IF_LINT (free (usvars));
-  IF_LINT (usvars = NULL);
-  IF_LINT (usvars_used = 0);
-  IF_LINT (usvars_alloc = 0);
-}
-
-static bool _GL_ATTRIBUTE_PURE
-valid_escape_sequence (const char c)
-{
-  return (c == 'c' || c == 'f' || c == 'n' || c == 'r' || c == 't' || c == 'v' \
-          || c == '#' || c == '$' || c == '_' || c == '"' || c == '\'' \
-          || c == '\\');
-}
-
-static char _GL_ATTRIBUTE_PURE
-escape_char (const char c)
-{
-  switch (c)
-    {
-    /* \a,\b not supported by FreeBSD's env. */
-    case 'f': return '\f';
-    case 'n': return '\n';
-    case 'r': return '\r';
-    case 't': return '\t';
-    case 'v': return '\v';
-    default:  assert (0);                           /* LCOV_EXCL_LINE */
-    }
 }
 
 /* Return a pointer to the end of a valid ${VARNAME} string, or NULL.
    'str' should point to the '$' character.
    First letter in VARNAME must be alpha or underscore,
-   rest of letters are alnum or underscore. Any other character is an error. */
-static const char* _GL_ATTRIBUTE_PURE
-scan_varname (const char* str)
+   rest of letters are alnum or underscore.
+   Any other character is an error.  */
+ATTRIBUTE_PURE
+static char const *
+scan_varname (char const *str)
 {
-  assert (str && *str == '$');                      /* LCOV_EXCL_LINE */
-  if ( *(str+1) == '{' && (c_isalpha (*(str+2)) || *(str+2) == '_'))
+  if (str[1] == '{' && (c_isalpha (str[2]) || str[2] == '_'))
     {
-      const char* end = str+3;
+      char const *end = str + 3;
       while (c_isalnum (*end) || *end == '_')
         ++end;
       if (*end == '}')
@@ -235,18 +211,18 @@ scan_varname (const char* str)
    extracted from a '${VARNAME}' string.
    The returned string will be NUL terminated.
    The returned pointer should not be freed.
-   Return NULL if not a valid ${VARNAME} syntax. */
-static char*
-extract_varname (const char* str)
+   Return NULL if not a valid ${VARNAME} syntax.  */
+static char *
+extract_varname (char const *str)
 {
-  ptrdiff_t i;
-  const char* p;
+  idx_t i;
+  char const *p;
 
   p = scan_varname (str);
   if (!p)
     return NULL;
 
-  /* -2 and +2 (below) account for the '${' prefix. */
+  /* -2 and +2 (below) account for the '${' prefix.  */
   i = p - str - 2;
 
   if (i >= vnlen)
@@ -255,165 +231,140 @@ extract_varname (const char* str)
       varname = xrealloc (varname, vnlen);
     }
 
-  memcpy (varname, str+2, i);
-  varname[i]=0;
+  memcpy (varname, str + 2, i);
+  varname[i] = 0;
 
   return varname;
 }
 
-/* Validate the "-S" parameter, according to the syntax defined by FreeBSD's
-   env(1). Terminate with an error message if not valid.
-
-   Calculate and set two values:
-   bufsize - the size (in bytes) required to hold the resulting string
-             after ENVVAR expansion (the value is overestimated).
-   maxargc - the maximum number of arguments (the size of the new argv). */
-static void
-validate_split_str (const char* str, size_t* /*out*/ bufsize,
-                    int* /*out*/ maxargc)
+/* Temporary buffer used by --split-string processing.  */
+struct splitbuf
 {
-  bool dq, sq, sp;
-  const char *pch;
-  size_t buflen;
-  int cnt = 1;
+  /* Buffer address, arg count, and half the number of elements in the buffer.
+     ARGC and ARGV are as in 'main', and ARGC + 1 <= HALF_ALLOC so
+     that the upper half of ARGV can be used for string contents.
+     This may waste up to half the space but keeps the code simple,
+     which is better for this rarely-used but security-sensitive code.
 
-  assert (str && str[0] && !isspace (str[0]));     /* LCOV_EXCL_LINE */
+     ARGV[0] is not initialized; that is the caller's responsibility
+     after finalization.
 
-  dq = sq = sp = false;
-  buflen = strlen (str)+1;
+     During assembly, ARGV[I] (where 0 < I < ARGC) contains the offset
+     of the Ith string (relative to ARGV + HALF_ALLOC), so that
+     reallocating ARGV does not change the validity of its contents.
+     The integer offset is cast to char * during assembly, and is
+     converted to a true char * pointer on finalization.
 
-  while (*str)
-    {
-      const char next = *(str+1);
+     During assembly, ARGV[ARGC] contains the offset of the first
+     unused string byte (relative to ARGV + HALF_ALLOC).  */
+  char **argv;
+  int argc;
+  idx_t half_alloc;
 
-      if (isspace (*str) && !dq && !sq)
-        {
-          sp = true;
-        }
-      else
-        {
-          if (sp)
-            ++cnt;
-          sp = false;
-        }
+  /* The number of extra argv slots to keep room for.  */
+  int extra_argc;
 
-      switch (*str)
-        {
-        case '\'':
-          assert (!(sq && dq));                           /* LCOV_EXCL_LINE */
-          sq = !sq && !dq;
-          break;
+  /* Whether processing should act as if the most recent character
+     seen was a separator.  */
+  bool sep;
+};
 
-        case '"':
-          assert (!(sq && dq));                           /* LCOV_EXCL_LINE */
-          dq = !sq && !dq;
-          break;
-
-        case '\\':
-          if (dq && next == 'c')
-            die (EXIT_CANCELED, 0,
-                 _("'\\c' must not appear in double-quoted -S string"));
-
-          if (next == '\0')
-            die (EXIT_CANCELED, 0,
-                 _("invalid backslash at end of string in -S"));
-
-          if (!valid_escape_sequence (next))
-            die (EXIT_CANCELED, 0, _("invalid sequence '\\%c' in -S"), next);
-
-          if (next == '_')
-            ++cnt;
-
-          ++str;
-          break;
-
-
-        case '$':
-          if (sq)
-            break;
-
-          if (!(pch = extract_varname (str)))
-            die (EXIT_CANCELED, 0, _("only ${VARNAME} expansion is supported,"\
-                                     " error at: %s"), str);
-
-          if ((pch = getenv (pch)))
-            buflen += strlen (pch);
-          break;
-        }
-      ++str;
-    }
-
-  if (dq || sq)
-    die (EXIT_CANCELED, 0, _("no terminating quote in -S string"));
-
-  *maxargc = cnt;
-  *bufsize = buflen;
+/* Expand SS so that it has at least one more argv slot and at least
+   one more string byte.  */
+static void
+splitbuf_grow (struct splitbuf *ss)
+{
+  idx_t old_half_alloc = ss->half_alloc;
+  idx_t string_bytes = (intptr_t) ss->argv[ss->argc];
+  ss->argv = xpalloc (ss->argv, &ss->half_alloc, 1,
+                      MIN (INT_MAX, IDX_MAX), 2 * sizeof *ss->argv);
+  memmove (ss->argv + ss->half_alloc, ss->argv + old_half_alloc, string_bytes);
 }
 
-/* Return a newly-allocated *arg[]-like array,
+/* In SS, append C to the last string.  */
+static void
+splitbuf_append_byte (struct splitbuf *ss, char c)
+{
+  idx_t string_bytes = (intptr_t) ss->argv[ss->argc];
+  if (ss->half_alloc * sizeof *ss->argv <= string_bytes)
+    splitbuf_grow (ss);
+  ((char *) (ss->argv + ss->half_alloc))[string_bytes] = c;
+  ss->argv[ss->argc] = (char *) (intptr_t) (string_bytes + 1);
+}
+
+/* If SS's most recent character was a separator, finish off its
+   previous argument and start a new one.  */
+static void
+check_start_new_arg (struct splitbuf *ss)
+{
+  if (ss->sep)
+    {
+      splitbuf_append_byte (ss, '\0');
+      int argc = ss->argc;
+      if (ss->half_alloc <= argc + ss->extra_argc + 1)
+        splitbuf_grow (ss);
+      ss->argv[argc + 1] = ss->argv[argc];
+      ss->argc = argc + 1;
+      ss->sep = false;
+    }
+}
+
+/* All additions to SS have been made.  Convert its offsets to pointers,
+   and return the resulting argument vector.  */
+static char **
+splitbuf_finishup (struct splitbuf *ss)
+{
+  int argc = ss->argc;
+  char **argv = ss->argv;
+  char *stringbase = (char *) (ss->argv + ss->half_alloc);
+  for (int i = 1; i < argc; i++)
+    argv[i] = stringbase + (intptr_t) argv[i];
+  return argv;
+}
+
+/* Return a newly-allocated argv-like array,
    by parsing and splitting the input 'str'.
+
    'extra_argc' is the number of additional elements to allocate
    in the array (on top of the number of args required to split 'str').
 
+   Store into *argc the number of arguments found (plus 1 for
+   the program name).
+
    Example:
-     char **argv = build_argv ("A=B uname -k', 3)
+     int argc;
+     char **argv = build_argv ("A=B uname -k', 3, &argc);
    Results in:
-     argv[0] = "DUMMY" - dummy executable name, can be replaced later.
+     argc = 4
+     argv[0] = [not initialized]
      argv[1] = "A=B"
      argv[2] = "uname"
      argv[3] = "-k"
-     argv[4] = NULL
-     argv[5,6,7] = [allocated due to extra_argc, but not initialized]
+     argv[4,5,6,7] = [allocated due to extra_argc + 1, but not initialized]
 
-   The strings are stored in an allocated buffer, pointed by argv[0].
    To free allocated memory:
-     free (argv[0]);
-     free (argv); */
-static char**
-build_argv (const char* str, int extra_argc)
+     free (argv);
+   However, 'env' does not free since it's about to exec or exit anyway
+   and the complexity of keeping track of the storage that may have been
+   allocated via multiple calls to build_argv is not worth the hassle.  */
+static char **
+build_argv (char const *str, int extra_argc, int *argc)
 {
-  bool dq = false, sq = false, sep = true;
-  char *dest;    /* buffer to hold the new argv values. allocated as one buffer,
-                    but will contain multiple NUL-terminate strings. */
-  char **newargv, **nextargv;
-  int newargc = 0;
-  size_t buflen = 0;
-
-  /* This macro is called before inserting any characters to the output
-     buffer. It checks if the previous character was a separator
-     and if so starts a new argv element. */
-#define CHECK_START_NEW_ARG                     \
-  do {                                          \
-    if (sep)                                    \
-      {                                         \
-        *dest++ = '\0';                         \
-        *nextargv++ = dest;                     \
-        sep = false;                            \
-      }                                         \
-  } while (0)
-
-  assert (str && str[0] && !isspace (str[0]));             /* LCOV_EXCL_LINE */
-
-  validate_split_str (str, &buflen, &newargc);
-
-  /* allocate buffer. +6 for the "DUMMY\0" executable name, +1 for NUL. */
-  dest = xmalloc (buflen + 6 + 1);
-
-  /* allocate the argv array.
-     +2 for the program name (argv[0]) and the last NULL pointer. */
-  nextargv = newargv = xmalloc ((newargc + extra_argc + 2) * sizeof (char *));
-
-  /* argv[0] = executable's name  - will be replaced later. */
-  strcpy (dest, "DUMMY");
-  *nextargv++ = dest;
-  dest += 6;
+  bool dq = false, sq = false;
+  struct splitbuf ss;
+  ss.argv = xnmalloc (extra_argc + 2, 2 * sizeof *ss.argv);
+  ss.argc = 1;
+  ss.half_alloc = extra_argc + 2;
+  ss.extra_argc = extra_argc;
+  ss.sep = true;
+  ss.argv[ss.argc] = 0;
 
   /* In the following loop,
      'break' causes the character 'newc' to be added to *dest,
-     'continue' skips the character. */
+     'continue' skips the character.  */
   while (*str)
     {
-      char newc = *str; /* default: add the next character. */
+      char newc = *str; /* Default: add the next character.  */
 
       switch (*str)
         {
@@ -421,7 +372,7 @@ build_argv (const char* str, int extra_argc)
           if (dq)
             break;
           sq = !sq;
-          CHECK_START_NEW_ARG;
+          check_start_new_arg (&ss);
           ++str;
           continue;
 
@@ -429,68 +380,88 @@ build_argv (const char* str, int extra_argc)
           if (sq)
             break;
           dq = !dq;
-          CHECK_START_NEW_ARG;
+          check_start_new_arg (&ss);
           ++str;
           continue;
 
-        case ' ':
-        case '\t':
-          /* space/tab outside quotes starts a new argument. */
+        case ' ': case '\t': case '\n': case '\v': case '\f': case '\r':
+          /* Start a new argument if outside quotes.  */
           if (sq || dq)
             break;
-          sep = true;
-          str += strspn (str, " \t"); /* skip whitespace. */
+          ss.sep = true;
+          str += strspn (str, C_ISSPACE_CHARS);
           continue;
 
         case '#':
-          if (!sep)
+          if (!ss.sep)
             break;
-          goto eos; /* '#' as first char terminates the string. */
+          goto eos; /* '#' as first char terminates the string.  */
 
         case '\\':
-          /* backslash inside single-quotes is not special, except \\ and \'. */
-          if (sq && *(str+1) != '\\' && *(str+1) != '\'')
+          /* Backslash inside single-quotes is not special, except \\
+             and \'.  */
+          if (sq && str[1] != '\\' && str[1] != '\'')
             break;
 
-          /* skip the backslash and examine the next character. */
-          newc = *(++str);
-          if ((newc == '\\' || newc == '\'')
-              || (!sq && (newc == '#' || newc == '$' || newc == '"')))
+          /* Skip the backslash and examine the next character.  */
+          newc = *++str;
+          switch (newc)
             {
-              /* Pass escaped character as-is. */
-            }
-          else if (newc == '_')
-            {
+            case '"': case '#': case '$': case '\'': case '\\':
+              /* Pass escaped character as-is.  */
+              break;
+
+            case '_':
               if (!dq)
                 {
-                  ++str;  /* '\_' outside double-quotes is arg separator. */
-                  sep = true;
+                  ++str;  /* '\_' outside double-quotes is arg separator.  */
+                  ss.sep = true;
                   continue;
                 }
-              else
-                  newc = ' ';  /* '\_' inside double-quotes is space. */
+              newc = ' ';  /* '\_' inside double-quotes is space.  */
+              break;
+
+            case 'c':
+              if (dq)
+                die (EXIT_CANCELED, 0,
+                     _("'\\c' must not appear in double-quoted -S string"));
+              goto eos; /* '\c' terminates the string.  */
+
+            case 'f': newc = '\f'; break;
+            case 'n': newc = '\n'; break;
+            case 'r': newc = '\r'; break;
+            case 't': newc = '\t'; break;
+            case 'v': newc = '\v'; break;
+
+            case '\0':
+              die (EXIT_CANCELED, 0,
+                   _("invalid backslash at end of string in -S"));
+
+            default:
+              die (EXIT_CANCELED, 0, _("invalid sequence '\\%c' in -S"), newc);
             }
-          else if (newc == 'c')
-              goto eos; /* '\c' terminates the string. */
-          else
-              newc = escape_char (newc); /* other characters (e.g. '\n'). */
           break;
 
         case '$':
-          /* ${VARNAME} are not expanded inside single-quotes. */
+          /* ${VARNAME} are not expanded inside single-quotes.  */
           if (sq)
             break;
 
-          /* Store the ${VARNAME} value. Error checking omitted as
-             the ${VARNAME} was already validated. */
+          /* Store the ${VARNAME} value.  */
           {
             char *n = extract_varname (str);
+            if (!n)
+              die (EXIT_CANCELED, 0,
+                   _("only ${VARNAME} expansion is supported, error at: %s"),
+                   str);
+
             char *v = getenv (n);
             if (v)
               {
-                CHECK_START_NEW_ARG;
+                check_start_new_arg (&ss);
                 devmsg ("expanding ${%s} into %s\n", n, quote (v));
-                dest = stpcpy (dest, v);
+                for (; *v; v++)
+                  splitbuf_append_byte (&ss, *v);
               }
             else
               devmsg ("replacing ${%s} with null string\n", n);
@@ -498,19 +469,20 @@ build_argv (const char* str, int extra_argc)
             str = strchr (str, '}') + 1;
             continue;
           }
-
         }
 
-      CHECK_START_NEW_ARG;
-      *dest++ = newc;
+      check_start_new_arg (&ss);
+      splitbuf_append_byte (&ss, newc);
       ++str;
     }
 
- eos:
-  *dest = '\0';
-  *nextargv = NULL; /* mark the last element in argv as NULL. */
+  if (dq || sq)
+    die (EXIT_CANCELED, 0, _("no terminating quote in -S string"));
 
-  return newargv;
+ eos:
+  splitbuf_append_byte (&ss, '\0');
+  *argc = ss.argc;
+  return splitbuf_finishup (&ss);
 }
 
 /* Process an "-S" string and create the corresponding argv array.
@@ -519,73 +491,53 @@ build_argv (const char* str, int extra_argc)
    Example: if executed as:
       $ env -S"-i -C/tmp A=B" foo bar
    The input argv is:
-      argv[0] = 'env'
+      argv[0] = "env"
       argv[1] = "-S-i -C/tmp A=B"
-      argv[2] = foo
-      argv[3] = bar
+      argv[2] = "foo"
+      argv[3] = "bar"
+      argv[4] = NULL
    This function will modify argv to be:
-      argv[0] = 'env'
+      argv[0] = "env"
       argv[1] = "-i"
       argv[2] = "-C/tmp"
-      argv[3] =  A=B"
-      argv[4] = foo
-      argv[5] = bar
+      argv[3] = "A=B"
+      argv[4] = "foo"
+      argv[5] = "bar"
+      argv[6] = NULL
    argc will be updated from 4 to 6.
-   optind will be reset to 0 to force getopt_long to rescan all arguments. */
+   optind will be reset to 0 to force getopt_long to rescan all arguments.  */
 static void
-parse_split_string (const char* str, int /*out*/ *orig_optind,
-                    int /*out*/ *orig_argc, char*** /*out*/ orig_argv)
+parse_split_string (char const *str, int *orig_optind,
+                    int *orig_argc, char ***orig_argv)
 {
-  int i, newargc;
-  char **newargv, **nextargv;
+  int extra_argc = *orig_argc - *orig_optind, newargc;
+  char **newargv = build_argv (str, extra_argc, &newargc);
 
-
-  while (isspace (*str))
-    str++;
-  if (*str == '\0')
-    return;
-
-  newargv = build_argv (str, *orig_argc - *orig_optind);
-
-  /* restore argv[0] - the 'env' executable name */
+  /* Restore argv[0] - the 'env' executable name.  */
   *newargv = (*orig_argv)[0];
 
-  /* Start from argv[1] */
-  nextargv = newargv + 1;
-
-  /* Print parsed arguments */
-  if (dev_debug && *nextargv)
+  /* Print parsed arguments.  */
+  if (dev_debug && 1 < newargc)
     {
       devmsg ("split -S:  %s\n", quote (str));
-      devmsg (" into:    %s\n", quote (*nextargv++));
-      while (*nextargv)
-        devmsg ("     &    %s\n", quote (*nextargv++));
-    }
-  else
-    {
-      /* Ensure nextargv points to the last argument */
-      while (*nextargv)
-        ++nextargv;
+      devmsg (" into:    %s\n", quote (newargv[1]));
+      for (int i = 2; i < newargc; i++)
+        devmsg ("     &    %s\n", quote (newargv[i]));
     }
 
-  /* Add remaining arguments from original command line */
-  for (i = *orig_optind; i < *orig_argc; ++i)
-    *nextargv++ = (*orig_argv)[i];
-  *nextargv = NULL;
+  /* Add remaining arguments and terminating null from the original
+     command line.  */
+  memcpy (newargv + newargc, *orig_argv + *orig_optind,
+          (extra_argc + 1) * sizeof *newargv);
 
-  /* Count how many new arguments we have */
-  newargc = 0;
-  for (nextargv = newargv; *nextargv; ++nextargv)
-    ++newargc;
-
-  /* set new values for original getopt variables */
-  *orig_argc = newargc;
+  /* Set new values for original getopt variables.  */
+  *orig_argc = newargc + extra_argc;
   *orig_argv = newargv;
-  *orig_optind = 0; /* tell getopt to restart from first argument */
+  *orig_optind = 0; /* Tell getopt to restart from first argument.  */
 }
 
 static void
-parse_signal_action_params (const char* optarg, bool set_default)
+parse_signal_action_params (char const *optarg, bool set_default)
 {
   char signame[SIG2STR_MAX];
   char *opt_sig;
@@ -593,7 +545,7 @@ parse_signal_action_params (const char* optarg, bool set_default)
 
   if (! optarg)
     {
-      /* without an argument, reset all signals.
+      /* Without an argument, reset all signals.
          Some signals cannot be set to ignore or default (e.g., SIGKILL,
          SIGSTOP on most OSes, and SIGCONT on AIX.) - so ignore errors.  */
       for (int i = 1 ; i <= SIGNUM_BOUND; i++)
@@ -647,8 +599,8 @@ reset_signal_handlers (void)
       if (! sig_err)
         {
           act.sa_handler = set_to_default ? SIG_DFL : SIG_IGN;
-
-          if ((sig_err = sigaction (i, &act, NULL)) && !ignore_errors)
+          sig_err = sigaction (i, &act, NULL);
+          if (sig_err && !ignore_errors)
             die (EXIT_CANCELED, errno,
                  _("failed to set signal action for signal %d"), i);
         }
@@ -667,7 +619,7 @@ reset_signal_handlers (void)
 
 
 static void
-parse_block_signal_params (const char* optarg, bool block)
+parse_block_signal_params (char const *optarg, bool block)
 {
   char signame[SIG2STR_MAX];
   char *opt_sig;
@@ -675,7 +627,7 @@ parse_block_signal_params (const char* optarg, bool block)
 
   if (! optarg)
     {
-      /* without an argument, reset all signals.  */
+      /* Without an argument, reset all signals.  */
       sigfillset (block ? &block_signals : &unblock_signals);
       sigemptyset (block ? &unblock_signals : &block_signals);
     }
@@ -717,7 +669,7 @@ set_signal_proc_mask (void)
 {
   /* Get the existing signal mask */
   sigset_t set;
-  const char *debug_act;
+  char const *debug_act;
 
   sigemptyset (&set);
 
@@ -770,9 +722,9 @@ list_signal_handling (void)
       if (sigaction (i, NULL, &act))
         continue;
 
-      char const* ignored = act.sa_handler == SIG_IGN ? "IGNORE" : "";
-      char const* blocked = sigismember (&set, i) ? "BLOCK" : "";
-      char const* connect = *ignored && *blocked ? "," : "";
+      char const *ignored = act.sa_handler == SIG_IGN ? "IGNORE" : "";
+      char const *blocked = sigismember (&set, i) ? "BLOCK" : "";
+      char const *connect = *ignored && *blocked ? "," : "";
 
       if (! *ignored && ! *blocked)
         continue;
@@ -848,9 +800,8 @@ main (int argc, char **argv)
         case 'S':
           parse_split_string (optarg, &optind, &argc, &argv);
           break;
-        case ' ':
-        case '\t':
-          /* These are undocumented options. Attempt to detect
+        case ' ': case '\t': case '\n': case '\v': case '\f': case '\r':
+          /* These are undocumented options.  Attempt to detect
              incorrect shebang usage with extraneous space, e.g.:
                 #!/usr/bin/env -i command
              In which case argv[1] == "-i command".  */
@@ -910,7 +861,7 @@ main (int argc, char **argv)
 
   if (! program_specified)
     {
-      /* Print the environment and exit. */
+      /* Print the environment and exit.  */
       char *const *e = environ;
       while (*e)
         printf ("%s%c", *e++, opt_nul_terminate_output ? '\0' : '\n');
@@ -945,8 +896,8 @@ main (int argc, char **argv)
   int exit_status = errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE;
   error (0, errno, "%s", quote (argv[optind]));
 
-  if (exit_status == EXIT_ENOENT && strchr (argv[optind], ' '))
+  if (exit_status == EXIT_ENOENT && strpbrk (argv[optind], C_ISSPACE_CHARS))
     error (0, 0, _("use -[v]S to pass options in shebang lines"));
 
-  return exit_status;
+  main_exit (exit_status);
 }

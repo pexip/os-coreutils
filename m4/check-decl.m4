@@ -1,7 +1,7 @@
-#serial 26
+#serial 27
 # Check declarations for this package.
 
-dnl Copyright (C) 1997-2020 Free Software Foundation, Inc.
+dnl Copyright (C) 1997-2022 Free Software Foundation, Inc.
 
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
@@ -13,8 +13,6 @@ dnl Putting it in a separate file like this helps share it between
 dnl different packages.
 AC_DEFUN([gl_CHECK_DECLS],
 [
-  AC_REQUIRE([AC_HEADER_TIME])
-
   AC_CHECK_HEADERS_ONCE([grp.h pwd.h])
   headers='
 #include <sys/types.h>

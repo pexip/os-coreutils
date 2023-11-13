@@ -1,5 +1,5 @@
 /* od -- dump files in octal and other formats
-   Copyright (C) 1992-2020 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -427,10 +427,10 @@ Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n\
 
 /* Define the print functions.  */
 
-#define PRINT_FIELDS(N, T, FMT_STRING, ACTION)                          \
+#define PRINT_FIELDS(N, T, FMT_STRING_DECL, ACTION)                     \
 static void                                                             \
 N (size_t fields, size_t blank, void const *block,                      \
-   char const *FMT_STRING, int width, int pad)                          \
+   FMT_STRING_DECL, int width, int pad)                                 \
 {                                                                       \
   T const *p = block;                                                   \
   uintmax_t i;                                                          \
@@ -448,7 +448,7 @@ N (size_t fields, size_t blank, void const *block,                      \
             char b[sizeof (T)];                                         \
           } u;                                                          \
           for (j = 0; j < sizeof (T); j++)                              \
-            u.b[j] = ((const char *) p)[sizeof (T) - 1 - j];            \
+            u.b[j] = ((char const *) p)[sizeof (T) - 1 - j];            \
           x = u.x;                                                      \
         }                                                               \
       else                                                              \
@@ -460,10 +460,11 @@ N (size_t fields, size_t blank, void const *block,                      \
 }
 
 #define PRINT_TYPE(N, T)                                                \
-  PRINT_FIELDS (N, T, fmt_string, xprintf (fmt_string, adjusted_width, x))
+  PRINT_FIELDS (N, T, char const *fmt_string,                           \
+                xprintf (fmt_string, adjusted_width, x))
 
 #define PRINT_FLOATTYPE(N, T, FTOASTR, BUFSIZE)                         \
-  PRINT_FIELDS (N, T, fmt_string _GL_UNUSED,                      \
+  PRINT_FIELDS (N, T, MAYBE_UNUSED char const *fmt_string,              \
                 char buf[BUFSIZE];                                      \
                 FTOASTR (buf, sizeof buf, 0, 0, x);                     \
                 xprintf ("%*s", adjusted_width, buf))
@@ -484,7 +485,7 @@ PRINT_FLOATTYPE (print_long_double, long double, ldtoastr, LDBL_BUFSIZE_BOUND)
 #undef PRINT_FLOATTYPE
 
 static void
-dump_hexl_mode_trailer (size_t n_bytes, const char *block)
+dump_hexl_mode_trailer (size_t n_bytes, char const *block)
 {
   fputs ("  >", stdout);
   for (size_t i = n_bytes; i > 0; i--)
@@ -498,7 +499,7 @@ dump_hexl_mode_trailer (size_t n_bytes, const char *block)
 
 static void
 print_named_ascii (size_t fields, size_t blank, void const *block,
-                   const char *unused_fmt_string _GL_UNUSED,
+                   MAYBE_UNUSED char const *unused_fmt_string,
                    int width, int pad)
 {
   unsigned char const *p = block;
@@ -508,7 +509,7 @@ print_named_ascii (size_t fields, size_t blank, void const *block,
     {
       int next_pad = pad * (i - 1) / fields;
       int masked_c = *p++ & 0x7f;
-      const char *s;
+      char const *s;
       char buf[2];
 
       if (masked_c == 127)
@@ -529,7 +530,7 @@ print_named_ascii (size_t fields, size_t blank, void const *block,
 
 static void
 print_ascii (size_t fields, size_t blank, void const *block,
-             const char *unused_fmt_string _GL_UNUSED, int width,
+             MAYBE_UNUSED char const *unused_fmt_string, int width,
              int pad)
 {
   unsigned char const *p = block;
@@ -539,7 +540,7 @@ print_ascii (size_t fields, size_t blank, void const *block,
     {
       int next_pad = pad * (i - 1) / fields;
       unsigned char c = *p++;
-      const char *s;
+      char const *s;
       char buf[4];
 
       switch (c)
@@ -595,7 +596,7 @@ print_ascii (size_t fields, size_t blank, void const *block,
    the result of the conversion and return true.  */
 
 static bool
-simple_strtoul (const char *s, const char **p, unsigned long int *val)
+simple_strtoul (char const *s, char const **p, unsigned long int *val)
 {
   unsigned long int sum;
 
@@ -632,7 +633,7 @@ simple_strtoul (const char *s, const char **p, unsigned long int *val)
    */
 
 static bool
-decode_one_format (const char *s_orig, const char *s, const char **next,
+decode_one_format (char const *s_orig, char const *s, char const **next,
                    struct tspec *tspec)
 {
   enum size_spec size_spec;
@@ -640,7 +641,7 @@ decode_one_format (const char *s_orig, const char *s, const char **next,
   enum output_format fmt;
   void (*print_function) (size_t, size_t, void const *, char const *,
                           int, int);
-  const char *p;
+  char const *p;
   char c;
   int field_width;
 
@@ -949,16 +950,15 @@ check_and_close (int in_errno)
 
   if (in_stream != NULL)
     {
-      if (ferror (in_stream))
+      if (!ferror (in_stream))
+        in_errno = 0;
+      if (STREQ (file_list[-1], "-"))
+        clearerr (in_stream);
+      else if (fclose (in_stream) != 0 && !in_errno)
+        in_errno = errno;
+      if (in_errno)
         {
-          error (0, in_errno, _("%s: read error"), quotef (input_filename));
-          if (! STREQ (file_list[-1], "-"))
-            fclose (in_stream);
-          ok = false;
-        }
-      else if (! STREQ (file_list[-1], "-") && fclose (in_stream) != 0)
-        {
-          error (0, errno, "%s", quotef (input_filename));
+          error (0, in_errno, "%s", quotef (input_filename));
           ok = false;
         }
 
@@ -979,14 +979,14 @@ check_and_close (int in_errno)
    necessary.  Return true if S is valid.  */
 
 static bool
-decode_format_string (const char *s)
+decode_format_string (char const *s)
 {
-  const char *s_orig = s;
+  char const *s_orig = s;
   assert (s != NULL);
 
   while (*s != '\0')
     {
-      const char *next;
+      char const *next;
 
       if (n_specs_allocated <= n_specs)
         spec = X2NREALLOC (spec, &n_specs_allocated);
@@ -1113,8 +1113,8 @@ skip (uintmax_t n_skip)
 }
 
 static void
-format_address_none (uintmax_t address _GL_UNUSED,
-                     char c _GL_UNUSED)
+format_address_none (MAYBE_UNUSED uintmax_t address,
+                     MAYBE_UNUSED char c)
 {
 }
 
@@ -1186,7 +1186,7 @@ format_address_label (uintmax_t address, char c)
 
 static void
 write_block (uintmax_t current_offset, size_t n_bytes,
-             const char *prev_block, const char *curr_block)
+             char const *prev_block, char const *curr_block)
 {
   static bool first = true;
   static bool prev_pair_equal = false;
@@ -1318,7 +1318,8 @@ read_block (size_t n, char *block, size_t *n_bytes_in_buffer)
 /* Return the least common multiple of the sizes associated
    with the format specs.  */
 
-static int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static int
 get_lcm (void)
 {
   int l_c_m = 1;
@@ -1332,7 +1333,7 @@ get_lcm (void)
    leading '+' return true and set *OFFSET to the offset it denotes.  */
 
 static bool
-parse_old_offset (const char *s, uintmax_t *offset)
+parse_old_offset (char const *s, uintmax_t *offset)
 {
   int radix;
 
@@ -1387,7 +1388,7 @@ dump (void)
 
   if (limit_bytes_to_format)
     {
-      while (1)
+      while (true)
         {
           size_t n_needed;
           if (current_offset >= end_offset)
@@ -1409,7 +1410,7 @@ dump (void)
     }
   else
     {
-      while (1)
+      while (true)
         {
           ok &= read_block (bytes_per_block, block[idx], &n_bytes_read);
           if (n_bytes_read < bytes_per_block)
@@ -1462,7 +1463,7 @@ dump_strings (void)
   uintmax_t address = n_bytes_to_skip;
   bool ok = true;
 
-  while (1)
+  while (true)
     {
       size_t i;
       int c;

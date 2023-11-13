@@ -1,9 +1,9 @@
 /* Declaration for va_list error-reporting function
-   Copyright (C) 2006-2007, 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2007, 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,7 +19,8 @@
 
 #include <stdarg.h>
 
-#include "error.h" /* for _GL_ATTRIBUTE_FORMAT */
+/* Get _GL_ATTRIBUTE_SPEC_PRINTF_STANDARD.  */
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +34,7 @@ extern "C" {
 
 extern void verror (int __status, int __errnum, const char *__format,
                     va_list __args)
-     _GL_ATTRIBUTE_FORMAT ((__printf__, 3, 0));
+     _GL_ATTRIBUTE_FORMAT ((_GL_ATTRIBUTE_SPEC_PRINTF_STANDARD, 3, 0));
 
 /* Print a message with 'vfprintf (stderr, FORMAT, ARGS)';
    if ERRNUM is nonzero, follow it with ": " and strerror (ERRNUM).
@@ -45,7 +46,7 @@ extern void verror (int __status, int __errnum, const char *__format,
 extern void verror_at_line (int __status, int __errnum, const char *__fname,
                             unsigned int __lineno, const char *__format,
                             va_list __args)
-     _GL_ATTRIBUTE_FORMAT ((__printf__, 5, 0));
+     _GL_ATTRIBUTE_FORMAT ((_GL_ATTRIBUTE_SPEC_PRINTF_STANDARD, 5, 0));
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 /* tac - concatenate and print files in reverse
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -156,7 +156,7 @@ Write each FILE to standard output, last line first.\n\
    If START is NULL, just flush the buffer. */
 
 static void
-output (const char *start, const char *past_end)
+output (char const *start, char const *past_end)
 {
   static char buffer[WRITESIZE];
   static size_t bytes_in_buffer = 0;
@@ -190,7 +190,7 @@ output (const char *start, const char *past_end)
    Return true if successful.  */
 
 static bool
-tac_seekable (int input_fd, const char *file, off_t file_pos)
+tac_seekable (int input_fd, char const *file, off_t file_pos)
 {
   /* Pointer to the location in 'G_buffer' where the search for
      the next separator will begin. */
@@ -393,7 +393,7 @@ tac_seekable (int input_fd, const char *file, off_t file_pos)
    But this isn't a big deal, since the code is used only on WOE/DOS
    systems, and few people invoke tac on that many nonseekable files.  */
 
-static const char *file_to_remove;
+static char const *file_to_remove;
 static FILE *fp_to_close;
 
 static void
@@ -417,7 +417,7 @@ record_or_unlink_tempfile (char const *fn, FILE *fp)
 #else
 
 static void
-record_or_unlink_tempfile (char const *fn, FILE *fp _GL_UNUSED)
+record_or_unlink_tempfile (char const *fn, MAYBE_UNUSED FILE *fp)
 {
   unlink (fn);
 }
@@ -505,7 +505,7 @@ copy_to_temp (FILE **g_tmp, char **g_tempfile, int input_fd, char const *file)
   if (!temp_stream (&fp, &file_name))
     return -1;
 
-  while (1)
+  while (true)
     {
       size_t bytes_read = safe_read (input_fd, G_buffer, read_size);
       if (bytes_read == 0)
@@ -543,7 +543,7 @@ copy_to_temp (FILE **g_tmp, char **g_tempfile, int input_fd, char const *file)
    Return true if successful.  */
 
 static bool
-tac_nonseekable (int input_fd, const char *file)
+tac_nonseekable (int input_fd, char const *file)
 {
   FILE *tmp_stream;
   char *tmp_file;
@@ -560,7 +560,7 @@ tac_nonseekable (int input_fd, const char *file)
    Return true if successful.  */
 
 static bool
-tac_file (const char *filename)
+tac_file (char const *filename)
 {
   bool ok;
   off_t file_size;
@@ -602,7 +602,7 @@ tac_file (const char *filename)
 int
 main (int argc, char **argv)
 {
-  const char *error_message;	/* Return value from re_compile_pattern. */
+  char const *error_message;	/* Return value from re_compile_pattern. */
   int optc;
   bool ok;
   size_t half_buffer_size;
@@ -704,10 +704,5 @@ main (int argc, char **argv)
       ok = false;
     }
 
-#ifdef lint
-  size_t offset = sentinel_length ? sentinel_length : 1;
-  free (G_buffer - offset);
-#endif
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  main_exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }

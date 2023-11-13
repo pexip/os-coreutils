@@ -35,12 +35,14 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_DAXFS: return 1;
       case S_MAGIC_DEBUGFS: return 1;
       case S_MAGIC_DEVFS: return 1;
+      case S_MAGIC_DEVMEM: return 1;
       case S_MAGIC_DEVPTS: return 1;
       case S_MAGIC_DMA_BUF: return 1;
       case S_MAGIC_ECRYPTFS: return 1;
       case S_MAGIC_EFIVARFS: return 1;
       case S_MAGIC_EFS: return 1;
       case S_MAGIC_EROFS_V1: return 1;
+      case S_MAGIC_EXFAT: return 1;
       case S_MAGIC_EXFS: return 1;
       case S_MAGIC_EXOFS: return 1;
       case S_MAGIC_EXT: return 1;
@@ -103,6 +105,7 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_ROMFS: return 1;
       case S_MAGIC_RPC_PIPEFS: return 1;
       case S_MAGIC_SDCARDFS: return 1;
+      case S_MAGIC_SECRETMEM: return 1;
       case S_MAGIC_SECURITYFS: return 1;
       case S_MAGIC_SELINUX: return 1;
       case S_MAGIC_SMACK: return 1;
@@ -122,6 +125,7 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_UFS_BYTESWAPPED: return 1;
       case S_MAGIC_USBDEVFS: return 1;
       case S_MAGIC_V9FS: return 1;
+      case S_MAGIC_VBOXSF: return 0;
       case S_MAGIC_VMHGFS: return 0;
       case S_MAGIC_VXFS: return 0;
       case S_MAGIC_VZFS: return 1;
@@ -132,6 +136,7 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_XIAFS: return 1;
       case S_MAGIC_Z3FOLD: return 1;
       case S_MAGIC_ZFS: return 1;
+      case S_MAGIC_ZONEFS: return 1;
       case S_MAGIC_ZSMALLOC: return 1;
       default: return -1;
     }

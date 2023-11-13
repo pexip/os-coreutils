@@ -1,18 +1,18 @@
 /* wrap getfilecon, lgetfilecon, and fgetfilecon
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3, or (at your option)
-   any later version.
+   This file is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   This file is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GNU Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* written by Jim Meyering */
 
@@ -33,9 +33,9 @@
 #undef getfilecon
 #undef lgetfilecon
 #undef fgetfilecon
-int getfilecon (char const *file, security_context_t *con);
-int lgetfilecon (char const *file, security_context_t *con);
-int fgetfilecon (int fd, security_context_t *con);
+int getfilecon (char const *file, char **con);
+int lgetfilecon (char const *file, char **con);
+int fgetfilecon (int fd, char **con);
 
 /* getfilecon, lgetfilecon, and fgetfilecon can all misbehave, be it
    via an old version of libselinux where these would return 0 and set the
@@ -46,7 +46,7 @@ int fgetfilecon (int fd, security_context_t *con);
    set errno to ENOTSUP in the first case, and ENODATA in the latter.  */
 
 static int
-map_to_failure (int ret, security_context_t *con)
+map_to_failure (int ret, char **con)
 {
   if (ret == 0)
     {
@@ -66,21 +66,21 @@ map_to_failure (int ret, security_context_t *con)
 }
 
 int
-rpl_getfilecon (char const *file, security_context_t *con)
+rpl_getfilecon (char const *file, char **con)
 {
   int ret = getfilecon (file, con);
   return map_to_failure (ret, con);
 }
 
 int
-rpl_lgetfilecon (char const *file, security_context_t *con)
+rpl_lgetfilecon (char const *file, char **con)
 {
   int ret = lgetfilecon (file, con);
   return map_to_failure (ret, con);
 }
 
 int
-rpl_fgetfilecon (int fd, security_context_t *con)
+rpl_fgetfilecon (int fd, char**con)
 {
   int ret = fgetfilecon (fd, con);
   return map_to_failure (ret, con);

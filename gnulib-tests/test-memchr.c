@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2008-2020 Free Software Foundation, Inc.
+ * Copyright (C) 2008-2022 Free Software Foundation, Inc.
  * Written by Eric Blake and Bruno Haible
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -49,7 +49,12 @@ main (void)
   ASSERT (MEMCHR (input, 'a', n) == input);
 
   ASSERT (MEMCHR (input, 'a', 0) == NULL);
-  ASSERT (MEMCHR (zerosize_ptr (), 'a', 0) == NULL);
+
+  {
+    void *page_boundary = zerosize_ptr ();
+    if (page_boundary)
+      ASSERT (MEMCHR (page_boundary, 'a', 0) == NULL);
+  }
 
   ASSERT (MEMCHR (input, 'b', n) == input + 1);
   ASSERT (MEMCHR (input, 'c', n) == input + 2);

@@ -1,11 +1,11 @@
 #!/bin/sh
 # Test suite for update-copyright.
-# Copyright (C) 2009-2020 Free Software Foundation, Inc.
+# Copyright (C) 2009-2022 Free Software Foundation, Inc.
 # This file is part of the GNUlib Library.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -50,7 +50,7 @@ cat <<\EOF > $s
 # are valid code in both sh and perl.  When executed by sh, they re-execute
 # the script through the perl program found in $PATH.  The '-x' option
 # is essential as well; without it, perl would re-execute the script
-# through /bin/sh.  When executed by  perl, the next two lines are a no-op.
+# through /bin/sh.  When executed by perl, the next two lines are a no-op.
 eval 'exec perl -wSx -pi "$0" "$@"'
      if 0;
 

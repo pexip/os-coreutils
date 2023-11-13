@@ -3,7 +3,7 @@
 # I.e., that it uses NORMAL to style non file name output and
 # file names with no associated color (unless FILE is also set).
 
-# Copyright (C) 2010-2020 Free Software Foundation, Inc.
+# Copyright (C) 2010-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ touch nocolor || framework_failure_
 
 TCOLORS="no=7:ex=01;32"
 
-# Non coloured files inherit NORMAL attributes
+# Uncolored file names inherit NORMAL attributes.
 LS_COLORS=$TCOLORS      ls -gGU --color exe nocolor | qls >> out || fail=1
 LS_COLORS=$TCOLORS      ls -xU  --color exe nocolor       >> out || fail=1
 LS_COLORS=$TCOLORS      ls -gGU --color nocolor exe | qls >> out || fail=1

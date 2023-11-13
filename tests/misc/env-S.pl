@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test 'env -S' feature
 
-# Copyright (C) 2018-2020 Free Software Foundation, Inc.
+# Copyright (C) 2018-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,16 @@ $env = $1;
 
 # Turn off localization of executable's output.
 @ENV{qw(LANGUAGE LANG LC_ALL)} = ('C') x 3;
+
+# This envvar is somehow set at least on macOS 11.6, and would
+# otherwise cause failure of q*, t* and more tests below.  Ignore it.
+my $cf = '__CF_USER_TEXT_ENCODING';
+exists $ENV{$cf} and $env .= " -u$cf";
+# Likewise for these Cygwin env vars
+my $cf = 'SYSTEMROOT';
+exists $ENV{$cf} and $env .= " -u$cf";
+my $cf = 'WINDIR';
+exists $ENV{$cf} and $env .= " -u$cf";
 
 my @Tests =
     (
@@ -60,6 +70,10 @@ my @Tests =
      # to env, resulting in two arguments ("A" <whitespace> "B").
      ['t3',  qq[-S'printf x%sx\\n A\tB'],     {OUT=>"xAx\nxBx"}],
      ['t4',  qq[-S'printf x%sx\\n A \t B'],   {OUT=>"xAx\nxBx"}],
+     # Ensure \v\f\r\n treated like other whitespace.
+     # From 8.30 - 8.32 these would introduce arguments to printf,
+     # and also crash ASAN builds with out of bounds access.
+     ['t5',  qq[-S'printf x%sx\\n A \t B \013\f\r\n'],   {OUT=>"xAx\nxBx"}],
 
 
      # Test empty strings

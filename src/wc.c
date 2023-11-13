@@ -1,5 +1,5 @@
 /* wc - print the number of lines, words, and bytes in files
-   Copyright (C) 1985-2020 Free Software Foundation, Inc.
+   Copyright (C) 1985-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,6 +37,9 @@
 #include "safe-read.h"
 #include "stat-size.h"
 #include "xbinary-io.h"
+#ifdef USE_AVX2_WC_LINECOUNT
+# include <cpuid.h>
+#endif
 
 #if !defined iswspace && !HAVE_ISWSPACE
 # define iswspace(wc) \
@@ -52,6 +55,21 @@
 
 /* Size of atomic reads. */
 #define BUFFER_SIZE (16 * 1024)
+
+static bool
+wc_lines (char const *file, int fd, uintmax_t *lines_out,
+          uintmax_t *bytes_out);
+#ifdef USE_AVX2_WC_LINECOUNT
+/* From wc_avx2.c */
+extern bool
+wc_lines_avx2 (char const *file, int fd, uintmax_t *lines_out,
+               uintmax_t *bytes_out);
+#endif
+static bool
+(*wc_lines_p) (char const *file, int fd, uintmax_t *lines_out,
+                uintmax_t *bytes_out) = wc_lines;
+
+static bool debug;
 
 /* Cumulative number of lines, words, chars and bytes in all files so far.
    max_line_length is the maximum over all files processed so far.  */
@@ -92,7 +110,8 @@ struct fstatus
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
 enum
 {
-  FILES0_FROM_OPTION = CHAR_MAX + 1
+  DEBUG_PROGRAM_OPTION = CHAR_MAX + 1,
+  FILES0_FROM_OPTION,
 };
 
 static struct option const longopts[] =
@@ -101,12 +120,66 @@ static struct option const longopts[] =
   {"chars", no_argument, NULL, 'm'},
   {"lines", no_argument, NULL, 'l'},
   {"words", no_argument, NULL, 'w'},
+  {"debug", no_argument, NULL, DEBUG_PROGRAM_OPTION},
   {"files0-from", required_argument, NULL, FILES0_FROM_OPTION},
   {"max-line-length", no_argument, NULL, 'L'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
 };
+
+#ifdef USE_AVX2_WC_LINECOUNT
+static bool
+avx2_supported (void)
+{
+  unsigned int eax = 0;
+  unsigned int ebx = 0;
+  unsigned int ecx = 0;
+  unsigned int edx = 0;
+  bool getcpuid_ok = false;
+  bool avx_enabled = false;
+
+  if (__get_cpuid (1, &eax, &ebx, &ecx, &edx))
+    {
+      getcpuid_ok = true;
+      if (ecx & bit_OSXSAVE)
+        avx_enabled = true;  /* Support is not disabled.  */
+    }
+
+
+  if (avx_enabled)
+    {
+      eax = ebx = ecx = edx = 0;
+      if (! __get_cpuid_count (7, 0, &eax, &ebx, &ecx, &edx))
+        getcpuid_ok = false;
+      else
+        {
+          if (! (ebx & bit_AVX2))
+            avx_enabled = false;  /* Hardware doesn't support it.  */
+        }
+    }
+
+
+  if (! getcpuid_ok)
+    {
+      if (debug)
+        error (0, 0, "%s", _("failed to get cpuid"));
+      return false;
+    }
+  else if (! avx_enabled)
+    {
+      if (debug)
+        error (0, 0, "%s", _("avx2 support not detected"));
+      return false;
+    }
+  else
+    {
+      if (debug)
+        error (0, 0, "%s", _("using avx2 hardware support"));
+      return true;
+    }
+}
+#endif
 
 void
 usage (int status)
@@ -123,7 +196,7 @@ Usage: %s [OPTION]... [FILE]...\n\
       fputs (_("\
 Print newline, word, and byte counts for each FILE, and a total line if\n\
 more than one FILE is specified.  A word is a non-zero-length sequence of\n\
-characters delimited by white space.\n\
+printable characters delimited by white space.\n\
 "), stdout);
 
       emit_stdin_note ();
@@ -151,7 +224,8 @@ the following order: newline, word, character, byte, maximum line length.\n\
 }
 
 /* Return non zero if a non breaking space.  */
-static int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static int
 iswnbspace (wint_t wc)
 {
   return ! posixly_correct
@@ -173,7 +247,7 @@ write_counts (uintmax_t lines,
               uintmax_t chars,
               uintmax_t bytes,
               uintmax_t linelength,
-              const char *file)
+              char const *file)
 {
   static char const format_sp_int[] = " %*s";
   char const *format_int = format_sp_int + 1;
@@ -206,6 +280,71 @@ write_counts (uintmax_t lines,
   if (file)
     printf (" %s", strchr (file, '\n') ? quotef (file) : file);
   putchar ('\n');
+}
+
+static bool
+wc_lines (char const *file, int fd, uintmax_t *lines_out, uintmax_t *bytes_out)
+{
+  size_t bytes_read;
+  uintmax_t lines, bytes;
+  char buf[BUFFER_SIZE + 1];
+  bool long_lines = false;
+
+  if (!lines_out || !bytes_out)
+    {
+      return false;
+    }
+
+  lines = bytes = 0;
+
+  while ((bytes_read = safe_read (fd, buf, BUFFER_SIZE)) > 0)
+    {
+
+      if (bytes_read == SAFE_READ_ERROR)
+        {
+          error (0, errno, "%s", quotef (file));
+          return false;
+        }
+
+      bytes += bytes_read;
+
+      char *p = buf;
+      char *end = buf + bytes_read;
+      uintmax_t plines = lines;
+
+      if (! long_lines)
+        {
+          /* Avoid function call overhead for shorter lines.  */
+          while (p != end)
+            lines += *p++ == '\n';
+        }
+      else
+        {
+          /* rawmemchr is more efficient with longer lines.  */
+          *end = '\n';
+          while ((p = rawmemchr (p, '\n')) < end)
+            {
+              ++p;
+              ++lines;
+            }
+        }
+
+      /* If the average line length in the block is >= 15, then use
+          memchr for the next block, where system specific optimizations
+          may outweigh function call overhead.
+          FIXME: This line length was determined in 2015, on both
+          x86_64 and ppc64, but it's worth re-evaluating in future with
+          newer compilers, CPUs, or memchr() implementations etc.  */
+      if (lines - plines <= bytes_read / 15)
+        long_lines = true;
+      else
+        long_lines = false;
+    }
+
+  *bytes_out = bytes;
+  *lines_out = lines;
+
+  return true;
 }
 
 /* Count words.  FILE_X is the name of the file (or NULL for standard
@@ -310,51 +449,14 @@ wc (int fd, char const *file_x, struct fstatus *fstatus, off_t current_pos)
     }
   else if (!count_chars && !count_complicated)
     {
+#ifdef USE_AVX2_WC_LINECOUNT
+      if (avx2_supported ())
+        wc_lines_p = wc_lines_avx2;
+#endif
+
       /* Use a separate loop when counting only lines or lines and bytes --
          but not chars or words.  */
-      bool long_lines = false;
-      while ((bytes_read = safe_read (fd, buf, BUFFER_SIZE)) > 0)
-        {
-          if (bytes_read == SAFE_READ_ERROR)
-            {
-              error (0, errno, "%s", quotef (file));
-              ok = false;
-              break;
-            }
-
-          bytes += bytes_read;
-
-          char *p = buf;
-          char *end = p + bytes_read;
-          uintmax_t plines = lines;
-
-          if (! long_lines)
-            {
-              /* Avoid function call overhead for shorter lines.  */
-              while (p != end)
-                lines += *p++ == '\n';
-            }
-          else
-            {
-              /* memchr is more efficient with longer lines.  */
-              while ((p = memchr (p, '\n', end - p)))
-                {
-                  ++p;
-                  ++lines;
-                }
-            }
-
-          /* If the average line length in the block is >= 15, then use
-             memchr for the next block, where system specific optimizations
-             may outweigh function call overhead.
-             FIXME: This line length was determined in 2015, on both
-             x86_64 and ppc64, but it's worth re-evaluating in future with
-             newer compilers, CPUs, or memchr() implementations etc.  */
-          if (lines - plines <= bytes_read / 15)
-            long_lines = true;
-          else
-            long_lines = false;
-        }
+      ok = wc_lines_p (file, fd, &lines, &bytes);
     }
 #if MB_LEN_MAX > 1
 # define SUPPORT_OLD_MBRTOWC 1
@@ -379,7 +481,7 @@ wc (int fd, char const *file_x, struct fstatus *fstatus, off_t current_pos)
 
       while ((bytes_read = safe_read (fd, buf + prev, BUFFER_SIZE - prev)) > 0)
         {
-          const char *p;
+          char const *p;
 # if SUPPORT_OLD_MBRTOWC
           mbstate_t backup_state;
 # endif
@@ -519,7 +621,7 @@ wc (int fd, char const *file_x, struct fstatus *fstatus, off_t current_pos)
 
       while ((bytes_read = safe_read (fd, buf, BUFFER_SIZE)) > 0)
         {
-          const char *p = buf;
+          char const *p = buf;
           if (bytes_read == SAFE_READ_ERROR)
             {
               error (0, errno, "%s", quotef (file));
@@ -647,7 +749,8 @@ get_input_fstatus (size_t nfiles, char *const *file)
    recorded in FSTATUS.  Optimize the same special case that
    get_input_fstatus optimizes.  */
 
-static int _GL_ATTRIBUTE_PURE
+ATTRIBUTE_PURE
+static int
 compute_number_width (size_t nfiles, struct fstatus const *fstatus)
 {
   int width = 1;
@@ -727,6 +830,10 @@ main (int argc, char **argv)
 
       case 'L':
         print_linelength = true;
+        break;
+
+      case DEBUG_PROGRAM_OPTION:
+        debug = true;
         break;
 
       case FILES0_FROM_OPTION:

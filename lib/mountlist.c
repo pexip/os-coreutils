@@ -1,10 +1,10 @@
 /* mountlist.c -- return a list of mounted file systems
 
-   Copyright (C) 1991-1992, 1997-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-1992, 1997-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -125,7 +125,7 @@
 
 #ifdef MOUNTED_GETMNTENT1
 # if !HAVE_SETMNTENT            /* Android <= 4.4 */
-#  define setmntent(fp,mode) fopen (fp, mode)
+#  define setmntent(fp,mode) fopen (fp, mode "e")
 # endif
 # if !HAVE_ENDMNTENT            /* Android <= 4.4 */
 #  define endmntent(fp) fclose (fp)
@@ -149,9 +149,8 @@
 # define MNT_IGNORE(M) 0
 #endif
 
-#if USE_UNLOCKED_IO
-# include "unlocked-io.h"
-#endif
+/* Each of the FILE streams in this file is only used in a single thread.  */
+#include "unlocked-io.h"
 
 /* The results of opendir() in this file are not used with dirfd and fchdir,
    therefore save some unnecessary work in fchdir.c.  */
@@ -170,6 +169,7 @@
    || strcmp (Fs_type, "debugfs") == 0          \
    || strcmp (Fs_type, "devpts") == 0           \
    || strcmp (Fs_type, "fusectl") == 0          \
+   || strcmp (Fs_type, "fuse.portal") == 0      \
    || strcmp (Fs_type, "mqueue") == 0           \
    || strcmp (Fs_type, "rpc_pipefs") == 0       \
    || strcmp (Fs_type, "sysfs") == 0            \
@@ -195,11 +195,14 @@
 
 #ifdef __CYGWIN__
 # include <windows.h>
+/* Don't assume that UNICODE is not defined.  */
+# undef GetDriveType
+# define GetDriveType GetDriveTypeA
 # define ME_REMOTE me_remote
 /* All cygwin mount points include ':' or start with '//'; so it
    requires a native Windows call to determine remote disks.  */
 static bool
-me_remote (char const *fs_name, char const *fs_type _GL_UNUSED)
+me_remote (char const *fs_name, _GL_UNUSED char const *fs_type)
 {
   if (fs_name[0] && fs_name[1] == ':')
     {
@@ -221,8 +224,9 @@ me_remote (char const *fs_name, char const *fs_type _GL_UNUSED)
 #ifndef ME_REMOTE
 /* A file system is "remote" if its Fs_name contains a ':'
    or if (it is of type (smbfs or cifs) and its Fs_name starts with '//')
-   or if it is of type (afs or auristorfs)
-   or Fs_name is equal to "-hosts" (used by autofs to mount remote fs).  */
+   or if it is of any other of the listed types
+   or Fs_name is equal to "-hosts" (used by autofs to mount remote fs).
+   "VM" file systems like prl_fs or vboxsf are not considered remote here. */
 # define ME_REMOTE(Fs_name, Fs_type)            \
     (strchr (Fs_name, ':') != NULL              \
      || ((Fs_name)[0] == '/'                    \
@@ -230,8 +234,15 @@ me_remote (char const *fs_name, char const *fs_type _GL_UNUSED)
          && (strcmp (Fs_type, "smbfs") == 0     \
              || strcmp (Fs_type, "smb3") == 0   \
              || strcmp (Fs_type, "cifs") == 0)) \
+     || strcmp (Fs_type, "acfs") == 0           \
      || strcmp (Fs_type, "afs") == 0            \
+     || strcmp (Fs_type, "coda") == 0           \
      || strcmp (Fs_type, "auristorfs") == 0     \
+     || strcmp (Fs_type, "fhgfs") == 0          \
+     || strcmp (Fs_type, "gpfs") == 0           \
+     || strcmp (Fs_type, "ibrix") == 0          \
+     || strcmp (Fs_type, "ocfs2") == 0          \
+     || strcmp (Fs_type, "vxfs") == 0           \
      || strcmp ("-hosts", Fs_name) == 0)
 #endif
 
@@ -460,7 +471,7 @@ read_file_system_list (bool need_fs_type)
        (and that code is in previous versions of this function), however
        libmount depends on libselinux which pulls in many dependencies.  */
     char const *mountinfo = "/proc/self/mountinfo";
-    fp = fopen (mountinfo, "r");
+    fp = fopen (mountinfo, "re");
     if (fp != NULL)
       {
         char *line = NULL;
@@ -794,7 +805,7 @@ read_file_system_list (bool need_fs_type)
     char *table = "/etc/mnttab";
     FILE *fp;
 
-    fp = fopen (table, "r");
+    fp = fopen (table, "re");
     if (fp == NULL)
       return NULL;
 
@@ -852,7 +863,7 @@ read_file_system_list (bool need_fs_type)
        by the kernel.  */
 
     errno = 0;
-    fp = fopen (table, "r");
+    fp = fopen (table, "re");
     if (fp == NULL)
       ret = errno;
     else
@@ -902,7 +913,7 @@ read_file_system_list (bool need_fs_type)
 #  ifndef MNTTAB_LOCK
 #   define MNTTAB_LOCK "/etc/.mnttab.lock"
 #  endif
-    lockfd = open (MNTTAB_LOCK, O_RDONLY);
+    lockfd = open (MNTTAB_LOCK, O_RDONLY | O_CLOEXEC);
     if (0 <= lockfd)
       {
         struct flock flock;
@@ -924,7 +935,7 @@ read_file_system_list (bool need_fs_type)
 # endif
 
     errno = 0;
-    fp = fopen (table, "r");
+    fp = fopen (table, "re");
     if (fp == NULL)
       ret = errno;
     else
@@ -980,9 +991,7 @@ read_file_system_list (bool need_fs_type)
     n_entries = mntctl (MCTL_QUERY, bufsize, entries);
     if (n_entries < 0)
       {
-        int saved_errno = errno;
         free (entries);
-        errno = saved_errno;
         return NULL;
       }
 
@@ -1080,7 +1089,7 @@ read_file_system_list (bool need_fs_type)
   return mount_list;
 
 
- free_then_fail: _GL_UNUSED_LABEL
+ free_then_fail: _GL_UNUSED_LABEL;
   {
     int saved_errno = errno;
     *mtail = NULL;
@@ -1099,7 +1108,8 @@ read_file_system_list (bool need_fs_type)
 
 /* Free a mount entry as returned from read_file_system_list ().  */
 
-void free_mount_entry (struct mount_entry *me)
+void
+free_mount_entry (struct mount_entry *me)
 {
   free (me->me_devname);
   free (me->me_mountdir);

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Compare actual numbers from du, assuming block size matches mine.
 
-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
+# Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ mkdir -p a/b d d/sub || framework_failure_
 
 # Ensure that these files contain more than 64 bytes, so that we don't
 # immediately disqualify file systems (e.g., NetApp) on which smaller
-# files take up zero disk blocks.
+# files take up zero file system blocks.
 printf '%*s' 257 make-sure-the-file-is-non-empty > a/b/F || framework_failure_
 printf %4096s x > d/1
 cp d/1 d/sub/2

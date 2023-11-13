@@ -1,7 +1,7 @@
 #!/bin/sh
 # make sure we get proper diagnostics: e.g., with --target-dir=d but no args
 
-# Copyright (C) 2000-2020 Free Software Foundation, Inc.
+# Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,8 +39,8 @@ mv: missing file operand
 Try 'mv --help' for more information.
 mv: missing destination file operand after 'no-file'
 Try 'mv --help' for more information.
-mv: target 'f1' is not a directory
-mv: target 'f2' is not a directory
+mv: target 'f1': Not a directory
+mv: target directory 'f2': Not a directory
 EOF
 
 compare exp out || fail=1

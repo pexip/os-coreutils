@@ -1,9 +1,9 @@
 /* Test intprops.h.
-   Copyright (C) 2011-2020 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -48,7 +48,7 @@
    These tests should be checkable via 'verify' rather than 'ASSERT', but
    using 'verify' would run into a bug with HP-UX 11.23 cc; see
    <https://lists.gnu.org/r/bug-gnulib/2011-05/msg00401.html>.  */
-#if __GNUC__ || __SUNPRO_C
+#if __GNUC__ || __clang__ || __SUNPRO_C
 # define VERIFY(x) verify_stmt (x)
 #else
 # define VERIFY(x) ASSERT (x)

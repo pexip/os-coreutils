@@ -1,7 +1,7 @@
 # Make coreutils man pages.				-*-Makefile-*-
 # This is included by the top-level Makefile.am.
 
-# Copyright (C) 2002-2020 Free Software Foundation, Inc.
+# Copyright (C) 2002-2022 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,10 @@ run_help2man = $(SHELL) $(srcdir)/man/dummy-man
 else
 ## Graceful degradation for systems lacking perl.
 if HAVE_PERL
-run_help2man = $(PERL) -- $(srcdir)/man/help2man
+if BOLD_MAN_REFS
+help2man_OPTS=--bold-refs
+endif
+run_help2man = $(PERL) -- $(srcdir)/man/help2man $(help2man_OPTS)
 else
 run_help2man = $(SHELL) $(srcdir)/man/dummy-man
 endif
