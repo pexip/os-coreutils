@@ -1,3 +1,9 @@
+coreutils (9.1-1+pexip24u3) pexip-bookworm; urgency=medium
+
+  * New versioning scheme
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Thu, 01 Feb 2024 15:54:17 +0000
+
 coreutils (9.1-1pexip2) pexip-bookworm; urgency=medium
 
   * Bookworm build for product distribution
