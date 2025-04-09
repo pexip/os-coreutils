@@ -1,7 +1,7 @@
 #!/bin/sh
 # test -C, --lines-bytes
 
-# Copyright (C) 2013-2022 Free Software Foundation, Inc.
+# Copyright (C) 2013-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ split
 
-vm=$(get_min_ulimit_v_ split -C 'K' /dev/null) \
-  || skip_ "this shell lacks ulimit support"
-
 # Ensure memory is not allocated up front
-(ulimit -v $vm && split -C 'G' /dev/null) || fail=1
+
+vm=$(get_min_ulimit_v_ split -C 'K' /dev/null) && {
+  (ulimit -v $vm && split -C 'G' /dev/null) || fail=1
+}
 
 
 # Ensure correct operation with various split and buffer size combinations
@@ -83,5 +83,17 @@ for b in $(seq 10); do
   compare splits_exp splits || fail=1
   compare no_eol_splits_exp no_eol_splits || fail=1
 done
+
+# Test hold buffer management with --lines-bytes.
+# The following triggers (with ASAN) a heap overflow issue
+# between coreutils 9.2 and 9.4 inclusive.
+printf '%131070s\n' '' >expaa || framework_failure_
+printf 'x\n' >expab || framework_failure_
+printf '%131071s\n' '' >expac || framework_failure_
+cat expaa expab expac >bigin || framework_failure_
+split -C 131072 ---io=131072 bigin || fail=1
+compare expaa xaa || fail=1
+compare expab xab || fail=1
+compare expac xac || fail=1
 
 Exit $fail

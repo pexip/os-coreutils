@@ -1,5 +1,5 @@
 /* Tests of linkat.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ SIGNATURE_CHECK (linkat, int, (int, char const *, int, char const *, int));
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,7 +78,7 @@ check_same_link (char const *name1, char const *name2)
   ASSERT (contents2);
   ASSERT (strcmp (contents1, contents2) == 0);
   if (EXPECT_LINK_HARDLINKS_SYMLINKS)
-    ASSERT (SAME_INODE (st1, st2));
+    ASSERT (psame_inode (&st1, &st2));
   free (contents1);
   free (contents2);
 }
@@ -138,6 +137,11 @@ main (void)
   ASSERT (close (dfd1) == 0);
   dfd1 = AT_FDCWD;
   ASSERT (test_link (do_link, false) == result);
+
+  /* Skip the rest of the test if the file system does not support hard links
+     and symlinks.  */
+  if (result)
+    return test_exit_status ? test_exit_status : result;
 
   /* Create locations to manipulate.  */
   ASSERT (mkdir (BASE "sub1", 0700) == 0);
@@ -198,10 +202,11 @@ main (void)
       ASSERT (rmdir (BASE "sub1") == 0);
       ASSERT (rmdir (BASE "sub2") == 0);
       free (cwd);
-      if (!result)
-        fputs ("skipping test: symlinks not supported on this file system\n",
-               stderr);
-      return result;
+      if (test_exit_status != EXIT_SUCCESS)
+        return test_exit_status;
+      fputs ("skipping test: symlinks not supported on this file system\n",
+             stderr);
+      return 77;
     }
   dfd = open (".", O_RDONLY);
   ASSERT (0 <= dfd);
@@ -379,5 +384,6 @@ main (void)
   ASSERT (unlink (BASE "link4") == 0);
   ASSERT (unlink (BASE "link5") == 0);
   free (cwd);
-  return result;
+
+  return test_exit_status;
 }

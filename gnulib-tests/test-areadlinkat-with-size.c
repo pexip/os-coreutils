@@ -1,5 +1,5 @@
 /* Tests of areadlinkat_with_size.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,5 +84,5 @@ main (void)
     }
 
   ASSERT (close (dfd) == 0);
-  return result;
+  return (result ? result : test_exit_status);
 }

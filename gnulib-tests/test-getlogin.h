@@ -1,5 +1,5 @@
 /* Test of getting user name.
-   Copyright (C) 2010-2022 Free Software Foundation, Inc.
+   Copyright (C) 2010-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,11 +42,43 @@ test_getlogin_result (const char *buf, int err)
           exit (77);
         }
 
-      /* It fails when stdin is not connected to a tty.  */
       ASSERT (err == ENOTTY
               || err == EINVAL /* seen on Linux/SPARC */
               || err == ENXIO
              );
+
+#if defined __linux__
+      /* On Linux, it is possible to set up a chroot environment in such a way
+         that stdin is connected to a tty and nevertheless /proc/self/loginuid
+         contains the value (uid_t)(-1).  In this situation, getlogin() and
+         getlogin_r() fail; this is expected.  */
+      bool loginuid_undefined = false;
+      /* Does the special file /proc/self/loginuid contain the value
+         (uid_t)(-1)?  */
+      FILE *fp = fopen ("/proc/self/loginuid", "r");
+      if (fp != NULL)
+        {
+          char fread_buf[21];
+          size_t n = fread (fread_buf, 1, sizeof fread_buf, fp);
+          if (n > 0 && n < sizeof fread_buf)
+            {
+              fread_buf[n] = '\0';
+              errno = 0;
+              char *endptr;
+              unsigned long value = strtoul (fread_buf, &endptr, 10);
+              if (*endptr == '\0' && errno == 0)
+                loginuid_undefined = ((uid_t) value == (uid_t)(-1));
+            }
+          fclose (fp);
+        }
+      if (loginuid_undefined)
+        {
+          fprintf (stderr, "Skipping test: loginuid is undefined.\n");
+          exit (77);
+        }
+#endif
+
+      /* It fails when stdin is not connected to a tty.  */
 #if !defined __hpux /* On HP-UX 11.11 it fails anyway.  */
       ASSERT (! isatty (0));
 #endif
@@ -63,8 +95,10 @@ test_getlogin_result (const char *buf, int err)
 
     if (!isatty (STDIN_FILENO))
       {
-         fprintf (stderr, "Skipping test: stdin is not a tty.\n");
-         exit (77);
+        /* We get here, for example, when running under 'nohup' or as part of a
+           non-interactive ssh command.  */
+        fprintf (stderr, "Skipping test: stdin is not a tty.\n");
+        exit (77);
       }
 
     ASSERT (fstat (STDIN_FILENO, &stat_buf) == 0);

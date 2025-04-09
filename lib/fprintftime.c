@@ -1,6 +1,6 @@
 /* Generate time strings directly to the output.
 
-   Copyright (C) 2005-2022 Free Software Foundation, Inc.
+   Copyright (C) 2005-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
@@ -15,5 +15,6 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
+#define my_strftime fprintftime
 #define FPRINTFTIME 1
-#include "nstrftime.c"
+#include "strftime.c"

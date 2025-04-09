@@ -1,5 +1,5 @@
 /* printenv -- print all or part of environment
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,10 +46,10 @@ enum { PRINTENV_FAILURE = 2 };
 
 static struct option const longopts[] =
 {
-  {"null", no_argument, NULL, '0'},
+  {"null", no_argument, nullptr, '0'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -96,7 +96,7 @@ main (int argc, char **argv)
   initialize_exit_failure (PRINTENV_FAILURE);
   atexit (close_stdout);
 
-  while ((optc = getopt_long (argc, argv, "+iu:0", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "+iu:0", longopts, nullptr)) != -1)
     {
       switch (optc)
         {
@@ -112,7 +112,7 @@ main (int argc, char **argv)
 
   if (optind >= argc)
     {
-      for (env = environ; *env != NULL; ++env)
+      for (env = environ; *env != nullptr; ++env)
         printf ("%s%c", *env, opt_nul_terminate_output ? '\0' : '\n');
       ok = true;
     }

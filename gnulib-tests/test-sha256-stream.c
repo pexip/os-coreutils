@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Free Software Foundation, Inc.
+ * Copyright (C) 2018-2025 Free Software Foundation, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,5 +43,5 @@ main (void)
                         "\xb4\x7c\xc0\xf1\x04\xb6\x2d\x4c\x7c\x30\xbc\xd6\x8f\xd8\xe6\x76\x13\xe2\x87\xdc\x4a\xd8\xc3\x10\xef\x10\xcb\xad\xea\x9c\x43\x80",
                         "\xe5\x19\x95\xff\x0b\xc4\x95\xcf\x49\xdd\x31\x42\x0a\x6b\xe0\x6b\x38\xef\xef\x43\xab\xa6\xf4\x76\x64\x32\x99\x4a\x47\x1a\x0f\xb5");
 
-  return 0;
+  return test_exit_status;
 }

@@ -3,7 +3,7 @@
 # Derived from tests/mkdir/selinux.sh.
 # Ensure that SMACK label gets set.
 
-# Copyright (C) 2014-2022 Free Software Foundation, Inc.
+# Copyright (C) 2014-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ c=arbitrary-smack-label
 
 for cmd in 'mkdir dir' 'mknod b p' 'mkfifo f'; do
   $cmd --context="$c" || { fail=1; continue; }
-  set $cmd
+  set -- $cmd
   ls -dZ $2 > out || fail=1
   test "$(cut -f1 -d' ' out)" = "$c" || { cat out; fail=1; }
 done

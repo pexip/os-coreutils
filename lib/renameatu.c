@@ -1,5 +1,5 @@
 /* Rename a file relative to open directories.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ errno_fail (int e)
 
 #if HAVE_RENAMEAT
 
-# include <stdbool.h>
 # include <stdlib.h>
 # include <string.h>
 
@@ -71,11 +70,15 @@ static int
 renameat2ish (int fd1, char const *src, int fd2, char const *dst,
               unsigned int flags)
 {
+# ifdef RENAME_SWAP
+  if (flags & RENAME_EXCHANGE)
+    return renameatx_np (fd1, src, fd2, dst, RENAME_SWAP);
+# endif
 # ifdef RENAME_EXCL
   if (flags)
     {
       int r = renameatx_np (fd1, src, fd2, dst, RENAME_EXCL);
-      if (r == 0 || errno != ENOTSUP)
+      if (r == 0 || (errno != ENOTSUP && errno != ENOSYS))
         return r;
     }
 # endif
@@ -103,7 +106,7 @@ renameatu (int fd1, char const *src, int fd2, char const *dst,
   int ret_val = -1;
   int err = EINVAL;
 
-#ifdef HAVE_RENAMEAT2
+#if HAVE_WORKING_RENAMEAT2
   ret_val = renameat2 (fd1, src, fd2, dst, flags);
   err = errno;
 #elif defined SYS_renameat2
@@ -146,6 +149,10 @@ renameatu (int fd1, char const *src, int fd2, char const *dst,
       dst_found_nonexistent = true;
       break;
 
+    case RENAME_EXCHANGE:
+#ifdef RENAME_SWAP
+      break;
+#endif
     default:
       return errno_fail (ENOTSUP);
     }
@@ -214,15 +221,16 @@ renameatu (int fd1, char const *src, int fd2, char const *dst,
           goto out;
         }
       strip_trailing_slashes (dst_temp);
-      if (fstatat (fd2, dst_temp, &dst_st, AT_SYMLINK_NOFOLLOW))
+      char readlink_buf[1];
+      if (readlinkat (fd2, dst_temp, readlink_buf, sizeof readlink_buf) < 0)
         {
-          if (errno != ENOENT)
+          if (errno != ENOENT && errno != EINVAL)
             {
               rename_errno = errno;
               goto out;
             }
         }
-      else if (S_ISLNK (dst_st.st_mode))
+      else
         goto out;
     }
 # endif /* RENAME_TRAILING_SLASH_SOURCE_BUG */

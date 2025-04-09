@@ -1,5 +1,5 @@
 /* Test renameatu.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ SIGNATURE_CHECK (renameatu, int,
 #include <dirent.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -206,6 +205,13 @@ main (void)
            == -1)
           && errno == EEXIST);
 
+  errno = 0;
+  ASSERT (renameatu (dfd, BASE "sub2", dfd, BASE "sub1", RENAME_EXCHANGE) < 0
+          ? errno == EINVAL || errno == ENOSYS || errno == ENOTSUP
+          : (renameatu (dfd, BASE "sub1/file", dfd, BASE "sub2/file",
+                        RENAME_NOREPLACE)
+             == 0));
+
   /* Cleanup.  */
   ASSERT (close (dfd) == 0);
   ASSERT (unlink (BASE "sub2/file") == 0);
@@ -214,8 +220,8 @@ main (void)
   ASSERT (rmdir (BASE "sub2") == 0);
   free (cwd);
 
-  if (result)
+  if (result == 77)
     fputs ("skipping test: symlinks not supported on this file system\n",
            stderr);
-  return result;
+  return (result ? result : test_exit_status);
 }

@@ -1,5 +1,5 @@
 /* Test of fsync() function.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +56,13 @@ main (void)
     ASSERT (fsync (99) == -1);
     ASSERT (errno == EBADF);
   }
+#ifdef AT_FDCWD
+  {
+    errno = 0;
+    ASSERT (fsync (AT_FDCWD) == -1);
+    ASSERT (errno == EBADF);
+  }
+#endif
 
   fd = open (file, O_WRONLY|O_CREAT|O_TRUNC, 0644);
   ASSERT (0 <= fd);
@@ -79,5 +86,5 @@ main (void)
 
   ASSERT (unlink (file) == 0);
 
-  return 0;
+  return test_exit_status;
 }

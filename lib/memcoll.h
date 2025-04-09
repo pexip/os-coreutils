@@ -1,6 +1,6 @@
 /* Locale-specific memory comparison.
 
-   Copyright (C) 1999, 2003, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2003, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,11 +18,21 @@
 /* Contributed by Paul Eggert <eggert@twinsun.com>.  */
 
 #ifndef MEMCOLL_H_
-# define MEMCOLL_H_ 1
+#define MEMCOLL_H_ 1
 
-# include <stddef.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 int memcoll (char *restrict, size_t, char *restrict, size_t);
 int memcoll0 (char const *, size_t, char const *, size_t);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MEMCOLL_H_ */

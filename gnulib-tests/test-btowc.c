@@ -1,5 +1,5 @@
 /* Test of conversion of unibyte character to wide character.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,24 +39,52 @@ main (int argc, char *argv[])
 
   ASSERT (btowc (EOF) == WEOF);
 
+#ifdef __ANDROID__
+  /* On Android ≥ 5.0, the default locale is the "C.UTF-8" locale, not the
+     "C" locale.  Furthermore, when you attempt to set the "C" or "POSIX"
+     locale via setlocale(), what you get is a "C" locale with UTF-8 encoding,
+     that is, effectively the "C.UTF-8" locale.  */
+  if (argc > 1 && strcmp (argv[1], "1") == 0 && MB_CUR_MAX > 1)
+    argv[1] = "3";
+#endif
+
   if (argc > 1)
     switch (argv[1][0])
       {
       case '1':
+        /* C or POSIX locale.  */
+        for (c = 0; c < 0x100; c++)
+          if (c != 0)
+            {
+              /* We are testing all nonnull bytes.  */
+              wint_t wc = btowc (c);
+              /* POSIX:2018 says: "In the POSIX locale, btowc() shall not return
+                 WEOF if c has a value in the range 0 to 255 inclusive."  */
+              if (c < 0x80)
+                /* c is an ASCII character.  */
+                ASSERT (wc == c);
+              else
+                /* On most platforms, the bytes 0x80..0xFF map to U+0080..U+00FF.
+                   But on musl libc, the bytes 0x80..0xFF map to U+DF80..U+DFFF.  */
+                ASSERT (wc == c || wc == 0xDF00 + c);
+            }
+        return test_exit_status;
+
+      case '2':
         /* Locale encoding is ISO-8859-1 or ISO-8859-15.  */
         for (c = 0; c < 0x80; c++)
           ASSERT (btowc (c) == c);
         for (c = 0xA0; c < 0x100; c++)
           ASSERT (btowc (c) != WEOF);
-        return 0;
+        return test_exit_status;
 
-      case '2':
+      case '3':
         /* Locale encoding is UTF-8.  */
         for (c = 0; c < 0x80; c++)
           ASSERT (btowc (c) == c);
         for (c = 0x80; c < 0x100; c++)
           ASSERT (btowc (c) == WEOF);
-        return 0;
+        return test_exit_status;
       }
 
   return 1;

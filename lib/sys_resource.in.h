@@ -1,5 +1,5 @@
 /* Substitute for <sys/resource.h>.
-   Copyright (C) 2012-2022 Free Software Foundation, Inc.
+   Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -35,6 +35,11 @@
 
 #ifndef _@GUARD_PREFIX@_SYS_RESOURCE_H
 #define _@GUARD_PREFIX@_SYS_RESOURCE_H
+
+/* This file uses GNULIB_POSIXCHECK, HAVE_RAW_DECL_*.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
 
 #if !@HAVE_SYS_RESOURCE_H@
 /* A platform that lacks <sys/resource.h>.  */
@@ -105,7 +110,7 @@ struct rusage
 
 #if @GNULIB_GETRUSAGE@
 # if !@HAVE_GETRUSAGE@
-_GL_FUNCDECL_SYS (getrusage, int, (int who, struct rusage *usage_p)
+_GL_FUNCDECL_SYS (getrusage, int, (int who, struct rusage *usage_p),
                                   _GL_ARG_NONNULL ((2)));
 # endif
 _GL_CXXALIAS_SYS (getrusage, int, (int who, struct rusage *usage_p));

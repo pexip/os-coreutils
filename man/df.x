@@ -1,4 +1,4 @@
-'\" Copyright (C) 1998-2022 Free Software Foundation, Inc.
+'\" Copyright (C) 1998-2025 Free Software Foundation, Inc.
 '\"
 '\" This is free software.  You may redistribute copies of it under the terms
 '\" of the GNU General Public License <https://www.gnu.org/licenses/gpl.html>.
@@ -24,6 +24,6 @@ shows the space available on that file system rather than on the
 file system containing the device node.  This version of
 .B df
 cannot show the space available on unmounted file systems, because on
-most kinds of systems doing so requires very nonportable intimate
+most kinds of systems doing so requires non-portable intimate
 knowledge of file system structures.
 .SH OPTIONS

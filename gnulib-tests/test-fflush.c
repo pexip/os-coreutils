@@ -1,5 +1,5 @@
 /* Test of POSIX compatible fflush() function.
-   Copyright (C) 2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -148,6 +148,7 @@ main (void)
 
   /* Test that fflush() sets errno if someone else closes the stream
      fd behind the back of stdio.  */
+  #if !defined __ANDROID__ /* fdsan */
   {
     FILE *fp = fopen ("test-fflush.txt", "w");
     ASSERT (fp != NULL);
@@ -158,6 +159,7 @@ main (void)
     ASSERT (errno == EBADF);
     fclose (fp);
   }
+  #endif
 
   /* Test that fflush() sets errno if the stream was constructed with
      an invalid file descriptor.  */
@@ -187,5 +189,5 @@ main (void)
   /* Clean up.  */
   unlink ("test-fflush.txt");
 
-  return 0;
+  return test_exit_status;
 }

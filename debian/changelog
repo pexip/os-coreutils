@@ -1,3 +1,71 @@
+coreutils (9.7-1) unstable; urgency=low
+
+  * New upstream version
+  * Remove Breaks: usrmerge
+  * Add libsystemd dependency (Closes: #1080330)
+  * Add packager to version output (Closes: #1094325)
+
+ -- Michael Stone <mstone@debian.org>  Wed, 09 Apr 2025 09:09:41 -0400
+
+coreutils (9.6-2) unstable; urgency=low
+
+  * Backport upstream commit 915004f4 to address crash in ls -Z
+
+ -- Michael Stone <mstone@debian.org>  Fri, 04 Apr 2025 10:54:18 -0400
+
+coreutils (9.6-1) unstable; urgency=low
+
+  * New upstream version
+  * Disable autoreconf on build (for now)
+
+ -- Michael Stone <mstone@debian.org>  Thu, 03 Apr 2025 13:29:08 -0400
+
+coreutils (9.5-1) unstable; urgency=low
+
+  * New upstream version (Closes: #1033277)
+  * drop cp -n patch
+  * drop non-essential attributes in upstream/signing-key.asc to reduce size
+  * update watch file to use https rather than ftp
+
+ -- Michael Stone <mstone@debian.org>  Wed, 23 Oct 2024 09:08:43 -0400
+
+coreutils (9.4-3.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * DEP17: Move files to /usr. (Closes: #1061274, #1057250)
+
+ -- Helmut Grohne <helmut@subdivi.de>  Sat, 09 Mar 2024 18:42:01 +0100
+
+coreutils (9.4-3) unstable; urgency=low
+
+  * remove arch restriction from libssl-dev build-depend
+  * revert cp -n behavior to debian 12 & prior (Closes: #1058752)
+  * add deprecation/compatibility warning for above
+
+ -- Michael Stone <mstone@debian.org>  Tue, 02 Jan 2024 08:54:03 -0500
+
+coreutils (9.4-2) unstable; urgency=low
+
+  * link against libssl if gpl compatible version available; add to
+    build-depends for linux-amd64 only at this time (will add others later as
+    makes sense)
+
+ -- Michael Stone <mstone@debian.org>  Fri, 10 Nov 2023 08:33:49 -0500
+
+coreutils (9.4-1) unstable; urgency=low
+
+  * New upstream version (Closes: #1017354)
+    - corrects cksum crashes due to missing cpu features (Closes: #1037264)
+    - corrects copy dir-relative operations (Closes: #1035531)
+    - corrects copy backup operations (Closes: #1035530)
+  * Drop old 61_whoips.patch and who --ips option; it no longer applies
+    cleanly after who.c refactoring, and it isn't clear the patch is still
+    useful given how system logging has changed since the patch was written
+  * Drop 63_dd-appenderrors.patch as documentation has been updated for ages
+  * Update copyright file
+
+ -- Michael Stone <mstone@debian.org>  Thu, 09 Nov 2023 14:18:41 -0500
+
 coreutils (9.1-1) unstable; urgency=low
 
   * New upstream version (Closes: #1017354)

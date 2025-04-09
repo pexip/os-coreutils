@@ -1,5 +1,5 @@
 /* tsort - topological sort.
-   Copyright (C) 1998-2022 Free Software Foundation, Inc.
+   Copyright (C) 1998-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,13 +22,11 @@
 
 #include <config.h>
 
-#include <assert.h>
 #include <sys/types.h>
 
 #include "system.h"
+#include "assure.h"
 #include "long-options.h"
-#include "die.h"
-#include "error.h"
 #include "fadvise.h"
 #include "readtokens.h"
 #include "stdio--.h"
@@ -62,13 +60,13 @@ struct item
 };
 
 /* The head of the sorted list.  */
-static struct item *head = NULL;
+static struct item *head = nullptr;
 
 /* The tail of the list of 'zeros', strings that have no predecessors.  */
-static struct item *zeros = NULL;
+static struct item *zeros = nullptr;
 
 /* Used for loop detection.  */
-static struct item *loop = NULL;
+static struct item *loop = nullptr;
 
 /* The number of strings to sort.  */
 static size_t n_strings = 0;
@@ -110,7 +108,7 @@ new_item (char const *str)
 }
 
 /* Search binary tree rooted at *ROOT for STR.  Allocate a new tree if
-   *ROOT is NULL.  Insert a node/item for STR if not found.  Return
+   *ROOT is null.  Insert a node/item for STR if not found.  Return
    the node/item found/created for STR.
 
    This is done according to Algorithm A (Balanced tree search and
@@ -123,11 +121,9 @@ search_item (struct item *root, char const *str)
   struct item *p, *q, *r, *s, *t;
   int a;
 
-  assert (root);
-
   /* Make sure the tree is not empty, since that is what the algorithm
      below expects.  */
-  if (root->right == NULL)
+  if (root->right == nullptr)
     return (root->right = new_item (str));
 
   /* A1. Initialize.  */
@@ -137,7 +133,6 @@ search_item (struct item *root, char const *str)
   while (true)
     {
       /* A2. Compare.  */
-      assert (str && p && p->str);
       a = strcmp (str, p->str);
       if (a == 0)
         return p;
@@ -148,7 +143,7 @@ search_item (struct item *root, char const *str)
       else
         q = p->right;
 
-      if (q == NULL)
+      if (q == nullptr)
         {
           /* A5. Insert.  */
           q = new_item (str);
@@ -160,28 +155,30 @@ search_item (struct item *root, char const *str)
             p->right = q;
 
           /* A6. Adjust balance factors.  */
-          assert (str && s && s->str && !STREQ (str, s->str));
-          if (strcmp (str, s->str) < 0)
+          a = strcmp (str, s->str);
+          if (a < 0)
             {
               r = p = s->left;
               a = -1;
             }
           else
             {
+              affirm (0 < a);
               r = p = s->right;
               a = 1;
             }
 
           while (p != q)
             {
-              assert (str && p && p->str && !STREQ (str, p->str));
-              if (strcmp (str, p->str) < 0)
+              int cmp = strcmp (str, p->str);
+              if (cmp < 0)
                 {
                   p->balance = -1;
                   p = p->left;
                 }
               else
                 {
+                  affirm (0 < cmp);
                   p->balance = 1;
                   p = p->right;
                 }
@@ -291,7 +288,7 @@ scan_zeros (struct item *k)
   /* Ignore strings that have already been printed.  */
   if (k->count == 0 && !k->printed)
     {
-      if (head == NULL)
+      if (head == nullptr)
         head = k;
       else
         zeros->qlink = k;
@@ -306,7 +303,7 @@ scan_zeros (struct item *k)
    loop, print the loop on standard error, remove a relation to break
    the loop, and return true.
 
-   The loop detection strategy is as follows: Realise that what we're
+   The loop detection strategy is as follows: Realize that what we're
    dealing with is essentially a directed graph.  If we find an item
    that is part of a graph that contains a cycle we traverse the graph
    in backwards direction.  In general there is no unique way to do
@@ -318,7 +315,7 @@ scan_zeros (struct item *k)
    are stored in the tree is not related to the specified partial
    ordering, we may need to walk the tree several times before the
    loop has completely been constructed.  If the loop was found, the
-   global variable LOOP will be NULL.  */
+   global variable LOOP will be null.  */
 
 static bool
 detect_loop (struct item *k)
@@ -328,7 +325,7 @@ detect_loop (struct item *k)
       /* K does not have to be part of a cycle.  It is however part of
          a graph that contains a cycle.  */
 
-      if (loop == NULL)
+      if (loop == nullptr)
         /* Start traversing the graph at K.  */
         loop = k;
       else
@@ -361,7 +358,7 @@ detect_loop (struct item *k)
 
                           /* Tidy things up since we might have to
                              detect another loop.  */
-                          loop->qlink = NULL;
+                          loop->qlink = nullptr;
                           loop = tmp;
                         }
 
@@ -369,7 +366,7 @@ detect_loop (struct item *k)
                         {
                           struct item *tmp = loop->qlink;
 
-                          loop->qlink = NULL;
+                          loop->qlink = nullptr;
                           loop = tmp;
                         }
 
@@ -399,16 +396,16 @@ detect_loop (struct item *k)
 static bool
 recurse_tree (struct item *root, bool (*action) (struct item *))
 {
-  if (root->left == NULL && root->right == NULL)
+  if (root->left == nullptr && root->right == nullptr)
     return (*action) (root);
   else
     {
-      if (root->left != NULL)
+      if (root->left != nullptr)
         if (recurse_tree (root->left, action))
           return true;
       if ((*action) (root))
         return true;
-      if (root->right != NULL)
+      if (root->right != nullptr)
         if (recurse_tree (root->right, action))
           return true;
     }
@@ -432,17 +429,16 @@ static _Noreturn void
 tsort (char const *file)
 {
   bool ok = true;
-  struct item *root;
-  struct item *j = NULL;
-  struct item *k = NULL;
+  struct item *j = nullptr;
+  struct item *k = nullptr;
   token_buffer tokenbuffer;
   bool is_stdin = STREQ (file, "-");
 
-  /* Intialize the head of the tree will hold the strings we're sorting.  */
-  root = new_item (NULL);
+  /* Initialize the head of the tree holding the strings we're sorting.  */
+  struct item *root = new_item (nullptr);
 
   if (!is_stdin && ! freopen (file, "r", stdin))
-    die (EXIT_FAILURE, errno, "%s", quotef (file));
+    error (EXIT_FAILURE, errno, "%s", quotef (file));
 
   fadvise (stdin, FADVISE_SEQUENTIAL);
 
@@ -453,24 +449,28 @@ tsort (char const *file)
       /* T2. Next Relation.  */
       size_t len = readtoken (stdin, DELIM, sizeof (DELIM) - 1, &tokenbuffer);
       if (len == (size_t) -1)
-        break;
+        {
+          if (ferror (stdin))
+            error (EXIT_FAILURE, errno, _("%s: read error"), quotef (file));
+          break;
+        }
 
-      assert (len != 0);
+      affirm (len != 0);
 
       k = search_item (root, tokenbuffer.buffer);
       if (j)
         {
           /* T3. Record the relation.  */
           record_relation (j, k);
-          k = NULL;
+          k = nullptr;
         }
 
       j = k;
     }
 
-  if (k != NULL)
-    die (EXIT_FAILURE, 0, _("%s: input contains an odd number of tokens"),
-         quotef (file));
+  if (k != nullptr)
+    error (EXIT_FAILURE, 0, _("%s: input contains an odd number of tokens"),
+           quotef (file));
 
   /* T1. Initialize (N <- n).  */
   walk_tree (root, count_items);
@@ -521,8 +521,8 @@ tsort (char const *file)
     }
 
   if (fclose (stdin) != 0)
-    die (EXIT_FAILURE, errno, "%s",
-         is_stdin ? _("standard input") : quotef (file));
+    error (EXIT_FAILURE, errno, "%s",
+           is_stdin ? _("standard input") : quotef (file));
 
   exit (ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
@@ -540,7 +540,7 @@ main (int argc, char **argv)
 
   parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
                                    Version, true, usage, AUTHORS,
-                                   (char const *) NULL);
+                                   (char const *) nullptr);
 
   if (1 < argc - optind)
     {

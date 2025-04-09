@@ -1,5 +1,5 @@
 /* Tests of areadlink.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,5 +48,6 @@ main (void)
   /* Remove any leftovers from a previous partial run.  */
   ignore_value (system ("rm -rf " BASE "*"));
 
-  return test_areadlink (do_areadlink, true);
+  int result = test_areadlink (do_areadlink, true);
+  return (result ? result : test_exit_status);
 }

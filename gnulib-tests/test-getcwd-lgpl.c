@@ -1,5 +1,5 @@
 /* Test of getcwd() function.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -92,11 +92,11 @@ main (int argc, char **argv)
 
   /* Validate a POSIX requirement on size.  */
   errno = 0;
-  ASSERT (getcwd(pwd2, 0) == NULL);
+  ASSERT (getcwd (pwd2, 0) == NULL);
   ASSERT (errno == EINVAL);
 
   free (pwd1);
   free (pwd2);
 
-  return 0;
+  return test_exit_status;
 }

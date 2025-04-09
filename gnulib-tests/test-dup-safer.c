@@ -1,5 +1,5 @@
 /* Test that dup_safer leaves standard fds alone.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -42,8 +41,12 @@
 #endif
 
 #if !O_BINARY
-# define set_binary_mode(f,m) zero ()
-static int zero (void) { return 0; }
+# define set_binary_mode my_set_binary_mode
+static int
+set_binary_mode (_GL_UNUSED int fd, _GL_UNUSED int mode)
+{
+  return 0;
+}
 #endif
 
 /* This test intentionally closes stderr.  So, we arrange to have fd 10
@@ -176,5 +179,5 @@ main (void)
   ASSERT (close (fd) == 0);
   ASSERT (unlink (witness) == 0);
 
-  return 0;
+  return test_exit_status;
 }

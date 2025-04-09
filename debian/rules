@@ -18,11 +18,17 @@ BIN_PROGS = cat chgrp chmod chown cp date dd df dir echo false ln ls mkdir \
 	mktemp
 d=debian/coreutils
 
+override_dh_update_autotools_config:
+	# don't do this
+
+override_dh_autoreconf:
+	# don't do this
+
 override_dh_auto_configure:
-	dh_auto_configure -- --enable-install-program=arch 
+	dh_auto_configure -- --enable-systemd --enable-install-program=arch --with-openssl=auto-gpl-compat --with-packager=Debian --with-packager-version=$(DEB_VERSION)
 
 %:
-	dh $@ --with autoreconf
+	dh $@
 
 override_dh_auto_clean:
 	make distclean || true
@@ -36,11 +42,6 @@ override_dh_auto_install:
 override_dh_install-arch: 
 	dh_install -a
 
-	# some things go in root rather than usr
-	for f in $(BIN_PROGS); do \
-		mv $(d)/usr/bin/$$f $(d)/bin/$$f; \
-	done
-	
 	# backward compatability
 	ln -s /usr/bin/md5sum $(d)/usr/bin/md5sum.textutils
 	ln -s /usr/share/man/man1/md5sum.1 $(d)/usr/share/man/man1/md5sum.textutils.1
@@ -49,8 +50,6 @@ override_dh_install-arch:
 ifeq ($(DEB_HOST_ARCH_OS),linux)
 	# kill from procps is linux-specific
 	rm -f $(d)/usr/bin/kill $(d)/usr/share/man/man1/kill.1
-else
-	mv $(d)/usr/bin/kill $(d)/bin
 endif
 	rm -f $(d)/usr/bin/hostname $(d)/usr/share/man/man1/hostname.1
 	rm -f $(d)/usr/bin/uptime $(d)/usr/share/man/man1/uptime.1

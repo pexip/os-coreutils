@@ -1,8 +1,10 @@
-# strtold.m4 serial 7
-dnl Copyright (C) 2002-2003, 2006-2022 Free Software Foundation, Inc.
+# strtold.m4
+# serial 10
+dnl Copyright (C) 2002-2003, 2006-2025 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
 
 AC_DEFUN([gl_FUNC_STRTOLD],
 [
@@ -16,8 +18,10 @@ AC_DEFUN([gl_FUNC_STRTOLD],
     AC_CACHE_CHECK([whether strtold obeys POSIX], [gl_cv_func_strtold_works],
       [AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <stdlib.h>
+#include <float.h>
 #include <math.h>
 #include <errno.h>
+#include <string.h>
 /* Compare two numbers with ==.
    This is a separate function because IRIX 6.5 "cc -O" miscompiles an
    'x == x' test.  */
@@ -79,10 +83,29 @@ numeric_equal (long double x, long double y)
     char *term;
     long double value = strtold (string, &term);
     if (numeric_equal (value, value) || term != (string + 3))
+      result |= 16;
+  }
+#ifndef _MSC_VER /* On MSVC, this is expected behaviour.  */
+  {
+    /* In Cygwin 2.9 and mingw 5.0, strtold does not set errno upon
+       gradual underflow.  */
+# if LDBL_MAX_EXP > 10000
+    const char *string = "1e-4950";
+# else
+    const char *string = "1e-320";
+# endif
+    char *term;
+    long double value;
+    errno = 0;
+    value = strtold (string, &term);
+    if (term != (string + strlen (string))
+        || (value > 0.0L && value <= LDBL_MIN && errno != ERANGE))
       result |= 32;
   }
+#endif
   {
-    /* In Cygwin 2.9, strtold does not set errno upon underflow.  */
+    /* In Cygwin 2.9, strtold does not set errno upon
+       flush-to-zero underflow.  */
     const char *string = "1E-100000";
     char *term;
     long double value;
@@ -94,10 +117,15 @@ numeric_equal (long double x, long double y)
   return result;
 ]])],
         [gl_cv_func_strtold_works=yes],
-        [if expr $? '>=' 64 >/dev/null; then
+        [result=$?
+         if expr $result '>=' 64 >/dev/null; then
            gl_cv_func_strtold_works="no (underflow problem)"
          else
-           gl_cv_func_strtold_works=no
+           if expr $result '>=' 32 >/dev/null; then
+             gl_cv_func_strtold_works="no (gradual underflow problem)"
+           else
+             gl_cv_func_strtold_works=no
+           fi
          fi
         ],
         [dnl The last known bugs in glibc strtold(), as of this writing,
@@ -114,11 +142,15 @@ numeric_equal (long double x, long double y)
            ],
            [gl_cv_func_strtold_works="guessing yes"],
            [case "$host_os" in
-                       # Guess yes on musl systems.
-              *-musl*) gl_cv_func_strtold_works="guessing yes" ;;
-                       # Guess 'no (underflow problem)' on Cygwin.
-              cygwin*) gl_cv_func_strtold_works="guessing no (underflow problem)" ;;
-              *)       gl_cv_func_strtold_works="$gl_cross_guess_normal" ;;
+                                  # Guess yes on musl systems.
+              *-musl* | midipix*) gl_cv_func_strtold_works="guessing yes" ;;
+                                  # Guess 'no (underflow problem)' on Cygwin.
+              cygwin*)            gl_cv_func_strtold_works="guessing no (underflow problem)" ;;
+                                  # Guess 'no (gradual underflow problem)' on mingw.
+                                  # (Although the results may vary depending on
+                                  # __USE_MINGW_ANSI_STDIO.)
+              mingw* | windows*)  gl_cv_func_strtold_works="guessing no (gradual underflow problem)" ;;
+              *)                  gl_cv_func_strtold_works="$gl_cross_guess_normal" ;;
             esac
            ])
         ])
@@ -130,7 +162,11 @@ numeric_equal (long double x, long double y)
         case "$gl_cv_func_strtold_works" in
           *"no (underflow problem)")
             AC_DEFINE([STRTOLD_HAS_UNDERFLOW_BUG], [1],
-              [Define to 1 if strtold does not set errno upon underflow.])
+              [Define to 1 if strtold does not set errno upon flush-to-zero underflow.])
+            ;;
+          *"no (gradual underflow problem)")
+            AC_DEFINE([STRTOLD_HAS_GRADUAL_UNDERFLOW_PROBLEM], [1],
+              [Define to 1 if strtold does not set errno upon gradual underflow.])
             ;;
         esac
         ;;
@@ -145,5 +181,5 @@ AC_DEFUN([gl_PREREQ_STRTOLD], [
     AC_DEFINE([HAVE_LDEXPL_IN_LIBC], [1],
       [Define if the ldexpl function is available in libc.])
   fi
-  AC_CHECK_FUNCS([nl_langinfo])
+  gl_CHECK_FUNCS_ANDROID([nl_langinfo], [[#include <langinfo.h>]])
 ])

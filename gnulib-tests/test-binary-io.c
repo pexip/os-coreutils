@@ -1,5 +1,5 @@
 /* Test of binary mode I/O.
-   Copyright (C) 2005, 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2007-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include "macros.h"
 
 int
-main (int argc, char *argv[])
+main (_GL_UNUSED int argc, char *argv[])
 {
   /* Test the O_BINARY macro.  */
   {
@@ -59,5 +59,5 @@ main (int argc, char *argv[])
       break;
     }
 
-  return 0;
+  return test_exit_status;
 }

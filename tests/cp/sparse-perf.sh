@@ -1,7 +1,7 @@
 #!/bin/sh
 # ensure that a sparse file is copied efficiently, by default
 
-# Copyright (C) 2021-2022 Free Software Foundation, Inc.
+# Copyright (C) 2021-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ timeout 10 truncate -s1T f ||
 # between the creation of the file and the use of SEEK_DATA,
 # for it to determine it's an empty file (return ENXIO).
 seek_data_capable_ f ||
-  skip_ "this file system lacks appropriate SEEK_DATA support"
+  skip_ "insufficient SEEK_DATA support"
 
 # Nothing can read that many bytes in so little time.
 timeout 10 cp --reflink=never f f2 || fail=1

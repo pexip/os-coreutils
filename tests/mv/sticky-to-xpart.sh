@@ -4,7 +4,7 @@
 # mv: cannot remove 'x': Operation not permitted
 # Affects coreutils-6.0-6.9.
 
-# Copyright (C) 2007-2022 Free Software Foundation, Inc.
+# Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,10 +59,19 @@ chroot --skip-chdir --user=$NON_ROOT_USERNAME / env PATH="$PATH" \
 onp='Operation not permitted'
 sed "s/Not owner/$onp/;s/Permission denied/$onp/" out-t > out
 
-cat <<\EOF > exp
-mv: cannot remove 't/root-owned': Operation not permitted
+# On some systems (OpenBSD 7.5), the initial rename fails with EPERM,
+# which is arguably better than the Linux kernel's EXDEV.
+cat <<EOF >exp1 || framework_failure_
+mv: cannot move 't/root-owned' to '$other_partition_tmpdir/root-owned': $onp
 EOF
 
-compare exp out || fail=1
+compare exp1 out >/dev/null || {
+
+  cat <<EOF >exp || framework_failure_
+mv: cannot remove 't/root-owned': $onp
+EOF
+
+  compare exp out || fail=1
+}
 
 Exit $fail

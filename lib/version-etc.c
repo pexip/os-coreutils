@@ -1,5 +1,5 @@
 /* Print --version and bug-reporting information in a consistent format.
-   Copyright (C) 1999-2022 Free Software Foundation, Inc.
+   Copyright (C) 1999-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -29,7 +29,7 @@
 #endif
 
 #include "gettext.h"
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 
 /* If you use AM_INIT_AUTOMAKE's no-define option,
    PACKAGE is not defined.  Use PACKAGE_TARNAME instead.  */
@@ -37,7 +37,7 @@
 # define PACKAGE PACKAGE_TARNAME
 #endif
 
-enum { COPYRIGHT_YEAR = 2022 };
+enum { COPYRIGHT_YEAR = 2025 };
 
 /* The three functions below display the --version information the
    standard way.

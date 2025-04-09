@@ -1,8 +1,10 @@
+# selinux-context-h.m4
 # serial 4   -*- Autoconf -*-
-# Copyright (C) 2006-2007, 2009-2022 Free Software Foundation, Inc.
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
+dnl Copyright (C) 2006-2007, 2009-2025 Free Software Foundation, Inc.
+dnl This file is free software; the Free Software Foundation
+dnl gives unlimited permission to copy and/or distribute it,
+dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
 
 # From Jim Meyering
 # Provide <selinux/context.h>, if necessary.

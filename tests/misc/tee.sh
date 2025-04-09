@@ -1,7 +1,7 @@
 #!/bin/sh
 # test for basic tee functionality.
 
-# Copyright (C) 2005-2022 Free Software Foundation, Inc.
+# Copyright (C) 2005-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,9 +63,45 @@ if test -w /dev/full && test -c /dev/full; then
   test $(wc -l < err) = 1 || { cat err; fail=1; }
 fi
 
+case $host_triplet in
+  *aix*) echo  'avoiding due to no way to detect closed outputs on AIX' ;;
+  *)
+# Test iopoll-powered early exit for closed pipes
+tee_exited() { sleep $1; test -f tee.exited; }
+# Currently this functionality is most useful with
+# intermittent input from a terminal, but here we
+# use an input pipe that doesn't write anything
+# but will exit as soon as tee does, or it times out
+retry_delay_ tee_exited .1 7 | # 12.7s (Must be > following timeout)
+{ timeout 10 tee -p 2>err && touch tee.exited; } | :
+test $(wc -l < err) = 0 || { cat err; fail=1; }
+test -f tee.exited || fail=1 ;;
+esac
+
+# Test with unwritable files
+if ! uid_is_privileged_; then  # root does not get EPERM.
+  touch file.ro || framework_failure_
+  chmod a-w file.ro || framework_failure_
+  returns_ 1 tee -p </dev/null file.ro || fail=1
+fi
+
+mkfifo_or_skip_ fifo
+
+# Ensure tee handles nonblocking output correctly
+# Terminate any background processes
+cleanup_() { kill $pid 2>/dev/null && wait $pid; }
+read_fifo_delayed() {
+  { sleep .1; timeout 10 dd of=/dev/null status=none; } <fifo
+}
+read_fifo_delayed & pid=$!
+dd count=20 bs=100K if=/dev/zero status=none |
+{
+  dd count=0 oflag=nonblock status=none
+  tee || { cleanup_; touch tee.fail; }
+} >fifo
+test -f tee.fail && fail=1 || cleanup_
 
 # Ensure tee honors --output-error modes
-mkfifo_or_skip_ fifo
 read_fifo() { timeout 10 dd count=1 if=fifo of=/dev/null status=none & }
 
 # Determine platform sigpipe exit status

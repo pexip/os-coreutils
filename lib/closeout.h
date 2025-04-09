@@ -1,6 +1,6 @@
 /* Close standard output and standard error.
 
-   Copyright (C) 1998, 2000, 2003-2004, 2006, 2008-2022 Free Software
+   Copyright (C) 1998, 2000, 2003-2004, 2006, 2008-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,6 @@
 
 #ifndef CLOSEOUT_H
 # define CLOSEOUT_H 1
-
-# include <stdbool.h>
 
 # ifdef __cplusplus
 extern "C" {

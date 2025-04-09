@@ -2,7 +2,7 @@
 
 /* Modified to run with the GNU shell by bfox. */
 
-/* Copyright (C) 1987-2022 Free Software Foundation, Inc.
+/* Copyright (C) 1987-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,13 +20,8 @@
 /* Define TEST_STANDALONE to get the /bin/test version.  Otherwise, you get
    the shell builtin version. */
 
-/* Without this pragma, gcc 4.6.2 20111027 mistakenly suggests that
-   the advance function might be candidate for attribute 'pure'.  */
-#if (__GNUC__ == 4 && 6 <= __GNUC_MINOR__) || 4 < __GNUC__
-# pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
-#endif
-
 #include <config.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <sys/types.h>
 
@@ -44,12 +39,13 @@
 #endif
 
 #include "system.h"
+#include "assure.h"
+#include "c-ctype.h"
 #include "quote.h"
 #include "stat-time.h"
 #include "strnumcmp.h"
 
 #include <stdarg.h>
-#include "verror.h"
 
 #if HAVE_SYS_PARAM_H
 # include <sys/param.h>
@@ -119,7 +115,7 @@ unary_advance (void)
  * beyond - call when we're beyond the end of the argument list (an
  *	error condition)
  */
-static void
+static _Noreturn void
 beyond (void)
 {
   test_syntax_error (_("missing argument after %s"), quote (argv[argc - 1]));
@@ -134,7 +130,7 @@ find_int (char const *string)
   char const *p;
   char const *number_start;
 
-  for (p = string; isblank (to_uchar (*p)); p++)
+  for (p = string; isspace (to_uchar (*p)); p++)
     continue;
 
   if (*p == '+')
@@ -148,11 +144,11 @@ find_int (char const *string)
       p += (*p == '-');
     }
 
-  if (ISDIGIT (*p++))
+  if (c_isdigit (*p++))
     {
-      while (ISDIGIT (*p))
+      while (c_isdigit (*p))
         p++;
-      while (isblank (to_uchar (*p)))
+      while (isspace (to_uchar (*p)))
         p++;
       if (!*p)
         return number_start;
@@ -178,7 +174,7 @@ static bool
 binop (char const *s)
 {
   return ((STREQ (s,   "=")) || (STREQ (s,  "!=")) || (STREQ (s, "==")) ||
-          (STREQ (s,   "-nt")) ||
+          (STREQ (s,   "-nt")) || (STREQ (s, ">")) || (STREQ (s, "<")) ||
           (STREQ (s, "-ot")) || (STREQ (s, "-ef")) || (STREQ (s, "-eq")) ||
           (STREQ (s, "-ne")) || (STREQ (s, "-lt")) || (STREQ (s, "-le")) ||
           (STREQ (s, "-gt")) || (STREQ (s, "-ge")));
@@ -194,7 +190,7 @@ binop (char const *s)
  *	'-t' int
  *	'-'('z'|'n') string
  *	string
- *	string ('!='|'=') string
+ *	string ('!='|'='|>|<) string
  *	<int> '-'(eq|ne|le|lt|ge|gt) <int>
  *	file '-'(nt|ot|ef) file
  *	'(' <expr> ')'
@@ -376,8 +372,22 @@ binary_operator (bool l_is_l)
       return value;
     }
 
+  if (STREQ (argv[op], ">"))
+    {
+      bool value = strcoll (argv[pos], argv[pos + 2]) > 0;
+      pos += 3;
+      return value;
+    }
+
+  if (STREQ (argv[op], "<"))
+    {
+      bool value = strcoll (argv[pos], argv[pos + 2]) < 0;
+      pos += 3;
+      return value;
+    }
+
   /* Not reached.  */
-  abort ();
+  affirm (false);
 }
 
 static bool
@@ -389,7 +399,6 @@ unary_operator (void)
     {
     default:
       test_syntax_error (_("%s: unary operator expected"), quote (argv[pos]));
-      return false;
 
       /* All of the following unary operators use unary_advance (), which
          checks to make sure that there is an argument, and then advances
@@ -511,7 +520,7 @@ unary_operator (void)
         unary_advance ();
         arg = find_int (argv[pos - 1]);
         errno = 0;
-        fd = strtol (arg, NULL, 10);
+        fd = strtol (arg, nullptr, 10);
         return (errno != ERANGE && 0 <= fd && fd <= INT_MAX && isatty (fd));
       }
 
@@ -621,7 +630,8 @@ three_arguments (void)
       value = one_argument ();
       advance (false);
     }
-  else if (STREQ (argv[pos + 1], "-a") || STREQ (argv[pos + 1], "-o"))
+  else if (STREQ (argv[pos + 1], "-a") || STREQ (argv[pos + 1], "-o")
+           || STREQ (argv[pos + 1], ">") || STREQ (argv[pos + 1], "<"))
     value = expr ();
   else
     test_syntax_error (_("%s: binary operator expected"),
@@ -666,8 +676,7 @@ posixtest (int nargs)
         FALLTHROUGH;
       case 5:
       default:
-        if (nargs <= 0)
-          abort ();
+        affirm (0 < nargs);
         value = expr ();
     }
 
@@ -715,6 +724,8 @@ EXPRESSION is true or false and sets exit status.  It is one of:\n\
   -z STRING            the length of STRING is zero\n\
   STRING1 = STRING2    the strings are equal\n\
   STRING1 != STRING2   the strings are not equal\n\
+  STRING1 > STRING2    STRING1 is greater than STRING2 in the current locale\n\
+  STRING1 < STRING2    STRING1 is less than STRING2 in the current locale\n\
 "), stdout);
       fputs (_("\
 \n\
@@ -768,13 +779,12 @@ INTEGER may also be -l STRING, which evaluates to the length of STRING.\n\
 "), stdout);
       fputs (_("\
 \n\
-NOTE: Binary -a and -o are inherently ambiguous.  Use 'test EXPR1 && test\n\
-EXPR2' or 'test EXPR1 || test EXPR2' instead.\n\
+Binary -a and -o are ambiguous.  Use 'test EXPR1 && test EXPR2'\n\
+or 'test EXPR1 || test EXPR2' instead.\n\
 "), stdout);
       fputs (_("\
 \n\
-NOTE: [ honors the --help and --version options, but test does not.\n\
-test treats each of those as it treats any other nonempty STRING.\n\
+'[' honors --help and --version, but 'test' treats them as STRINGs.\n\
 "), stdout);
       printf (USAGE_BUILTIN_WARNING, _("test and/or ["));
       emit_ancillary_info (PROGRAM_NAME);
@@ -838,7 +848,7 @@ main (int margc, char **margv)
           if (STREQ (margv[1], "--version"))
             {
               version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version, AUTHORS,
-                           (char *) NULL);
+                           (char *) nullptr);
               test_main_return (EXIT_SUCCESS);
             }
         }

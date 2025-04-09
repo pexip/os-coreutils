@@ -1,6 +1,6 @@
 /* argmatch.c -- find a match for a string in an array
 
-   Copyright (C) 1990, 1998-1999, 2001-2007, 2009-2022 Free Software
+   Copyright (C) 1990, 1998-1999, 2001-2007, 2009-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -24,16 +24,14 @@
 /* Specification.  */
 #include "argmatch.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 
-#include "error.h"
+#include <error.h>
 #include "quotearg.h"
-#include "getprogname.h"
 
 #if USE_UNLOCKED_IO
 # include "unlocked-io.h"

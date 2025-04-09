@@ -2,7 +2,7 @@
 # In coreutils-8.12, rm,du,chmod, etc. would use too much memory
 # when processing a directory with many entries (as in > 100,000).
 
-# Copyright (C) 2011-2022 Free Software Foundation, Inc.
+# Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ mkdir d2 \
 # Restrict memory.  Each of these coreutils-8.12 programs would fail
 # with a diagnostic like "rm: fts_read failed: Cannot allocate memory".
 vm=$(get_min_ulimit_v_ du -sh d2) \
-  || skip_ "this shell lacks ulimit support"
+  || skip_ 'shell lacks ulimit, or ASAN enabled'
 
 # With many files in a single directory...
 mkdir d || framework_failure_

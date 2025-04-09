@@ -18,7 +18,7 @@ func_tmpdir ()
   # Use the environment variable TMPDIR, falling back to /tmp. This allows
   # users to specify a different temporary directory, for example, if their
   # /tmp is filled up or too small.
-  : ${TMPDIR=/tmp}
+  : "${TMPDIR=/tmp}"
   {
     # Use the mktemp program if available. If not available, hide the error
     # message.
@@ -70,7 +70,7 @@ cd "$builddir" ||
   acl_flavor=none
   if (getfacl tmpfile0 >/dev/null) 2>/dev/null; then
     # Platforms with the getfacl and setfacl programs.
-    # Linux, FreeBSD, Solaris, Cygwin.
+    # Linux, FreeBSD, NetBSD >= 10, Solaris, Cygwin.
     if (setfacl --help >/dev/null) 2>/dev/null; then
       # Linux, Cygwin.
       if (LC_ALL=C setfacl --help | grep ' --set-file' >/dev/null) 2>/dev/null; then
@@ -80,9 +80,9 @@ cd "$builddir" ||
         acl_flavor=cygwin
       fi
     else
-      # FreeBSD, Solaris.
+      # FreeBSD, NetBSD >= 10, Solaris.
       if (LC_ALL=C setfacl 2>&1 | grep '\-x entries' >/dev/null) 2>/dev/null; then
-        # FreeBSD.
+        # FreeBSD, NetBSD >= 10.
         acl_flavor=freebsd
       else
         # Solaris.
@@ -310,7 +310,9 @@ cd "$builddir" ||
       cygwin)
 
         # Set an ACL for a group.
-        setfacl -m group:0:1 tmpfile0
+        # Group 1 in Cygwin corresponds to the DIALUP users (cf.
+        # <https://learn.microsoft.com/en-us/windows/win32/secauthz/well-known-sids>).
+        setfacl -m group:1:1 tmpfile0
 
         func_test_copy tmpfile0 tmpfile2
 
@@ -320,7 +322,7 @@ cd "$builddir" ||
         func_test_copy tmpfile0 tmpfile4
 
         # Remove the ACL for the group.
-        setfacl -d group:0 tmpfile0
+        setfacl -d group:1 tmpfile0
 
         func_test_copy tmpfile0 tmpfile5
 

@@ -1,5 +1,5 @@
 /* sleep - delay for a specified amount of time.
-   Copyright (C) 1984-2022 Free Software Foundation, Inc.
+   Copyright (C) 1984-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,12 +20,10 @@
 
 #include "system.h"
 #include "cl-strtod.h"
-#include "die.h"
-#include "error.h"
+#include "dtimespec-bound.h"
 #include "long-options.h"
 #include "quote.h"
 #include "xnanosleep.h"
-#include "xstrtod.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "sleep"
@@ -44,10 +42,9 @@ usage (int status)
       printf (_("\
 Usage: %s NUMBER[SUFFIX]...\n\
   or:  %s OPTION\n\
-Pause for NUMBER seconds.  SUFFIX may be 's' for seconds (the default),\n\
-'m' for minutes, 'h' for hours or 'd' for days.  NUMBER need not be an\n\
-integer.  Given two or more arguments, pause for the amount of time\n\
-specified by the sum of their values.\n\
+Pause for NUMBER seconds, where NUMBER is an integer or floating-point.\n\
+SUFFIX may be 's','m','h', or 'd', for seconds, minutes, hours, days.\n\
+With multiple arguments, pause for the sum of their values.\n\
 \n\
 "),
               program_name, program_name);
@@ -88,7 +85,7 @@ apply_suffix (double *x, char suffix_char)
       return false;
     }
 
-  *x *= multiplier;
+  *x = dtimespec_bound (*x * multiplier, 0);
 
   return true;
 }
@@ -109,7 +106,7 @@ main (int argc, char **argv)
 
   parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
                                    Version, true, usage, AUTHORS,
-                                   (char const *) NULL);
+                                   (char const *) nullptr);
 
   if (argc == 1)
     {
@@ -119,9 +116,11 @@ main (int argc, char **argv)
 
   for (int i = optind; i < argc; i++)
     {
-      double s;
-      char const *p;
-      if (! (xstrtod (argv[i], &p, &s, cl_strtod) || errno == ERANGE)
+      char *p;
+      errno = 0;
+      double duration = cl_strtod (argv[i], &p);
+      double s = dtimespec_bound (duration, errno);
+      if (argv[i] == p
           /* Nonnegative interval.  */
           || ! (0 <= s)
           /* No extra chars after the number and an optional s,m,h,d char.  */
@@ -133,14 +132,14 @@ main (int argc, char **argv)
           ok = false;
         }
 
-      seconds += s;
+      seconds = dtimespec_bound (seconds + s, 0);
     }
 
   if (!ok)
     usage (EXIT_FAILURE);
 
   if (xnanosleep (seconds))
-    die (EXIT_FAILURE, errno, _("cannot read realtime clock"));
+    error (EXIT_FAILURE, errno, _("cannot read realtime clock"));
 
   return EXIT_SUCCESS;
 }

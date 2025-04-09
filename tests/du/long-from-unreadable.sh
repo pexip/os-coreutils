@@ -1,7 +1,7 @@
 #!/bin/sh
 # Show fts fails on old-fashioned systems.
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ cwd=$(pwd)
 $PERL \
     -e 'my $d = '$dir'; foreach my $i (1..52)' \
     -e '  { mkdir ($d, 0700) && chdir $d or die "$!" }' \
-  || framework_failure_
+  || skip_ 'failed to create hierarchy of long names'
 
 mkdir inaccessible || framework_failure_
 cd inaccessible || framework_failure_

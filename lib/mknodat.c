@@ -1,5 +1,5 @@
 /* Create an inode relative to an open directory.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +54,12 @@ rpl_mknodat (int fd, char const *file, mode_t mode, dev_t dev)
       return -1;
     }
 
+# if defined __HAIKU__
+  /* POSIX requires mknodat to create fifos for non-privileged processes, but
+     on Haiku it fails with ENOTSUP.  */
+  if (S_ISFIFO (mode) && dev == 0)
+    return mkfifo (file, mode & ~S_IFIFO);
+# endif
   return mknodat (fd, file, mode, dev);
 }
 

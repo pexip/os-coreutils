@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2022 Free Software Foundation, Inc.
+ * Copyright (C) 2008-2025 Free Software Foundation, Inc.
  * Written by Simon Josefsson and Bruno Haible
  *
  * This program is free software: you can redistribute it and/or modify
@@ -69,5 +69,5 @@ main (void)
       }
   }
 
-  return 0;
+  return test_exit_status;
 }

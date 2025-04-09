@@ -1,5 +1,5 @@
 /* mkdir -- make directories
-   Copyright (C) 1990-2022 Free Software Foundation, Inc.
+   Copyright (C) 1990-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@
 #include <selinux/label.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
 #include "mkdir-p.h"
 #include "modechange.h"
 #include "prog-fprintf.h"
@@ -41,12 +39,12 @@
 static struct option const longopts[] =
 {
   {GETOPT_SELINUX_CONTEXT_OPTION_DECL},
-  {"mode", required_argument, NULL, 'm'},
-  {"parents", no_argument, NULL, 'p'},
-  {"verbose", no_argument, NULL, 'v'},
+  {"mode", required_argument, nullptr, 'm'},
+  {"parents", no_argument, nullptr, 'p'},
+  {"verbose", no_argument, nullptr, 'v'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -66,7 +64,7 @@ Create the DIRECTORY(ies), if they do not already exist.\n\
       fputs (_("\
   -m, --mode=MODE   set file mode (as in chmod), not a=rwx - umask\n\
   -p, --parents     no error if existing, make parent directories as needed,\n\
-                    with their file modes unaffected by any -m option.\n\
+                    with their file modes unaffected by any -m option\n\
   -v, --verbose     print a message for each created directory\n\
 "), stdout);
       fputs (_("\
@@ -85,7 +83,7 @@ Create the DIRECTORY(ies), if they do not already exist.\n\
 /* Options passed to subsidiary functions.  */
 struct mkdir_options
 {
-  /* Function to make an ancestor, or NULL if ancestors should not be
+  /* Function to make an ancestor, or nullptr if ancestors should not be
      made.  */
   int (*make_ancestor_function) (char const *, char const *, void *);
 
@@ -192,16 +190,16 @@ process_dir (char *dir, struct savewd *wd, void *options)
 int
 main (int argc, char **argv)
 {
-  char const *specified_mode = NULL;
+  char const *specified_mode = nullptr;
   int optc;
-  char const *scontext = NULL;
+  char const *scontext = nullptr;
   struct mkdir_options options;
 
-  options.make_ancestor_function = NULL;
+  options.make_ancestor_function = nullptr;
   options.mode = S_IRWXUGO;
   options.mode_bits = 0;
-  options.created_directory_format = NULL;
-  options.set_security_context = NULL;
+  options.created_directory_format = nullptr;
+  options.set_security_context = nullptr;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -211,7 +209,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((optc = getopt_long (argc, argv, "pm:vZ", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "pm:vZ", longopts, nullptr)) != -1)
     {
       switch (optc)
         {
@@ -237,7 +235,7 @@ main (int argc, char **argv)
               else
                 {
                   options.set_security_context = selabel_open (SELABEL_CTX_FILE,
-                                                               NULL, 0);
+                                                               nullptr, 0);
                   if (! options.set_security_context)
                     error (0, errno, _("warning: ignoring --context"));
                 }
@@ -274,9 +272,9 @@ main (int argc, char **argv)
         ret = setfscreatecon (scontext);
 
       if (ret < 0)
-        die (EXIT_FAILURE, errno,
-             _("failed to set default file creation context to %s"),
-             quote (scontext));
+        error (EXIT_FAILURE, errno,
+               _("failed to set default file creation context to %s"),
+               quote (scontext));
     }
 
 
@@ -289,8 +287,8 @@ main (int argc, char **argv)
         {
           struct mode_change *change = mode_compile (specified_mode);
           if (!change)
-            die (EXIT_FAILURE, 0, _("invalid mode %s"),
-                 quote (specified_mode));
+            error (EXIT_FAILURE, 0, _("invalid mode %s"),
+                   quote (specified_mode));
           options.mode = mode_adjust (S_IRWXUGO, true, umask_value, change,
                                       &options.mode_bits);
           options.umask_self = umask_value & ~options.mode;

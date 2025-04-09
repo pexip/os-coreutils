@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Free Software Foundation, Inc.
+ * Copyright (C) 2009-2025 Free Software Foundation, Inc.
  * Written by Jim Meyering
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -259,5 +258,5 @@ main (int argc, char **argv)
       hash_free (ht);
     }
 
-  return 0;
+  return test_exit_status;
 }

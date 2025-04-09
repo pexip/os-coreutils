@@ -1,6 +1,6 @@
 /* Unicode character output to streams with locale dependent encoding.
 
-   Copyright (C) 2000-2003, 2006, 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2003, 2006, 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 #include <error.h>
 
 #include "gettext.h"
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 #define N_(msgid) msgid
 
 #include "localcharset.h"
@@ -57,7 +57,7 @@
 /* Converts the Unicode character CODE to its multibyte representation
    in the current locale and calls the SUCCESS callback on the resulting
    byte sequence.  If an error occurs, invokes the FAILURE callback instead,
-   passing it CODE and an English error string.
+   passing it CODE and an English (or already localized) error string.
    Returns whatever the callback returned.
    Assumes that the locale doesn't change between two calls.  */
 long
@@ -99,16 +99,16 @@ unicode_to_mb (unsigned int code,
     {
 #if HAVE_ICONV
       if (utf8_to_local == (iconv_t)(-1))
-        return failure (code, N_("iconv function not usable"), callback_arg);
+        return failure (code, _("iconv function not usable"), callback_arg);
 #else
-      return failure (code, N_("iconv function not available"), callback_arg);
+      return failure (code, _("iconv function not available"), callback_arg);
 #endif
     }
 
   /* Convert the character to UTF-8.  */
   count = u8_uctomb ((unsigned char *) inbuf, code, sizeof (inbuf));
   if (count < 0)
-    return failure (code, N_("character out of range"), callback_arg);
+    return failure (code, _("character out of range"), callback_arg);
 
 #if HAVE_ICONV
   if (!is_utf8)
@@ -144,7 +144,7 @@ unicode_to_mb (unsigned int code,
 # endif
           /* FreeBSD iconv(), NetBSD iconv(), and Solaris 11 iconv() insert
              a '?' if they cannot convert.  */
-# if !defined _LIBICONV_VERSION
+# if !defined _LIBICONV_VERSION || (_LIBICONV_VERSION == 0x10b && defined __APPLE__)
           || (res > 0 && outptr - outbuf == 1 && *outbuf == '?')
 # endif
           /* musl libc iconv() inserts a '*' if it cannot convert.  */
@@ -154,17 +154,10 @@ unicode_to_mb (unsigned int code,
          )
         return failure (code, NULL, callback_arg);
 
-      /* Avoid glibc-2.1 bug and Solaris 7 bug.  */
-# if defined _LIBICONV_VERSION \
-    || !(((__GLIBC__ - 0 == 2 && __GLIBC_MINOR__ - 0 <= 1) \
-          && !defined __UCLIBC__) \
-         || defined __sun)
-
       /* Get back to the initial shift state.  */
       res = iconv (utf8_to_local, NULL, NULL, &outptr, &outbytesleft);
       if (res == (size_t)(-1))
         return failure (code, NULL, callback_arg);
-# endif
 
       return success (outbuf, outptr - outbuf, callback_arg);
     }
@@ -224,9 +217,17 @@ fallback_failure_callback (unsigned int code,
 void
 print_unicode_char (FILE *stream, unsigned int code, int exit_on_error)
 {
-  unicode_to_mb (code, fwrite_success_callback,
-                 exit_on_error
-                 ? exit_failure_callback
-                 : fallback_failure_callback,
-                 stream);
+  /* Simplify this subset to avoid potential iconv() issues
+     for that range at least.  */
+  if (32 <= code && code < 128)
+    {
+      char code_char = code;
+      fwrite_success_callback (&code_char, sizeof code_char, stream);
+    }
+  else
+    unicode_to_mb (code, fwrite_success_callback,
+                   exit_on_error
+                   ? exit_failure_callback
+                   : fallback_failure_callback,
+                   stream);
 }

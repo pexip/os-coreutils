@@ -1,5 +1,5 @@
 /* Parse a 'user:group' specifier (e.g. the first argument of chown utility).
-   Copyright (C) 2003-2022 Free Software Foundation, Inc.
+   Copyright (C) 2003-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,10 +17,14 @@
 /* Written by Jim Meyering, 2003.  */
 
 #ifndef USERSPEC_H
-# define USERSPEC_H 1
+#define USERSPEC_H 1
 
-# include <stdbool.h>
-# include <sys/types.h>
+#include <sys/types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 char const *
 parse_user_spec (char const *spec_arg, uid_t *uid, gid_t *gid,
@@ -28,5 +32,10 @@ parse_user_spec (char const *spec_arg, uid_t *uid, gid_t *gid,
 char const *
 parse_user_spec_warn (char const *spec_arg, uid_t *uid, gid_t *gid,
                       char **username_arg, char **groupname_arg, bool *pwarn);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

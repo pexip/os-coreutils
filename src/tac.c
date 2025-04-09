@@ -1,5 +1,5 @@
 /* tac - concatenate and print files in reverse
-   Copyright (C) 1988-2022 Free Software Foundation, Inc.
+   Copyright (C) 1988-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,11 +43,10 @@ tac -r -s '.\|
 
 #include <regex.h>
 
-#include "die.h"
-#include "error.h"
 #include "filenamecat.h"
+#include "full-read.h"
 #include "safe-read.h"
-#include "stdlib--.h"
+#include "temp-stream.h"
 #include "xbinary-io.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
@@ -57,18 +56,6 @@ tac -r -s '.\|
   proper_name ("Jay Lepreau"), \
   proper_name ("David MacKenzie")
 
-#if defined __MSDOS__ || defined _WIN32
-/* Define this to non-zero on systems for which the regular mechanism
-   (of unlinking an open file and expecting to be able to write, seek
-   back to the beginning, then reread it) doesn't work.  E.g., on Windows
-   and DOS systems.  */
-# define DONT_UNLINK_WHILE_OPEN 1
-#endif
-
-
-#ifndef DEFAULT_TMPDIR
-# define DEFAULT_TMPDIR "/tmp"
-#endif
 
 /* The number of bytes per atomic read. */
 #define INITIAL_READSIZE 8192
@@ -114,12 +101,12 @@ static struct re_registers regs;
 
 static struct option const longopts[] =
 {
-  {"before", no_argument, NULL, 'b'},
-  {"regex", no_argument, NULL, 'r'},
-  {"separator", required_argument, NULL, 's'},
+  {"before", no_argument, nullptr, 'b'},
+  {"regex", no_argument, nullptr, 'r'},
+  {"separator", required_argument, nullptr, 's'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -153,7 +140,7 @@ Write each FILE to standard output, last line first.\n\
 }
 
 /* Print the characters from START to PAST_END - 1.
-   If START is NULL, just flush the buffer. */
+   If START is null, just flush the buffer. */
 
 static void
 output (char const *start, char const *past_end)
@@ -201,7 +188,7 @@ tac_seekable (int input_fd, char const *file, off_t file_pos)
   char *past_end;
 
   /* Length of the record growing in 'G_buffer'. */
-  size_t saved_record_size;
+  ptrdiff_t saved_record_size;
 
   /* True if 'output' has not been called yet for any file.
      Only used when the separator is attached to the preceding record. */
@@ -237,16 +224,16 @@ tac_seekable (int input_fd, char const *file, off_t file_pos)
   /* Now scan forward, looking for end of file.  */
   while (saved_record_size == read_size)
     {
-      size_t nread = safe_read (input_fd, G_buffer, read_size);
+      ptrdiff_t nread = safe_read (input_fd, G_buffer, read_size);
       if (nread == 0)
         break;
       saved_record_size = nread;
-      if (saved_record_size == SAFE_READ_ERROR)
+      if (saved_record_size < 0)
         break;
       file_pos += nread;
     }
 
-  if (saved_record_size == SAFE_READ_ERROR)
+  if (saved_record_size < 0)
     {
       error (0, errno, _("%s: read error"), quotef (file));
       return false;
@@ -273,7 +260,7 @@ tac_seekable (int input_fd, char const *file, off_t file_pos)
           regoff_t ret;
 
           if (1 < range)
-            die (EXIT_FAILURE, 0, _("record too large"));
+            error (EXIT_FAILURE, 0, _("record too large"));
 
           if (range == 1
               || ((ret = re_search (&compiled_separator, G_buffer,
@@ -281,10 +268,8 @@ tac_seekable (int input_fd, char const *file, off_t file_pos)
                   == -1))
             match_start = G_buffer - 1;
           else if (ret == -2)
-            {
-              die (EXIT_FAILURE, 0,
+            error (EXIT_FAILURE, 0,
                    _("error in regular expression search"));
-            }
           else
             {
               match_start = G_buffer + regs.start[0];
@@ -352,7 +337,7 @@ tac_seekable (int input_fd, char const *file, off_t file_pos)
           else
             match_start = past_end;
 
-          if (safe_read (input_fd, G_buffer, read_size) != read_size)
+          if (full_read (input_fd, G_buffer, read_size) != read_size)
             {
               error (0, errno, _("%s: read error"), quotef (file));
               return false;
@@ -385,113 +370,6 @@ tac_seekable (int input_fd, char const *file, off_t file_pos)
     }
 }
 
-#if DONT_UNLINK_WHILE_OPEN
-
-/* FIXME-someday: remove all of this DONT_UNLINK_WHILE_OPEN junk.
-   Using atexit like this is wrong, since it can fail
-   when called e.g. 32 or more times.
-   But this isn't a big deal, since the code is used only on WOE/DOS
-   systems, and few people invoke tac on that many nonseekable files.  */
-
-static char const *file_to_remove;
-static FILE *fp_to_close;
-
-static void
-unlink_tempfile (void)
-{
-  fclose (fp_to_close);
-  unlink (file_to_remove);
-}
-
-static void
-record_or_unlink_tempfile (char const *fn, FILE *fp)
-{
-  if (!file_to_remove)
-    {
-      file_to_remove = fn;
-      fp_to_close = fp;
-      atexit (unlink_tempfile);
-    }
-}
-
-#else
-
-static void
-record_or_unlink_tempfile (char const *fn, MAYBE_UNUSED FILE *fp)
-{
-  unlink (fn);
-}
-
-#endif
-
-/* A wrapper around mkstemp that gives us both an open stream pointer,
-   FP, and the corresponding FILE_NAME.  Always return the same FP/name
-   pair, rewinding/truncating it upon each reuse.  */
-static bool
-temp_stream (FILE **fp, char **file_name)
-{
-  static char *tempfile = NULL;
-  static FILE *tmp_fp;
-  if (tempfile == NULL)
-    {
-      char const *t = getenv ("TMPDIR");
-      char const *tempdir = t ? t : DEFAULT_TMPDIR;
-      tempfile = mfile_name_concat (tempdir, "tacXXXXXX", NULL);
-      if (tempdir == NULL)
-        {
-          error (0, 0, _("memory exhausted"));
-          return false;
-        }
-
-      /* FIXME: there's a small window between a successful mkstemp call
-         and the unlink that's performed by record_or_unlink_tempfile.
-         If we're interrupted in that interval, this code fails to remove
-         the temporary file.  On systems that define DONT_UNLINK_WHILE_OPEN,
-         the window is much larger -- it extends to the atexit-called
-         unlink_tempfile.
-         FIXME: clean up upon fatal signal.  Don't block them, in case
-         $TMPFILE is a remote file system.  */
-
-      int fd = mkstemp (tempfile);
-      if (fd < 0)
-        {
-          error (0, errno, _("failed to create temporary file in %s"),
-                 quoteaf (tempdir));
-          goto Reset;
-        }
-
-      tmp_fp = fdopen (fd, (O_BINARY ? "w+b" : "w+"));
-      if (! tmp_fp)
-        {
-          error (0, errno, _("failed to open %s for writing"),
-                 quoteaf (tempfile));
-          close (fd);
-          unlink (tempfile);
-        Reset:
-          free (tempfile);
-          tempfile = NULL;
-          return false;
-        }
-
-      record_or_unlink_tempfile (tempfile, tmp_fp);
-    }
-  else
-    {
-      clearerr (tmp_fp);
-      if (fseeko (tmp_fp, 0, SEEK_SET) < 0
-          || ftruncate (fileno (tmp_fp), 0) < 0)
-        {
-          error (0, errno, _("failed to rewind stream for %s"),
-                 quoteaf (tempfile));
-          return false;
-        }
-    }
-
-  *fp = tmp_fp;
-  *file_name = tempfile;
-  return true;
-}
-
 /* Copy from file descriptor INPUT_FD (corresponding to the named FILE) to
    a temporary file, and set *G_TMP and *G_TEMPFILE to the resulting stream
    and file name.  Return the number of bytes copied, or -1 on error.  */
@@ -507,10 +385,10 @@ copy_to_temp (FILE **g_tmp, char **g_tempfile, int input_fd, char const *file)
 
   while (true)
     {
-      size_t bytes_read = safe_read (input_fd, G_buffer, read_size);
+      ptrdiff_t bytes_read = safe_read (input_fd, G_buffer, read_size);
       if (bytes_read == 0)
         break;
-      if (bytes_read == SAFE_READ_ERROR)
+      if (bytes_read < 0)
         {
           error (0, errno, _("%s: read error"), quotef (file));
           return -1;
@@ -609,7 +487,7 @@ main (int argc, char **argv)
 
   /* Initializer for file_list if no file-arguments
      were specified on the command line.  */
-  static char const *const default_file_list[] = {"-", NULL};
+  static char const *const default_file_list[] = {"-", nullptr};
   char const *const *file;
 
   initialize_main (&argc, &argv);
@@ -624,7 +502,7 @@ main (int argc, char **argv)
   sentinel_length = 1;
   separator_ends_record = true;
 
-  while ((optc = getopt_long (argc, argv, "brs:", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "brs:", longopts, nullptr)) != -1)
     {
       switch (optc)
         {
@@ -647,16 +525,16 @@ main (int argc, char **argv)
   if (sentinel_length == 0)
     {
       if (*separator == 0)
-        die (EXIT_FAILURE, 0, _("separator cannot be empty"));
+        error (EXIT_FAILURE, 0, _("separator cannot be empty"));
 
-      compiled_separator.buffer = NULL;
+      compiled_separator.buffer = nullptr;
       compiled_separator.allocated = 0;
       compiled_separator.fastmap = compiled_separator_fastmap;
-      compiled_separator.translate = NULL;
+      compiled_separator.translate = nullptr;
       error_message = re_compile_pattern (separator, strlen (separator),
                                           &compiled_separator);
       if (error_message)
-        die (EXIT_FAILURE, 0, "%s", (error_message));
+        error (EXIT_FAILURE, 0, "%s", (error_message));
     }
   else
     match_length = sentinel_length = *separator ? strlen (separator) : 1;
@@ -675,7 +553,7 @@ main (int argc, char **argv)
   G_buffer = xmalloc (G_buffer_size);
   if (sentinel_length)
     {
-      memcpy (G_buffer, separator, sentinel_length + 1);
+      memcpy (G_buffer, separator, sentinel_length + !!*separator);
       G_buffer += sentinel_length;
     }
   else
@@ -696,7 +574,7 @@ main (int argc, char **argv)
   }
 
   /* Flush the output buffer. */
-  output ((char *) NULL, (char *) NULL);
+  output ((char *) nullptr, (char *) nullptr);
 
   if (have_read_stdin && close (STDIN_FILENO) < 0)
     {

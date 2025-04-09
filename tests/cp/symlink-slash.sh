@@ -2,7 +2,7 @@
 # Make sure that cp -dR dereferences a symlink arg if its name is
 # written with a trailing slash.
 
-# Copyright (C) 2000-2022 Free Software Foundation, Inc.
+# Copyright (C) 2000-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ mkdir dir || framework_failure_
 ln -s dir symlink || framework_failure_
 
 cp -dR symlink/ s || fail=1
-set $(ls -l s)
+set -- $(ls -l s)
 
 # Prior to fileutils-4.0q, the following would have output ...'s -> dir'
 # because the trailing slash was removed unconditionally (now you have to

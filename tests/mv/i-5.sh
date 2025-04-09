@@ -1,7 +1,7 @@
 #!/bin/sh
 # Make sure 'mv -i dir file' prompts before failing.
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,6 @@ touch b || framework_failure_
 
 
 # coreutils 6.2 mv would neglect to prompt in this case.
-echo n | mv -i a b 2>/dev/null || fail=1
+echo n | returns_ 1 mv -i a b 2>/dev/null || fail=1
 
 Exit $fail

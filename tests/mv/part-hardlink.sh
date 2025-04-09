@@ -4,7 +4,7 @@
 # For additional constraints, see the comment in copy.c.
 # Before coreutils-5.2.1, this test would fail.
 
-# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+# Copyright (C) 2004-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,9 +35,9 @@ mv f g "$other_partition_tmpdir" || fail=1
 mv a b "$other_partition_tmpdir" || fail=1
 
 cd "$other_partition_tmpdir"
-set $(ls -Ci f g)
+set -- $(ls -Ci f g)
 test $1 = $3 || fail=1
-set $(ls -Ci a/1 b/1)
+set -- $(ls -Ci a/1 b/1)
 test $1 = $3 || fail=1
 
 Exit $fail

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure "mv --verbose --backup" works the same for dirs and non-dirs.
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,5 +35,11 @@ compare exp out || fail=1
 mkdir C D E || framework_failure_
 mv -T --backup=numbered C E/ || fail=1
 mv -T --backup=numbered D E/ || fail=1
+
+# Bug#55029
+mkdir F && echo 1 >1 && echo 2 >2 && cp 1 F/X && cp 2 X || framework_failure_
+mv --backup=simple X F/ || fail=1
+compare 1 F/X~ || fail=1
+compare 2 F/X || fail=1
 
 Exit $fail

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Make sure "chown USER:GROUP FILE" works, and similar tests with separators.
 
-# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+# Copyright (C) 2004-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ test -n "$id_gn" || framework_failure_
 # Systems with both local and external groups with conflicting IDs,
 # were seen to fail this test erroneously with EPERM errors.
 test $(getent group | grep "^$id_gn:" | wc -l) = 1 ||
-  skip_ "group '$id_gn' not biunique: " \
+  skip_ "group '$id_gn' not unique: " \
         "$(getent group | grep "^$id_gn:" | tr '\n' ',')"
 
 # FreeBSD 6.x's getgrnam fails to look up a group name containing

@@ -1,5 +1,5 @@
 /* Test of fseeko() function.
-   Copyright (C) 2011-2022 Free Software Foundation, Inc.
+   Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ main (int argc, char **argv)
   {
     FILE *fp = fopen (filename, "r");
     ASSERT (fp != NULL);
+    #if !defined __ANDROID__ /* fdsan */
     setvbuf (fp, NULL, _IONBF, 0);
     ASSERT (ftell (fp) == 0);
     ASSERT (fseeko (fp, 0, SEEK_END) == 0);
@@ -41,6 +42,7 @@ main (int argc, char **argv)
     errno = 0;
     ASSERT (fseeko (fp, 0, SEEK_SET) == -1);
     ASSERT (errno == EBADF);
+    #endif
     fclose (fp);
   }
 
@@ -69,5 +71,5 @@ main (int argc, char **argv)
       }
   }
 
-  return 0;
+  return test_exit_status;
 }

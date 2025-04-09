@@ -1,5 +1,5 @@
 /* GNU's uptime.
-   Copyright (C) 1992-2022 Free Software Foundation, Inc.
+   Copyright (C) 1992-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,22 +17,12 @@
 /* Created by hacking who.c by Kaveh Ghazi ghazi@caip.rutgers.edu.  */
 
 #include <config.h>
-#include <stdio.h>
 
+#include <stdio.h>
 #include <sys/types.h>
+
 #include "system.h"
 
-#if HAVE_SYSCTL && HAVE_SYS_SYSCTL_H && ! defined __GLIBC__
-# include <sys/sysctl.h>
-#endif
-
-#if HAVE_OS_H
-# include <OS.h>
-#endif
-
-#include "c-strtod.h"
-#include "die.h"
-#include "error.h"
 #include "long-options.h"
 #include "quote.h"
 #include "readutmp.h"
@@ -46,113 +36,69 @@
   proper_name ("David MacKenzie"), \
   proper_name ("Kaveh Ghazi")
 
-static void
-print_uptime (size_t n, const STRUCT_UTMP *this)
+static int
+print_uptime (idx_t n, struct gl_utmp const *utmp_buf)
 {
-  size_t entries = 0;
+  int status = EXIT_SUCCESS;
   time_t boot_time = 0;
-  time_t time_now;
-  time_t uptime = 0;
-  long int updays;
-  int uphours;
-  int upmins;
-  struct tm *tmn;
-  double avg[3];
-  int loads;
-#ifdef HAVE_PROC_UPTIME
-  FILE *fp;
 
-  fp = fopen ("/proc/uptime", "r");
-  if (fp != NULL)
-    {
-      char buf[BUFSIZ];
-      char *b = fgets (buf, BUFSIZ, fp);
-      if (b == buf)
-        {
-          char *end_ptr;
-          double upsecs = c_strtod (buf, &end_ptr);
-          if (buf != end_ptr)
-            uptime = (0 <= upsecs && upsecs < TYPE_MAXIMUM (time_t)
-                      ? upsecs : -1);
-        }
-
-      fclose (fp);
-    }
-#endif /* HAVE_PROC_UPTIME */
-
-#if HAVE_SYSCTL && ! defined __GLIBC__ \
-    && defined CTL_KERN && defined KERN_BOOTTIME
-  {
-    /* FreeBSD specific: fetch sysctl "kern.boottime".  */
-    static int request[2] = { CTL_KERN, KERN_BOOTTIME };
-    struct timeval result;
-    size_t result_len = sizeof result;
-
-    if (sysctl (request, 2, &result, &result_len, NULL, 0) >= 0)
-      boot_time = result.tv_sec;
-  }
-#endif
-
-#if HAVE_OS_H /* BeOS */
-  {
-    system_info si;
-
-    get_system_info (&si);
-    boot_time = si.boot_time / 1000000;
-  }
-#endif
-
-#if HAVE_UTMPX_H || HAVE_UTMP_H
   /* Loop through all the utmp entries we just read and count up the valid
      ones, also in the process possibly gleaning boottime. */
-  while (n--)
+  idx_t entries = 0;
+  for (idx_t i = 0; i < n; i++)
     {
+      struct gl_utmp const *this = &utmp_buf[i];
       entries += IS_USER_PROCESS (this);
       if (UT_TYPE_BOOT_TIME (this))
-        boot_time = UT_TIME_MEMBER (this);
-      ++this;
+        boot_time = this->ut_ts.tv_sec;
     }
-#else
-  (void) n;
-  (void) this;
-#endif
-
-  time_now = time (NULL);
-#if defined HAVE_PROC_UPTIME
-  if (uptime == 0)
-#endif
+  /* The gnulib module 'readutmp' is supposed to provide a BOOT_TIME entry
+     on all platforms.  */
+  if (boot_time == 0)
     {
-      if (boot_time == 0)
-        die (EXIT_FAILURE, errno, _("couldn't get boot time"));
-      uptime = time_now - boot_time;
+      error (0, errno, _("couldn't get boot time"));
+      status = EXIT_FAILURE;
     }
-  updays = uptime / 86400;
-  uphours = (uptime - (updays * 86400)) / 3600;
-  upmins = (uptime - (updays * 86400) - (uphours * 3600)) / 60;
-  tmn = localtime (&time_now);
+
+  time_t time_now = time (nullptr);
+  struct tm *tmn = time_now == (time_t) -1 ? nullptr : localtime (&time_now);
   /* procps' version of uptime also prints the seconds field, but
      previous versions of coreutils don't. */
   if (tmn)
     /* TRANSLATORS: This prints the current clock time. */
     fprintftime (stdout, _(" %H:%M:%S  "), tmn, 0, 0);
   else
-    printf (_(" ??:????  "));
-  if (uptime == (time_t) -1)
-    printf (_("up ???? days ??:??,  "));
+    {
+      printf (_(" ??:????  "));
+      status = EXIT_FAILURE;
+    }
+
+  intmax_t uptime;
+  if (time_now == (time_t) -1 || boot_time == 0
+      || ckd_sub (&uptime, time_now, boot_time) || uptime < 0)
+    {
+      printf (_("up ???? days ??:??,  "));
+      status = EXIT_FAILURE;
+    }
   else
     {
+      intmax_t updays = uptime / 86400;
+      int uphours = uptime % 86400 / 3600;
+      int upmins = uptime % 86400 % 3600 / 60;
       if (0 < updays)
-        printf (ngettext ("up %ld day %2d:%02d,  ",
-                          "up %ld days %2d:%02d,  ",
+        printf (ngettext ("up %jd day %2d:%02d,  ",
+                          "up %jd days %2d:%02d,  ",
                           select_plural (updays)),
                 updays, uphours, upmins);
       else
         printf (_("up  %2d:%02d,  "), uphours, upmins);
     }
-  printf (ngettext ("%lu user", "%lu users", select_plural (entries)),
-          (unsigned long int) entries);
 
-  loads = getloadavg (avg, 3);
+  printf (ngettext ("%td user", "%td users", select_plural (entries)),
+          entries);
+
+  double avg[3];
+  int loads = getloadavg (avg, 3);
 
   if (loads == -1)
     putchar ('\n');
@@ -167,6 +113,8 @@ print_uptime (size_t n, const STRUCT_UTMP *this)
       if (loads > 0)
         putchar ('\n');
     }
+
+  return status;
 }
 
 /* Display the system uptime and the number of users on the system,
@@ -176,17 +124,19 @@ print_uptime (size_t n, const STRUCT_UTMP *this)
 static _Noreturn void
 uptime (char const *filename, int options)
 {
-  size_t n_users;
-  STRUCT_UTMP *utmp_buf = NULL;
+  idx_t n_users;
+  struct gl_utmp *utmp_buf;
+  int read_utmp_status = (read_utmp (filename, &n_users, &utmp_buf, options) < 0
+                          ? EXIT_FAILURE : EXIT_SUCCESS);
+  if (read_utmp_status != EXIT_SUCCESS)
+    {
+      error (0, errno, "%s", quotef (filename));
+      n_users = 0;
+      utmp_buf = nullptr;
+    }
 
-#if HAVE_UTMPX_H || HAVE_UTMP_H
-  if (read_utmp (filename, &n_users, &utmp_buf, options) != 0)
-    die (EXIT_FAILURE, errno, "%s", quotef (filename));
-#endif
-
-  print_uptime (n_users, utmp_buf);
-
-  exit (EXIT_SUCCESS);
+  int print_uptime_status = print_uptime (n_users, utmp_buf);
+  exit (MAX (read_utmp_status, print_uptime_status));
 }
 
 void
@@ -236,7 +186,7 @@ main (int argc, char **argv)
 
   parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
                                    Version, true, usage, AUTHORS,
-                                   (char const *) NULL);
+                                   (char const *) nullptr);
 
   switch (argc - optind)
     {

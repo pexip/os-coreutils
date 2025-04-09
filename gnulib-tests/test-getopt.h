@@ -1,5 +1,5 @@
 /* Test of command line argument processing.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 
 /* Written by Bruno Haible <bruno@clisp.org>, 2009.  */
 
-#include <stdbool.h>
 
 /* The glibc/gnulib implementation of getopt supports setting optind =
    0, but not all other implementations do.  This matters for getopt.
@@ -86,8 +85,10 @@ test_getopt (void)
   bool posixly = !!getenv ("POSIXLY_CORRECT");
   /* See comment in getopt.c:
      glibc gets a LSB-compliant getopt.
-     Standalone applications get a POSIX-compliant getopt.  */
-#if defined __GETOPT_PREFIX || !(__GLIBC__ >= 2 || defined __MINGW32__)
+     Standalone applications get a POSIX-compliant getopt.
+     Note: The 'defined __GETOPT_PREFIX' condition is equivalent to
+     $REPLACE_GETOPT = 1 at configure time.  */
+#if defined __GETOPT_PREFIX || !(__GLIBC__ >= 2)
   /* Using getopt from gnulib or from a non-glibc system.  */
   posixly = true;
 #endif
@@ -1262,7 +1263,7 @@ test_getopt (void)
 #if GNULIB_TEST_GETOPT_GNU
   /* If GNU extensions are supported, require compliance with POSIX
      interpretation on leading '+' behavior.
-     http://austingroupbugs.net/view.php?id=191  */
+     https://austingroupbugs.net/view.php?id=191  */
   for (start = OPTIND_MIN; start <= 1; start++)
     {
       int a_seen = 0;

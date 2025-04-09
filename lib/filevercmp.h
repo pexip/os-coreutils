@@ -2,7 +2,7 @@
 
    Copyright (C) 1995 Ian Jackson <iwj10@cus.cam.ac.uk>
    Copyright (C) 2001 Anthony Towns <aj@azure.humbug.org.au>
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -20,7 +20,17 @@
 #ifndef FILEVERCMP_H
 #define FILEVERCMP_H
 
+/* This file uses _GL_ATTRIBUTE_PURE.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
+
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* Compare strings A and B as file names containing version numbers,
    and return an integer that is negative, zero, or positive depending
@@ -61,7 +71,9 @@
    without them, using version sort without special priority;
    if they do not compare equal, this comparison result is used and
    the suffixes are effectively ignored.  Otherwise, the entire
-   strings are compared using version sort.
+   strings are compared using version sort.  When removing a suffix
+   from a nonempty string, remove the maximal-length suffix such that
+   the remaining string is nonempty.
 
    This function is intended to be a replacement for strverscmp.  */
 int filevercmp (char const *a, char const *b) _GL_ATTRIBUTE_PURE;
@@ -72,5 +84,10 @@ int filevercmp (char const *a, char const *b) _GL_ATTRIBUTE_PURE;
    terminated by '\0', and similarly for BLEN.  */
 int filenvercmp (char const *a, ptrdiff_t alen, char const *b, ptrdiff_t blen)
   _GL_ATTRIBUTE_PURE;
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FILEVERCMP_H */

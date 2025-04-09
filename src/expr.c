@@ -1,5 +1,5 @@
 /* expr -- evaluate expressions.
-   Copyright (C) 1986-2022 Free Software Foundation, Inc.
+   Copyright (C) 1986-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,16 +35,15 @@
 
 #include <gmp.h>
 #include <regex.h>
-#include "die.h"
-#include "error.h"
+#include "c-ctype.h"
 #include "long-options.h"
-#include "mbuiter.h"
+#include "mcel.h"
 #include "strnumcmp.h"
 #include "xstrtol.h"
 
 /* Various parts of this code assume size_t fits into unsigned long
    int, the widest unsigned type that GMP supports.  */
-verify (SIZE_MAX <= ULONG_MAX);
+static_assert (SIZE_MAX <= ULONG_MAX);
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "expr"
@@ -124,38 +123,37 @@ mbs_logical_cspn (char const *s, char const *accept)
   /* General case.  */
   if (MB_CUR_MAX > 1)
     {
-      mbui_iterator_t iter;
-
-      for (mbui_init (iter, s); mbui_avail (iter); mbui_advance (iter))
+      for (char const *p = s; *p; )
         {
           ++idx;
-          if (mb_len (mbui_cur (iter)) == 1)
+          mcel_t g = mcel_scanz (p);
+          if (g.len == 1)
             {
-              if (mbschr (accept, *mbui_cur_ptr (iter)))
+              if (mbschr (accept, *p))
                 return idx;
             }
           else
-            {
-              mbui_iterator_t aiter;
-
-              for (mbui_init (aiter, accept);
-                   mbui_avail (aiter);
-                   mbui_advance (aiter))
-                if (mb_equal (mbui_cur (aiter), mbui_cur (iter)))
+            for (char const *a = accept; *a; )
+              {
+                mcel_t h = mcel_scanz (a);
+                if (mcel_cmp (g, h) == 0)
                   return idx;
-            }
+                a += h.len;
+              }
+          p += g.len;
         }
-
-      /* not found */
-      return 0;
     }
   else
     {
       /* single-byte locale,
          convert returned byte offset to 1-based index or zero if not found. */
       size_t i = strcspn (s, accept);
-      return (s[i] ? i + 1 : 0);
+      if (s[i])
+        return i + 1;
     }
+
+  /* not found */
+  return 0;
 }
 
 /* Extract the substring of S, from logical character
@@ -168,48 +166,43 @@ mbs_logical_cspn (char const *s, char const *accept)
 static char *
 mbs_logical_substr (char const *s, size_t pos, size_t len)
 {
-  char *v, *vlim;
-
-  size_t blen = strlen (s); /* byte length */
-  size_t llen = (MB_CUR_MAX > 1) ? mbslen (s) : blen; /* logical length */
-
-  if (llen < pos || pos == 0 || len == 0 || len == SIZE_MAX)
-    return xstrdup ("");
+  size_t mb_cur_max = MB_CUR_MAX;
+  idx_t llen = mb_cur_max <= 1 ? strlen (s) : mbslen (s); /* logical length */
 
   /* characters to copy */
-  size_t vlen = MIN (len, llen - pos + 1);
+  size_t vlen = MIN (len, pos <= llen ? llen - pos + 1 : 0);
 
-  if (MB_CUR_MAX == 1)
+  char const *substart = s;
+  idx_t sublen = 0;
+  if (pos == 0 || len == SIZE_MAX)
     {
-      /* Single-byte case */
-      v = xmalloc (vlen + 1);
-      vlim = mempcpy (v, s + pos - 1, vlen);
+      /* The request is invalid.  Silently yield an empty string.  */
+    }
+  else if (mb_cur_max <= 1)
+    {
+      substart += pos - 1;
+      sublen = vlen;
     }
   else
-    {
-      /* Multibyte case */
+    for (idx_t idx = 1; *s && vlen; idx++)
+      {
+        idx_t char_bytes = mcel_scanz (s).len;
 
-      /* FIXME: this is wasteful. Some memory can be saved by counting
-         how many bytes the matching characters occupy. */
-      vlim = v = xmalloc (blen + 1);
+        /* Skip until we reach the starting position.  */
+        if (pos <= idx)
+          {
+            if (pos == idx)
+              substart = s;
 
-      mbui_iterator_t iter;
-      size_t idx=1;
-      for (mbui_init (iter, s);
-           mbui_avail (iter) && vlen > 0;
-           mbui_advance (iter), ++idx)
-        {
-          /* Skip until we reach the starting position */
-          if (idx < pos)
-            continue;
+            /* Add one character's length in bytes.  */
+            vlen--;
+            sublen += char_bytes;
+          }
 
-          /* Copy one character */
-          --vlen;
-          vlim = mempcpy (vlim, mbui_cur_ptr (iter), mb_len (mbui_cur (iter)));
-        }
-    }
-  *vlim = '\0';
-  return v;
+        s += char_bytes;
+      }
+
+  return ximemdup0 (substart, sublen);
 }
 
 /* Return the number of logical characters (possibly multibyte)
@@ -223,15 +216,9 @@ mbs_logical_substr (char const *s, size_t pos, size_t len)
 static size_t
 mbs_offset_to_chars (char const *s, size_t ofs)
 {
-  mbui_iterator_t iter;
   size_t c = 0;
-  for (mbui_init (iter, s); mbui_avail (iter); mbui_advance (iter))
-    {
-      ptrdiff_t d = mbui_cur_ptr (iter) - s;
-      if (d >= ofs)
-        break;
-      ++c;
-    }
+  for (size_t d = 0; d < ofs && s[d]; d += mcel_scanz (s + d).len)
+    c++;
   return c;
 }
 
@@ -331,18 +318,17 @@ main (int argc, char **argv)
   atexit (close_stdout);
 
   parse_long_options (argc, argv, PROGRAM_NAME, PACKAGE_NAME, VERSION,
-                      usage, AUTHORS, (char const *) NULL);
+                      usage, AUTHORS, (char const *) nullptr);
 
   /* The above handles --help and --version.
      Since there is no other invocation of getopt, handle '--' here.  */
-  unsigned int u_argc = argc;
-  if (1 < u_argc && STREQ (argv[1], "--"))
+  if (1 < argc && STREQ (argv[1], "--"))
     {
-      --u_argc;
+      --argc;
       ++argv;
     }
 
-  if (u_argc <= 1)
+  if (argc <= 1)
     {
       error (0, 0, _("missing operand"));
       usage (EXPR_INVALID);
@@ -352,8 +338,8 @@ main (int argc, char **argv)
 
   v = eval (true);
   if (!nomoreargs ())
-    die (EXPR_INVALID, 0, _("syntax error: unexpected argument %s"),
-         quotearg_n_style (0, locale_quoting_style, *args));
+    error (EXPR_INVALID, 0, _("syntax error: unexpected argument %s"),
+           quotearg_n_style (0, locale_quoting_style, *args));
 
   printv (v);
 
@@ -409,7 +395,7 @@ printv (VALUE *v)
       puts (v->u.s);
       break;
     default:
-      abort ();
+      unreachable ();
     }
 }
 
@@ -441,7 +427,7 @@ null (VALUE *v)
         return true;
       }
     default:
-      abort ();
+      unreachable ();
     }
 }
 
@@ -454,7 +440,7 @@ looks_like_integer (char const *cp)
   cp += (*cp == '-');
 
   do
-    if (! ISDIGIT (*cp))
+    if (! c_isdigit (*cp))
       return false;
   while (*++cp);
 
@@ -470,7 +456,7 @@ tostring (VALUE *v)
     {
     case integer:
       {
-        char *s = mpz_get_str (NULL, 10, v->u.i);
+        char *s = mpz_get_str (nullptr, 10, v->u.i);
         mpz_clear (v->u.i);
         v->u.s = s;
         v->type = string;
@@ -479,7 +465,7 @@ tostring (VALUE *v)
     case string:
       break;
     default:
-      abort ();
+      unreachable ();
     }
 }
 
@@ -499,13 +485,13 @@ toarith (VALUE *v)
         if (! looks_like_integer (s))
           return false;
         if (mpz_init_set_str (v->u.i, s, 10) != 0)
-          die (EXPR_FAILURE, ERANGE, "%s", (s));
+          error (EXPR_FAILURE, ERANGE, "%s", (s));
         free (s);
         v->type = integer;
         return true;
       }
     default:
-      abort ();
+      unreachable ();
     }
 }
 
@@ -527,12 +513,12 @@ getsize (mpz_t i)
 }
 
 /* Return true and advance if the next token matches STR exactly.
-   STR must not be NULL.  */
+   STR must not be null.  */
 
 static bool
 nextarg (char const *str)
 {
-  if (*args == NULL)
+  if (*args == nullptr)
     return false;
   else
     {
@@ -557,8 +543,8 @@ static void
 require_more_args (void)
 {
   if (nomoreargs ())
-    die (EXPR_INVALID, 0, _("syntax error: missing argument after %s"),
-         quotearg_n_style (0, locale_quoting_style, *(args - 1)));
+    error (EXPR_INVALID, 0, _("syntax error: missing argument after %s"),
+           quotearg_n_style (0, locale_quoting_style, *(args - 1)));
 }
 
 
@@ -596,18 +582,18 @@ docolon (VALUE *sv, VALUE *pv)
   tostring (pv);
 
   re_regs.num_regs = 0;
-  re_regs.start = NULL;
-  re_regs.end = NULL;
+  re_regs.start = nullptr;
+  re_regs.end = nullptr;
 
-  re_buffer.buffer = NULL;
+  re_buffer.buffer = nullptr;
   re_buffer.allocated = 0;
   re_buffer.fastmap = fastmap;
-  re_buffer.translate = NULL;
+  re_buffer.translate = nullptr;
   re_syntax_options =
     RE_SYNTAX_POSIX_BASIC & ~RE_CONTEXT_INVALID_DUP & ~RE_NO_EMPTY_RANGES;
   errmsg = re_compile_pattern (pv->u.s, strlen (pv->u.s), &re_buffer);
   if (errmsg)
-    die (EXPR_INVALID, 0, "%s", (errmsg));
+    error (EXPR_INVALID, 0, "%s", (errmsg));
   re_buffer.newline_anchor = 0;
 
   matchlen = re_match (&re_buffer, sv->u.s, strlen (sv->u.s), 0, &re_regs);
@@ -643,16 +629,16 @@ docolon (VALUE *sv, VALUE *pv)
         v = int_value (0);
     }
   else
-    die (EXPR_FAILURE,
-         (matchlen == -2 ? errno : EOVERFLOW),
-         _("error in regular expression matcher"));
+    error (EXPR_FAILURE,
+           matchlen == -2 ? errno : EOVERFLOW,
+           _("error in regular expression matcher"));
 
   if (0 < re_regs.num_regs)
     {
       free (re_regs.start);
       free (re_regs.end);
     }
-  re_buffer.fastmap = NULL;
+  re_buffer.fastmap = nullptr;
   regfree (&re_buffer);
   return v;
 }
@@ -673,16 +659,16 @@ eval7 (bool evaluate)
     {
       v = eval (evaluate);
       if (nomoreargs ())
-        die (EXPR_INVALID, 0, _("syntax error: expecting ')' after %s"),
-             quotearg_n_style (0, locale_quoting_style, *(args - 1)));
+        error (EXPR_INVALID, 0, _("syntax error: expecting ')' after %s"),
+               quotearg_n_style (0, locale_quoting_style, *(args - 1)));
       if (!nextarg (")"))
-        die (EXPR_INVALID, 0, _("syntax error: expecting ')' instead of %s"),
-             quotearg_n_style (0, locale_quoting_style, *args));
+        error (EXPR_INVALID, 0, _("syntax error: expecting ')' instead of %s"),
+               quotearg_n_style (0, locale_quoting_style, *args));
       return v;
     }
 
   if (nextarg (")"))
-    die (EXPR_INVALID, 0, _("syntax error: unexpected ')'"));
+    error (EXPR_INVALID, 0, _("syntax error: unexpected ')'"));
 
   return str_value (*args++);
 }
@@ -828,9 +814,9 @@ eval4 (bool evaluate)
       if (evaluate)
         {
           if (!toarith (l) || !toarith (r))
-            die (EXPR_INVALID, 0, _("non-integer argument"));
+            error (EXPR_INVALID, 0, _("non-integer argument"));
           if (fxn != multiply && mpz_sgn (r->u.i) == 0)
-            die (EXPR_INVALID, 0, _("division by zero"));
+            error (EXPR_INVALID, 0, _("division by zero"));
           ((fxn == multiply ? mpz_mul
             : fxn == divide ? mpz_tdiv_q
             : mpz_tdiv_r)
@@ -865,7 +851,7 @@ eval3 (bool evaluate)
       if (evaluate)
         {
           if (!toarith (l) || !toarith (r))
-            die (EXPR_INVALID, 0, _("non-integer argument"));
+            error (EXPR_INVALID, 0, _("non-integer argument"));
           (fxn == plus ? mpz_add : mpz_sub) (l->u.i, l->u.i, r->u.i);
         }
       freev (r);
@@ -925,10 +911,10 @@ eval2 (bool evaluate)
                 {
                   error (0, errno, _("string comparison failed"));
                   error (0, 0, _("set LC_ALL='C' to work around the problem"));
-                  die (EXPR_INVALID, 0,
-                       _("the strings compared were %s and %s"),
-                       quotearg_n_style (0, locale_quoting_style, l->u.s),
-                       quotearg_n_style (1, locale_quoting_style, r->u.s));
+                  error (EXPR_INVALID, 0,
+                         _("the strings compared were %s and %s"),
+                         quotearg_n_style (0, locale_quoting_style, l->u.s),
+                         quotearg_n_style (1, locale_quoting_style, r->u.s));
                 }
             }
 
@@ -940,7 +926,7 @@ eval2 (bool evaluate)
             case not_equal:     val = (cmp != 0); break;
             case greater_equal: val = (cmp >= 0); break;
             case greater_than:  val = (cmp >  0); break;
-            default: abort ();
+            default: unreachable ();
             }
         }
 

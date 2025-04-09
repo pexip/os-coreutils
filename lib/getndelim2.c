@@ -1,7 +1,7 @@
 /* getndelim2 - Read a line from a stream, stopping at one of 2 delimiters,
    with bounded memory allocation.
 
-   Copyright (C) 1993, 1996-1998, 2000, 2003-2004, 2006, 2008-2022 Free
+   Copyright (C) 1993, 1996-1998, 2000, 2003-2004, 2006, 2008-2025 Free
    Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@
 
 #include "getndelim2.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,11 +46,7 @@
 #include "freadseek.h"
 #include "memchr2.h"
 
-#ifndef SSIZE_MAX
-# define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
-#endif
-
-/* Use this to suppress gcc's "...may be used before initialized" warnings. */
+/* Avoid false GCC warning "'c' may be used uninitialized".  */
 #if defined GCC_LINT || defined lint
 # define IF_LINT(Code) Code
 #else
@@ -109,7 +104,7 @@ getndelim2 (char **lineptr, size_t *linesize, size_t offset, size_t nmax,
       /* Here always ptr + size == read_pos + nbytes_avail.
          Also nbytes_avail > 0 || size < nmax.  */
 
-      int c IF_LINT (= 0);
+      int c IF_LINT (= EOF);
       const char *buffer;
       size_t buffer_len;
 

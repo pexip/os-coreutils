@@ -1,5 +1,5 @@
 /* Tests of unlinkat.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ SIGNATURE_CHECK (unlinkat, int, (int, char const *, int));
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -56,7 +55,7 @@ unlinker (char const *name)
 }
 
 int
-main (_GL_UNUSED int argc, char *argv[])
+main ()
 {
   /* FIXME: Add tests of fd other than ".".  */
   int result1;
@@ -91,5 +90,5 @@ main (_GL_UNUSED int argc, char *argv[])
   if (result1 == 77)
     fputs ("skipping test: symlinks not supported on this file system\n",
            stderr);
-  return result1;
+  return (result1 ? result1 : test_exit_status);
 }

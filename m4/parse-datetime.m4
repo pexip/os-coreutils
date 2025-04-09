@@ -1,8 +1,10 @@
-# parse-datetime.m4 serial 27
-dnl Copyright (C) 2002-2006, 2008-2022 Free Software Foundation, Inc.
+# parse-datetime.m4
+# serial 28
+dnl Copyright (C) 2002-2006, 2008-2025 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
 
 dnl Define HAVE_COMPOUND_LITERALS if the C compiler supports compound literals
 dnl as in ISO C99.
@@ -48,7 +50,6 @@ AC_DEFUN([gl_PARSE_DATETIME],
   dnl Prerequisites of lib/parse-datetime.y.
   AC_REQUIRE([gl_BISON])
   AC_REQUIRE([gl_C_COMPOUND_LITERALS])
-  AC_STRUCT_TIMEZONE
   AC_REQUIRE([gl_CLOCK_TIME])
   AC_REQUIRE([gl_TM_GMTOFF])
 ])

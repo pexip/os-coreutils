@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure we don't segfault in selinux handling
 
-# Copyright (C) 2008-2022 Free Software Foundation, Inc.
+# Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,5 +29,8 @@ ls -l $f > out || fail=1
 mkdir sedir || framework_failure_
 ln -sf missing sedir/broken || framework_failure_
 returns_ 1 ls -L -R -Z -m sedir > out || fail=1
+
+# ls 9.6 would segfault with the following
+ls -Z . > out || fail=1
 
 Exit $fail

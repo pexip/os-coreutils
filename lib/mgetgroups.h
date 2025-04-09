@@ -1,5 +1,5 @@
 /* Get a list of all group IDs associated with a specified user ID.
-   Copyright (C) 2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -16,7 +16,17 @@
 
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 int mgetgroups (const char *username, gid_t gid, gid_t **groups);
 #if GNULIB_XGETGROUPS
 int xgetgroups (const char *username, gid_t gid, gid_t **groups);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif

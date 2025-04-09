@@ -1,5 +1,5 @@
 /* Open a stream to a file.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -19,12 +19,12 @@
 /* If the user's config.h happens to include <stdio.h>, let it include only
    the system's <stdio.h> here, so that orig_freopen doesn't recurse to
    rpl_freopen.  */
-#define _GL_ALREADY_INCLUDING_STDIO_H
+#define _GL_SKIP_GNULIB_STDIO_H
 #include <config.h>
 
 /* Get the original definition of freopen.  It might be defined as a macro.  */
 #include <stdio.h>
-#undef _GL_ALREADY_INCLUDING_STDIO_H
+#undef _GL_SKIP_GNULIB_STDIO_H
 
 #include <errno.h>
 
@@ -35,9 +35,13 @@ orig_freopen (const char *filename, const char *mode, FILE *stream)
 }
 
 /* Specification.  */
+#ifdef __osf__
 /* Write "stdio.h" here, not <stdio.h>, otherwise OSF/1 5.1 DTK cc eliminates
    this include because of the preliminary #include <stdio.h> above.  */
-#include "stdio.h"
+# include "stdio.h"
+#else
+# include <stdio.h>
+#endif
 
 #include <fcntl.h>
 #include <string.h>

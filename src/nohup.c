@@ -1,5 +1,5 @@
 /* nohup -- run a command immune to hangups, with output to a non-tty
-   Copyright (C) 2003-2022 Free Software Foundation, Inc.
+   Copyright (C) 2003-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 #include "system.h"
 
-#include "error.h"
 #include "filenamecat.h"
 #include "fd-reopen.h"
 #include "long-options.h"
@@ -67,10 +66,17 @@ If standard error is a terminal, redirect it to standard output.\n\
 To save output to FILE, use '%s COMMAND > FILE'.\n"),
               program_name);
       printf (USAGE_BUILTIN_WARNING, PROGRAM_NAME);
+      emit_exec_status (PROGRAM_NAME);
       emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
 }
+
+/* GCC 13 gets confused by the dup2 calls
+   <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109839>.  */
+#if 13 <= __GNUC__
+# pragma GCC diagnostic ignored "-Wanalyzer-fd-leak"
+#endif
 
 int
 main (int argc, char **argv)
@@ -100,7 +106,7 @@ main (int argc, char **argv)
 
   parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
                                    Version, false, usage, AUTHORS,
-                                   (char const *) NULL);
+                                   (char const *) nullptr);
 
   if (argc <= optind)
     {
@@ -131,7 +137,7 @@ main (int argc, char **argv)
      $HOME/nohup.out without redirecting anything.  */
   if (redirecting_stdout || (redirecting_stderr && stdout_is_closed))
     {
-      char *in_home = NULL;
+      char *in_home = nullptr;
       char const *file = "nohup.out";
       int flags = O_CREAT | O_WRONLY | O_APPEND;
       mode_t mode = S_IRUSR | S_IWUSR;
@@ -146,7 +152,7 @@ main (int argc, char **argv)
           char const *home = getenv ("HOME");
           if (home)
             {
-              in_home = file_name_concat (home, file, NULL);
+              in_home = file_name_concat (home, file, nullptr);
               out_fd = (redirecting_stdout
                         ? fd_reopen (STDOUT_FILENO, in_home, flags, mode)
                         : open (in_home, flags, mode));

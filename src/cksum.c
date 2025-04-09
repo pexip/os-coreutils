@@ -1,5 +1,5 @@
 /* cksum -- calculate and print POSIX checksums and sizes of files
-   Copyright (C) 1992-2022 Free Software Foundation, Inc.
+   Copyright (C) 1992-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
   do something like the following:
 
       cc -I../lib -DCRCTAB -o crctab cksum.c
-      crctab > crctab.c
+      ./crctab > crctab.c
 
   This software is compatible with neither the System V nor the BSD
   'sum' program.  It is supposed to conform to POSIX, except perhaps
@@ -34,21 +34,11 @@
 
 #include <config.h>
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdint.h>
-#include "system.h"
-
-#include <byteswap.h>
-#ifdef WORDS_BIGENDIAN
-# define SWAP(n) (n)
-#else
-# define SWAP(n) bswap_32 (n)
-#endif
-
 #ifdef CRCTAB
 
-# define BIT(x)	((uint_fast32_t) 1 << (x))
+# include <stdio.h>
+
+# define BIT(x)	(1u << (x))
 # define SBIT	BIT (31)
 
 /* The generating polynomial is
@@ -62,7 +52,7 @@
                  | BIT (11) | BIT (10) | BIT (8) | BIT (7) | BIT (5) \
                  | BIT (4) | BIT (2) | BIT (1) | BIT (0))
 
-static uint_fast32_t r[8];
+static unsigned int r[8];
 
 static void
 fill_r (void)
@@ -72,10 +62,10 @@ fill_r (void)
     r[i] = (r[i - 1] << 1) ^ ((r[i - 1] & SBIT) ? GEN : 0);
 }
 
-static uint_fast32_t
+static unsigned int
 crc_remainder (int m)
 {
-  uint_fast32_t rem = 0;
+  unsigned int rem = 0;
 
   for (int i = 0; i < 8; i++)
     if (BIT (i) & m)
@@ -87,15 +77,12 @@ crc_remainder (int m)
 int
 main (void)
 {
-  int i;
-  static uint_fast32_t crctab[8][256];
+  static unsigned int crctab[8][256];
 
   fill_r ();
 
-  for (i = 0; i < 256; i++)
-    {
-      crctab[0][i] = crc_remainder (i);
-    }
+  for (int i = 0; i < 256; i++)
+    crctab[0][i] = crc_remainder (i);
 
   /* CRC(0x11 0x22 0x33 0x44)
      is equal to
@@ -104,24 +91,26 @@ main (void)
      We precompute the CRC values for the offset values into
      separate CRC tables. We can then use them to speed up
      CRC calculation by processing multiple bytes at the time. */
-  for (i = 0; i < 256; i++)
+  for (int i = 0; i < 256; i++)
     {
-      uint32_t crc = 0;
+      unsigned int crc = 0;
 
-      crc = (crc << 8) ^ crctab[0][((crc >> 24) ^ (i & 0xFF)) & 0xFF];
-      for (unsigned int offset = 1; offset < 8; offset++)
+      crc = (crc << 8) ^ crctab[0][((crc >> 24) ^ i) & 0xFF];
+      for (int offset = 1; offset < 8; offset++)
         {
-          crc = (crc << 8) ^ crctab[0][((crc >> 24) ^ 0x00) & 0xFF];
-          crctab[offset][i] = crc;
+          crc = (crc << 8) ^ crctab[0][((crc >> 24) ^ 0) & 0xFF];
+          crctab[offset][i] = crc & 0xFFFFFFFF;
         }
     }
 
-  printf ("#include <stdint.h>\n\n");
+  printf ("#include <config.h>\n");
+  printf ("#include \"cksum.h\"\n");
+  printf ("\n");
   printf ("uint_fast32_t const crctab[8][256] = {\n");
   for (int y = 0; y < 8; y++)
     {
       printf ("{\n  0x%08x", crctab[y][0]);
-      for (i = 0; i < 51; i++)
+      for (int i = 0; i < 51; i++)
         {
           printf (",\n  0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x",
                   crctab[y][i * 5 + 1], crctab[y][i * 5 + 2],
@@ -131,62 +120,104 @@ main (void)
         printf ("\n},\n");
     }
   printf ("};\n");
-  return EXIT_SUCCESS;
 }
 
 #else /* !CRCTAB */
 
-# include "die.h"
-# include "error.h"
-
 # include "cksum.h"
-# if USE_PCLMUL_CRC32
-#  include "cpuid.h"
-# else
-#  define cksum_pclmul cksum_slice8
-# endif /* USE_PCLMUL_CRC32 */
+# include <sys/types.h>
+# include <endian.h>
+# include "system.h"
+
+# ifdef USE_VMULL_CRC32
+#  include <sys/auxv.h>
+#  include <asm/hwcap.h>
+# endif
+
+# include "crc.h"
 
 /* Number of bytes to read at once.  */
 # define BUFLEN (1 << 16)
 
+typedef bool (*cksum_fp_t) (FILE *, uint_fast32_t *, uintmax_t *);
 
-static bool
-cksum_slice8 (FILE *fp, uint_fast32_t *crc_out, uintmax_t *length_out);
-static bool
-  (*cksum_fp)(FILE *, uint_fast32_t *, uintmax_t *);
-
-static bool
+static cksum_fp_t
 pclmul_supported (void)
 {
-# if USE_PCLMUL_CRC32
-  unsigned int eax = 0;
-  unsigned int ebx = 0;
-  unsigned int ecx = 0;
-  unsigned int edx = 0;
-
-  if (! __get_cpuid (1, &eax, &ebx, &ecx, &edx))
-    {
-      if (cksum_debug)
-        error (0, 0, "%s", _("failed to get cpuid"));
-      return false;
-    }
-
-  if (! (ecx & bit_PCLMUL) || ! (ecx & bit_AVX))
-    {
-      if (cksum_debug)
-        error (0, 0, "%s", _("pclmul support not detected"));
-      return false;
-    }
-
+# if USE_PCLMUL_CRC32 || GL_CRC_X86_64_PCLMUL
+  bool pclmul_enabled = (0 < __builtin_cpu_supports ("pclmul")
+                         && 0 < __builtin_cpu_supports ("avx"));
   if (cksum_debug)
-    error (0, 0, "%s", _("using pclmul hardware support"));
+    error (0, 0, "%s",
+           (pclmul_enabled
+            ? _("using pclmul hardware support")
+            : _("pclmul support not detected")));
+  if (pclmul_enabled)
+    return cksum_pclmul;
+# endif
 
-  return true;
-# else
+  return nullptr;
+}
+
+static cksum_fp_t
+avx2_supported (void)
+{
+  /* AVX512 processors will not set vpclmulqdq unless they support
+     the avx512 version, but it implies that the avx2 version
+     is supported  */
+# if USE_AVX2_CRC32
+  bool avx2_enabled = (0 < __builtin_cpu_supports ("vpclmulqdq")
+                       && 0 < __builtin_cpu_supports ("avx2"));
   if (cksum_debug)
-    error (0, 0, "%s", _("using generic hardware support"));
-  return false;
-# endif /* USE_PCLMUL_CRC32 */
+    error (0, 0, "%s",
+           (avx2_enabled
+            ? _("using avx2 hardware support")
+            : _("avx2 support not detected")));
+  if (avx2_enabled)
+    return cksum_avx2;
+# endif
+
+  return nullptr;
+}
+
+static cksum_fp_t
+avx512_supported (void)
+{
+  /* vpclmulqdq for multiplication
+     mavx512f for most of the avx512 functions we're using
+     mavx512bw for byte swapping  */
+# if USE_AVX512_CRC32
+  bool avx512_enabled = (0 < __builtin_cpu_supports ("vpclmulqdq")
+                         && 0 < __builtin_cpu_supports ("avx512bw")
+                         && 0 < __builtin_cpu_supports ("avx512f"));
+  if (cksum_debug)
+    error (0, 0, "%s",
+           (avx512_enabled
+            ? _("using avx512 hardware support")
+            : _("avx512 support not detected")));
+  if (avx512_enabled)
+    return cksum_avx512;
+# endif
+
+  return nullptr;
+}
+
+static cksum_fp_t
+vmull_supported (void)
+{
+  /* vmull for multiplication  */
+# if USE_VMULL_CRC32
+  bool vmull_enabled = (getauxval (AT_HWCAP) & HWCAP_PMULL) > 0;
+  if (cksum_debug)
+    error (0, 0, "%s",
+           (vmull_enabled
+            ? _("using vmull hardware support")
+            : _("vmull support not detected")));
+  if (vmull_enabled)
+    return cksum_vmull;
+# endif
+
+  return nullptr;
 }
 
 static bool
@@ -211,19 +242,13 @@ cksum_slice8 (FILE *fp, uint_fast32_t *crc_out, uintmax_t *length_out)
         }
       length += bytes_read;
 
-      if (bytes_read == 0)
-        {
-          if (ferror (fp))
-            return false;
-        }
-
       /* Process multiples of 8 bytes */
       datap = (uint32_t *)buf;
       while (bytes_read >= 8)
         {
           uint32_t first = *datap++, second = *datap++;
-          crc ^= SWAP (first);
-          second = SWAP (second);
+          crc ^= htobe32 (first);
+          second = htobe32 (second);
           crc = (crctab[7][(crc >> 24) & 0xFF]
                  ^ crctab[6][(crc >> 16) & 0xFF]
                  ^ crctab[5][(crc >> 8) & 0xFF]
@@ -246,7 +271,7 @@ cksum_slice8 (FILE *fp, uint_fast32_t *crc_out, uintmax_t *length_out)
   *crc_out = crc;
   *length_out = length;
 
-  return true;
+  return !ferror (fp);
 }
 
 /* Calculate the checksum and length in bytes of stream STREAM.
@@ -258,13 +283,17 @@ crc_sum_stream (FILE *stream, void *resstream, uintmax_t *length)
   uintmax_t total_bytes = 0;
   uint_fast32_t crc = 0;
 
+  static cksum_fp_t cksum_fp;
   if (! cksum_fp)
-    {
-       if (pclmul_supported ())
-         cksum_fp = cksum_pclmul;
-       else
-         cksum_fp = cksum_slice8;
-    }
+    cksum_fp = avx512_supported ();
+  if (! cksum_fp)
+    cksum_fp = avx2_supported ();
+  if (! cksum_fp)
+    cksum_fp = pclmul_supported ();
+  if (! cksum_fp)
+    cksum_fp = vmull_supported ();
+  if (! cksum_fp)
+    cksum_fp = cksum_slice8;
 
   if (! cksum_fp (stream, &crc, &total_bytes))
     return -1;
@@ -281,15 +310,64 @@ crc_sum_stream (FILE *stream, void *resstream, uintmax_t *length)
   return 0;
 }
 
+/* Calculate the crc32b checksum and length in bytes of stream STREAM.
+   Return -1 on error, 0 on success.  */
+
+int
+crc32b_sum_stream (FILE *stream, void *resstream, uintmax_t *reslen)
+{
+  uint32_t buf[BUFLEN / sizeof (uint32_t)];
+  uint32_t crc = 0;
+  uintmax_t len = 0;
+  size_t bytes_read;
+
+  if (!stream || !resstream || !reslen)
+    return -1;
+
+# if GL_CRC_X86_64_PCLMUL
+  if (cksum_debug)
+    (void) pclmul_supported ();
+# endif
+
+  while ((bytes_read = fread (buf, 1, BUFLEN, stream)) > 0)
+    {
+      if (len + bytes_read < len)
+        {
+          errno = EOVERFLOW;
+          return -1;
+        }
+      len += bytes_read;
+
+      crc = crc32_update (crc, (char const *)buf, bytes_read);
+
+      if (feof (stream))
+        break;
+    }
+
+  unsigned int crc_out = crc;
+  memcpy (resstream, &crc_out, sizeof crc_out);
+
+  *reslen = len;
+
+  return ferror (stream) ? -1 : 0;
+}
+
 /* Print the checksum and size to stdout.
    If ARGS is true, also print the FILE name.  */
 
 void
-output_crc (char const *file, int binary_file, void const *digest,
+output_crc (char const *file, int binary_file, void const *digest, bool raw,
             bool tagged, unsigned char delim, bool args, uintmax_t length)
 {
-  char length_buf[INT_BUFSIZE_BOUND (uintmax_t)];
-  printf ("%u %s", *(unsigned int *)digest, umaxtostr (length, length_buf));
+  if (raw)
+    {
+      /* Output in network byte order (big endian).  */
+      uint32_t out_int = htobe32 (*(uint32_t *)digest);
+      fwrite (&out_int, 1, 32/8, stdout);
+      return;
+    }
+
+  printf ("%u %ju", *(unsigned int *)digest, length);
   if (args)
     printf (" %s", file);
   putchar (delim);

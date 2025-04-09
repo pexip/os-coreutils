@@ -1,5 +1,5 @@
 /* Test of filevercmp() function.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@ static const char *const examples[] =
   "",
   ".",
   "..",
+  ".0",
+  ".9",
   ".A",
   ".Z",
   ".a~",
@@ -39,8 +41,6 @@ static const char *const examples[] =
   ".zz~",
   ".zz",
   ".zz.~1~",
-  ".0",
-  ".9",
   ".zz.0",
   ".\1",
   ".\1.txt",
@@ -202,5 +202,5 @@ main (void)
           ASSERT (test_filevercmp (*j, *i) == 0);
         }
 
-  return 0;
+  return test_exit_status;
 }

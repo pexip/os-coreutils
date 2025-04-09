@@ -1,5 +1,5 @@
 /* sync - update the super block
-   Copyright (C) 1994-2022 Free Software Foundation, Inc.
+   Copyright (C) 1994-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,14 +17,11 @@
 /* Written by Jim Meyering */
 
 #include <config.h>
-#include <assert.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <sys/types.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "sync"
@@ -47,11 +44,11 @@ enum sync_mode
 
 static struct option const long_options[] =
 {
-  {"data", no_argument, NULL, 'd'},
-  {"file-system", no_argument, NULL, 'f'},
+  {"data", no_argument, nullptr, 'd'},
+  {"file-system", no_argument, nullptr, 'f'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -142,14 +139,13 @@ sync_arg (enum sync_mode mode, char const *file)
           sync_status = fsync (fd);
           break;
 
-#if HAVE_SYNCFS
         case MODE_FILE_SYSTEM:
+#if HAVE_SYNCFS
           sync_status = syncfs (fd);
           break;
 #endif
-
-        default:
-          assert ("invalid sync_mode");
+        case MODE_SYNC: default:
+          unreachable ();
         }
 
       if (sync_status < 0)
@@ -185,7 +181,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((c = getopt_long (argc, argv, "df", long_options, NULL))
+  while ((c = getopt_long (argc, argv, "df", long_options, nullptr))
          != -1)
     {
       switch (c)
@@ -210,13 +206,11 @@ main (int argc, char **argv)
   args_specified = optind < argc;
 
   if (arg_data && arg_file_system)
-    {
-      die (EXIT_FAILURE, 0,
+    error (EXIT_FAILURE, 0,
            _("cannot specify both --data and --file-system"));
-    }
 
   if (!args_specified && arg_data)
-    die (EXIT_FAILURE, 0, _("--data needs at least one argument"));
+    error (EXIT_FAILURE, 0, _("--data needs at least one argument"));
 
   if (! args_specified || (arg_file_system && ! HAVE_SYNCFS))
     mode = MODE_SYNC;

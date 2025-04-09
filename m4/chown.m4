@@ -1,12 +1,13 @@
-# serial 35
-# Determine whether we need the chown wrapper.
-
-dnl Copyright (C) 1997-2001, 2003-2005, 2007, 2009-2022 Free Software
+# chown.m4
+# serial 36
+dnl Copyright (C) 1997-2001, 2003-2005, 2007, 2009-2025 Free Software
 dnl Foundation, Inc.
-
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
+
+# Determine whether we need the chown wrapper.
 
 # chown should accept arguments of -1 for uid and gid, and it should
 # dereference symlinks.  If it doesn't, arrange to use the replacement
@@ -46,14 +47,14 @@ AC_DEFUN([AC_FUNC_CHOWN],
        [ac_cv_func_chown_works=yes],
        [ac_cv_func_chown_works=no],
        [case "$host_os" in # ((
-                           # Guess yes on Linux systems.
-          linux-* | linux) ac_cv_func_chown_works="guessing yes" ;;
-                           # Guess yes on glibc systems.
-          *-gnu* | gnu*)   ac_cv_func_chown_works="guessing yes" ;;
-                           # Guess no on native Windows.
-          mingw*)          ac_cv_func_chown_works="guessing no" ;;
-                           # If we don't know, obey --enable-cross-guesses.
-          *)               ac_cv_func_chown_works="$gl_cross_guess_normal" ;;
+                             # Guess yes on Linux systems.
+          linux-* | linux)   ac_cv_func_chown_works="guessing yes" ;;
+                             # Guess yes on glibc systems.
+          *-gnu* | gnu*)     ac_cv_func_chown_works="guessing yes" ;;
+                             # Guess no on native Windows.
+          mingw* | windows*) ac_cv_func_chown_works="guessing no" ;;
+                             # If we don't know, obey --enable-cross-guesses.
+          *)                 ac_cv_func_chown_works="$gl_cross_guess_normal" ;;
         esac
        ])
      rm -f conftest.chown

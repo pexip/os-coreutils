@@ -3,9 +3,9 @@
    SM3, published by State Encryption Management Bureau, China.
 
    SM3 cryptographic hash algorithm.
-   <http://www.sca.gov.cn/sca/xwdt/2010-12/17/content_1002389.shtml>
+   <https://www.sca.gov.cn/sca/xwdt/2010-12/17/content_1002389.shtml>
 
-   Copyright (C) 2017-2022 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -26,9 +26,6 @@
 #include <config.h>
 
 /* Specification.  */
-#if HAVE_OPENSSL_SM3
-# define GL_OPENSSL_INLINE _GL_EXTERN_INLINE
-#endif
 #include "sm3.h"
 
 #include <stdlib.h>
@@ -114,10 +111,3 @@ sm3_stream (FILE *stream, void *resblock)
   free (buffer);
   return 0;
 }
-
-/*
- * Hey Emacs!
- * Local Variables:
- * coding: utf-8
- * End:
- */

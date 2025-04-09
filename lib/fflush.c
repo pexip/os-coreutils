@@ -1,5 +1,5 @@
 /* fflush.c -- allow flushing input streams
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -33,12 +33,15 @@
 
 #if defined _IO_EOF_SEEN || defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1
 /* GNU libc, BeOS, Haiku, Linux libc5 */
+# if !defined __HAIKU__
+#  define fp_ fp
+# endif
 
 /* Clear the stream's ungetc buffer, preserving the value of ftello (fp).  */
 static void
 clear_ungetc_buffer_preserving_position (FILE *fp)
 {
-  if (fp->_flags & _IO_IN_BACKUP)
+  if (fp_->_flags & _IO_IN_BACKUP)
     /* _IO_free_backup_area is a bit complicated.  Simply call fseek.  */
     fseeko (fp, 0, SEEK_CUR);
 }
@@ -99,7 +102,7 @@ update_fpos_cache (_GL_ATTRIBUTE_MAYBE_UNUSED FILE *fp,
 {
 #  if defined __sferror || defined __DragonFly__ || defined __ANDROID__
   /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin, Minix 3, Android */
-#   if defined __CYGWIN__
+#   if defined __CYGWIN__ || defined __ANDROID__
   /* fp_->_offset is typed as an integer.  */
   fp_->_offset = pos;
 #   else

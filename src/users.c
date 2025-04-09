@@ -1,5 +1,5 @@
 /* GNU's users.
-   Copyright (C) 1992-2022 Free Software Foundation, Inc.
+   Copyright (C) 1992-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 #include <sys/types.h>
 #include "system.h"
 
-#include "die.h"
-#include "error.h"
 #include "long-options.h"
 #include "quote.h"
 #include "readutmp.h"
@@ -44,11 +42,11 @@ userid_compare (const void *v_a, const void *v_b)
 }
 
 static void
-list_entries_users (size_t n, const STRUCT_UTMP *this)
+list_entries_users (idx_t n, struct gl_utmp const *this)
 {
-  char **u = xnmalloc (n, sizeof *u);
-  size_t i;
-  size_t n_entries = 0;
+  char **u = xinmalloc (n, sizeof *u);
+  idx_t i;
+  idx_t n_entries = 0;
 
   while (n--)
     {
@@ -84,11 +82,11 @@ list_entries_users (size_t n, const STRUCT_UTMP *this)
 static void
 users (char const *filename, int options)
 {
-  size_t n_users;
-  STRUCT_UTMP *utmp_buf;
-
+  idx_t n_users;
+  struct gl_utmp *utmp_buf;
+  options |= READ_UTMP_USER_PROCESS;
   if (read_utmp (filename, &n_users, &utmp_buf, options) != 0)
-    die (EXIT_FAILURE, errno, "%s", quotef (filename));
+    error (EXIT_FAILURE, errno, "%s", quotef (filename));
 
   list_entries_users (n_users, utmp_buf);
 
@@ -129,7 +127,7 @@ main (int argc, char **argv)
 
   parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
                                    Version, true, usage, AUTHORS,
-                                   (char const *) NULL);
+                                   (char const *) nullptr);
 
   switch (argc - optind)
     {

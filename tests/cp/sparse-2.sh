@@ -1,7 +1,7 @@
 #!/bin/sh
 # Exercise a few more corners of the copying code.
 
-# Copyright (C) 2011-2022 Free Software Foundation, Inc.
+# Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,11 +17,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
-print_ver_ cp stat dd
+print_ver_ cp dd
 
 touch sparse_chk
 seek_data_capable_ sparse_chk \
-  || skip_ "this file system lacks SEEK_DATA support"
+  || skip_ "insufficient SEEK_DATA support"
 
 # Exercise the code that handles a file ending in a hole.
 printf x > k || framework_failure_
@@ -44,18 +44,13 @@ printf x > k || framework_failure_
 dd bs=1k seek=1 of=k count=255 < /dev/zero || framework_failure_
 
 # cp should detect the all-zero blocks and convert some of them to holes.
-# How many it detects/converts currently depends on io_blksize.
-# Currently, on my F14/ext4 desktop, this K file starts off with size 256KiB,
-# (note that the K in the preceding test starts off with size 4KiB).
-# cp from coreutils-8.9 with --sparse=always reduces the size to 32KiB.
-cp --reflink=never --sparse=always k k2 || fail=1
-if test $(stat -c %b k2) -ge $(stat -c %b k); then
-  # If not sparse, then double check by creating with dd
-  # as we're not guaranteed that seek will create a hole.
-  # apfs on darwin 19.2.0 for example was seen to not to create holes < 16MiB.
-  hole_size=$(stat -c %o k2) || framework_failure_
-  dd if=k of=k2.dd bs=$hole_size conv=sparse || framework_failure_
-  test $(stat -c %b k2) -eq $(stat -c %b k2.dd) || fail=1
-fi
+cp --debug --reflink=never --sparse=always k k2 >cp.out || fail=1
+cmp k k2 || fail=1
+grep 'sparse detection: .*zeros' cp.out || { cat cp.out; fail=1; }
+
+# cp should disable reflink AND copy offload with --sparse=never
+cp --debug --sparse=never k k2 >cp.out || fail=1
+cmp k k2 || fail=1
+grep 'copy offload: avoided, reflink: no' cp.out || { cat cp.out; fail=1; }
 
 Exit $fail

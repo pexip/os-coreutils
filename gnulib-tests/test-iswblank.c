@@ -1,5 +1,5 @@
 /* Test of iswblank() function.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,5 +31,10 @@ main (void)
   /* Check that the isw* functions map WEOF to 0.  */
   ASSERT (!iswblank (e));
 
-  return 0;
+  /* Sanity check for the iswblank function.  */
+  ASSERT (iswblank (L' '));
+  ASSERT (iswblank (L'\t'));
+  ASSERT (!iswblank (L'\n'));
+
+  return test_exit_status;
 }

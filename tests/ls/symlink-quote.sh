@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure symlinks are quoted appropriately
 
-# Copyright (C) 2017-2022 Free Software Foundation, Inc.
+# Copyright (C) 2017-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ ln -s 'needs quoting' symlink || framework_failure_
 ls -l --quoting-style='shell-escape' symlink >out || fail=1
 
 # Coreutils v8.26 and 8.27 failed to quote the target name
-grep -q "symlink -> 'needs quoting'\$" out ||
+grep "symlink -> 'needs quoting'\$" out >/dev/null ||
   { cat out; fail=1; }
 
 Exit $fail

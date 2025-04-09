@@ -1,5 +1,5 @@
 /* Test timespec functions.
-   Copyright 2015-2022 Free Software Foundation, Inc.
+   Copyright 2015-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include "intprops.h"
 #include "macros.h"
 
-#include <stdbool.h>
 #include <limits.h>
 
 static struct { int s; int ns; } const prototype[] =
@@ -163,5 +162,5 @@ main (void)
           }
     }
 
-  return 0;
+  return test_exit_status;
 }

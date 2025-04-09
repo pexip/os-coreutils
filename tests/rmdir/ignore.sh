@@ -1,7 +1,7 @@
 #!/bin/sh
 # make sure rmdir's --ignore-fail-on-non-empty option works
 
-# Copyright (C) 1999-2022 Free Software Foundation, Inc.
+# Copyright (C) 1999-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ fi
 
 test -d x/y || fail=1
 # Between 6.11 and 8.31, the following rmdir would mistakenly fail,
-# and also give a non descript error
+# and also give a nondescript error
 touch x/y/z || framework_failure_
 rmdir --ignore-fail-on-non-empty x/y || fail=1
 test -d x/y || fail=1

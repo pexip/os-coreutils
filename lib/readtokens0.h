@@ -1,6 +1,6 @@
 /* readtokens0.h -- read NUL-separated tokens from an input stream.
 
-   Copyright (C) 2004, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,12 +18,16 @@
    Written by Jim Meyering. */
 
 #ifndef READTOKENS0_H
-# define READTOKENS0_H 1
+#define READTOKENS0_H 1
 
-# include <stdio.h>
-# include <sys/types.h>
-# include <stdbool.h>
-# include "obstack.h"
+#include <stdio.h>
+#include <sys/types.h>
+#include "obstack.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 struct Tokens
 {
@@ -38,5 +42,10 @@ struct Tokens
 void readtokens0_init (struct Tokens *t);
 void readtokens0_free (struct Tokens *t);
 bool readtokens0 (FILE *in, struct Tokens *t);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

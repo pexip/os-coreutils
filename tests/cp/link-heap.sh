@@ -1,7 +1,7 @@
 #!/bin/sh
 # ensure that cp --preserve=link --link doesn't waste heap
 
-# Copyright (C) 2008-2022 Free Software Foundation, Inc.
+# Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ expensive_
 # Determine basic amount of memory needed for 'cp -al'.
 touch f || framework_failure_
 vm=$(get_min_ulimit_v_ cp -al f f2) \
-  || skip_ "this shell lacks ulimit support"
+  || skip_ 'shell lacks ulimit, or ASAN enabled'
 rm f f2 || framework_failure_
 
 a=$(printf %031d 0)

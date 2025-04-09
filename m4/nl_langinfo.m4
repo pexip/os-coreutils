@@ -1,14 +1,16 @@
-# nl_langinfo.m4 serial 8
-dnl Copyright (C) 2009-2022 Free Software Foundation, Inc.
+# nl_langinfo.m4
+# serial 12
+dnl Copyright (C) 2009-2025 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
 
 AC_DEFUN([gl_FUNC_NL_LANGINFO],
 [
   AC_REQUIRE([gl_LANGINFO_H_DEFAULTS])
   AC_REQUIRE([gl_LANGINFO_H])
-  AC_CHECK_FUNCS_ONCE([nl_langinfo])
+  gl_CHECK_FUNCS_ANDROID([nl_langinfo], [[#include <langinfo.h>]])
   AC_REQUIRE([AC_CANONICAL_HOST])
   AC_REQUIRE([gl_FUNC_SETLOCALE_NULL])
   AC_REQUIRE([gl_PTHREADLIB])
@@ -49,6 +51,7 @@ AC_DEFUN([gl_FUNC_NL_LANGINFO],
     if test $HAVE_LANGINFO_CODESET = 1 \
        && test $HAVE_LANGINFO_T_FMT_AMPM = 1 \
        && test $HAVE_LANGINFO_ALTMON = 1 \
+       && test $HAVE_LANGINFO_ABALTMON = 1 \
        && test $HAVE_LANGINFO_ERA = 1 \
        && test $FUNC_NL_LANGINFO_YESEXPR_WORKS = 1 \
        && test $NL_LANGINFO_MTSAFE = 1; then
@@ -60,9 +63,12 @@ AC_DEFUN([gl_FUNC_NL_LANGINFO],
     fi
   else
     HAVE_NL_LANGINFO=0
+    case "$gl_cv_onwards_func_nl_langinfo" in
+      future*) REPLACE_NL_LANGINFO=1 ;;
+    esac
   fi
   if test $HAVE_NL_LANGINFO = 0 || test $HAVE_LANGINFO_CODESET = 0; then
-    LIB_NL_LANGINFO="$LIB_SETLOCALE_NULL"
+    LIB_NL_LANGINFO="$SETLOCALE_NULL_LIB"
   else
     LIB_NL_LANGINFO=
   fi
