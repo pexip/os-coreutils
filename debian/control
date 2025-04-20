@@ -2,8 +2,8 @@ Source: coreutils
 Maintainer: Michael Stone <mstone@debian.org>
 Section: utils
 Priority: required
-Standards-Version: 4.5.0
-Build-Depends: gettext (>= 0.10.37), debhelper-compat (= 13), texinfo (>= 4.2), groff, libattr1-dev [linux-any], libacl1-dev [linux-any], libselinux1-dev (>= 1.32) [linux-any], gperf, bison, libgmp3-dev, libssl-dev, libsystemd-dev
+Standards-Version: 4.7.2
+Build-Depends: gettext (>= 0.10.37), debhelper-compat (= 13), texinfo (>= 4.2) <!nodoc>, libattr1-dev [linux-any], libacl1-dev [linux-any], libselinux1-dev (>= 1.32) [linux-any], gperf, bison, libgmp3-dev, libssl-dev, libsystemd-dev
 
 Package: coreutils
 Architecture: any
@@ -24,4 +24,4 @@ Description: GNU core utilities
  rmdir runcon sha*sum seq shred sleep sort split stat stty sum sync tac 
  tail tee test timeout touch tr true truncate tsort tty uname unexpand 
  uniq unlink users vdir wc who whoami yes
-Homepage: http://gnu.org/software/coreutils
+Homepage: https://gnu.org/software/coreutils
