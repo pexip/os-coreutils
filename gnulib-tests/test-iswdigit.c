@@ -1,5 +1,5 @@
 /* Test of iswdigit() function.
-   Copyright (C) 2020-2022 Free Software Foundation, Inc.
+   Copyright (C) 2020-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -111,7 +111,7 @@ main (int argc, char *argv[])
       {
       case '0':
         /* C locale; tested above.  */
-        return 0;
+        return test_exit_status;
 
       case '1':
         /* Locale encoding is ISO-8859-1 or ISO-8859-15.  */
@@ -126,7 +126,7 @@ main (int argc, char *argv[])
           is = for_character ("\271", 1);
           ASSERT (is == 0);
         }
-        return 0;
+        return test_exit_status;
 
       case '2':
         /* Locale encoding is EUC-JP.  */
@@ -135,7 +135,7 @@ main (int argc, char *argv[])
           is = for_character ("\243\261", 2);
           ASSERT (is == 0);
         }
-        return 0;
+        return test_exit_status;
 
       case '3':
         /* Locale encoding is UTF-8.  */
@@ -180,7 +180,7 @@ main (int argc, char *argv[])
           is = for_character ("\363\240\200\263", 4);
           ASSERT (is == 0);
         }
-        return 0;
+        return test_exit_status;
 
       case '4':
         /* Locale encoding is GB18030.  */
@@ -225,7 +225,7 @@ main (int argc, char *argv[])
           is = for_character ("\323\066\232\071", 4);
           ASSERT (is == 0);
         }
-        return 0;
+        return test_exit_status;
 
       }
 

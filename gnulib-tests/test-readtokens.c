@@ -1,5 +1,5 @@
 /* Test the readtokens module.
-   Copyright (C) 2012-2022 Free Software Foundation, Inc.
+   Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include <config.h>
-#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -94,5 +93,5 @@ main (int argc, char **argv)
 
   ASSERT ( ! ferror (stdin));
 
-  return 0;
+  return test_exit_status;
 }

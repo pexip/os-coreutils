@@ -1,6 +1,6 @@
 /* readtokens.h -- Functions for reading tokens from an input stream.
 
-   Copyright (C) 1990-1991, 1999, 2001-2004, 2009-2022 Free Software
+   Copyright (C) 1990-1991, 1999, 2001-2004, 2009-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,11 @@
 
 # include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* FIXME: This header should use idx_t, not size_t.  */
 
 struct tokenbuffer
@@ -41,5 +46,10 @@ size_t
   readtokens (FILE *stream, size_t projected_n_tokens,
               const char *delim, size_t n_delim,
               char ***tokens_out, size_t **token_lengths);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* not READTOKENS_H */

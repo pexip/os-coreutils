@@ -1,5 +1,5 @@
 /* userspec.c -- Parse a user and group string.
-   Copyright (C) 1989-1992, 1997-1998, 2000, 2002-2022 Free Software
+   Copyright (C) 1989-1992, 1997-1998, 2000, 2002-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -43,7 +43,7 @@
 #include "xstrtol.h"
 
 #include "gettext.h"
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 #define N_(msgid) msgid
 
 #ifndef HAVE_ENDGRENT

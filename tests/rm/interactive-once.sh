@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test the -I option added to coreutils 6.0
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ rm -I file1-* < in-n >> out 2>> err || fail=1
 echo . >> err || framework_failure_
 test -f file1-1 && fail=1
 
+write_prot_msg1=
 echo 'one file, read only, answer no' >> err || framework_failure_
 if ls /dev/stdin >/dev/null 2>&1; then
   touch file1-1 || framework_failure_

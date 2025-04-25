@@ -1,6 +1,6 @@
 /* settime -- set the system clock
 
-   Copyright (C) 2002, 2004-2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004-2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,11 +41,9 @@ settime (struct timespec const *ts)
 
 #if HAVE_SETTIMEOFDAY
   {
-    struct timeval tv;
-
-    tv.tv_sec = ts->tv_sec;
-    tv.tv_usec = ts->tv_nsec / 1000;
-    return settimeofday (&tv, 0);
+    struct timeval tv = { .tv_sec = ts->tv_sec,
+                          .tv_usec = ts->tv_nsec / 1000 };
+    return settimeofday (&tv, NULL);
   }
 #elif HAVE_STIME
   /* This fails to compile on OSF1 V5.1, due to stime requiring

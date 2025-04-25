@@ -1,5 +1,5 @@
 /* Test changing the protections of a file.
-   Copyright (C) 2020-2022 Free Software Foundation, Inc.
+   Copyright (C) 2020-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -83,5 +83,5 @@ main (void)
     unlink (BASE "link");
   }
 
-  return 0;
+  return test_exit_status;
 }

@@ -1,6 +1,6 @@
 /* Map an ino_t inode number to a small integer.
 
-   Copyright 2009-2022 Free Software Foundation, Inc.
+   Copyright 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #include "ino-map.h"
 
 #include "hash.h"
-#include "verify.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -151,7 +150,7 @@ ino_map_insert (struct ino_map *im, ino_t ino)
          overflow to zero, then it must equal INO_MAP_INSERT_FAILURE,
          which is the value that should be returned in that case.
          Verify that this works.  */
-      verify (INO_MAP_INSERT_FAILURE + 1 == 0);
+      static_assert (INO_MAP_INSERT_FAILURE + 1 == 0);
 
       /* Prepare to allocate a new probe next time; this one is in use.  */
       im->probe = NULL;

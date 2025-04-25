@@ -1,5 +1,5 @@
 /* find-mount-point.c -- find the root mount point for a file.
-   Copyright (C) 2010-2022 Free Software Foundation, Inc.
+   Copyright (C) 2010-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,27 +18,25 @@
 #include <sys/types.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
 #include "save-cwd.h"
 #include "xgetcwd.h"
 #include "find-mount-point.h"
 
 /* Return the root mountpoint of the file system on which FILE exists, in
    malloced storage.  FILE_STAT should be the result of stating FILE.
-   Give a diagnostic and return NULL if unable to determine the mount point.
+   Give a diagnostic and return nullptr if unable to determine the mount point.
    Exit if unable to restore current working directory.  */
 extern char *
 find_mount_point (char const *file, struct stat const *file_stat)
 {
   struct saved_cwd cwd;
   struct stat last_stat;
-  char *mp = NULL;		/* The malloc'd mount point.  */
+  char *mp = nullptr;		/* The malloc'd mount point.  */
 
   if (save_cwd (&cwd) != 0)
     {
       error (0, errno, _("cannot get current directory"));
-      return NULL;
+      return nullptr;
     }
 
   if (S_ISDIR (file_stat->st_mode))
@@ -48,7 +46,7 @@ find_mount_point (char const *file, struct stat const *file_stat)
       if (chdir (file) < 0)
         {
           error (0, errno, _("cannot change to directory %s"), quoteaf (file));
-          return NULL;
+          return nullptr;
         }
     }
   else
@@ -62,7 +60,7 @@ find_mount_point (char const *file, struct stat const *file_stat)
       if (chdir (dir) < 0)
         {
           error (0, errno, _("cannot change to directory %s"), quoteaf (dir));
-          return NULL;
+          return nullptr;
         }
 
       if (stat (".", &last_stat) < 0)
@@ -103,8 +101,8 @@ done:
   {
     int save_errno = errno;
     if (restore_cwd (&cwd) != 0)
-      die (EXIT_FAILURE, errno,
-           _("failed to return to initial working directory"));
+      error (EXIT_FAILURE, errno,
+             _("failed to return to initial working directory"));
     free_cwd (&cwd);
     errno = save_errno;
   }

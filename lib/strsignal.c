@@ -1,4 +1,4 @@
-/* Copyright (C) 1991, 1994-2002, 2005, 2008-2022 Free Software Foundation,
+/* Copyright (C) 1991, 1994-2002, 2005, 2008-2025 Free Software Foundation,
    Inc.
    This file is part of the GNU C Library.
 
@@ -30,14 +30,14 @@
 # include <libintl.h>
 #else /* !_LIBC */
 # include "gettext.h"
-# define _(msgid) gettext (msgid)
+# define _(msgid) dgettext ("gnulib", msgid)
 # define N_(msgid) gettext_noop (msgid)
 #endif /* _LIBC */
 
 #ifdef _LIBC
 # include <bits/libc-lock.h>
 #else /* !_LIBC */
-# include "glthread/lock.h"
+# include "glthread/once.h"
 # include "glthread/tls.h"
 # define __libc_once_define(CLASS, NAME) gl_once_define (CLASS, NAME)
 # define __libc_once(NAME, INIT) gl_once ((NAME), (INIT))

@@ -1,6 +1,6 @@
 /* readtokens.c  -- Functions for reading tokens from an input stream.
 
-   Copyright (C) 1990-1991, 1999-2004, 2006, 2009-2022 Free Software
+   Copyright (C) 1990-1991, 1999-2004, 2006, 2009-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "xalloc.h"
 

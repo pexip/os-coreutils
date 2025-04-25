@@ -1,5 +1,5 @@
 /* Replacement <selinux/label.h> for platforms that lack it.
-   Copyright 2020-2022 Free Software Foundation, Inc.
+   Copyright 2020-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -17,15 +17,17 @@
 /* Written by Paul Eggert.  */
 
 #ifndef SELINUX_LABEL_H
-
 #define SELINUX_LABEL_H
+
+/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE,
+   _GL_ATTRIBUTE_MAYBE_UNUSED.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
 
 #include <selinux/selinux.h>
 #include <errno.h>
 
-#ifndef _GL_INLINE_HEADER_BEGIN
- #error "Please include config.h first."
-#endif
 _GL_INLINE_HEADER_BEGIN
 #ifndef SE_LABEL_INLINE
 # define SE_LABEL_INLINE _GL_INLINE
@@ -53,6 +55,13 @@ selabel_lookup (_GL_ATTRIBUTE_MAYBE_UNUSED struct selabel_handle *hnd,
                 _GL_ATTRIBUTE_MAYBE_UNUSED char **context,
                 _GL_ATTRIBUTE_MAYBE_UNUSED char const *key,
                 _GL_ATTRIBUTE_MAYBE_UNUSED int type)
+{ errno = ENOTSUP; return -1; }
+
+SE_LABEL_INLINE int
+selabel_lookup_raw (_GL_ATTRIBUTE_MAYBE_UNUSED struct selabel_handle *hnd,
+                    _GL_ATTRIBUTE_MAYBE_UNUSED char **context,
+                    _GL_ATTRIBUTE_MAYBE_UNUSED char const *key,
+                    _GL_ATTRIBUTE_MAYBE_UNUSED int type)
 { errno = ENOTSUP; return -1; }
 
 SE_LABEL_INLINE struct selabel_handle *

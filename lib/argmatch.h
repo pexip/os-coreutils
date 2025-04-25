@@ -1,6 +1,6 @@
 /* argmatch.h -- definitions and prototypes for argmatch.c
 
-   Copyright (C) 1990, 1998-1999, 2001-2002, 2004-2005, 2009-2022 Free Software
+   Copyright (C) 1990, 1998-1999, 2001-2002, 2004-2005, 2009-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -22,15 +22,18 @@
 #ifndef ARGMATCH_H_
 # define ARGMATCH_H_ 1
 
+/* This file uses _GL_ATTRIBUTE_PURE.  */
+# if !_GL_CONFIG_H_INCLUDED
+#  error "Please include config.h first."
+# endif
+
 # include <limits.h>
-# include <stdbool.h>
 # include <stddef.h>
 # include <stdio.h>
 # include <string.h> /* memcmp */
 
 # include "gettext.h"
 # include "quote.h"
-# include "verify.h"
 
 # ifdef  __cplusplus
 extern "C" {
@@ -42,7 +45,8 @@ extern "C" {
    (argument list ends with a NULL guard).  */
 
 # define ARGMATCH_VERIFY(Arglist, Vallist) \
-    verify (ARRAY_CARDINALITY (Arglist) == ARRAY_CARDINALITY (Vallist) + 1)
+    static_assert (ARRAY_CARDINALITY (Arglist) \
+                   == ARRAY_CARDINALITY (Vallist) + 1)
 
 /* Return the index of the element of ARGLIST (NULL terminated) that
    matches with ARG.  If VALLIST is not NULL, then use it to resolve
@@ -235,7 +239,7 @@ char const *argmatch_to_argument (void const *value,
                                                                         \
     /* Try to put synonyms on the same line.  Synonyms are expected     \
        to follow each other. */                                         \
-    fputs (gettext ("Valid arguments are:"), out);                      \
+    fputs (dgettext ("gnulib", "Valid arguments are:"), out);           \
     for (int i = 0; g->args[i].arg; i++)                                \
       if (i == 0                                                        \
           || memcmp (&g->args[i-1].val, &g->args[i].val, size))         \

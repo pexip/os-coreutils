@@ -1,5 +1,5 @@
 /* nproc - print the number of processors.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #include <sys/types.h>
 
 #include "system.h"
-#include "error.h"
 #include "nproc.h"
 #include "quote.h"
 #include "xdectoint.h"
@@ -40,11 +39,11 @@ enum
 
 static struct option const longopts[] =
 {
-  {"all", no_argument, NULL, ALL_OPTION},
-  {"ignore", required_argument, NULL, IGNORE_OPTION},
+  {"all", no_argument, nullptr, ALL_OPTION},
+  {"ignore", required_argument, nullptr, IGNORE_OPTION},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -88,7 +87,7 @@ main (int argc, char **argv)
 
   while (true)
     {
-      int c = getopt_long (argc, argv, "", longopts, NULL);
+      int c = getopt_long (argc, argv, "", longopts, nullptr);
       if (c == -1)
         break;
       switch (c)
@@ -102,7 +101,8 @@ main (int argc, char **argv)
           break;
 
         case IGNORE_OPTION:
-          ignore = xdectoumax (optarg, 0, ULONG_MAX, "", _("invalid number"),0);
+          ignore = xnumtoumax (optarg, 10, 0, ULONG_MAX, "",
+                               _("invalid number"), 0, XTOINT_MAX_QUIET);
           break;
 
         default:

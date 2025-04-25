@@ -1,5 +1,5 @@
 /* Binary mode I/O with checking
-   Copyright 2017-2022 Free Software Foundation, Inc.
+   Copyright 2017-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -21,12 +21,11 @@
 
 #include <errno.h>
 #include <error.h>
-#include <stdbool.h>
 #include "exitfail.h"
 #include "verify.h"
 
 #include "gettext.h"
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 
 #if O_BINARY
 

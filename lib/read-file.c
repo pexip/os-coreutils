@@ -1,5 +1,5 @@
 /* read-file.c -- read file contents into a string
-   Copyright (C) 2006, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2006, 2009-2025 Free Software Foundation, Inc.
    Written by Simon Josefsson and Bruno Haible.
 
    This file is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 /* Get malloc, realloc, free. */
 #include <stdlib.h>
 
-/* Get explicit_bzero, memcpy. */
+/* Get memcpy, memset_explicit. */
 #include <string.h>
 
 /* Get errno. */
@@ -84,7 +84,7 @@ fread_file (FILE *stream, int flags, size_t *length)
 
   {
     size_t size = 0; /* number of bytes read so far */
-    int save_errno;
+    int saved_errno;
 
     for (;;)
       {
@@ -96,7 +96,7 @@ fread_file (FILE *stream, int flags, size_t *length)
 
         if (count != requested)
           {
-            save_errno = errno;
+            saved_errno = errno;
             if (ferror (stream))
               break;
 
@@ -107,11 +107,11 @@ fread_file (FILE *stream, int flags, size_t *length)
                   {
                     char *smaller_buf = malloc (size + 1);
                     if (smaller_buf == NULL)
-                      explicit_bzero (buf + size, alloc - size);
+                      memset_explicit (buf + size, 0, alloc - size);
                     else
                       {
                         memcpy (smaller_buf, buf, size);
-                        explicit_bzero (buf, alloc);
+                        memset_explicit (buf, 0, alloc);
                         free (buf);
                         buf = smaller_buf;
                       }
@@ -131,11 +131,11 @@ fread_file (FILE *stream, int flags, size_t *length)
 
         {
           char *new_buf;
-          size_t save_alloc = alloc;
+          size_t saved_alloc = alloc;
 
           if (alloc == PTRDIFF_MAX)
             {
-              save_errno = ENOMEM;
+              saved_errno = ENOMEM;
               break;
             }
 
@@ -150,16 +150,16 @@ fread_file (FILE *stream, int flags, size_t *length)
               if (!new_buf)
                 {
                   /* BUF should be cleared below after the loop.  */
-                  save_errno = errno;
+                  saved_errno = errno;
                   break;
                 }
-              memcpy (new_buf, buf, save_alloc);
-              explicit_bzero (buf, save_alloc);
+              memcpy (new_buf, buf, saved_alloc);
+              memset_explicit (buf, 0, saved_alloc);
               free (buf);
             }
           else if (!(new_buf = realloc (buf, alloc)))
             {
-              save_errno = errno;
+              saved_errno = errno;
               break;
             }
 
@@ -168,10 +168,10 @@ fread_file (FILE *stream, int flags, size_t *length)
       }
 
     if (flags & RF_SENSITIVE)
-      explicit_bzero (buf, alloc);
+      memset_explicit (buf, 0, alloc);
 
     free (buf);
-    errno = save_errno;
+    errno = saved_errno;
     return NULL;
   }
 }
@@ -206,7 +206,7 @@ read_file (const char *filename, int flags, size_t *length)
       if (out)
         {
           if (flags & RF_SENSITIVE)
-            explicit_bzero (out, *length);
+            memset_explicit (out, 0, *length);
           free (out);
         }
       return NULL;

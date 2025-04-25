@@ -1,5 +1,5 @@
 /* 'ln' program to create links between files.
-   Copyright (C) 1986-2022 Free Software Foundation, Inc.
+   Copyright (C) 1986-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@
 
 #include "system.h"
 #include "backupfile.h"
-#include "die.h"
-#include "error.h"
 #include "fcntl-safer.h"
 #include "filenamecat.h"
 #include "file-set.h"
@@ -92,22 +90,22 @@ enum { DEST_INFO_INITIAL_CAPACITY = 61 };
 
 static struct option const long_options[] =
 {
-  {"backup", optional_argument, NULL, 'b'},
-  {"directory", no_argument, NULL, 'F'},
-  {"no-dereference", no_argument, NULL, 'n'},
-  {"no-target-directory", no_argument, NULL, 'T'},
-  {"force", no_argument, NULL, 'f'},
-  {"interactive", no_argument, NULL, 'i'},
-  {"suffix", required_argument, NULL, 'S'},
-  {"target-directory", required_argument, NULL, 't'},
-  {"logical", no_argument, NULL, 'L'},
-  {"physical", no_argument, NULL, 'P'},
-  {"relative", no_argument, NULL, 'r'},
-  {"symbolic", no_argument, NULL, 's'},
-  {"verbose", no_argument, NULL, 'v'},
+  {"backup", optional_argument, nullptr, 'b'},
+  {"directory", no_argument, nullptr, 'F'},
+  {"no-dereference", no_argument, nullptr, 'n'},
+  {"no-target-directory", no_argument, nullptr, 'T'},
+  {"force", no_argument, nullptr, 'f'},
+  {"interactive", no_argument, nullptr, 'i'},
+  {"suffix", required_argument, nullptr, 'S'},
+  {"target-directory", required_argument, nullptr, 't'},
+  {"logical", no_argument, nullptr, 'L'},
+  {"physical", no_argument, nullptr, 'P'},
+  {"relative", no_argument, nullptr, 'r'},
+  {"symbolic", no_argument, nullptr, 's'},
+  {"verbose", no_argument, nullptr, 'v'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Return an errno value for a system call that returned STATUS.
@@ -132,7 +130,7 @@ convert_abs_rel (char const *from, char const *target)
   char *realdest = canonicalize_filename_mode (targetdir, CAN_MISSING);
   char *realfrom = canonicalize_filename_mode (from, CAN_MISSING);
 
-  char *relative_from = NULL;
+  char *relative_from = nullptr;
   if (realdest && realfrom)
     {
       /* Write to a PATH_MAX buffer.  */
@@ -141,7 +139,7 @@ convert_abs_rel (char const *from, char const *target)
       if (!relpath (realfrom, realdest, relative_from, PATH_MAX))
         {
           free (relative_from);
-          relative_from = NULL;
+          relative_from = nullptr;
         }
     }
 
@@ -182,8 +180,8 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
 {
   struct stat source_stats;
   int source_status = 1;
-  char *backup_base = NULL;
-  char *rel_source = NULL;
+  char *backup_base = nullptr;
+  char *rel_source = nullptr;
   int nofollow_flag = logical ? 0 : AT_SYMLINK_NOFOLLOW;
   if (link_errno < 0)
     link_errno = atomic_link (source, destdir_fd, dest_base);
@@ -261,7 +259,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
                   if (source_status != 0)
                     source_status = stat (source, &source_stats);
                   if (source_status == 0
-                      && SAME_INODE (source_stats, dest_stats)
+                      && psame_inode (&source_stats, &dest_stats)
                       && (source_stats.st_nlink == 1
                           || same_nameat (AT_FDCWD, source,
                                           destdir_fd, dest_base)))
@@ -281,7 +279,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
                       if (!yesno ())
                         {
                           free (rel_source);
-                          return true;
+                          return false;
                         }
                     }
 
@@ -296,7 +294,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
                         {
                           int rename_errno = errno;
                           free (backup_base);
-                          backup_base = NULL;
+                          backup_base = nullptr;
                           if (rename_errno != ENOENT)
                             {
                               error (0, rename_errno, _("cannot backup %s"),
@@ -317,7 +315,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
          to link A to B.  But strictly following this has the counterintuitive
          effect of losing the contents of B if A does not exist.  Fortunately,
          POSIX 2008 clarified that an application is free to fail early if it
-         can prove that continuing onwards cannot succeed, so we can try to
+         can prove that continuing onward cannot succeed, so we can try to
          link A to B before blindly unlinking B, thus sometimes attempting to
          link a second time during a successful 'ln -f A B'.
 
@@ -352,7 +350,7 @@ do_link (char const *source, int destdir_fd, char const *dest_base,
           if (backup_base)
             {
               char *backup = backup_base;
-              void *alloc = NULL;
+              void *alloc = nullptr;
               ptrdiff_t destdirlen = dest_base - dest;
               if (0 < destdirlen)
                 {
@@ -431,7 +429,7 @@ interpreted in relation to its parent directory.\n\
       --backup[=CONTROL]      make a backup of each existing destination file\n\
   -b                          like --backup but does not accept an argument\n\
   -d, -F, --directory         allow the superuser to attempt to hard link\n\
-                                directories (note: will probably fail due to\n\
+                                directories (this will probably fail due to\n\
                                 system restrictions, even for the superuser)\n\
   -f, --force                 remove existing destination files\n\
 "), stdout);
@@ -470,9 +468,9 @@ main (int argc, char **argv)
   int c;
   bool ok;
   bool make_backups = false;
-  char const *backup_suffix = NULL;
-  char *version_control_string = NULL;
-  char const *target_directory = NULL;
+  char const *backup_suffix = nullptr;
+  char *version_control_string = nullptr;
+  char const *target_directory = nullptr;
   int destdir_fd;
   bool no_target_directory = false;
   int n_files;
@@ -490,7 +488,8 @@ main (int argc, char **argv)
   symbolic_link = remove_existing_files = interactive = verbose
     = hard_dir_link = false;
 
-  while ((c = getopt_long (argc, argv, "bdfinrst:vFLPS:T", long_options, NULL))
+  while ((c = getopt_long (argc, argv, "bdfinrst:vFLPS:T",
+                           long_options, nullptr))
          != -1)
     {
       switch (c)
@@ -529,16 +528,16 @@ main (int argc, char **argv)
           break;
         case 't':
           if (target_directory)
-            die (EXIT_FAILURE, 0, _("multiple target directories specified"));
+            error (EXIT_FAILURE, 0, _("multiple target directories specified"));
           else
             {
               struct stat st;
               if (stat (optarg, &st) != 0)
-                die (EXIT_FAILURE, errno, _("failed to access %s"),
-                     quoteaf (optarg));
+                error (EXIT_FAILURE, errno, _("failed to access %s"),
+                       quoteaf (optarg));
               if (! S_ISDIR (st.st_mode))
-                die (EXIT_FAILURE, 0, _("target %s is not a directory"),
-                     quoteaf (optarg));
+                error (EXIT_FAILURE, 0, _("target %s is not a directory"),
+                       quoteaf (optarg));
             }
           target_directory = optarg;
           break;
@@ -570,7 +569,7 @@ main (int argc, char **argv)
     }
 
   if (relative && !symbolic_link)
-    die (EXIT_FAILURE, 0, _("cannot do --relative without --symbolic"));
+    error (EXIT_FAILURE, 0, _("cannot do --relative without --symbolic"));
 
   if (!hard_dir_link)
     {
@@ -581,9 +580,9 @@ main (int argc, char **argv)
   if (no_target_directory)
     {
       if (target_directory)
-        die (EXIT_FAILURE, 0,
-             _("cannot combine --target-directory "
-               "and --no-target-directory"));
+        error (EXIT_FAILURE, 0,
+               _("cannot combine --target-directory "
+                 "and --no-target-directory"));
       if (n_files != 2)
         {
           if (n_files < 2)
@@ -630,7 +629,7 @@ main (int argc, char **argv)
               target_directory = d;
             }
           else if (! (n_files == 2 && !target_directory))
-            die (EXIT_FAILURE, err, _("target %s"), quoteaf (d));
+            error (EXIT_FAILURE, err, _("target %s"), quoteaf (d));
         }
     }
 
@@ -655,11 +654,11 @@ main (int argc, char **argv)
           && backup_type != numbered_backups)
         {
           dest_set = hash_initialize (DEST_INFO_INITIAL_CAPACITY,
-                                      NULL,
+                                      nullptr,
                                       triple_hash,
                                       triple_compare,
                                       triple_free);
-          if (dest_set == NULL)
+          if (dest_set == nullptr)
             xalloc_die ();
         }
 

@@ -1,8 +1,8 @@
 #!/bin/sh
-# Test rm's behaviour when the directory cannot be read.
+# Test rm's behavior when the directory cannot be read.
 # This test is skipped on systems that lack LD_PRELOAD support.
 
-# Copyright (C) 2016-2022 Free Software Foundation, Inc.
+# Copyright (C) 2016-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ struct dirent *readdir (DIR *dirp)
   if (! (d = real_readdir (dirp)))
     {
       fprintf (stderr, "Failed to get dirent\n");
-      errno = ENOENT;
+      errno = EIO;
       return NULL;
     }
 
@@ -76,14 +76,14 @@ struct dirent *readdir (DIR *dirp)
       count++;
       d->d_name[0]='0'+count; d->d_name[1]='\0';
 #ifdef _DIRENT_HAVE_D_NAMLEN
-      d->d_namlen = 2;
+      d->d_namlen = 1;
 #endif
       errno = 0;
       return d;
     };
 
   /* Fail.  */
-  errno = ENOENT;
+  errno = EIO;
   return NULL;
 }
 EOF
@@ -112,6 +112,7 @@ done
 # (with ENOENT in this case but it could be anything).
 cat <<EOF > exp
 rm: cannot remove 'dir'
+Failed to get dirent
 rm: traversal failed: dir
 EOF
 sed 's/\(rm:.*\):.*/\1/' errt > err || framework_failure_

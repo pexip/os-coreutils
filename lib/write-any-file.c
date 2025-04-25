@@ -1,6 +1,6 @@
 /* Determine whether we can write any file.
 
-   Copyright (C) 2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,11 +19,18 @@
 
 #include <config.h>
 
+/* Specification.  */
 #include "write-any-file.h"
+
+#include <unistd.h>
+
 #include "priv-set.h"
 #include "root-uid.h"
 
-#include <unistd.h>
+/* mingw and MSVC 9 lack geteuid, so setup a dummy value.  */
+#if !HAVE_GETEUID
+# define geteuid() ROOT_UID
+#endif
 
 /* Return true if we know that we can write any file, including
    writing directories.  */

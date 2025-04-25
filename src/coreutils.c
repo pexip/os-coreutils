@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2022 Free Software Foundation, Inc.
+/* Copyright (C) 2014-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,8 +27,6 @@
 #endif
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
 #include "quote.h"
 
 #ifdef SINGLE_BINARY
@@ -51,7 +49,7 @@ static struct option const long_options[] =
 {
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 
@@ -95,7 +93,7 @@ Use: '%s --coreutils-prog=PROGRAM_NAME --help' for individual program help.\n"),
 static void
 launch_program (char const *prog_name, int prog_argc, char **prog_argv)
 {
-  int (*prog_main) (int, char **) = NULL;
+  int (*prog_main) (int, char **) = nullptr;
 
   /* Ensure that at least one parameter was passed.  */
   if (!prog_argc || !prog_argv || !prog_argv[0] || !prog_name)
@@ -153,7 +151,7 @@ main (int argc, char **argv)
   if (argc >= 2)
     {
       size_t nskip = 0;
-      char *arg_name = NULL;
+      char *arg_name = nullptr;
 
       /* If calling coreutils directly, the "script" name isn't passed.
          Distinguish the two cases with a -shebang suffix.  */
@@ -176,8 +174,8 @@ main (int argc, char **argv)
         {
           argv[nskip] = arg_name; /* XXX: Discards any specified path.  */
           launch_program (prog_name, argc - nskip, argv + nskip);
-          die (EXIT_FAILURE, 0, _("unknown program %s"),
-               quote (prog_name));
+          error (EXIT_FAILURE, 0, _("unknown program %s"),
+                 quote (prog_name));
         }
     }
 
@@ -190,7 +188,7 @@ main (int argc, char **argv)
   textdomain (PACKAGE);
   atexit (close_stdout);
 
-  if ((optc = getopt_long (argc, argv, "", long_options, NULL)) != -1)
+  if ((optc = getopt_long (argc, argv, "", long_options, nullptr)) != -1)
     switch (optc)
       {
       case_GETOPT_HELP_CHAR;

@@ -1,5 +1,5 @@
 /* cksum -- calculate and print POSIX checksums and sizes of files
-   Copyright (C) 1992-2022 Free Software Foundation, Inc.
+   Copyright (C) 2021-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,19 +16,15 @@
 
 #include <config.h>
 
+#include "cksum.h"
+
 #include <stdio.h>
 #include <sys/types.h>
-#include <stdint.h>
 #include <x86intrin.h>
 #include "system.h"
 
 /* Number of bytes to read at once.  */
 #define BUFLEN (1 << 16)
-
-extern uint_fast32_t const crctab[8][256];
-
-extern bool
-cksum_pclmul (FILE *fp, uint_fast32_t *crc_out, uintmax_t *length_out);
 
 /* Calculate CRC32 using PCLMULQDQ CPU instruction found in x86/x64 CPUs */
 
@@ -76,12 +72,6 @@ cksum_pclmul (FILE *fp, uint_fast32_t *crc_out, uintmax_t *length_out)
           return false;
         }
       length += bytes_read;
-
-      if (bytes_read == 0)
-        {
-          if (ferror (fp))
-            return false;
-        }
 
       datap = (__m128i *)buf;
 
@@ -191,5 +181,5 @@ cksum_pclmul (FILE *fp, uint_fast32_t *crc_out, uintmax_t *length_out)
   *crc_out = crc;
   *length_out = length;
 
-  return true;
+  return !ferror (fp);
 }

@@ -1,5 +1,5 @@
 /* isatty() replacement.
-   Copyright (C) 2012-2022 Free Software Foundation, Inc.
+   Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -130,8 +130,7 @@ static BOOL IsCygwinConsoleHandle (HANDLE h)
              or higher.  */
           if (QueryFullProcessImageNameFunc (processHandle, 0, buf, &bufsize))
             {
-              if (strlen (buf) >= 11
-                  && strcmp (buf + strlen (buf) - 11, "\\mintty.exe") == 0)
+              if (str_endswith (buf, "\\mintty.exe"))
                 result = TRUE;
             }
           CloseHandle (processHandle);

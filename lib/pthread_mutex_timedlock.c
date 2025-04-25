@@ -1,5 +1,5 @@
 /* Lock a mutex, abandoning after a certain time.
-   Copyright (C) 2019-2022 Free Software Foundation, Inc.
+   Copyright (C) 2019-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -24,6 +24,10 @@
 #include <sys/time.h>
 #include <time.h>
 
+#ifndef MIN
+# define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 int
 pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *abstime)
 {
@@ -39,7 +43,6 @@ pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *abstime)
       int err;
       struct timeval currtime;
       unsigned long remaining;
-      struct timespec duration;
 
       err = pthread_mutex_trylock (mutex);
       if (err != EBUSY)
@@ -78,10 +81,11 @@ pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *abstime)
         return ETIMEDOUT;
 
       /* Sleep 1 ms.  */
-      duration.tv_sec = 0;
-      duration.tv_nsec = 1000000;
-      if (duration.tv_nsec > remaining)
-        duration.tv_nsec = remaining;
+      struct timespec duration =
+        {
+          .tv_sec = 0,
+          .tv_nsec = MIN (1000000, remaining)
+        };
       nanosleep (&duration, NULL);
     }
 }

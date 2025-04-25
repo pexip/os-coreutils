@@ -1,5 +1,5 @@
 /* printf wrappers that fail immediately for non-file-related errors
-   Copyright (C) 2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,25 +14,25 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
+/* written by Jim Meyering */
+
 #include <config.h>
 
 #include "xprintf.h"
 
 #include <errno.h>
 
-#include "error.h"
+#include <error.h>
 #include "exitfail.h"
 #include "gettext.h"
 
-/* written by Jim Meyering */
+#define _(msgid) dgettext ("gnulib", msgid)
 
-/* Just like printf, but call error if it fails without setting the
-   stream's error indicator.  */
-int
+off64_t
 xprintf (char const *restrict format, ...)
 {
   va_list args;
-  int retval;
+  off64_t retval;
   va_start (args, format);
   retval = xvprintf (format, args);
   va_end (args);
@@ -40,25 +40,21 @@ xprintf (char const *restrict format, ...)
   return retval;
 }
 
-/* Just like vprintf, but call error if it fails without setting the
-   stream's error indicator.  */
-int
+off64_t
 xvprintf (char const *restrict format, va_list args)
 {
-  int retval = vprintf (format, args);
+  off64_t retval = vzprintf (format, args);
   if (retval < 0 && ! ferror (stdout))
-    error (exit_failure, errno, gettext ("cannot perform formatted output"));
+    error (exit_failure, errno, "%s", _("cannot perform formatted output"));
 
   return retval;
 }
 
-/* Just like fprintf, but call error if it fails without setting the
-   stream's error indicator.  */
-int
+off64_t
 xfprintf (FILE *restrict stream, char const *restrict format, ...)
 {
   va_list args;
-  int retval;
+  off64_t retval;
   va_start (args, format);
   retval = xvfprintf (stream, format, args);
   va_end (args);
@@ -66,14 +62,12 @@ xfprintf (FILE *restrict stream, char const *restrict format, ...)
   return retval;
 }
 
-/* Just like vfprintf, but call error if it fails without setting the
-   stream's error indicator.  */
-int
+off64_t
 xvfprintf (FILE *restrict stream, char const *restrict format, va_list args)
 {
-  int retval = vfprintf (stream, format, args);
+  off64_t retval = vfzprintf (stream, format, args);
   if (retval < 0 && ! ferror (stream))
-    error (exit_failure, errno, gettext ("cannot perform formatted output"));
+    error (exit_failure, errno, "%s", _("cannot perform formatted output"));
 
   return retval;
 }

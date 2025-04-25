@@ -1,5 +1,5 @@
 /* obstack.c - subroutines used implicitly by object stack macros
-   Copyright (C) 1988-2022 Free Software Foundation, Inc.
+   Copyright (C) 1988-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    This file is free software: you can redistribute it and/or modify
@@ -23,43 +23,23 @@
 # include "obstack.h"
 #endif
 
-/* NOTE BEFORE MODIFYING THIS FILE: _OBSTACK_INTERFACE_VERSION in
-   obstack.h must be incremented whenever callers compiled using an old
+/* NOTE BEFORE MODIFYING THIS FILE IN GNU LIBC: _OBSTACK_INTERFACE_VERSION in
+   gnu-versions.h must be incremented whenever callers compiled using an old
    obstack.h can no longer properly call the functions in this file.  */
 
-/* Comment out all this code if we are using the GNU C Library, and are not
-   actually compiling the library itself, and the installed library
-   supports the same library interface we do.  This code is part of the GNU
-   C Library, but also included in many other GNU distributions.  Compiling
-   and linking in this code is a waste when using the GNU C library
-   (especially if it is a shared library).  Rather than having every GNU
-   program understand 'configure --with-gnu-libc' and omit the object
-   files, it is simpler to just do this in the source for each such file.  */
-#if !defined _LIBC && defined __GNU_LIBRARY__ && __GNU_LIBRARY__ > 1
-# include <gnu-versions.h>
-# if (_GNU_OBSTACK_INTERFACE_VERSION == _OBSTACK_INTERFACE_VERSION	      \
-      || (_GNU_OBSTACK_INTERFACE_VERSION == 1				      \
-          && _OBSTACK_INTERFACE_VERSION == 2				      \
-          && defined SIZEOF_INT && defined SIZEOF_SIZE_T		      \
-          && SIZEOF_INT == SIZEOF_SIZE_T))
-#  define _OBSTACK_ELIDE_CODE
-# endif
-#endif
-
-#ifndef _OBSTACK_ELIDE_CODE
 /* If GCC, or if an oddball (testing?) host that #defines __alignof__,
    use the already-supplied __alignof__.  Otherwise, this must be Gnulib
    (as glibc assumes GCC); defer to Gnulib's alignof_type.  */
-# if !defined __GNUC__ && !defined __alignof__
-#  include <alignof.h>
-#  define __alignof__(type) alignof_type (type)
-# endif
-# include <stdlib.h>
-# include <stdint.h>
+#if !defined __GNUC__ && !defined __alignof__
+# include <alignof.h>
+# define __alignof__(type) alignof_type (type)
+#endif
+#include <stdlib.h>
+#include <stdint.h>
 
-# ifndef MAX
-#  define MAX(a,b) ((a) > (b) ? (a) : (b))
-# endif
+#ifndef MAX
+# define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
 
 /* Determine default alignment.  */
 
@@ -138,7 +118,7 @@ _obstack_begin_worker (struct obstack *h,
   h->next_free = h->object_base = __PTR_ALIGN ((char *) chunk, chunk->contents,
                                                alignment - 1);
   h->chunk_limit = chunk->limit = (char *) chunk + h->chunk_size;
-  chunk->prev = 0;
+  chunk->prev = NULL;
   /* The initial chunk now contains no empty object.  */
   h->maybe_empty_object = 0;
   h->alloc_failed = 0;
@@ -181,7 +161,7 @@ void
 _obstack_newchunk (struct obstack *h, _OBSTACK_SIZE_T length)
 {
   struct _obstack_chunk *old_chunk = h->chunk;
-  struct _obstack_chunk *new_chunk = 0;
+  struct _obstack_chunk *new_chunk = NULL;
   size_t obj_size = h->next_free - h->object_base;
   char *object_base;
 
@@ -246,12 +226,12 @@ _obstack_allocated_p (struct obstack *h, void *obj)
   /* We use >= rather than > since the object cannot be exactly at
      the beginning of the chunk but might be an empty object exactly
      at the end of an adjacent chunk.  */
-  while (lp != 0 && ((void *) lp >= obj || (void *) (lp)->limit < obj))
+  while (lp != NULL && ((void *) lp >= obj || (void *) (lp)->limit < obj))
     {
       plp = lp->prev;
       lp = plp;
     }
-  return lp != 0;
+  return lp != NULL;
 }
 
 /* Free objects in obstack H, including OBJ and everything allocate
@@ -267,7 +247,7 @@ _obstack_free (struct obstack *h, void *obj)
   /* We use >= because there cannot be an object at the beginning of a chunk.
      But there can be an empty object at that address
      at the end of another chunk.  */
-  while (lp != 0 && ((void *) lp >= obj || (void *) (lp)->limit < obj))
+  while (lp != NULL && ((void *) lp >= obj || (void *) (lp)->limit < obj))
     {
       plp = lp->prev;
       call_freefun (h, lp);
@@ -282,7 +262,7 @@ _obstack_free (struct obstack *h, void *obj)
       h->chunk_limit = lp->limit;
       h->chunk = lp;
     }
-  else if (obj != 0)
+  else if (obj != NULL)
     /* obj is not in any of the chunks! */
     abort ();
 }
@@ -293,37 +273,40 @@ _obstack_memory_used (struct obstack *h)
   struct _obstack_chunk *lp;
   _OBSTACK_SIZE_T nbytes = 0;
 
-  for (lp = h->chunk; lp != 0; lp = lp->prev)
+  for (lp = h->chunk; lp != NULL; lp = lp->prev)
     {
       nbytes += lp->limit - (char *) lp;
     }
   return nbytes;
 }
 
-# ifndef _OBSTACK_NO_ERROR_HANDLER
+#ifndef _OBSTACK_NO_ERROR_HANDLER
 /* Define the error handler.  */
-#  include <stdio.h>
+# include <stdio.h>
 
 /* Exit value used when 'print_and_abort' is used.  */
-#  ifdef _LIBC
+# ifdef _LIBC
 int obstack_exit_failure = EXIT_FAILURE;
-#  else
-#   include "exitfail.h"
-#   define obstack_exit_failure exit_failure
-#  endif
+# else
+#  include "exitfail.h"
+#  define obstack_exit_failure exit_failure
+# endif
 
-#  ifdef _LIBC
-#   include <libintl.h>
-#  else
-#   include "gettext.h"
-#  endif
+# ifdef _LIBC
+#  include <libintl.h>
 #  ifndef _
 #   define _(msgid) gettext (msgid)
 #  endif
-
-#  ifdef _LIBC
-#   include <libio/iolibio.h>
+# else
+#  include "gettext.h"
+#  ifndef _
+#   define _(msgid) dgettext ("gnulib", msgid)
 #  endif
+# endif
+
+# ifdef _LIBC
+#  include <libio/iolibio.h>
+# endif
 
 static __attribute_noreturn__ void
 print_and_abort (void)
@@ -333,11 +316,11 @@ print_and_abort (void)
      happen because the "memory exhausted" message appears in other places
      like this and the translation should be reused instead of creating
      a very similar string which requires a separate translation.  */
-#  ifdef _LIBC
+# ifdef _LIBC
   (void) __fxprintf (NULL, "%s\n", _("memory exhausted"));
-#  else
+# else
   fprintf (stderr, "%s\n", _("memory exhausted"));
-#  endif
+# endif
   exit (obstack_exit_failure);
 }
 
@@ -349,5 +332,4 @@ print_and_abort (void)
    'print_and_abort'.  */
 __attribute_noreturn__ void (*obstack_alloc_failed_handler) (void)
   = print_and_abort;
-# endif /* !_OBSTACK_NO_ERROR_HANDLER */
-#endif /* !_OBSTACK_ELIDE_CODE */
+#endif /* !_OBSTACK_NO_ERROR_HANDLER */

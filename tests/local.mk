@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in -*-Makefile-*-.
 
-## Copyright (C) 2007-2022 Free Software Foundation, Inc.
+## Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Indirections required so that we'll still be able to know the
+# Indirection required so that we'll still be able to know the
 # complete list of our tests even if the user overrides TESTS
 # from the command line (as permitted by the test harness API).
 TESTS = $(all_tests) $(factor_tests)
@@ -108,6 +108,7 @@ EXTRA_DIST +=			\
 
 all_root_tests =				\
   tests/chown/basic.sh				\
+  tests/chgrp/from.sh				\
   tests/cp/cp-a-selinux.sh			\
   tests/cp/preserve-gid.sh			\
   tests/cp/special-bits.sh			\
@@ -123,11 +124,12 @@ all_root_tests =				\
   tests/id/setgid.sh				\
   tests/install/install-C-root.sh		\
   tests/ls/capability.sh			\
+  tests/ls/no-cap.sh				\
   tests/ls/nameless-uid.sh			\
-  tests/misc/chcon.sh				\
-  tests/misc/chroot-credentials.sh		\
+  tests/chcon/chcon.sh				\
+  tests/chroot/chroot-credentials.sh		\
   tests/misc/selinux.sh				\
-  tests/misc/truncate-owned-by-other.sh		\
+  tests/truncate/truncate-owned-by-other.sh	\
   tests/mkdir/writable-under-readonly.sh	\
   tests/mkdir/smack-root.sh			\
   tests/mv/hardlink-case.sh			\
@@ -137,8 +139,9 @@ all_root_tests =				\
   tests/rm/one-file-system.sh			\
   tests/rm/read-only.sh				\
   tests/rm/empty-immutable-skip.sh		\
-  tests/tail-2/append-only.sh			\
-  tests/tail-2/end-of-device.sh			\
+  tests/split/l-chunk-root.sh			\
+  tests/tail/append-only.sh			\
+  tests/tail/end-of-device.sh			\
   tests/touch/now-owned-by-other.sh
 
 ALL_RECURSIVE_TARGETS += check-root
@@ -163,30 +166,32 @@ check-root:
 # Put head-elide-tail early, because it's long-running.
 
 all_tests =					\
-  tests/misc/help-version.sh			\
-  tests/misc/help-version-getopt.sh		\
-  tests/tail-2/inotify-race.sh			\
-  tests/tail-2/inotify-race2.sh			\
+  tests/help/help-version.sh			\
+  tests/help/help-version-getopt.sh		\
+  tests/tail/inotify-race.sh			\
+  tests/tail/inotify-race2.sh			\
   tests/misc/invalid-opt.pl			\
   tests/rm/ext3-perf.sh				\
   tests/rm/cycle.sh				\
   tests/cp/link-heap.sh				\
   tests/cp/no-ctx.sh				\
-  tests/misc/tty-eof.pl				\
-  tests/tail-2/inotify-hash-abuse.sh		\
-  tests/tail-2/inotify-hash-abuse2.sh		\
-  tests/tail-2/F-vs-missing.sh			\
-  tests/tail-2/F-vs-rename.sh			\
-  tests/tail-2/F-headers.sh			\
-  tests/tail-2/descriptor-vs-rename.sh		\
-  tests/tail-2/inotify-rotate.sh		\
-  tests/tail-2/inotify-rotate-resources.sh	\
-  tests/tail-2/inotify-dir-recreate.sh		\
-  tests/tail-2/inotify-only-regular.sh		\
+  tests/tty/tty-eof.pl				\
+  tests/misc/read-errors.sh			\
+  tests/misc/write-errors.sh			\
+  tests/tail/inotify-hash-abuse.sh		\
+  tests/tail/inotify-hash-abuse2.sh		\
+  tests/tail/F-vs-missing.sh			\
+  tests/tail/F-vs-rename.sh			\
+  tests/tail/F-headers.sh			\
+  tests/tail/descriptor-vs-rename.sh		\
+  tests/tail/inotify-rotate.sh			\
+  tests/tail/inotify-rotate-resources.sh	\
+  tests/tail/inotify-dir-recreate.sh		\
+  tests/tail/inotify-only-regular.sh		\
   tests/chmod/no-x.sh				\
   tests/chgrp/basic.sh				\
   tests/rm/dangling-symlink.sh			\
-  tests/misc/ls-time.sh				\
+  tests/ls/ls-time.sh				\
   tests/rm/d-1.sh				\
   tests/rm/d-2.sh				\
   tests/rm/d-3.sh				\
@@ -201,7 +206,7 @@ all_tests =					\
   tests/rm/f-1.sh				\
   tests/rm/fail-eacces.sh			\
   tests/rm/fail-eperm.xpl			\
-  tests/tail-2/assert.sh			\
+  tests/tail/assert.sh				\
   tests/rm/hash.sh				\
   tests/rm/i-1.sh				\
   tests/rm/i-never.sh				\
@@ -241,155 +246,163 @@ all_tests =					\
   tests/fmt/long-line.sh			\
   tests/fmt/non-space.sh			\
   tests/misc/echo.sh				\
-  tests/misc/env.sh				\
-  tests/misc/env-signal-handler.sh		\
-  tests/misc/ptx.pl				\
-  tests/misc/test.pl				\
-  tests/misc/seq.pl				\
-  tests/misc/seq-epipe.sh			\
-  tests/misc/seq-extra-number.sh		\
-  tests/misc/seq-io-errors.sh			\
-  tests/misc/seq-locale.sh			\
-  tests/misc/seq-long-double.sh			\
-  tests/misc/seq-precision.sh			\
-  tests/misc/head.pl				\
-  tests/misc/head-elide-tail.pl			\
-  tests/tail-2/tail-n0f.sh			\
-  tests/misc/ls-misc.pl				\
-  tests/misc/date.pl				\
-  tests/misc/date-next-dow.pl			\
-  tests/misc/ptx-overrun.sh			\
+  tests/env/env.sh				\
+  tests/env/env-signal-handler.sh		\
+  tests/ptx/ptx.pl				\
+  tests/test/test.pl				\
+  tests/seq/seq.pl				\
+  tests/seq/seq-epipe.sh			\
+  tests/seq/seq-extra-number.sh			\
+  tests/seq/seq-io-errors.sh			\
+  tests/seq/seq-locale.sh			\
+  tests/seq/seq-long-double.sh			\
+  tests/seq/seq-precision.sh			\
+  tests/head/head.pl				\
+  tests/head/head-elide-tail.pl			\
+  tests/tail/tail-sysfs.sh			\
+  tests/tail/tail-n0f.sh			\
+  tests/ls/ls-misc.pl				\
+  tests/date/date.pl				\
+  tests/date/date-next-dow.pl			\
+  tests/ptx/ptx-overrun.sh			\
   tests/misc/xstrtol.pl				\
-  tests/tail-2/overlay-headers.sh		\
-  tests/tail-2/pid.sh				\
-  tests/misc/od.pl				\
-  tests/misc/od-endian.sh			\
-  tests/misc/od-float.sh			\
+  tests/tail/overlay-headers.sh			\
+  tests/tail/pid.sh				\
+  tests/tail/pid-pipe.sh			\
+  tests/od/od.pl				\
+  tests/od/od-endian.sh				\
+  tests/od/od-float.sh				\
   tests/misc/mktemp.pl				\
   tests/misc/arch.sh				\
-  tests/misc/join.pl				\
   tests/pr/pr-tests.pl				\
-  tests/misc/pwd-option.sh			\
-  tests/misc/chcon-fail.sh			\
+  tests/pwd/pwd-option.sh			\
+  tests/chcon/chcon-fail.sh			\
   tests/misc/coreutils.sh			\
-  tests/misc/cut.pl				\
-  tests/misc/cut-huge-range.sh			\
-  tests/misc/wc.pl				\
-  tests/misc/wc-files0-from.pl			\
-  tests/misc/wc-files0.sh			\
-  tests/misc/wc-nbsp.sh				\
-  tests/misc/wc-parallel.sh			\
-  tests/misc/wc-proc.sh				\
-  tests/misc/cat-E.sh				\
-  tests/misc/cat-proc.sh			\
-  tests/misc/cat-buf.sh				\
-  tests/misc/cat-self.sh			\
-  tests/misc/base64.pl				\
+  tests/cut/cut.pl				\
+  tests/cut/cut-huge-range.sh			\
+  tests/wc/wc.pl				\
+  tests/wc/wc-files0-from.pl			\
+  tests/wc/wc-files0.sh				\
+  tests/wc/wc-nbsp.sh				\
+  tests/wc/wc-parallel.sh			\
+  tests/wc/wc-proc.sh				\
+  tests/wc/wc-total.sh				\
+  tests/cat/cat-E.sh				\
+  tests/cat/cat-proc.sh				\
+  tests/cat/cat-buf.sh				\
+  tests/cat/cat-self.sh				\
   tests/misc/basename.pl			\
-  tests/misc/basenc.pl				\
+  tests/basenc/base64.pl			\
+  tests/basenc/basenc.pl			\
   tests/misc/close-stdout.sh			\
-  tests/misc/chroot-fail.sh			\
-  tests/misc/cksum.sh				\
-  tests/misc/cksum-a.sh				\
-  tests/misc/cksum-c.sh				\
+  tests/chroot/chroot-fail.sh			\
+  tests/cksum/cksum.sh				\
+  tests/cksum/cksum-a.sh			\
+  tests/cksum/cksum-c.sh			\
+  tests/cksum/cksum-base64.pl			\
+  tests/cksum/cksum-raw.sh			\
   tests/misc/comm.pl				\
-  tests/misc/csplit.sh				\
-  tests/misc/csplit-1000.sh			\
-  tests/misc/csplit-heap.sh			\
-  tests/misc/csplit-io-err.sh			\
-  tests/misc/csplit-suppress-matched.pl		\
-  tests/misc/date-debug.sh			\
-  tests/misc/date-sec.sh			\
-  tests/misc/date-tz.sh				\
+  tests/csplit/csplit.sh			\
+  tests/csplit/csplit-1000.sh			\
+  tests/csplit/csplit-heap.sh			\
+  tests/csplit/csplit-io-err.sh			\
+  tests/csplit/csplit-suppress-matched.pl	\
+  tests/date/date-debug.sh			\
+  tests/date/date-sec.sh			\
+  tests/date/date-tz.sh				\
   tests/misc/dircolors.pl			\
   tests/misc/dirname.pl				\
-  tests/misc/env-null.sh			\
-  tests/misc/env-S.pl				\
-  tests/misc/env-S-script.sh			\
+  tests/env/env-null.sh				\
+  tests/env/env-S.pl				\
+  tests/env/env-S-script.sh			\
   tests/misc/expand.pl				\
-  tests/misc/expr.pl				\
-  tests/misc/expr-multibyte.pl			\
-  tests/misc/factor.pl				\
-  tests/misc/factor-parallel.sh			\
+  tests/expr/expr.pl				\
+  tests/expr/expr-multibyte.pl			\
+  tests/factor/factor.pl			\
+  tests/factor/factor-parallel.sh		\
   tests/misc/false-status.sh			\
   tests/misc/fold.pl				\
-  tests/misc/groups-dash.sh			\
-  tests/misc/groups-process-all.sh		\
-  tests/misc/groups-version.sh			\
-  tests/misc/head-c.sh				\
-  tests/misc/head-pos.sh			\
-  tests/misc/head-write-error.sh		\
+  tests/groups/groups-dash.sh			\
+  tests/groups/groups-process-all.sh		\
+  tests/groups/groups-version.sh		\
+  tests/head/head-c.sh				\
+  tests/head/head-pos.sh			\
+  tests/head/head-write-error.sh		\
   tests/misc/kill.sh				\
-  tests/misc/b2sum.sh				\
-  tests/misc/md5sum.pl				\
-  tests/misc/md5sum-bsd.sh			\
-  tests/misc/md5sum-newline.pl			\
-  tests/misc/md5sum-parallel.sh			\
+  tests/cksum/b2sum.sh				\
+  tests/cksum/md5sum.pl				\
+  tests/cksum/md5sum-bsd.sh			\
+  tests/cksum/md5sum-newline.pl			\
+  tests/cksum/md5sum-parallel.sh		\
+  tests/join/join.pl				\
+  tests/join/join-utf8.sh			\
   tests/misc/mknod.sh				\
-  tests/misc/nice.sh				\
-  tests/misc/nice-fail.sh			\
+  tests/nice/nice.sh				\
+  tests/nice/nice-fail.sh			\
   tests/misc/nl.sh				\
   tests/misc/nohup.sh				\
-  tests/misc/nproc-avail.sh			\
-  tests/misc/nproc-positive.sh			\
-  tests/misc/nproc-override.sh			\
+  tests/nproc/nproc-avail.sh			\
+  tests/nproc/nproc-positive.sh			\
+  tests/nproc/nproc-override.sh			\
   tests/misc/numfmt.pl				\
-  tests/misc/od-N.sh				\
-  tests/misc/od-j.sh				\
-  tests/misc/od-multiple-t.sh			\
-  tests/misc/od-x8.sh				\
+  tests/od/od-N.sh				\
+  tests/od/od-j.sh				\
+  tests/od/od-multiple-t.sh			\
+  tests/od/od-x8.sh				\
   tests/misc/paste.pl				\
-  tests/misc/pathchk1.sh			\
+  tests/misc/pathchk.sh				\
   tests/misc/printenv.sh			\
-  tests/misc/printf.sh				\
-  tests/misc/printf-cov.pl			\
-  tests/misc/printf-hex.sh			\
-  tests/misc/printf-mb.sh			\
-  tests/misc/printf-surprise.sh			\
-  tests/misc/printf-quote.sh			\
-  tests/misc/pwd-long.sh			\
-  tests/misc/readlink-fp-loop.sh		\
-  tests/misc/readlink-root.sh			\
+  tests/printf/printf.sh			\
+  tests/printf/printf-cov.pl			\
+  tests/printf/printf-hex.sh			\
+  tests/printf/printf-indexed.sh		\
+  tests/printf/printf-mb.sh			\
+  tests/printf/printf-surprise.sh		\
+  tests/printf/printf-quote.sh			\
+  tests/pwd/pwd-long.sh				\
+  tests/readlink/readlink-fp-loop.sh		\
+  tests/readlink/readlink-root.sh		\
   tests/misc/realpath.sh			\
-  tests/misc/runcon-no-reorder.sh		\
-  tests/misc/sha1sum.pl				\
-  tests/misc/sha1sum-vec.pl			\
-  tests/misc/sha224sum.pl			\
-  tests/misc/sha256sum.pl			\
-  tests/misc/sha384sum.pl			\
-  tests/misc/sha512sum.pl			\
-  tests/misc/shred-exact.sh			\
-  tests/misc/shred-passes.sh			\
-  tests/misc/shred-remove.sh			\
-  tests/misc/shred-size.sh			\
-  tests/misc/shuf.sh				\
-  tests/misc/shuf-reservoir.sh			\
+  tests/runcon/runcon-compute.sh		\
+  tests/runcon/runcon-no-reorder.sh		\
+  tests/cksum/sha1sum.pl			\
+  tests/cksum/sha1sum-vec.pl			\
+  tests/cksum/sha224sum.pl			\
+  tests/cksum/sha256sum.pl			\
+  tests/cksum/sha384sum.pl			\
+  tests/cksum/sha512sum.pl			\
+  tests/shred/shred-exact.sh			\
+  tests/shred/shred-passes.sh			\
+  tests/shred/shred-remove.sh			\
+  tests/shred/shred-size.sh			\
+  tests/shuf/shuf.sh				\
+  tests/shuf/shuf-reservoir.sh			\
   tests/misc/sleep.sh				\
-  tests/misc/sm3sum.pl				\
-  tests/misc/sort.pl				\
-  tests/misc/sort-benchmark-random.sh		\
-  tests/misc/sort-compress.sh			\
-  tests/misc/sort-compress-hang.sh		\
-  tests/misc/sort-compress-proc.sh		\
-  tests/misc/sort-continue.sh			\
-  tests/misc/sort-debug-keys.sh			\
-  tests/misc/sort-debug-warn.sh			\
-  tests/misc/sort-discrim.sh			\
-  tests/misc/sort-files0-from.pl		\
-  tests/misc/sort-float.sh			\
-  tests/misc/sort-h-thousands-sep.sh		\
-  tests/misc/sort-merge.pl			\
-  tests/misc/sort-merge-fdlimit.sh		\
-  tests/misc/sort-month.sh			\
-  tests/misc/sort-exit-early.sh			\
-  tests/misc/sort-rand.sh			\
-  tests/misc/sort-spinlock-abuse.sh		\
-  tests/misc/sort-stale-thread-mem.sh		\
-  tests/misc/sort-unique.sh			\
-  tests/misc/sort-unique-segv.sh		\
-  tests/misc/sort-version.sh			\
-  tests/misc/sort-NaN-infloop.sh		\
-  tests/misc/sort-u-FMR.sh			\
+  tests/cksum/sm3sum.pl				\
+  tests/sort/sort.pl				\
+  tests/sort/sort-benchmark-random.sh		\
+  tests/sort/sort-compress.sh			\
+  tests/sort/sort-compress-hang.sh		\
+  tests/sort/sort-compress-proc.sh		\
+  tests/sort/sort-continue.sh			\
+  tests/sort/sort-debug-keys.sh			\
+  tests/sort/sort-debug-warn.sh			\
+  tests/sort/sort-discrim.sh			\
+  tests/sort/sort-files0-from.pl		\
+  tests/sort/sort-float.sh			\
+  tests/sort/sort-h-thousands-sep.sh		\
+  tests/sort/sort-merge.pl			\
+  tests/sort/sort-merge-fdlimit.sh		\
+  tests/sort/sort-month.sh			\
+  tests/sort/sort-exit-early.sh			\
+  tests/sort/sort-rand.sh			\
+  tests/sort/sort-spinlock-abuse.sh		\
+  tests/sort/sort-stale-thread-mem.sh		\
+  tests/sort/sort-unique.sh			\
+  tests/sort/sort-unique-segv.sh		\
+  tests/sort/sort-version.sh			\
+  tests/sort/sort-NaN-infloop.sh		\
+  tests/sort/sort-u-FMR.sh			\
   tests/split/filter.sh				\
   tests/split/suffix-auto-length.sh		\
   tests/split/suffix-length.sh			\
@@ -403,58 +416,58 @@ all_tests =					\
   tests/split/record-sep.sh			\
   tests/split/numeric.sh			\
   tests/split/guard-input.sh			\
-  tests/misc/stat-birthtime.sh			\
-  tests/misc/stat-fmt.sh			\
-  tests/misc/stat-hyphen.sh			\
-  tests/misc/stat-mount.sh			\
-  tests/misc/stat-nanoseconds.sh		\
-  tests/misc/stat-printf.pl			\
-  tests/misc/stat-slash.sh			\
+  tests/stat/stat-birthtime.sh			\
+  tests/stat/stat-fmt.sh			\
+  tests/stat/stat-hyphen.sh			\
+  tests/stat/stat-mount.sh			\
+  tests/stat/stat-nanoseconds.sh		\
+  tests/stat/stat-printf.pl			\
+  tests/stat/stat-slash.sh			\
   tests/misc/stdbuf.sh				\
-  tests/misc/stty.sh				\
-  tests/misc/stty-invalid.sh			\
-  tests/misc/stty-pairs.sh			\
-  tests/misc/stty-row-col.sh			\
-  tests/misc/sum.pl				\
-  tests/misc/sum-sysv.sh			\
+  tests/stty/stty.sh				\
+  tests/stty/stty-invalid.sh			\
+  tests/stty/stty-pairs.sh			\
+  tests/stty/stty-row-col.sh			\
+  tests/cksum/sum.pl				\
+  tests/cksum/sum-sysv.sh			\
   tests/misc/sync.sh				\
-  tests/misc/tac.pl				\
-  tests/misc/tac-continue.sh			\
-  tests/misc/tac-2-nonseekable.sh		\
-  tests/misc/tail.pl				\
+  tests/tac/tac.pl				\
+  tests/tac/tac-continue.sh			\
+  tests/tac/tac-2-nonseekable.sh		\
+  tests/tail/tail.pl				\
   tests/misc/tee.sh				\
-  tests/misc/test-N.sh				\
-  tests/misc/test-diag.pl			\
+  tests/test/test-N.sh				\
+  tests/test/test-diag.pl			\
   tests/misc/time-style.sh			\
-  tests/misc/timeout.sh				\
-  tests/misc/timeout-blocked.pl			\
-  tests/misc/timeout-group.sh			\
-  tests/misc/timeout-large-parameters.sh	\
-  tests/misc/timeout-parameters.sh		\
-  tests/misc/tr.pl				\
-  tests/misc/tr-case-class.sh			\
-  tests/misc/truncate-dangling-symlink.sh	\
-  tests/misc/truncate-dir-fail.sh		\
-  tests/misc/truncate-fail-diag.sh		\
-  tests/misc/truncate-fifo.sh			\
-  tests/misc/truncate-no-create-missing.sh	\
-  tests/misc/truncate-overflow.sh		\
-  tests/misc/truncate-parameters.sh		\
-  tests/misc/truncate-relative.sh		\
+  tests/timeout/timeout.sh			\
+  tests/timeout/timeout-blocked.pl		\
+  tests/timeout/timeout-group.sh		\
+  tests/timeout/timeout-large-parameters.sh	\
+  tests/timeout/timeout-parameters.sh		\
+  tests/tr/tr.pl				\
+  tests/tr/tr-case-class.sh			\
+  tests/truncate/truncate-dangling-symlink.sh	\
+  tests/truncate/truncate-dir-fail.sh		\
+  tests/truncate/truncate-fail-diag.sh		\
+  tests/truncate/truncate-fifo.sh		\
+  tests/truncate/truncate-no-create-missing.sh	\
+  tests/truncate/truncate-overflow.sh		\
+  tests/truncate/truncate-parameters.sh		\
+  tests/truncate/truncate-relative.sh		\
   tests/misc/tsort.pl				\
-  tests/misc/tty.sh				\
+  tests/tty/tty.sh				\
   tests/misc/usage_vs_getopt.sh			\
   tests/misc/unexpand.pl			\
-  tests/misc/uniq.pl				\
-  tests/misc/uniq-perf.sh			\
-  tests/misc/uniq-collate.sh			\
+  tests/uniq/uniq.pl				\
+  tests/uniq/uniq-perf.sh			\
+  tests/uniq/uniq-collate.sh			\
   tests/misc/xattr.sh				\
   tests/misc/yes.sh				\
-  tests/tail-2/wait.sh				\
-  tests/tail-2/retry.sh				\
-  tests/tail-2/symlink.sh			\
-  tests/tail-2/tail-c.sh			\
-  tests/tail-2/truncate.sh			\
+  tests/tail/wait.sh				\
+  tests/tail/retry.sh				\
+  tests/tail/symlink.sh				\
+  tests/tail/tail-c.sh				\
+  tests/tail/truncate.sh			\
   tests/chmod/c-option.sh			\
   tests/chmod/equal-x.sh			\
   tests/chmod/equals.sh				\
@@ -466,6 +479,7 @@ all_tests =					\
   tests/chmod/thru-dangling.sh			\
   tests/chmod/umask-x.sh			\
   tests/chmod/usage.sh				\
+  tests/chmod/symlinks.sh				\
   tests/chown/deref.sh				\
   tests/chown/preserve-root.sh			\
   tests/chown/separator.sh			\
@@ -480,6 +494,7 @@ all_tests =					\
   tests/cp/cp-i.sh				\
   tests/cp/cp-mv-backup.sh			\
   tests/cp/cp-parents.sh			\
+  tests/cp/debug.sh				\
   tests/cp/deref-slink.sh			\
   tests/cp/dir-rm-dest.sh			\
   tests/cp/dir-slash.sh				\
@@ -487,6 +502,7 @@ all_tests =					\
   tests/cp/existing-perm-dir.sh			\
   tests/cp/existing-perm-race.sh		\
   tests/cp/fail-perm.sh				\
+  tests/cp/keep-directory-symlink.sh		\
   tests/cp/sparse-extents.sh			\
   tests/cp/copy-FMR.sh				\
   tests/cp/sparse-perf.sh			\
@@ -537,6 +553,7 @@ all_tests =					\
   tests/dd/no-allocate.sh			\
   tests/dd/nocache.sh				\
   tests/dd/nocache_eof.sh			\
+  tests/dd/nocache_fail.sh			\
   tests/dd/not-rewound.sh			\
   tests/dd/reblock.sh				\
   tests/dd/skip-seek.pl				\
@@ -551,6 +568,7 @@ all_tests =					\
   tests/df/total-verify.sh			\
   tests/du/2g.sh				\
   tests/du/8gb.sh				\
+  tests/du/apparent.sh				\
   tests/du/basic.sh				\
   tests/du/bigtime.sh				\
   tests/du/deref.sh				\
@@ -599,6 +617,7 @@ all_tests =					\
   tests/ln/slash-decorated-nonexistent-dest.sh	\
   tests/ln/target-1.sh				\
   tests/ls/a-option.sh				\
+  tests/ls/acl.sh				\
   tests/ls/abmon-align.sh			\
   tests/ls/birthtime.sh				\
   tests/ls/block-size.sh			\
@@ -622,20 +641,22 @@ all_tests =					\
   tests/ls/w-option.sh				\
   tests/ls/multihardlink.sh			\
   tests/ls/no-arg.sh				\
-  tests/ls/no-cap.sh				\
   tests/ls/selinux-segfault.sh			\
   tests/ls/quote-align.sh			\
+  tests/ls/size-align.sh			\
   tests/ls/readdir-mountpoint-inode.sh		\
   tests/ls/recursive.sh				\
   tests/ls/removed-directory.sh			\
   tests/ls/root-rel-symlink-color.sh		\
   tests/ls/rt-1.sh				\
+  tests/ls/selinux.sh				\
   tests/ls/slink-acl.sh				\
   tests/ls/stat-dtype.sh			\
   tests/ls/stat-failed.sh			\
   tests/ls/stat-free-color.sh			\
   tests/ls/stat-free-symlinks.sh		\
   tests/ls/stat-vs-dirent.sh			\
+  tests/ls/symlink-loop.sh			\
   tests/ls/symlink-quote.sh			\
   tests/ls/symlink-slash.sh			\
   tests/ls/time-style-diag.sh			\
@@ -682,8 +703,10 @@ all_tests =					\
   tests/mv/into-self-3.sh			\
   tests/mv/into-self-4.sh			\
   tests/mv/leak-fd.sh				\
+  tests/mv/mv-exchange.sh			\
   tests/mv/mv-n.sh				\
   tests/mv/mv-special-1.sh			\
+  tests/mv/no-copy.sh				\
   tests/mv/no-target-dir.sh			\
   tests/mv/part-fail.sh				\
   tests/mv/part-hardlink.sh			\
@@ -705,15 +728,15 @@ all_tests =					\
   tests/rmdir/ignore.sh				\
   tests/rmdir/symlink-errors.sh			\
   tests/rmdir/t-slash.sh			\
-  tests/tail-2/assert-2.sh			\
-  tests/tail-2/big-4gb.sh			\
-  tests/tail-2/flush-initial.sh			\
-  tests/tail-2/follow-name.sh			\
-  tests/tail-2/follow-stdin.sh			\
-  tests/tail-2/pipe-f.sh			\
-  tests/tail-2/pipe-f2.sh			\
-  tests/tail-2/proc-ksyms.sh			\
-  tests/tail-2/start-middle.sh			\
+  tests/tail/assert-2.sh			\
+  tests/tail/big-4gb.sh				\
+  tests/tail/flush-initial.sh			\
+  tests/tail/follow-name.sh			\
+  tests/tail/follow-stdin.sh			\
+  tests/tail/pipe-f.sh				\
+  tests/tail/pipe-f2.sh				\
+  tests/tail/proc-ksyms.sh			\
+  tests/tail/start-middle.sh			\
   tests/touch/60-seconds.sh			\
   tests/touch/dangling-symlink.sh		\
   tests/touch/dir-1.sh				\
@@ -739,7 +762,7 @@ factor_tests = \
   $(tf)/t20.sh $(tf)/t21.sh $(tf)/t22.sh $(tf)/t23.sh $(tf)/t24.sh \
   $(tf)/t25.sh $(tf)/t26.sh $(tf)/t27.sh $(tf)/t28.sh $(tf)/t29.sh \
   $(tf)/t30.sh $(tf)/t31.sh $(tf)/t32.sh $(tf)/t33.sh $(tf)/t34.sh \
-  $(tf)/t35.sh $(tf)/t36.sh
+  $(tf)/t35.sh $(tf)/t36.sh $(tf)/t37.sh
 
 $(factor_tests): $(tf)/run.sh $(tf)/create-test.sh
 	$(AM_V_GEN)$(MKDIR_P) $(tf)

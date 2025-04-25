@@ -1,5 +1,5 @@
 /* Base64, base32, and similar encoding/decoding strings or files.
-   Copyright (C) 2004-2022 Free Software Foundation, Inc.
+   Copyright (C) 2004-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,11 +23,9 @@
 #include <sys/types.h>
 
 #include "system.h"
+#include "assure.h"
 #include "c-ctype.h"
-#include "die.h"
-#include "error.h"
 #include "fadvise.h"
-#include "idx.h"
 #include "quote.h"
 #include "xstrtol.h"
 #include "xdectoint.h"
@@ -50,7 +48,7 @@
 #elif BASE_TYPE == 42
 # include "base32.h"
 # include "base64.h"
-# include <assert.h>
+# include "assure.h"
 # define PROGRAM_NAME "basenc"
 #else
 # error missing/invalid BASE_TYPE definition
@@ -89,7 +87,7 @@ static struct option const long_options[] =
 #endif
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -175,58 +173,88 @@ from any other non-alphabet bytes in the encoded stream.\n"),
   exit (status);
 }
 
+#if BASE_TYPE != 64
+static int
+base32_required_padding (int len)
+{
+  int partial = len % 8;
+  return partial ? 8 - partial : 0;
+}
+#endif
+
+#if BASE_TYPE != 32
+static int
+base64_required_padding (int len)
+{
+  int partial = len % 4;
+  return partial ? 4 - partial : 0;
+}
+#endif
+
+#if BASE_TYPE == 42
+static int
+no_required_padding (int len)
+{
+  return 0;
+}
+#endif
+
 #define ENC_BLOCKSIZE (1024 * 3 * 10)
 
 #if BASE_TYPE == 32
 # define BASE_LENGTH BASE32_LENGTH
+# define REQUIRED_PADDING base32_required_padding
 /* Note that increasing this may decrease performance if --ignore-garbage
    is used, because of the memmove operation below.  */
 # define DEC_BLOCKSIZE (1024 * 5)
 
 /* Ensure that BLOCKSIZE is a multiple of 5 and 8.  */
-verify (ENC_BLOCKSIZE % 40 == 0);  /* So padding chars only on last block.  */
-verify (DEC_BLOCKSIZE % 40 == 0);  /* So complete encoded blocks are used.  */
+static_assert (ENC_BLOCKSIZE % 40 == 0); /* Padding chars only on last block. */
+static_assert (DEC_BLOCKSIZE % 40 == 0); /* Complete encoded blocks are used. */
 
 # define base_encode base32_encode
 # define base_decode_context base32_decode_context
 # define base_decode_ctx_init base32_decode_ctx_init
 # define base_decode_ctx base32_decode_ctx
-# define isbase isbase32
+# define isubase isubase32
 #elif BASE_TYPE == 64
 # define BASE_LENGTH BASE64_LENGTH
+# define REQUIRED_PADDING base64_required_padding
 /* Note that increasing this may decrease performance if --ignore-garbage
    is used, because of the memmove operation below.  */
 # define DEC_BLOCKSIZE (1024 * 3)
 
 /* Ensure that BLOCKSIZE is a multiple of 3 and 4.  */
-verify (ENC_BLOCKSIZE % 12 == 0);  /* So padding chars only on last block.  */
-verify (DEC_BLOCKSIZE % 12 == 0);  /* So complete encoded blocks are used.  */
+static_assert (ENC_BLOCKSIZE % 12 == 0); /* Padding chars only on last block. */
+static_assert (DEC_BLOCKSIZE % 12 == 0); /* Complete encoded blocks are used. */
 
 # define base_encode base64_encode
 # define base_decode_context base64_decode_context
 # define base_decode_ctx_init base64_decode_ctx_init
 # define base_decode_ctx base64_decode_ctx
-# define isbase isbase64
+# define isubase isubase64
 #elif BASE_TYPE == 42
 
 
 # define BASE_LENGTH base_length
+# define REQUIRED_PADDING required_padding
 
 /* Note that increasing this may decrease performance if --ignore-garbage
    is used, because of the memmove operation below.  */
 # define DEC_BLOCKSIZE (4200)
-verify (DEC_BLOCKSIZE % 40 == 0); /* complete encoded blocks for base32 */
-verify (DEC_BLOCKSIZE % 12 == 0); /* complete encoded blocks for base64 */
+static_assert (DEC_BLOCKSIZE % 40 == 0); /* complete encoded blocks for base32*/
+static_assert (DEC_BLOCKSIZE % 12 == 0); /* complete encoded blocks for base64*/
 
 static int (*base_length) (int i);
-static bool (*isbase) (char ch);
+static int (*required_padding) (int i);
+static bool (*isubase) (unsigned char ch);
 static void (*base_encode) (char const *restrict in, idx_t inlen,
                             char *restrict out, idx_t outlen);
 
 struct base16_decode_context
 {
-  char nibble;
-  bool have_nibble;
+  /* Either a 4-bit nibble, or negative if we have no nibble.  */
+  signed char nibble;
 };
 
 struct z85_decode_context
@@ -297,10 +325,8 @@ static void
 prepare_inbuf (struct base_decode_context *ctx, idx_t inlen)
 {
   if (ctx->bufsize < inlen)
-    {
-      ctx->bufsize = inlen * 2;
-      ctx->inbuf = xnrealloc (ctx->inbuf, ctx->bufsize, sizeof (char));
-    }
+    ctx->inbuf = xpalloc (ctx->inbuf, &ctx->bufsize,
+                          inlen - ctx->bufsize, -1, sizeof *ctx->inbuf);
 }
 
 
@@ -322,10 +348,10 @@ base64url_encode (char const *restrict in, idx_t inlen,
 }
 
 static bool
-isbase64url (char ch)
+isubase64url (unsigned char ch)
 {
   return (ch == '-' || ch == '_'
-          || (ch != '+' && ch != '/' && isbase64 (ch)));
+          || (ch != '+' && ch != '/' && isubase64 (ch)));
 }
 
 static void
@@ -435,7 +461,7 @@ static const char base32_hex_to_norm[32 + 9] = {
 
 
 inline static bool
-isbase32hex (char ch)
+isubase32hex (unsigned char ch)
 {
   return ('0' <= ch && ch <= '9') || ('A' <= ch && ch <= 'V');
 }
@@ -449,7 +475,7 @@ base32hex_encode (char const *restrict in, idx_t inlen,
 
   for (char *p = out; outlen--; p++)
     {
-      assert (0x32 <= *p && *p <= 0x5a);          /* LCOV_EXCL_LINE */
+      affirm (0x32 <= *p && *p <= 0x5a);          /* LCOV_EXCL_LINE */
       *p = base32_norm_to_hex[*p - 0x32];
     }
 }
@@ -474,8 +500,8 @@ base32hex_decode_ctx_wrapper (struct base_decode_context *ctx,
   char *p = ctx->inbuf;
   while (i--)
     {
-      if (isbase32hex (*in))
-        *p = base32_hex_to_norm[ (int)*in - 0x30];
+      if (isubase32hex (*in))
+        *p = base32_hex_to_norm[*in - 0x30];
       else
         *p = *in;
       ++p;
@@ -488,12 +514,105 @@ base32hex_decode_ctx_wrapper (struct base_decode_context *ctx,
 
   return b;
 }
+/* With this approach this file works independent of the charset used
+   (think EBCDIC).  However, it does assume that the characters in the
+   Base32 alphabet (A-Z2-7) are encoded in 0..255.  POSIX
+   1003.1-2001 require that char and unsigned char are 8-bit
+   quantities, though, taking care of that problem.  But this may be a
+   potential problem on non-POSIX C99 platforms.
 
+   IBM C V6 for AIX mishandles "#define B32(x) ...'x'...", so use "_"
+   as the formal parameter rather than "x".  */
+# define B16(_)                                 \
+  ((_) == '0' ? 0                               \
+   : (_) == '1' ? 1                             \
+   : (_) == '2' ? 2                             \
+   : (_) == '3' ? 3                             \
+   : (_) == '4' ? 4                             \
+   : (_) == '5' ? 5                             \
+   : (_) == '6' ? 6                             \
+   : (_) == '7' ? 7                             \
+   : (_) == '8' ? 8                             \
+   : (_) == '9' ? 9                             \
+   : (_) == 'A' || (_) == 'a' ? 10              \
+   : (_) == 'B' || (_) == 'b' ? 11              \
+   : (_) == 'C' || (_) == 'c' ? 12              \
+   : (_) == 'D' || (_) == 'd' ? 13              \
+   : (_) == 'E' || (_) == 'e' ? 14              \
+   : (_) == 'F' || (_) == 'f' ? 15              \
+   : -1)
+
+static signed char const base16_to_int[256] = {
+  B16 (0), B16 (1), B16 (2), B16 (3),
+  B16 (4), B16 (5), B16 (6), B16 (7),
+  B16 (8), B16 (9), B16 (10), B16 (11),
+  B16 (12), B16 (13), B16 (14), B16 (15),
+  B16 (16), B16 (17), B16 (18), B16 (19),
+  B16 (20), B16 (21), B16 (22), B16 (23),
+  B16 (24), B16 (25), B16 (26), B16 (27),
+  B16 (28), B16 (29), B16 (30), B16 (31),
+  B16 (32), B16 (33), B16 (34), B16 (35),
+  B16 (36), B16 (37), B16 (38), B16 (39),
+  B16 (40), B16 (41), B16 (42), B16 (43),
+  B16 (44), B16 (45), B16 (46), B16 (47),
+  B16 (48), B16 (49), B16 (50), B16 (51),
+  B16 (52), B16 (53), B16 (54), B16 (55),
+  B16 (56), B16 (57), B16 (58), B16 (59),
+  B16 (60), B16 (61), B16 (62), B16 (63),
+  B16 (32), B16 (65), B16 (66), B16 (67),
+  B16 (68), B16 (69), B16 (70), B16 (71),
+  B16 (72), B16 (73), B16 (74), B16 (75),
+  B16 (76), B16 (77), B16 (78), B16 (79),
+  B16 (80), B16 (81), B16 (82), B16 (83),
+  B16 (84), B16 (85), B16 (86), B16 (87),
+  B16 (88), B16 (89), B16 (90), B16 (91),
+  B16 (92), B16 (93), B16 (94), B16 (95),
+  B16 (96), B16 (97), B16 (98), B16 (99),
+  B16 (100), B16 (101), B16 (102), B16 (103),
+  B16 (104), B16 (105), B16 (106), B16 (107),
+  B16 (108), B16 (109), B16 (110), B16 (111),
+  B16 (112), B16 (113), B16 (114), B16 (115),
+  B16 (116), B16 (117), B16 (118), B16 (119),
+  B16 (120), B16 (121), B16 (122), B16 (123),
+  B16 (124), B16 (125), B16 (126), B16 (127),
+  B16 (128), B16 (129), B16 (130), B16 (131),
+  B16 (132), B16 (133), B16 (134), B16 (135),
+  B16 (136), B16 (137), B16 (138), B16 (139),
+  B16 (140), B16 (141), B16 (142), B16 (143),
+  B16 (144), B16 (145), B16 (146), B16 (147),
+  B16 (148), B16 (149), B16 (150), B16 (151),
+  B16 (152), B16 (153), B16 (154), B16 (155),
+  B16 (156), B16 (157), B16 (158), B16 (159),
+  B16 (160), B16 (161), B16 (162), B16 (163),
+  B16 (132), B16 (165), B16 (166), B16 (167),
+  B16 (168), B16 (169), B16 (170), B16 (171),
+  B16 (172), B16 (173), B16 (174), B16 (175),
+  B16 (176), B16 (177), B16 (178), B16 (179),
+  B16 (180), B16 (181), B16 (182), B16 (183),
+  B16 (184), B16 (185), B16 (186), B16 (187),
+  B16 (188), B16 (189), B16 (190), B16 (191),
+  B16 (192), B16 (193), B16 (194), B16 (195),
+  B16 (196), B16 (197), B16 (198), B16 (199),
+  B16 (200), B16 (201), B16 (202), B16 (203),
+  B16 (204), B16 (205), B16 (206), B16 (207),
+  B16 (208), B16 (209), B16 (210), B16 (211),
+  B16 (212), B16 (213), B16 (214), B16 (215),
+  B16 (216), B16 (217), B16 (218), B16 (219),
+  B16 (220), B16 (221), B16 (222), B16 (223),
+  B16 (224), B16 (225), B16 (226), B16 (227),
+  B16 (228), B16 (229), B16 (230), B16 (231),
+  B16 (232), B16 (233), B16 (234), B16 (235),
+  B16 (236), B16 (237), B16 (238), B16 (239),
+  B16 (240), B16 (241), B16 (242), B16 (243),
+  B16 (244), B16 (245), B16 (246), B16 (247),
+  B16 (248), B16 (249), B16 (250), B16 (251),
+  B16 (252), B16 (253), B16 (254), B16 (255)
+};
 
 static bool
-isbase16 (char ch)
+isubase16 (unsigned char ch)
 {
-  return ('0' <= ch && ch <= '9') || ('A' <= ch && ch <= 'F');
+  return ch < sizeof base16_to_int && 0 <= base16_to_int[ch];
 }
 
 static int
@@ -502,18 +621,21 @@ base16_length (int len)
   return len * 2;
 }
 
-static const char base16[16] = "0123456789ABCDEF";
 
 static void
 base16_encode (char const *restrict in, idx_t inlen,
                char *restrict out, idx_t outlen)
 {
-  while (inlen--)
+  static const char base16[16] _GL_ATTRIBUTE_NONSTRING = "0123456789ABCDEF";
+
+  while (inlen && outlen)
     {
       unsigned char c = *in;
       *out++ = base16[c >> 4];
       *out++ = base16[c & 0x0F];
       ++in;
+      inlen--;
+      outlen -= 2;
     }
 }
 
@@ -522,7 +644,7 @@ static void
 base16_decode_ctx_init (struct base_decode_context *ctx)
 {
   init_inbuf (ctx);
-  ctx->ctx.base16.have_nibble = false;
+  ctx->ctx.base16.nibble = -1;
   ctx->i = 1;
 }
 
@@ -533,44 +655,42 @@ base16_decode_ctx (struct base_decode_context *ctx,
                    char *restrict out, idx_t *outlen)
 {
   bool ignore_lines = true;  /* for now, always ignore them */
-
-  *outlen = 0;
+  char *out0 = out;
+  signed char nibble = ctx->ctx.base16.nibble;
 
   /* inlen==0 is request to flush output.
      if there is a dangling high nibble - we are missing the low nibble,
      so return false - indicating an invalid input.  */
   if (inlen == 0)
-    return !ctx->ctx.base16.have_nibble;
+    {
+      *outlen = 0;
+      return nibble < 0;
+    }
 
   while (inlen--)
     {
-      if (ignore_lines && *in == '\n')
+      unsigned char c = *in++;
+      if (ignore_lines && c == '\n')
+        continue;
+
+      if (sizeof base16_to_int <= c || base16_to_int[c] < 0)
         {
-          ++in;
-          continue;
+          *outlen = out - out0;
+          return false; /* garbage - return false */
         }
 
-      int nib = *in++;
-      if ('0' <= nib && nib <= '9')
-        nib -= '0';
-      else if ('A' <= nib && nib <= 'F')
-        nib -= 'A' - 10;
+      if (nibble < 0)
+        nibble = base16_to_int[c];
       else
-        return false; /* garbage - return false */
-
-      if (ctx->ctx.base16.have_nibble)
         {
           /* have both nibbles, write octet */
-          *out++ = (ctx->ctx.base16.nibble << 4) + nib;
-          ++(*outlen);
+          *out++ = (nibble << 4) + base16_to_int[c];
+          nibble = -1;
         }
-      else
-        {
-          /* Store higher nibble until next one arrives */
-          ctx->ctx.base16.nibble = nib;
-        }
-      ctx->ctx.base16.have_nibble = !ctx->ctx.base16.have_nibble;
     }
+
+  ctx->ctx.base16.nibble = nibble;
+  *outlen = out - out0;
   return true;
 }
 
@@ -586,12 +706,12 @@ z85_length (int len)
 }
 
 static bool
-isz85 (char ch)
+isuz85 (unsigned char ch)
 {
-  return c_isalnum (ch) || (strchr (".-:+=^!/*?&<>()[]{}@%$#", ch) != NULL);
+  return c_isalnum (ch) || strchr (".-:+=^!/*?&<>()[]{}@%$#", ch) != nullptr;
 }
 
-static char const z85_encoding[85] =
+static char const z85_encoding[85] _GL_ATTRIBUTE_NONSTRING =
   "0123456789"
   "abcdefghijklmnopqrstuvwxyz"
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -614,8 +734,8 @@ z85_encode (char const *restrict in, idx_t inlen,
             return;
 
           /* currently, there's no way to return an error in encoding.  */
-          die (EXIT_FAILURE, 0,
-               _("invalid input (length must be multiple of 4 characters)"));
+          error (EXIT_FAILURE, 0,
+                 _("invalid input (length must be multiple of 4 characters)"));
         }
       else
         {
@@ -768,7 +888,7 @@ z85_decode_ctx (struct base_decode_context *ctx,
 
 
 inline static bool
-isbase2 (char ch)
+isubase2 (unsigned char ch)
 {
   return ch == '0' || ch == '1';
 }
@@ -784,7 +904,7 @@ inline static void
 base2msbf_encode (char const *restrict in, idx_t inlen,
                   char *restrict out, idx_t outlen)
 {
-  while (inlen--)
+  while (inlen && outlen)
     {
       unsigned char c = *in;
       for (int i = 0; i < 8; i++)
@@ -792,6 +912,7 @@ base2msbf_encode (char const *restrict in, idx_t inlen,
           *out++ = c & 0x80 ? '1' : '0';
           c <<= 1;
         }
+      inlen--;
       outlen -= 8;
       ++in;
     }
@@ -801,7 +922,7 @@ inline static void
 base2lsbf_encode (char const *restrict in, idx_t inlen,
                   char *restrict out, idx_t outlen)
 {
-  while (inlen--)
+  while (inlen && outlen)
     {
       unsigned char c = *in;
       for (int i = 0; i < 8; i++)
@@ -809,6 +930,7 @@ base2lsbf_encode (char const *restrict in, idx_t inlen,
           *out++ = c & 0x01 ? '1' : '0';
           c >>= 1;
         }
+      inlen--;
       outlen -= 8;
       ++in;
     }
@@ -847,7 +969,7 @@ base2lsbf_decode_ctx (struct base_decode_context *ctx,
           continue;
         }
 
-      if (!isbase2 (*in))
+      if (!isubase2 (*in))
         return false;
 
       bool bit = (*in == '1');
@@ -891,7 +1013,7 @@ base2msbf_decode_ctx (struct base_decode_context *ctx,
           continue;
         }
 
-      if (!isbase2 (*in))
+      if (!isubase2 (*in))
         return false;
 
       bool bit = (*in == '1');
@@ -926,7 +1048,7 @@ wrap_write (char const *buffer, idx_t len,
     {
       /* Simple write. */
       if (fwrite (buffer, 1, len, stdout) < len)
-        die (EXIT_FAILURE, errno, _("write error"));
+        write_error ();
     }
   else
     for (idx_t written = 0; written < len; )
@@ -936,13 +1058,13 @@ wrap_write (char const *buffer, idx_t len,
         if (to_write == 0)
           {
             if (fputc ('\n', out) == EOF)
-              die (EXIT_FAILURE, errno, _("write error"));
+              write_error ();
             *current_column = 0;
           }
         else
           {
             if (fwrite (buffer + written, 1, to_write, stdout) < to_write)
-              die (EXIT_FAILURE, errno, _("write error"));
+              write_error ();
             *current_column += to_write;
             written += to_write;
           }
@@ -955,9 +1077,9 @@ finish_and_exit (FILE *in, char const *infile)
   if (fclose (in) != 0)
     {
       if (STREQ (infile, "-"))
-        die (EXIT_FAILURE, errno, _("closing standard input"));
+        error (EXIT_FAILURE, errno, _("closing standard input"));
       else
-        die (EXIT_FAILURE, errno, "%s", quotef (infile));
+        error (EXIT_FAILURE, errno, "%s", quotef (infile));
     }
 
   exit (EXIT_SUCCESS);
@@ -999,10 +1121,10 @@ do_encode (FILE *in, char const *infile, FILE *out, idx_t wrap_column)
 
   /* When wrapping, terminate last line. */
   if (wrap_column && current_column > 0 && fputc ('\n', out) == EOF)
-    die (EXIT_FAILURE, errno, _("write error"));
+    write_error ();
 
   if (ferror (in))
-    die (EXIT_FAILURE, errno, _("read error"));
+    error (EXIT_FAILURE, errno, _("read error"));
 
   finish_and_exit (in, infile);
 }
@@ -1014,11 +1136,12 @@ do_decode (FILE *in, char const *infile, FILE *out, bool ignore_garbage)
   idx_t sum;
   struct base_decode_context ctx;
 
+  char padbuf[8] _GL_ATTRIBUTE_NONSTRING = "========";
   inbuf = xmalloc (BASE_LENGTH (DEC_BLOCKSIZE));
   outbuf = xmalloc (DEC_BLOCKSIZE);
 
 #if BASE_TYPE == 42
-  ctx.inbuf = NULL;
+  ctx.inbuf = nullptr;
 #endif
   base_decode_ctx_init (&ctx);
 
@@ -1036,7 +1159,7 @@ do_decode (FILE *in, char const *infile, FILE *out, bool ignore_garbage)
             {
               for (idx_t i = 0; n > 0 && i < n;)
                 {
-                  if (isbase (inbuf[sum + i]) || inbuf[sum + i] == '=')
+                  if (isubase (inbuf[sum + i]) || inbuf[sum + i] == '=')
                     i++;
                   else
                     memmove (inbuf + sum + i, inbuf + sum + i + 1, --n - i);
@@ -1046,7 +1169,7 @@ do_decode (FILE *in, char const *infile, FILE *out, bool ignore_garbage)
           sum += n;
 
           if (ferror (in))
-            die (EXIT_FAILURE, errno, _("read error"));
+            error (EXIT_FAILURE, errno, _("read error"));
         }
       while (sum < BASE_LENGTH (DEC_BLOCKSIZE) && !feof (in));
 
@@ -1056,16 +1179,31 @@ do_decode (FILE *in, char const *infile, FILE *out, bool ignore_garbage)
          telling it to flush what is in CTX.  */
       for (int k = 0; k < 1 + !!feof (in); k++)
         {
-          if (k == 1 && ctx.i == 0)
-            break;
+          if (k == 1)
+            {
+              if (ctx.i == 0)
+                break;
+
+              /* auto pad input (at eof).  */
+              idx_t auto_padding = REQUIRED_PADDING (ctx.i);
+              if (auto_padding && (sum == 0 || inbuf[sum - 1] != '='))
+                {
+                  affirm (auto_padding <= sizeof (padbuf));
+                  IF_LINT (free (inbuf));
+                  sum = auto_padding;
+                  inbuf = padbuf;
+                }
+              else
+                sum = 0;  /* process ctx buffer only */
+            }
           idx_t n = DEC_BLOCKSIZE;
-          ok = base_decode_ctx (&ctx, inbuf, (k == 0 ? sum : 0), outbuf, &n);
+          ok = base_decode_ctx (&ctx, inbuf, sum, outbuf, &n);
 
           if (fwrite (outbuf, 1, n, out) < n)
-            die (EXIT_FAILURE, errno, _("write error"));
+            write_error ();
 
           if (!ok)
-            die (EXIT_FAILURE, 0, _("invalid input"));
+            error (EXIT_FAILURE, 0, _("invalid input"));
         }
     }
   while (!feof (in));
@@ -1099,7 +1237,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((opt = getopt_long (argc, argv, "diw:", long_options, NULL)) != -1)
+  while ((opt = getopt_long (argc, argv, "diw:", long_options, nullptr)) != -1)
     switch (opt)
       {
       case 'd':
@@ -1109,10 +1247,10 @@ main (int argc, char **argv)
       case 'w':
         {
           intmax_t w;
-          strtol_error s_err = xstrtoimax (optarg, NULL, 10, &w, "");
+          strtol_error s_err = xstrtoimax (optarg, nullptr, 10, &w, "");
           if (LONGINT_OVERFLOW < s_err || w < 0)
-            die (EXIT_FAILURE, 0, "%s: %s",
-                 _("invalid wrap size"), quote (optarg));
+            error (EXIT_FAILURE, 0, "%s: %s",
+                   _("invalid wrap size"), quote (optarg));
           wrap_column = s_err == LONGINT_OVERFLOW || IDX_MAX < w ? 0 : w;
         }
         break;
@@ -1148,7 +1286,8 @@ main (int argc, char **argv)
     {
     case BASE64_OPTION:
       base_length = base64_length_wrapper;
-      isbase = isbase64;
+      required_padding = base64_required_padding;
+      isubase = isubase64;
       base_encode = base64_encode;
       base_decode_ctx_init = base64_decode_ctx_init_wrapper;
       base_decode_ctx = base64_decode_ctx_wrapper;
@@ -1156,7 +1295,8 @@ main (int argc, char **argv)
 
     case BASE64URL_OPTION:
       base_length = base64_length_wrapper;
-      isbase = isbase64url;
+      required_padding = base64_required_padding;
+      isubase = isubase64url;
       base_encode = base64url_encode;
       base_decode_ctx_init = base64url_decode_ctx_init_wrapper;
       base_decode_ctx = base64url_decode_ctx_wrapper;
@@ -1164,7 +1304,8 @@ main (int argc, char **argv)
 
     case BASE32_OPTION:
       base_length = base32_length_wrapper;
-      isbase = isbase32;
+      required_padding = base32_required_padding;
+      isubase = isubase32;
       base_encode = base32_encode;
       base_decode_ctx_init = base32_decode_ctx_init_wrapper;
       base_decode_ctx = base32_decode_ctx_wrapper;
@@ -1172,7 +1313,8 @@ main (int argc, char **argv)
 
     case BASE32HEX_OPTION:
       base_length = base32_length_wrapper;
-      isbase = isbase32hex;
+      required_padding = base32_required_padding;
+      isubase = isubase32hex;
       base_encode = base32hex_encode;
       base_decode_ctx_init = base32hex_decode_ctx_init_wrapper;
       base_decode_ctx = base32hex_decode_ctx_wrapper;
@@ -1180,7 +1322,8 @@ main (int argc, char **argv)
 
     case BASE16_OPTION:
       base_length = base16_length;
-      isbase = isbase16;
+      required_padding = no_required_padding;
+      isubase = isubase16;
       base_encode = base16_encode;
       base_decode_ctx_init = base16_decode_ctx_init;
       base_decode_ctx = base16_decode_ctx;
@@ -1188,7 +1331,8 @@ main (int argc, char **argv)
 
     case BASE2MSBF_OPTION:
       base_length = base2_length;
-      isbase = isbase2;
+      required_padding = no_required_padding;
+      isubase = isubase2;
       base_encode = base2msbf_encode;
       base_decode_ctx_init = base2_decode_ctx_init;
       base_decode_ctx = base2msbf_decode_ctx;
@@ -1196,7 +1340,8 @@ main (int argc, char **argv)
 
     case BASE2LSBF_OPTION:
       base_length = base2_length;
-      isbase = isbase2;
+      required_padding = no_required_padding;
+      isubase = isubase2;
       base_encode = base2lsbf_encode;
       base_decode_ctx_init = base2_decode_ctx_init;
       base_decode_ctx = base2lsbf_decode_ctx;
@@ -1204,7 +1349,8 @@ main (int argc, char **argv)
 
     case Z85_OPTION:
       base_length = z85_length;
-      isbase = isz85;
+      required_padding = no_required_padding;
+      isubase = isuz85;
       base_encode = z85_encode;
       base_decode_ctx_init = z85_decode_ctx_init;
       base_decode_ctx = z85_decode_ctx;
@@ -1235,8 +1381,8 @@ main (int argc, char **argv)
   else
     {
       input_fh = fopen (infile, "rb");
-      if (input_fh == NULL)
-        die (EXIT_FAILURE, errno, "%s", quotef (infile));
+      if (input_fh == nullptr)
+        error (EXIT_FAILURE, errno, "%s", quotef (infile));
     }
 
   fadvise (input_fh, FADVISE_SEQUENTIAL);

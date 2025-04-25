@@ -1,5 +1,5 @@
 /* truncate -- truncate or extend the length of files.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,13 +21,12 @@
    to better fit the "GNU" environment.  */
 
 #include <config.h>             /* sets _FILE_OFFSET_BITS=64 etc. */
+#include <ctype.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/types.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
 #include "quote.h"
 #include "stat-size.h"
 #include "xdectoint.h"
@@ -35,7 +34,7 @@
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "truncate"
 
-#define AUTHORS proper_name ("Padraig Brady")
+#define AUTHORS proper_name_lite ("Padraig Brady", "P\303\241draig Brady")
 
 /* (-c) If true, don't create if not already there */
 static bool no_create;
@@ -48,13 +47,13 @@ static char const *ref_file;
 
 static struct option const longopts[] =
 {
-  {"no-create", no_argument, NULL, 'c'},
-  {"io-blocks", no_argument, NULL, 'o'},
-  {"reference", required_argument, NULL, 'r'},
-  {"size", required_argument, NULL, 's'},
+  {"no-create", no_argument, nullptr, 'c'},
+  {"io-blocks", no_argument, nullptr, 'o'},
+  {"reference", required_argument, nullptr, 'r'},
+  {"size", required_argument, nullptr, 's'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 typedef enum
@@ -116,13 +115,12 @@ do_ftruncate (int fd, char const *fname, off_t ssize, off_t rsize,
     }
   if (block_mode)
     {
-      ptrdiff_t blksize = ST_BLKSIZE (sb);
+      ptrdiff_t blksize = STP_BLKSIZE (&sb);
       intmax_t ssize0 = ssize;
-      if (INT_MULTIPLY_WRAPV (ssize, blksize, &ssize))
+      if (ckd_mul (&ssize, ssize, blksize))
         {
           error (0, 0,
-                 _("overflow in %" PRIdMAX
-                   " * %" PRIdPTR " byte blocks for file %s"),
+                 _("overflow in %jd * %td byte blocks for file %s"),
                  ssize0, blksize, quoteaf (fname));
           return false;
         }
@@ -174,7 +172,7 @@ do_ftruncate (int fd, char const *fname, off_t ssize, off_t rsize,
               off_t r = fsize % ssize;
               ssize = r == 0 ? 0 : ssize - r;
             }
-          if (INT_ADD_WRAPV (fsize, ssize, &nsize))
+          if (ckd_add (&nsize, fsize, ssize))
             {
               error (0, 0, _("overflow extending size of file %s"),
                      quoteaf (fname));
@@ -189,9 +187,8 @@ do_ftruncate (int fd, char const *fname, off_t ssize, off_t rsize,
 
   if (ftruncate (fd, nsize) != 0)
     {
-      intmax_t s = nsize;
-      error (0, errno, _("failed to truncate %s at %"PRIdMAX" bytes"),
-             quoteaf (fname), s);
+      error (0, errno, _("failed to truncate %s at %jd bytes"),
+             quoteaf (fname), (intmax_t) nsize);
       return false;
     }
 
@@ -215,7 +212,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((c = getopt_long (argc, argv, "cor:s:", longopts, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, "cor:s:", longopts, nullptr)) != -1)
     {
       switch (c)
         {
@@ -269,11 +266,11 @@ main (int argc, char **argv)
             }
           /* Support dd BLOCK size suffixes + lowercase g,t,m for bsd compat.
              Note we don't support dd's b=512, c=1, w=2 or 21x512MiB formats. */
-          size = xdectoimax (optarg, OFF_T_MIN, OFF_T_MAX, "EgGkKmMPtTYZ0",
+          size = xdectoimax (optarg, OFF_T_MIN, OFF_T_MAX, "EgGkKmMPQRtTYZ0",
                              _("Invalid number"), 0);
           /* Rounding to multiple of 0 is nonsensical */
           if ((rel_mode == rm_rup || rel_mode == rm_rdn) && size == 0)
-            die (EXIT_FAILURE, 0, _("division by zero"));
+            error (EXIT_FAILURE, 0, _("division by zero"));
           got_size = true;
           break;
 
@@ -322,7 +319,7 @@ main (int argc, char **argv)
       struct stat sb;
       off_t file_size = -1;
       if (stat (ref_file, &sb) != 0)
-        die (EXIT_FAILURE, errno, _("cannot stat %s"), quoteaf (ref_file));
+        error (EXIT_FAILURE, errno, _("cannot stat %s"), quoteaf (ref_file));
       if (usable_st_size (&sb))
         file_size = sb.st_size;
       else
@@ -343,8 +340,8 @@ main (int argc, char **argv)
             }
         }
       if (file_size < 0)
-        die (EXIT_FAILURE, errno, _("cannot get the size of %s"),
-             quoteaf (ref_file));
+        error (EXIT_FAILURE, errno, _("cannot get the size of %s"),
+               quoteaf (ref_file));
       if (!got_size)
         size = file_size;
       else

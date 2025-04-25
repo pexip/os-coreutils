@@ -1,5 +1,5 @@
 /* Replacement <selinux/selinux.h> for platforms that lack it.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -19,7 +19,7 @@
 #endif
 @PRAGMA_COLUMNS@
 
-#if HAVE_SELINUX_SELINUX_H
+#if @USE_SELINUX_SELINUX_H@
 
 #@INCLUDE_NEXT@ @NEXT_SELINUX_SELINUX_H@
 
@@ -27,12 +27,15 @@
 # if !defined _@GUARD_PREFIX@_SELINUX_SELINUX_H
 #  define _@GUARD_PREFIX@_SELINUX_SELINUX_H
 
+/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE,
+   _GL_ATTRIBUTE_MAYBE_UNUSED.  */
+#  if !_GL_CONFIG_H_INCLUDED
+#   error "Please include config.h first."
+#  endif
+
 #  include <sys/types.h>
 #  include <errno.h>
 
-#  ifndef _GL_INLINE_HEADER_BEGIN
-    #error "Please include config.h first."
-#  endif
 _GL_INLINE_HEADER_BEGIN
 #  ifndef SE_SELINUX_INLINE
 #   define SE_SELINUX_INLINE _GL_INLINE
@@ -60,6 +63,9 @@ struct selinux_opt;
 SE_SELINUX_INLINE int
 getcon (_GL_ATTRIBUTE_MAYBE_UNUSED char **con)
   { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
+getcon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char **con)
+  { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE void
 freecon (_GL_ATTRIBUTE_MAYBE_UNUSED char *con) {}
 
@@ -67,7 +73,13 @@ SE_SELINUX_INLINE int
 getfscreatecon (_GL_ATTRIBUTE_MAYBE_UNUSED char **con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
+getfscreatecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char **con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
 setfscreatecon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
+setfscreatecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
 matchpathcon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
@@ -79,23 +91,46 @@ getfilecon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
             _GL_ATTRIBUTE_MAYBE_UNUSED char **con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
+getfilecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
+                _GL_ATTRIBUTE_MAYBE_UNUSED char **con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
 lgetfilecon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
              _GL_ATTRIBUTE_MAYBE_UNUSED char **con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
+lgetfilecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
+                 _GL_ATTRIBUTE_MAYBE_UNUSED char **con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
 fgetfilecon (int fd,_GL_ATTRIBUTE_MAYBE_UNUSED char **con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
+fgetfilecon_raw (int fd,_GL_ATTRIBUTE_MAYBE_UNUSED char **con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
 setfilecon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
             _GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
+setfilecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
+                _GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
 lsetfilecon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
              _GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
+lsetfilecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *file,
+                 _GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
 fsetfilecon (_GL_ATTRIBUTE_MAYBE_UNUSED int fd,
              _GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
+fsetfilecon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED int fd,
+                 _GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
   { errno = ENOTSUP; return -1; }
 
 SE_SELINUX_INLINE int
@@ -108,10 +143,19 @@ SE_SELINUX_INLINE int
 setexeccon (_GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE int
+setexeccon_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *con)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
 security_compute_create (_GL_ATTRIBUTE_MAYBE_UNUSED char const *scon,
                          _GL_ATTRIBUTE_MAYBE_UNUSED char const *tcon,
                          _GL_ATTRIBUTE_MAYBE_UNUSED security_class_t tclass,
                          _GL_ATTRIBUTE_MAYBE_UNUSED char **newcon)
+  { errno = ENOTSUP; return -1; }
+SE_SELINUX_INLINE int
+security_compute_create_raw (_GL_ATTRIBUTE_MAYBE_UNUSED char const *scon,
+                             _GL_ATTRIBUTE_MAYBE_UNUSED char const *tcon,
+                             _GL_ATTRIBUTE_MAYBE_UNUSED security_class_t tclass,
+                             _GL_ATTRIBUTE_MAYBE_UNUSED char **newcon)
   { errno = ENOTSUP; return -1; }
 SE_SELINUX_INLINE security_class_t
 string_to_security_class (char const *name)
@@ -126,5 +170,5 @@ matchpathcon_init_prefix (_GL_ATTRIBUTE_MAYBE_UNUSED char const *path,
 
 _GL_INLINE_HEADER_END
 
-# endif
+# endif /* _@GUARD_PREFIX@_SELINUX_SELINUX_H */
 #endif

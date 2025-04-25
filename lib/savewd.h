@@ -1,6 +1,6 @@
 /* Save and restore the working directory, possibly using a subprocess.
 
-   Copyright (C) 2006, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2006, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,18 +18,24 @@
 /* Written by Paul Eggert.  */
 
 #ifndef SAVEWD_H
-# define SAVEWD_H 1
+#define SAVEWD_H 1
 
-#include <stdbool.h>
-#include <sys/types.h>
-
-#ifndef _GL_INLINE_HEADER_BEGIN
+/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE, _GL_ATTRIBUTE_PURE.  */
+#if !_GL_CONFIG_H_INCLUDED
  #error "Please include config.h first."
 #endif
+
+#include <sys/types.h>
+
 _GL_INLINE_HEADER_BEGIN
 #ifndef SAVEWD_INLINE
 # define SAVEWD_INLINE _GL_INLINE
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* A saved working directory.  The member names and constants defined
    by this structure are private to the savewd module.  */
@@ -61,7 +67,8 @@ struct savewd
 
       /* savewd_finish has been called, so the application no longer
          cares whether the working directory is saved, and there is no
-         more work to do.  */
+         more work to do.  val.errnum contains the error number if
+         there was a serious problem, 0 otherwise.  */
       FINAL_STATE
     } state;
 
@@ -123,7 +130,7 @@ int savewd_restore (struct savewd *wd, int status);
 SAVEWD_INLINE int _GL_ATTRIBUTE_PURE
 savewd_errno (struct savewd const *wd)
 {
-  return (wd->state == ERROR_STATE ? wd->val.errnum : 0);
+  return wd->state < ERROR_STATE ? 0 : wd->val.errnum;
 }
 
 /* Deallocate any resources associated with WD.  A program that chdirs
@@ -147,6 +154,11 @@ void savewd_finish (struct savewd *wd);
 int savewd_process_files (int n_files, char **file,
                           int (*act) (char *, struct savewd *, void *),
                           void *options);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 _GL_INLINE_HEADER_END
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test whether mv -n works as documented (not overwrite target).
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ echo "renamed 'a' -> 'b'" > out_move
 
 # ask for overwrite, answer no
 touch a b || framework_failure_
-echo n | mv -vi a b 2>/dev/null > out1 || fail=1
+echo n | returns_ 1 mv -vi a b 2>/dev/null > out1 || fail=1
 compare out1 out_empty || fail=1
 
 # ask for overwrite, answer yes
@@ -39,6 +39,12 @@ compare out2 out_move || fail=1
 touch a b || framework_failure_
 echo y | mv -vin a b 2>/dev/null > out3 || fail=1
 compare out3 out_empty || fail=1
+
+# -n wins (non verbose)
+touch a b || framework_failure_
+echo y | mv -in a b 2>err3 > out3 || fail=1
+compare out3 out_empty || fail=1
+compare /dev/null err3 || fail=1
 
 # -n wins (as the last option)
 touch a b || framework_failure_
@@ -53,5 +59,8 @@ compare out5 out_empty || fail=1
 # options --backup and --no-clobber are mutually exclusive
 touch a || framework_failure_
 returns_ 1 mv -bn a b 2>/dev/null || fail=1
+# options --backup and --update=none{,-fail} are mutually exclusive
+returns_ 1 mv -b --update=none a b 2>/dev/null || fail=1
+returns_ 1 mv -b --update=none-fail a b 2>/dev/null || fail=1
 
 Exit $fail

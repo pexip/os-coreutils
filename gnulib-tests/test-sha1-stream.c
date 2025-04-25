@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005, 2008-2022 Free Software Foundation, Inc.
+ * Copyright (C) 2005, 2008-2025 Free Software Foundation, Inc.
  * Written by Simon Josefsson
  *
  * This program is free software: you can redistribute it and/or modify
@@ -38,5 +38,5 @@ main (void)
                         "\x9c\x04\xcd\x63\x72\x07\x7e\x9b\x11\xf7\x0c\xa1\x11\xc9\x80\x7d\xc7\x13\x7e\x4b",
                         "\x91\xab\x6b\x1b\x8d\x29\x25\x3c\xcb\x8d\xce\xb7\x7a\x25\x26\x2c\x92\xc9\x22\x09");
 
-  return 0;
+  return test_exit_status;
 }

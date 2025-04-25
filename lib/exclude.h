@@ -1,6 +1,6 @@
 /* exclude.h -- declarations for excluding file names
 
-   Copyright (C) 1992-1994, 1997, 1999, 2001-2003, 2005-2006, 2009-2022 Free
+   Copyright (C) 1992-1994, 1997, 1999, 2001-2003, 2005-2006, 2009-2025 Free
    Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,24 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
+/* Written by Paul Eggert <eggert@twinsun.com>
+   and Sergey Poznyakoff <gray@gnu.org> */
+
 #ifndef _GL_EXCLUDE_H
 #define _GL_EXCLUDE_H 1
 
-#include <stdbool.h>
+/* This file uses _GL_ATTRIBUTE_DEALLOC, _GL_ATTRIBUTE_MALLOC,
+   _GL_ATTRIBUTE_NONNULL, _GL_ATTRIBUTE_PURE, _GL_ATTRIBUTE_RETURNS_NONNULL.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
+
 #include <stdio.h>
 
-/* Written by Paul Eggert <eggert@twinsun.com>
-   and Sergey Poznyakoff <gray@gnu.org> */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* Exclude options, which can be ORed with fnmatch options.  */
 
@@ -61,5 +71,10 @@ int add_exclude_fp (void (*) (struct exclude *, char const *, int, void *),
 bool excluded_file_name (struct exclude const *, char const *);
 void exclude_add_pattern_buffer (struct exclude *ex, char *buf);
 bool exclude_fnmatch (char const *, char const *, int);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _GL_EXCLUDE_H */

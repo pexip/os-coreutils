@@ -1,6 +1,6 @@
 /* Copy access control list from one file to file.  -*- coding: utf-8 -*-
 
-   Copyright (C) 2002-2003, 2005-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002-2003, 2005-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,9 +24,9 @@
 #include <errno.h>
 
 #include "quote.h"
-#include "error.h"
+#include <error.h>
 #include "gettext.h"
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 
 
 /* Copy access control lists from one file to another. If SOURCE_DESC is
@@ -40,8 +40,8 @@
    negative error code.  */
 
 int
-copy_acl (const char *src_name, int source_desc, const char *dst_name,
-          int dest_desc, mode_t mode)
+xcopy_acl (const char *src_name, int source_desc, const char *dst_name,
+           int dest_desc, mode_t mode)
 {
   int ret = qcopy_acl (src_name, source_desc, dst_name, dest_desc, mode);
   switch (ret)
@@ -58,4 +58,11 @@ copy_acl (const char *src_name, int source_desc, const char *dst_name,
       break;
     }
   return ret;
+}
+
+int
+copy_acl (const char *src_name, int source_desc, const char *dst_name,
+          int dest_desc, mode_t mode)
+{
+  return xcopy_acl (src_name, source_desc, dst_name, dest_desc, mode);
 }

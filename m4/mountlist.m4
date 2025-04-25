@@ -1,8 +1,10 @@
-# serial 15
-dnl Copyright (C) 2002-2006, 2009-2022 Free Software Foundation, Inc.
+# mountlist.m4
+# serial 18
+dnl Copyright (C) 2002-2006, 2009-2025 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
 
 dnl From Jim Meyering.
 
@@ -106,7 +108,18 @@ $ac_includes_default
           [Define if there is a function named getmntent for reading the list
            of mounted file systems, and that function takes a single argument.
            (4.3BSD, SunOS, HP-UX, Irix)])
-        AC_CHECK_FUNCS([setmntent endmntent hasmntopt])
+        gl_CHECK_FUNCS_ANDROID([setmntent],
+          [[#include <stdio.h>
+            #include <mntent.h>
+          ]])
+        gl_CHECK_FUNCS_ANDROID([endmntent],
+          [[#include <stdio.h>
+            #include <mntent.h>
+          ]])
+        gl_CHECK_FUNCS_ANDROID([hasmntopt],
+          [[#include <stdio.h>
+            #include <mntent.h>
+          ]])
       fi
     fi
 
@@ -306,12 +319,17 @@ int getmntinfo (struct statfs **, int);
   fi
 
   if test -z "$ac_list_mounted_fs"; then
-    AC_MSG_ERROR([could not determine how to read list of mounted file systems])
-    # FIXME -- no need to abort building the whole package
-    # Can't build mountlist.c or anything that needs its functions
+    case "$host_os" in
+      mingw* | windows*) ac_list_mounted_fs=found ;;
+    esac
   fi
 
-  if test $ac_list_mounted_fs = found; then
+  if test -z "$ac_list_mounted_fs"; then
+    AC_DEFINE([MOUNTED_NOT_PORTED], [1],
+      [Define if we don't know how to determine the list of mounted file systems.])
+  fi
+
+  if test "$ac_list_mounted_fs" = found; then
     gl_cv_list_mounted_fs=yes
   else
     gl_cv_list_mounted_fs=no

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ensure that df outputs one line per entry
 
-# Copyright (C) 2012-2022 Free Software Foundation, Inc.
+# Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,9 +46,8 @@ test "$fail" = 1 && dump_mount_list_
 # Ensure mount points not matching the current user encoding are output
 
 unset LC_ALL
-f=$LOCALE_FR_UTF8
-: ${LOCALE_FR_UTF8=none}
 if test "$LOCALE_FR_UTF8" != "none"; then
+  f=$LOCALE_FR_UTF8
 
   cleanup_ || framework_failure_
 

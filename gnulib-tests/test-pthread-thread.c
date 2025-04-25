@@ -1,5 +1,5 @@
 /* Test of pthread_create () function.
-   Copyright (C) 2011-2022 Free Software Foundation, Inc.
+   Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ static pthread_t worker_thread;
 static volatile int work_done;
 
 static void *
-worker_thread_func (void *arg)
+worker_thread_func (_GL_UNUSED void *arg)
 {
   work_done = 1;
   return MAGIC;
@@ -63,7 +63,7 @@ main ()
       /* Check that worker_thread_func () has finished executing.  */
       ASSERT (work_done);
 
-      return 0;
+      return test_exit_status;
     }
   else
     {

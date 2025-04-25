@@ -1,5 +1,5 @@
 /* Test of conversion of wide character to multibyte character.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -184,6 +184,26 @@ test_one_locale (const char *name, int codepage)
       }
       return 0;
 
+    case 65001:
+      /* Locale encoding is CP65001 = UTF-8.  */
+      if (strcmp (locale_charset (), "UTF-8") != 0)
+        return 77;
+      {
+        /* Convert "B\303\274\303\237er": "Büßer" */
+        memset (buf, 'x', 8);
+        ret = wcrtomb (buf, 0x00FC, NULL);
+        ASSERT (ret == 2);
+        ASSERT (memcmp (buf, "\303\274", 2) == 0);
+        ASSERT (buf[2] == 'x');
+
+        memset (buf, 'x', 8);
+        ret = wcrtomb (buf, 0x00DF, NULL);
+        ASSERT (ret == 2);
+        ASSERT (memcmp (buf, "\303\237", 2) == 0);
+        ASSERT (buf[2] == 'x');
+      }
+      return 0;
+
     case 932:
       /* Locale encoding is CP932, similar to Shift_JIS.  */
       {
@@ -276,26 +296,6 @@ test_one_locale (const char *name, int codepage)
       }
       return 0;
 
-    case 65001:
-      /* Locale encoding is CP65001 = UTF-8.  */
-      if (strcmp (locale_charset (), "UTF-8") != 0)
-        return 77;
-      {
-        /* Convert "B\303\274\303\237er": "Büßer" */
-        memset (buf, 'x', 8);
-        ret = wcrtomb (buf, 0x00FC, NULL);
-        ASSERT (ret == 2);
-        ASSERT (memcmp (buf, "\303\274", 2) == 0);
-        ASSERT (buf[2] == 'x');
-
-        memset (buf, 'x', 8);
-        ret = wcrtomb (buf, 0x00DF, NULL);
-        ASSERT (ret == 2);
-        ASSERT (memcmp (buf, "\303\237", 2) == 0);
-        ASSERT (buf[2] == 'x');
-      }
-      return 0;
-
     default:
       return 1;
     }
@@ -319,10 +319,12 @@ main (int argc, char *argv[])
 
   if (result == 77)
     {
+      if (test_exit_status != EXIT_SUCCESS)
+        return test_exit_status;
       fprintf (stderr, "Skipping test: found no locale with codepage %d\n",
                codepage);
     }
-  return result;
+  return (result ? result : test_exit_status);
 }
 
 #else

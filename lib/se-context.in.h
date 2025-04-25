@@ -1,5 +1,5 @@
 /* SELinux-related headers.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -17,13 +17,16 @@
 /* Written by Jim Meyering, 2007.  */
 
 #ifndef SELINUX_CONTEXT_H
-# define SELINUX_CONTEXT_H
+#define SELINUX_CONTEXT_H
 
-# include <errno.h>
-
-#ifndef _GL_INLINE_HEADER_BEGIN
+/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE,
+   _GL_ATTRIBUTE_MAYBE_UNUSED.  */
+#if !_GL_CONFIG_H_INCLUDED
  #error "Please include config.h first."
 #endif
+
+#include <errno.h>
+
 _GL_INLINE_HEADER_BEGIN
 #ifndef SE_CONTEXT_INLINE
 # define SE_CONTEXT_INLINE _GL_INLINE

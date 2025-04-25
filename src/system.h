@@ -1,5 +1,5 @@
 /* system-dependent definitions for coreutils
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -67,6 +67,8 @@
 # define makedev(maj, min)  mkdev (maj, min)
 #endif
 
+#include <stdckdint.h>
+#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 
@@ -77,7 +79,6 @@
 # define ENODATA (-1)
 #endif
 
-#include <stdbool.h>
 #include <stdlib.h>
 #include "version.h"
 
@@ -142,28 +143,10 @@ enum
 
 #include "timespec.h"
 
-#include <ctype.h>
-
-/* ISDIGIT differs from isdigit, as follows:
-   - Its arg may be any int or unsigned int; it need not be an unsigned char
-     or EOF.
-   - It's typically faster.
-   POSIX says that only '0' through '9' are digits.  Prefer ISDIGIT to
-   isdigit unless it's important to use the locale's definition
-   of 'digit' even when the host does not conform to POSIX.  */
-#define ISDIGIT(c) ((unsigned int) (c) - '0' <= 9)
-
 /* Convert a possibly-signed character to an unsigned character.  This is
    a bit safer than casting to unsigned char, since it catches some type
    errors that the cast doesn't.  */
 static inline unsigned char to_uchar (char ch) { return ch; }
-
-/* '\n' is considered a field separator with  --zero-terminated.  */
-static inline bool
-field_sep (unsigned char ch)
-{
-  return isblank (ch) || ch == '\n';
-}
 
 #include <locale.h>
 
@@ -192,7 +175,7 @@ select_plural (uintmax_t n)
 }
 
 #define STREQ(a, b) (strcmp (a, b) == 0)
-#define STREQ_LEN(a, b, n) (strncmp (a, b, n) == 0)
+#define STREQ_LEN(a, b, n) (strncmp (a, b, n) == 0) /* n==-1 means unbounded */
 #define STRPREFIX(a, b) (strncmp (a, b, strlen (b)) == 0)
 
 /* Just like strncmp, but the second argument must be a literal string
@@ -241,23 +224,9 @@ struct group *getgrgid (gid_t);
 uid_t getuid (void);
 #endif
 
+#include "idx.h"
 #include "xalloc.h"
 #include "verify.h"
-
-/* This is simply a shorthand for the common case in which
-   the third argument to x2nrealloc would be 'sizeof *(P)'.
-   Ensure that sizeof *(P) is *not* 1.  In that case, it'd be
-   better to use X2REALLOC, although not strictly necessary.  */
-#define X2NREALLOC(P, PN) verify_expr (sizeof *(P) != 1, \
-                                       x2nrealloc (P, PN, sizeof *(P)))
-
-/* Using x2realloc (when appropriate) usually makes your code more
-   readable than using x2nrealloc, but it also makes it so your
-   code will malfunction if sizeof *(P) ever becomes 2 or greater.
-   So use this macro instead of using x2realloc directly.  */
-#define X2REALLOC(P, PN) verify_expr (sizeof *(P) == 1, \
-                                      x2realloc (P, PN))
-
 #include "unlocked-io.h"
 #include "same-inode.h"
 
@@ -283,42 +252,46 @@ readdir_ignoring_dot_and_dotdot (DIR *dirp)
   while (true)
     {
       struct dirent const *dp = readdir (dirp);
-      if (dp == NULL || ! dot_or_dotdot (dp->d_name))
+      if (dp == nullptr || ! dot_or_dotdot (dp->d_name))
         return dp;
     }
 }
 
-/* Return true if DIR is determined to be an empty directory.
-   Return false with ERRNO==0 if DIR is a non empty directory.
-   Return false if not able to determine if directory empty.  */
-static inline bool
-is_empty_dir (int fd_cwd, char const *dir)
+/* Return -1 if DIR is an empty directory,
+   0 if DIR is a nonempty directory,
+   and a positive error number if there was trouble determining
+   whether DIR is an empty or nonempty directory.  */
+enum {
+    DS_UNKNOWN = -2,
+    DS_EMPTY = -1,
+    DS_NONEMPTY = 0,
+};
+static inline int
+directory_status (int fd_cwd, char const *dir)
 {
   DIR *dirp;
-  struct dirent const *dp;
+  bool no_direntries;
   int saved_errno;
   int fd = openat (fd_cwd, dir,
                    (O_RDONLY | O_DIRECTORY
                     | O_NOCTTY | O_NOFOLLOW | O_NONBLOCK));
 
   if (fd < 0)
-    return false;
+    return errno;
 
   dirp = fdopendir (fd);
-  if (dirp == NULL)
+  if (dirp == nullptr)
     {
+      saved_errno = errno;
       close (fd);
-      return false;
+      return saved_errno;
     }
 
   errno = 0;
-  dp = readdir_ignoring_dot_and_dotdot (dirp);
+  no_direntries = !readdir_ignoring_dot_and_dotdot (dirp);
   saved_errno = errno;
   closedir (dirp);
-  errno = saved_errno;
-  if (dp != NULL)
-    return false;
-  return saved_errno == 0 ? true : false;
+  return no_direntries && saved_errno == 0 ? DS_EMPTY : saved_errno;
 }
 
 /* Factor out some of the common --help and --version processing code.  */
@@ -333,11 +306,11 @@ enum
 };
 
 #define GETOPT_HELP_OPTION_DECL \
-  "help", no_argument, NULL, GETOPT_HELP_CHAR
+  "help", no_argument, nullptr, GETOPT_HELP_CHAR
 #define GETOPT_VERSION_OPTION_DECL \
-  "version", no_argument, NULL, GETOPT_VERSION_CHAR
+  "version", no_argument, nullptr, GETOPT_VERSION_CHAR
 #define GETOPT_SELINUX_CONTEXT_OPTION_DECL \
-  "context", optional_argument, NULL, 'Z'
+  "context", optional_argument, nullptr, 'Z'
 
 #define case_GETOPT_HELP_CHAR			\
   case GETOPT_HELP_CHAR:			\
@@ -348,7 +321,7 @@ enum
    Usually it is just PROGRAM_NAME.  */
 #define USAGE_BUILTIN_WARNING \
   _("\n" \
-"NOTE: your shell may have its own version of %s, which usually supersedes\n" \
+"Your shell may have its own version of %s, which usually supersedes\n" \
 "the version described here.  Please refer to your shell's documentation\n" \
 "for details about the options it supports.\n")
 
@@ -365,19 +338,18 @@ enum
 #undef emit_bug_reporting_address
 
 #include "propername.h"
-/* Define away proper_name (leaving proper_name_utf8, which affects far
-   fewer programs), since it's not worth the cost of adding ~17KB to
+/* Define away proper_name, since it's not worth the cost of adding ~17KB to
    the x86_64 text size of every single program.  This avoids a 40%
    (almost ~2MB) increase in the file system space utilization for the set
    of the 100 binaries. */
-#define proper_name(x) (x)
+#define proper_name(x) proper_name_lite (x, x)
 
 #include "progname.h"
 
 #define case_GETOPT_VERSION_CHAR(Program_name, Authors)			\
   case GETOPT_VERSION_CHAR:						\
     version_etc (stdout, Program_name, PACKAGE_NAME, Version, Authors,	\
-                 (char *) NULL);					\
+                 (char *) nullptr);					\
     exit (EXIT_SUCCESS);						\
     break;
 
@@ -549,26 +521,13 @@ is_nul (void const *buf, size_t length)
    return memcmp (buf, p, length) == 0;
 }
 
-/* If 10*Accum + Digit_val is larger than the maximum value for Type,
-   then don't update Accum and return false to indicate it would
-   overflow.  Otherwise, set Accum to that new value and return true.
-   Verify at compile-time that Type is Accum's type, and that Type is
-   unsigned.  Accum must be an object, so that we can take its
-   address.  Accum and Digit_val may be evaluated multiple times.
+/* Set Accum = 10*Accum + Digit_val and return true, where Accum is an
+   integer object and Digit_val an integer expression.  However, if
+   the result overflows, set Accum to an unspecified value and return
+   false.  Accum and Digit_val may be evaluated multiple times.  */
 
-   The "Added check" below is not strictly required, but it causes GCC
-   to return a nonzero exit status instead of merely a warning
-   diagnostic, and that is more useful.  */
-
-#define DECIMAL_DIGIT_ACCUMULATE(Accum, Digit_val, Type)		\
-  (									\
-   (void) (&(Accum) == (Type *) NULL),  /* The type matches.  */	\
-   verify_expr (! TYPE_SIGNED (Type), /* The type is unsigned.  */      \
-                (((Type) -1 / 10 < (Accum)                              \
-                  || (Type) ((Accum) * 10 + (Digit_val)) < (Accum))     \
-                 ? false                                                \
-                 : (((Accum) = (Accum) * 10 + (Digit_val)), true)))     \
-  )
+#define DECIMAL_DIGIT_ACCUMULATE(Accum, Digit_val)			\
+  (!ckd_mul (&(Accum), Accum, 10) && !ckd_add (&(Accum), Accum, Digit_val))
 
 static inline void
 emit_stdin_note (void)
@@ -590,7 +549,7 @@ emit_size_note (void)
 {
   fputs (_("\n\
 The SIZE argument is an integer and optional unit (example: 10K is 10*1024).\n\
-Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).\n\
+Units are K,M,G,T,P,E,Z,Y,R,Q (powers of 1024) or KB,MB,... (powers of 1000).\n\
 Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n\
 "), stdout);
 }
@@ -603,6 +562,23 @@ Display values are in units of the first available SIZE from --block-size,\n\
 and the %s_BLOCK_SIZE, BLOCK_SIZE and BLOCKSIZE environment variables.\n\
 Otherwise, units default to 1024 bytes (or 512 if POSIXLY_CORRECT is set).\n\
 "), program);
+}
+
+static inline void
+emit_update_parameters_note (void)
+{
+  fputs (_("\
+\n\
+UPDATE controls which existing files in the destination are replaced.\n\
+'all' is the default operation when an --update option is not specified,\n\
+and results in all existing files in the destination being replaced.\n\
+'none' is like the --no-clobber option, in that no files in the\n\
+destination are replaced, and skipped files do not induce a failure.\n\
+'none-fail' also ensures no files are replaced in the destination,\n\
+but any skipped files are diagnosed and induce a failure.\n\
+'older' is the default operation when --update is specified, and results\n\
+in files being replaced if they're older than the corresponding source file.\n\
+"), stdout);
 }
 
 static inline void
@@ -624,6 +600,36 @@ the VERSION_CONTROL environment variable.  Here are the values:\n\
 }
 
 static inline void
+emit_symlink_recurse_options (char const *default_opt)
+{
+      printf (_("\
+\n\
+The following options modify how a hierarchy is traversed when the -R\n\
+option is also specified.  If more than one is specified, only the final\n\
+one takes effect. %s is the default.\n\
+\n\
+  -H                     if a command line argument is a symbolic link\n\
+                         to a directory, traverse it\n\
+  -L                     traverse every symbolic link to a directory\n\
+                         encountered\n\
+  -P                     do not traverse any symbolic links\n\
+\n\
+"), default_opt);
+}
+
+static inline void
+emit_exec_status (char const *program)
+{
+      printf (_("\n\
+Exit status:\n\
+  125  if the %s command itself fails\n\
+  126  if COMMAND is found but cannot be invoked\n\
+  127  if COMMAND cannot be found\n\
+  -    the exit status of COMMAND otherwise\n\
+"), program);
+}
+
+static inline void
 emit_ancillary_info (char const *program)
 {
   struct infomap { char const *program; char const *node; } const infomap[] = {
@@ -633,7 +639,7 @@ emit_ancillary_info (char const *program)
     { "sha256sum", "sha2 utilities" },
     { "sha384sum", "sha2 utilities" },
     { "sha512sum", "sha2 utilities" },
-    { NULL, NULL }
+    { nullptr, nullptr }
   };
 
   char const *node = program;
@@ -647,9 +653,16 @@ emit_ancillary_info (char const *program)
 
   printf (_("\n%s online help: <%s>\n"), PACKAGE_NAME, PACKAGE_URL);
 
+#ifdef PACKAGE_PACKAGER
+# ifdef PACKAGE_PACKAGER_BUG_REPORTS
+  printf (_("Report %s bugs to: <%s>\n"), PACKAGE_PACKAGER,
+          PACKAGE_PACKAGER_BUG_REPORTS);
+# endif
+#endif
+
   /* Don't output this redundant message for English locales.
      Note we still output for 'C' so that it gets included in the man page.  */
-  char const *lc_messages = setlocale (LC_MESSAGES, NULL);
+  char const *lc_messages = setlocale (LC_MESSAGES, nullptr);
   if (lc_messages && STRNCMP_LIT (lc_messages, "en_"))
     {
       /* TRANSLATORS: Replace LANG_CODE in this URL with your language code
@@ -707,6 +720,8 @@ usable_st_size (struct stat const *sb)
 
 _Noreturn void usage (int status);
 
+#include <error.h>
+
 /* Like error(0, 0, ...), but without an implicit newline.
    Also a noop unless the global DEV_DEBUG is set.  */
 #define devmsg(...)			\
@@ -729,6 +744,18 @@ The following directory is part of the cycle:\n  %s\n"), \
     }					\
   while (0)
 
+/* exit with a _single_ "write error" diagnostic.  */
+
+static inline void
+write_error (void)
+{
+  int saved_errno = errno;
+  fflush (stdout);    /* Last attempt to write any buffered data.  */
+  fpurge (stdout);    /* Ensure nothing buffered that might induce an error. */
+  clearerr (stdout);  /* Avoid extraneous diagnostic from close_stdout.  */
+  error (EXIT_FAILURE, saved_errno, _("write error"));
+}
+
 /* Like stpncpy, but do ensure that the result is NUL-terminated,
    and do not NUL-pad out to LEN.  I.e., when strnlen (src, len) == len,
    this function writes a NUL byte into dest[len].  Thus, the length
@@ -737,8 +764,8 @@ The following directory is part of the cycle:\n  %s\n"), \
 static inline char *
 stzncpy (char *restrict dest, char const *restrict src, size_t len)
 {
-  char const *src_end = src + len;
-  while (src < src_end && *src)
+  size_t i;
+  for (i = 0; i < len && *src; i++)
     *dest++ = *src++;
   *dest = 0;
   return dest;

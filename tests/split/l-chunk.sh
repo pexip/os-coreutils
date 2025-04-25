@@ -1,7 +1,7 @@
 #!/bin/sh
 # test splitting into newline delineated chunks (-n l/...)
 
-# Copyright (C) 2010-2022 Free Software Foundation, Inc.
+# Copyright (C) 2010-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,23 +24,15 @@ echo "split: invalid number of chunks: '1o'" > exp
 returns_ 1 split -n l/1o 2>err || fail=1
 compare exp err || fail=1
 
-echo "split: -: cannot determine file size" > exp
-: | returns_ 1 split -n l/1 2>err || fail=1
-compare exp err || fail=1
+rm -f x* || fail=1
+: | split -n l/1 || fail=1
+compare /dev/null xaa || fail=1
+test ! -f xab || fail=1
 
 # N can be greater than the file size
 # in which case no data is extracted, or empty files are written
 split -n l/10 /dev/null || fail=1
 test "$(stat -c %s x* | uniq -c | sed 's/^ *//; s/ /x/')" = "10x0" || fail=1
-rm x??
-
-# 'split' should reject any attempt to create an infinitely
-# long output file.
-returns_ 1 split -n l/2 /dev/zero || fail=1
-rm x??
-
-# Repeat the above,  but with 1/2, not l/2:
-returns_ 1 split -n 1/2 /dev/zero || fail=1
 rm x??
 
 # Ensure --elide-empty-files is honored
@@ -59,21 +51,20 @@ sed "s/': .*/'/" < err.t > err || framework_failure_
 compare exp err || fail=1
 
 printf '%s' "\
-14 16 09 15 16 10
+14 16 16 08 16 10
 14 08 08 10 14 08 08 10
-06 08 08 02 06 08 08 02 06 08 08 10
-06 08 02 06 08 00 08 02 06 08 02 06 08 00 10
-06 00 08 00 02 06 00 02 06 00 08 00 01 07 00 02 06 00 08 00 02 16
+08 06 08 08 08 08 08 02 06 08 08 02
+06 08 08 02 06 08 02 06 08 02 06 08 00 08 02
+06 02 06 02 06 02 06 02 06 02 06 02 06 02 06 00 08 00 02 06 00 02
 " > exp || framework_failure_
 
 sed 's/00 *//g' exp > exp.elide_empty || framework_failure_
 
-DEBUGGING=
-test "$DEBUGGING" && test "$VERBOSE" && set +x
+test "$DEBUG" && test "$VERBOSE" && set +x
 for ELIDE_EMPTY in '' '-e'; do
   for IO_BLKSIZE in 1 2 5 10 80 100; do
     > out
-    test "$DEBUGGING" && printf "\n---io-blk-size=$IO_BLKSIZE $ELIDE_EMPTY\n"
+    test "$DEBUG" && printf "\n---io-blk-size=$IO_BLKSIZE $ELIDE_EMPTY\n"
     for N in 6 8 12 15 22; do
       rm -f x*
 
@@ -89,7 +80,7 @@ for ELIDE_EMPTY in '' '-e'; do
         compare chunk.k xab || fail=1
       fi
 
-      if test "$DEBUGGING"; then
+      if test "$DEBUG"; then
         # Output partition pattern
         size=$(printf "%s" "$lines" | wc -c)
         chunk_size=$(($size/$N))
@@ -116,21 +107,17 @@ for ELIDE_EMPTY in '' '-e'; do
     compare out $EXP || fail=1
   done
 done
-test "$DEBUGGING" && test "$VERBOSE" && set -x
+test "$DEBUG" && test "$VERBOSE" && set -x
 
 
 # Check extraction of particular chunks
-> out
-printf '1\n12345\n' > exp
-split -n l/13/15 in > out
+split -n l/13/15 in > out &&
+compare /dev/null out || fail=1
+printf '1\n12345\n' > exp || framework_failure_
+split -n l/14/15 in > out &&
 compare exp out || fail=1
-> out
-printf '' > exp
-split -n l/14/15 in > out
-compare exp out || fail=1
-> out
-printf '1\n12345\n1\n' > exp
-split -n l/15/15 in > out
+printf '1\n' > exp || framework_failure_
+split -n l/15/15 in > out &&
 compare exp out || fail=1
 
 # test input with no \n at end

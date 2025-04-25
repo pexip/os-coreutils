@@ -1,6 +1,6 @@
 /* Provide a stub lchown function for systems that lack it.
 
-   Copyright (C) 1998-1999, 2002, 2004, 2006-2007, 2009-2022 Free Software
+   Copyright (C) 1998-1999, 2002, 2004, 2006-2007, 2009-2025 Free Software
    Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@
 #include <unistd.h>
 
 #include <errno.h>
-#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -31,7 +30,7 @@
 
 /* If the system chown does not follow symlinks, we don't want it
    replaced by gnulib's chown, which does follow symlinks.  */
-# if CHOWN_MODIFIES_SYMLINK
+# if CHOWN_MODIFIES_SYMLINK /* native Windows and some very old platforms */
 #  undef chown
 # endif
 
@@ -45,9 +44,9 @@ lchown (const char *file, uid_t uid, gid_t gid)
 {
 # if HAVE_CHOWN
 #  if ! CHOWN_MODIFIES_SYMLINK
-  struct stat stats;
+  char readlink_buf[1];
 
-  if (lstat (file, &stats) == 0 && S_ISLNK (stats.st_mode))
+  if (0 <= readlink (file, readlink_buf, sizeof readlink_buf))
     {
       errno = EOPNOTSUPP;
       return -1;

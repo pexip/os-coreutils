@@ -1,6 +1,6 @@
 /* Determine whether two file names refer to the same file.
 
-   Copyright (C) 1997-2000, 2002-2006, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 1997-2000, 2002-2006, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #include <config.h>
 
 #include <fcntl.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -38,7 +37,7 @@
 
 #include "same.h"
 #include "dirname.h"
-#include "error.h"
+#include <error.h>
 #include "same-inode.h"
 
 #ifndef MIN
@@ -112,7 +111,7 @@ same_nameat (int source_dfd, char const *source,
       int destdir_fd = openat (dest_dfd, dest_dirname, open_flags);
       if (destdir_fd < 0 || fstat (destdir_fd, &dest_dir_stats) != 0)
         destdir_errno = errno;
-      else if (SAME_INODE (source_dir_stats, dest_dir_stats))
+      else if (psame_inode (&source_dir_stats, &dest_dir_stats))
         {
           same = identical_basenames;
           if (! same)
@@ -139,7 +138,7 @@ same_nameat (int source_dfd, char const *source,
           /* Shouldn't happen.  */
           error (1, errno, "%s", dest_dirname);
         }
-      same = SAME_INODE (source_dir_stats, dest_dir_stats);
+      same = psame_inode (&source_dir_stats, &dest_dir_stats);
 #endif
 
       free (dest_dirname);

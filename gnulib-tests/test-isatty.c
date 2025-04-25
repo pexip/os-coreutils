@@ -1,5 +1,5 @@
 /* Test isatty() function.
-   Copyright (C) 2011-2022 Free Software Foundation, Inc.
+   Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +56,15 @@ main (void)
             || errno == 0 /* seen on IRIX 6.5, Solaris 10 */
            );
   }
+#ifdef AT_FDCWD
+  {
+    errno = 0;
+    ASSERT (isatty (AT_FDCWD) == 0);
+    ASSERT (errno == EBADF
+            || errno == 0 /* seen on IRIX 6.5, Solaris 10 */
+           );
+  }
+#endif
 
   /* Test behaviour for regular files.  */
   {
@@ -95,5 +104,5 @@ main (void)
 
   ASSERT (unlink (file) == 0);
 
-  return 0;
+  return test_exit_status;
 }

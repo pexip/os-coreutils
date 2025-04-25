@@ -2,7 +2,7 @@
 # -*- perl -*-
 # Test comm
 
-# Copyright (C) 2008-2022 Free Software Foundation, Inc.
+# Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ use strict;
 
 my $prog = 'comm';
 
-# Turn off localization of executable's ouput.
+# Turn off localization of executable's output.
 @ENV{qw(LANGUAGE LANG LC_ALL)} = ('C') x 3;
 
 my @inputs = ({IN=>{a=>"1\n3\n3\n3"}}, {IN=>{b=>"2\n2\n3\n3\n3"}});
@@ -157,6 +157,9 @@ my @Tests =
     {OUT=>"1\n\0002\n\0002\n\000\0003\n\000\0003\n\000\0003\n"} ],
    ['zdelim-empty', '-z', '-z --output-delimiter=', @zinputs,
     {OUT=>"1\000\0002\000\0002\000\000\0003\000\000\0003\000\000\0003\000"} ],
+   ['total-delim-empty', '--total --output-delimiter=', @inputs,
+    {OUT=>"1\n\0002\n\0002\n\000\0003\n\000\0003\n\000\0003\n"
+        . "1\0002\0003\000total\n"} ],
 
    # invalid dual delimiter
    ['delim-dual', '--output-delimiter=,', '--output-delimiter=+', @inputs,

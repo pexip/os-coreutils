@@ -1,5 +1,5 @@
 /* GNU's pinky.
-   Copyright (C) 1992-2022 Free Software Foundation, Inc.
+   Copyright (C) 1992-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 /* Created by hacking who.c by Kaveh Ghazi ghazi@caip.rutgers.edu */
 
 #include <config.h>
+#include <ctype.h>
 #include <getopt.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -25,8 +26,6 @@
 #include "system.h"
 
 #include "canon-host.h"
-#include "die.h"
-#include "error.h"
 #include "hard-locale.h"
 #include "readutmp.h"
 
@@ -62,8 +61,11 @@ static bool include_home_and_shell = true;
 /* if true, use the "short" output format. */
 static bool do_short_format = true;
 
+/* If true, attempt to canonicalize hostnames via a DNS lookup. */
+static bool do_lookup;
+
 /* if true, display the ut_host field. */
-#ifdef HAVE_UT_HOST
+#if HAVE_STRUCT_XTMP_UT_HOST
 static bool include_where = true;
 #endif
 
@@ -72,25 +74,29 @@ static bool include_where = true;
 static char const *time_format;
 static int time_format_width;
 
+/* for long options with no corresponding short option, use enum */
+enum
+{
+  LOOKUP_OPTION = CHAR_MAX + 1
+};
+
 static struct option const longopts[] =
 {
+  {"lookup", no_argument, nullptr, LOOKUP_OPTION},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Count and return the number of ampersands in STR.  */
 
 ATTRIBUTE_PURE
-static size_t
+static idx_t
 count_ampersands (char const *str)
 {
-  size_t count = 0;
-  do
-    {
-      if (*str == '&')
-        count++;
-    } while (*str++);
+  idx_t count = 0;
+  for (; *str; str++)
+    count += *str == '&';
   return count;
 }
 
@@ -103,17 +109,17 @@ count_ampersands (char const *str)
 static char *
 create_fullname (char const *gecos_name, char const *user_name)
 {
-  size_t rsize = strlen (gecos_name) + 1;
+  idx_t rsize = strlen (gecos_name) + 1;
   char *result;
   char *r;
-  size_t ampersands = count_ampersands (gecos_name);
+  idx_t ampersands = count_ampersands (gecos_name);
 
   if (ampersands != 0)
     {
-      size_t ulen = strlen (user_name);
-      size_t product;
-      if (INT_MULTIPLY_WRAPV (ulen, ampersands - 1, &product)
-          || INT_ADD_WRAPV (rsize, product, &rsize))
+      idx_t ulen = strlen (user_name);
+      ptrdiff_t product;
+      if (ckd_mul (&product, ulen - 1, ampersands)
+          || ckd_add (&rsize, rsize, product))
         xalloc_die ();
     }
 
@@ -148,7 +154,7 @@ static char const *
 idle_string (time_t when)
 {
   static time_t now = 0;
-  static char buf[INT_STRLEN_BOUND (long int) + 2];
+  static char buf[INT_STRLEN_BOUND (intmax_t) + sizeof "d"];
   time_t seconds_idle;
 
   if (now == 0)
@@ -165,26 +171,18 @@ idle_string (time_t when)
     }
   else
     {
-      unsigned long int days = seconds_idle / (24 * 60 * 60);
-      sprintf (buf, "%lud", days);
+      intmax_t days = seconds_idle / (24 * 60 * 60);
+      sprintf (buf, "%jdd", days);
     }
   return buf;
 }
 
 /* Return a time string.  */
 static char const *
-time_string (const STRUCT_UTMP *utmp_ent)
+time_string (struct gl_utmp const *utmp_ent)
 {
   static char buf[INT_STRLEN_BOUND (intmax_t) + sizeof "-%m-%d %H:%M"];
-
-  /* Don't take the address of UT_TIME_MEMBER directly.
-     Ulrich Drepper wrote:
-     "... GNU libc (and perhaps other libcs as well) have extended
-     utmp file formats which do not use a simple time_t ut_time field.
-     In glibc, ut_time is a macro which selects for backward compatibility
-     the tv_sec member of a struct timeval value."  */
-  time_t t = UT_TIME_MEMBER (utmp_ent);
-  struct tm *tmp = localtime (&t);
+  struct tm *tmp = localtime (&utmp_ent->ut_ts.tv_sec);
 
   if (tmp)
     {
@@ -192,32 +190,39 @@ time_string (const STRUCT_UTMP *utmp_ent)
       return buf;
     }
   else
-    return timetostr (t, buf);
+    return timetostr (utmp_ent->ut_ts.tv_sec, buf);
 }
 
 /* Display a line of information about UTMP_ENT. */
 
 static void
-print_entry (const STRUCT_UTMP *utmp_ent)
+print_entry (struct gl_utmp const *utmp_ent)
 {
   struct stat stats;
   time_t last_change;
   char mesg;
 
-#define DEV_DIR_WITH_TRAILING_SLASH "/dev/"
-#define DEV_DIR_LEN (sizeof (DEV_DIR_WITH_TRAILING_SLASH) - 1)
+  /* If ut_line contains a space, the device name starts after the space.  */
+  char *line = utmp_ent->ut_line;
+  char *space = strchr (line, ' ');
+  line = space ? space + 1 : line;
 
-  char line[sizeof (utmp_ent->ut_line) + DEV_DIR_LEN + 1];
-  char *p = line;
+  int dirfd;
+  if (IS_ABSOLUTE_FILE_NAME (line))
+    dirfd = AT_FDCWD;
+  else
+    {
+      static int dev_dirfd;
+      if (!dev_dirfd)
+        {
+          dev_dirfd = open ("/dev", O_PATHSEARCH | O_DIRECTORY);
+          if (dev_dirfd < 0)
+            dev_dirfd = AT_FDCWD - 1;
+        }
+      dirfd = dev_dirfd;
+    }
 
-  /* Copy ut_line into LINE, prepending '/dev/' if ut_line is not
-     already an absolute file name.  Some system may put the full,
-     absolute file name in ut_line.  */
-  if ( ! IS_ABSOLUTE_FILE_NAME (utmp_ent->ut_line))
-    p = stpcpy (p, DEV_DIR_WITH_TRAILING_SLASH);
-  stzncpy (p, utmp_ent->ut_line, sizeof (utmp_ent->ut_line));
-
-  if (stat (line, &stats) == 0)
+  if (AT_FDCWD <= dirfd && fstatat (dirfd, line, &stats, 0) == 0)
     {
       mesg = (stats.st_mode & S_IWGRP) ? ' ' : '*';
       last_change = stats.st_atime;
@@ -228,16 +233,16 @@ print_entry (const STRUCT_UTMP *utmp_ent)
       last_change = 0;
     }
 
-  printf ("%-8.*s", UT_USER_SIZE, UT_USER (utmp_ent));
+  char *ut_user = utmp_ent->ut_user;
+  if (strnlen (ut_user, 8) < 8)
+    printf ("%-8s", ut_user);
+  else
+    fputs (ut_user, stdout);
 
   if (include_fullname)
     {
-      struct passwd *pw;
-      char name[UT_USER_SIZE + 1];
-
-      stzncpy (name, UT_USER (utmp_ent), UT_USER_SIZE);
-      pw = getpwnam (name);
-      if (pw == NULL)
+      struct passwd *pw = getpwnam (ut_user);
+      if (pw == nullptr)
         /* TRANSLATORS: Real name is unknown; at most 19 characters. */
         printf (" %19s", _("        ???"));
       else
@@ -254,8 +259,12 @@ print_entry (const STRUCT_UTMP *utmp_ent)
         }
     }
 
-  printf (" %c%-8.*s",
-          mesg, (int) sizeof (utmp_ent->ut_line), utmp_ent->ut_line);
+  fputc (' ', stdout);
+  fputc (mesg, stdout);
+  if (strnlen (utmp_ent->ut_line, 8) < 8)
+    printf ("%-8s", utmp_ent->ut_line);
+  else
+    fputs (utmp_ent->ut_line, stdout);
 
   if (include_idle)
     {
@@ -268,31 +277,31 @@ print_entry (const STRUCT_UTMP *utmp_ent)
 
   printf (" %s", time_string (utmp_ent));
 
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_XTMP_UT_HOST
   if (include_where && utmp_ent->ut_host[0])
     {
-      char ut_host[sizeof (utmp_ent->ut_host) + 1];
-      char *host = NULL;
-      char *display = NULL;
-
-      /* Copy the host name into UT_HOST, and ensure it's nul terminated. */
-      stzncpy (ut_host, utmp_ent->ut_host, sizeof (utmp_ent->ut_host));
+      char *host = nullptr;
+      char *display = nullptr;
+      char *ut_host = utmp_ent->ut_host;
 
       /* Look for an X display.  */
       display = strchr (ut_host, ':');
       if (display)
         *display++ = '\0';
 
-      if (*ut_host)
+      if (*ut_host && do_lookup)
         /* See if we can canonicalize it.  */
         host = canon_host (ut_host);
       if ( ! host)
         host = ut_host;
 
+      fputc (' ', stdout);
+      fputs (host, stdout);
       if (display)
-        printf (" %s:%s", host, display);
-      else
-        printf (" %s", host);
+        {
+          fputc (':', stdout);
+          fputs (display, stdout);
+        }
 
       if (host != ut_host)
         free (host);
@@ -315,7 +324,7 @@ print_long_entry (const char name[])
   printf ("%-28s", name);
 
   printf (_("In real life: "));
-  if (pw == NULL)
+  if (pw == nullptr)
     {
       /* TRANSLATORS: Real name is unknown; no hard limit. */
       printf (" %s", _("???\n"));
@@ -409,7 +418,7 @@ print_heading (void)
   if (include_idle)
     printf (" %-6s", _("Idle"));
   printf (" %-*s", time_format_width, _("When"));
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_XTMP_UT_HOST
   if (include_where)
     printf (" %s", _("Where"));
 #endif
@@ -419,7 +428,7 @@ print_heading (void)
 /* Display UTMP_BUF, which should have N entries. */
 
 static void
-scan_entries (size_t n, const STRUCT_UTMP *utmp_buf,
+scan_entries (idx_t n, struct gl_utmp const *utmp_buf,
               const int argc_names, char *const argv_names[])
 {
   if (hard_locale (LC_TIME))
@@ -443,7 +452,7 @@ scan_entries (size_t n, const STRUCT_UTMP *utmp_buf,
           if (argc_names)
             {
               for (int i = 0; i < argc_names; i++)
-                if (STREQ_LEN (UT_USER (utmp_buf), argv_names[i], UT_USER_SIZE))
+                if (STREQ (utmp_buf->ut_user, argv_names[i]))
                   {
                     print_entry (utmp_buf);
                     break;
@@ -462,11 +471,10 @@ static void
 short_pinky (char const *filename,
              const int argc_names, char *const argv_names[])
 {
-  size_t n_users;
-  STRUCT_UTMP *utmp_buf = NULL;
-
-  if (read_utmp (filename, &n_users, &utmp_buf, 0) != 0)
-    die (EXIT_FAILURE, errno, "%s", quotef (filename));
+  idx_t n_users;
+  struct gl_utmp *utmp_buf;
+  if (read_utmp (filename, &n_users, &utmp_buf, READ_UTMP_USER_PROCESS) != 0)
+    error (EXIT_FAILURE, errno, "%s", quotef (filename));
 
   scan_entries (n_users, utmp_buf, argc_names, argv_names);
   exit (EXIT_SUCCESS);
@@ -502,6 +510,9 @@ usage (int status)
   -q              omit the user's full name, remote host and idle time\n\
                   in short format\n\
 "), stdout);
+      fputs (_("\
+      --lookup    attempt to canonicalize hostnames via DNS\n\
+"), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       printf (_("\
@@ -528,7 +539,8 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((optc = getopt_long (argc, argv, "sfwiqbhlp", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "sfwiqbhlp", longopts, nullptr))
+         != -1)
     {
       switch (optc)
         {
@@ -550,14 +562,14 @@ main (int argc, char **argv)
 
         case 'i':
           include_fullname = false;
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_XTMP_UT_HOST
           include_where = false;
 #endif
           break;
 
         case 'q':
           include_fullname = false;
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_XTMP_UT_HOST
           include_where = false;
 #endif
           include_idle = false;
@@ -573,6 +585,10 @@ main (int argc, char **argv)
 
         case 'b':
           include_home_and_shell = false;
+          break;
+
+        case LOOKUP_OPTION:
+          do_lookup = true;
           break;
 
         case_GETOPT_HELP_CHAR;

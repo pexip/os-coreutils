@@ -1,5 +1,5 @@
 /* readlink -- display value of a symbolic link.
-   Copyright (C) 2002-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 #include "system.h"
 #include "canonicalize.h"
-#include "error.h"
 #include "areadlink.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
@@ -39,17 +38,17 @@ static bool verbose;
 
 static struct option const longopts[] =
 {
-  {"canonicalize", no_argument, NULL, 'f'},
-  {"canonicalize-existing", no_argument, NULL, 'e'},
-  {"canonicalize-missing", no_argument, NULL, 'm'},
-  {"no-newline", no_argument, NULL, 'n'},
-  {"quiet", no_argument, NULL, 'q'},
-  {"silent", no_argument, NULL, 's'},
-  {"verbose", no_argument, NULL, 'v'},
-  {"zero", no_argument, NULL, 'z'},
+  {"canonicalize", no_argument, nullptr, 'f'},
+  {"canonicalize-existing", no_argument, nullptr, 'e'},
+  {"canonicalize-missing", no_argument, nullptr, 'm'},
+  {"no-newline", no_argument, nullptr, 'n'},
+  {"quiet", no_argument, nullptr, 'q'},
+  {"silent", no_argument, nullptr, 's'},
+  {"verbose", no_argument, nullptr, 'v'},
+  {"zero", no_argument, nullptr, 'z'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -107,7 +106,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((optc = getopt_long (argc, argv, "efmnqsvz", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "efmnqsvz", longopts, nullptr)) != -1)
     {
       switch (optc)
         {

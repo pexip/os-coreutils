@@ -1,5 +1,5 @@
 /* Iterate over arguments from argv or --files0-from=FILE
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,11 +14,20 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
+/* This file uses _GL_ATTRIBUTE_DEALLOC, _GL_ATTRIBUTE_PURE.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
+
 #include <stdio.h>
-#include <stdbool.h>
 
 /* Definition of _GL_ARG_NONNULL.  */
 #include "arg-nonnull.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 struct argv_iterator;
 
@@ -41,3 +50,8 @@ char *argv_iter (struct argv_iterator *, enum argv_iter_err *)
   _GL_ARG_NONNULL ((1, 2));
 size_t argv_iter_n_args (struct argv_iterator const *)
   _GL_ATTRIBUTE_PURE _GL_ARG_NONNULL ((1));
+
+
+#ifdef __cplusplus
+}
+#endif

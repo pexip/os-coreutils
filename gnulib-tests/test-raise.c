@@ -1,5 +1,5 @@
 /* Test raising a signal.
-   Copyright (C) 2011-2022 Free Software Foundation, Inc.
+   Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,13 +26,13 @@ SIGNATURE_CHECK (raise, int, (int));
 
 #include "macros.h"
 
-/* It is safe to use _Noreturn here: exit() never returns, and GCC knows that
-   exit() is a non-returning function, even on platforms where its declaration
-   in <stdlib.h> does not have the 'noreturn' attribute.  */
+/* It is safe to use _Noreturn here: _exit() never returns, and GCC knows that
+   _exit() is a non-returning function, even on platforms where its declaration
+   in <unistd.h> does not have the 'noreturn' attribute.  */
 static _Noreturn void
-handler (int sig)
+handler (_GL_UNUSED int sig)
 {
-  _exit (0);
+  _exit (test_exit_status);
 }
 
 int

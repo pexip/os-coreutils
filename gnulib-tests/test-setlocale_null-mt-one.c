@@ -1,5 +1,5 @@
 /* Multithread-safety test for setlocale_null_r (LC_xxx, ...).
-   Copyright (C) 2019-2022 Free Software Foundation, Inc.
+   Copyright (C) 2019-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #include <config.h>
 
 /* Work around GCC bug 44511.  */
-#if 4 < __GNUC__ + (3 <= __GNUC_MINOR__)
+#if _GL_GNUC_PREREQ (4, 3)
 # pragma GCC diagnostic ignored "-Wreturn-type"
 #endif
 

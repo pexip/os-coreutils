@@ -1,5 +1,5 @@
 /* expand - convert tabs to spaces
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,12 +34,11 @@
 
 #include <config.h>
 
+#include <ctype.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/types.h>
 #include "system.h"
-#include "die.h"
-
 #include "expand-common.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
@@ -51,11 +50,11 @@ static char const shortopts[] = "it:0::1::2::3::4::5::6::7::8::9::";
 
 static struct option const longopts[] =
 {
-  {"tabs", required_argument, NULL, 't'},
-  {"initial", no_argument, NULL, 'i'},
+  {"tabs", required_argument, nullptr, 't'},
+  {"initial", no_argument, nullptr, 'i'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -96,7 +95,7 @@ static void
 expand (void)
 {
   /* Input stream.  */
-  FILE *fp = next_file (NULL);
+  FILE *fp = next_file (nullptr);
 
   if (!fp)
     return;
@@ -114,10 +113,10 @@ expand (void)
          is true:  */
 
       /* Column of next input character.  */
-      uintmax_t column = 0;
+      colno column = 0;
 
       /* Index in TAB_LIST of next tab stop to examine.  */
-      size_t tab_index = 0;
+      idx_t tab_index = 0;
 
 
       /* Convert a line of text.  */
@@ -132,21 +131,13 @@ expand (void)
               if (c == '\t')
                 {
                   /* Column the next input tab stop is on.  */
-                  uintmax_t next_tab_column;
                   bool last_tab;
-
-                  next_tab_column = get_next_tab_column (column, &tab_index,
-                                                         &last_tab);
-
-                  if (last_tab)
-                    next_tab_column = column + 1;
-
-                  if (next_tab_column < column)
-                    die (EXIT_FAILURE, 0, _("input line is too long"));
+                  colno next_tab_column
+                    = get_next_tab_column (column, &tab_index, &last_tab);
 
                   while (++column < next_tab_column)
                     if (putchar (' ') < 0)
-                      die (EXIT_FAILURE, errno, _("write error"));
+                      write_error ();
 
                   c = ' ';
                 }
@@ -159,9 +150,8 @@ expand (void)
                 }
               else
                 {
-                  column++;
-                  if (!column)
-                    die (EXIT_FAILURE, 0, _("input line is too long"));
+                  if (ckd_add (&column, column, 1))
+                    error (EXIT_FAILURE, 0, _("input line is too long"));
                 }
 
               convert &= convert_entire_line || !! isblank (c);
@@ -171,7 +161,7 @@ expand (void)
             return;
 
           if (putchar (c) < 0)
-            die (EXIT_FAILURE, errno, _("write error"));
+            write_error ();
         }
       while (c != '\n');
     }
@@ -191,7 +181,7 @@ main (int argc, char **argv)
   atexit (close_stdout);
   convert_entire_line = true;
 
-  while ((c = getopt_long (argc, argv, shortopts, longopts, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, shortopts, longopts, nullptr)) != -1)
     {
       switch (c)
         {
@@ -227,7 +217,7 @@ main (int argc, char **argv)
 
   finalize_tab_stops ();
 
-  set_file_list ((optind < argc) ? &argv[optind] : NULL);
+  set_file_list (optind < argc ? &argv[optind] : nullptr);
 
   expand ();
 

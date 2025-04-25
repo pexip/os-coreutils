@@ -1,5 +1,5 @@
 /* Hash functions for file-related (name, device, inode) triples.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,9 +19,18 @@
 #ifndef HASH_TRIPLE_H
 #define HASH_TRIPLE_H
 
+/* This file uses _GL_ATTRIBUTE_PURE.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* Describe a just-created or just-renamed destination file.  */
 struct F_triple
@@ -42,5 +51,10 @@ extern void triple_free (void *x);
 extern size_t triple_hash_no_name (void const *x, size_t table_size)
   _GL_ATTRIBUTE_PURE;
 extern bool triple_compare (void const *x, void const *y);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

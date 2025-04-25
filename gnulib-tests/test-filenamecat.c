@@ -1,6 +1,6 @@
 /* Test of concatenation of two arbitrary file names.
 
-   Copyright (C) 1996-2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 1996-2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 #include "idx.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

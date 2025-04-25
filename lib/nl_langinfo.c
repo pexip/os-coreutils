@@ -1,6 +1,6 @@
 /* nl_langinfo() replacement: query locale dependent information.
 
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -30,7 +30,12 @@
 #endif
 
 #if REPLACE_NL_LANGINFO && !NL_LANGINFO_MTSAFE
-# if defined _WIN32 && !defined __CYGWIN__
+
+# if AVOID_ANY_THREADS
+
+/* The option '--disable-threads' explicitly requests no locking.  */
+
+# elif defined _WIN32 && !defined __CYGWIN__
 
 #  define WIN32_LEAN_AND_MEAN  /* avoid including junk */
 #  include <windows.h>
@@ -51,6 +56,7 @@
 #  include <threads.h>
 
 # endif
+
 #endif
 
 /* nl_langinfo() must be multithread-safe.  To achieve this without using
@@ -70,6 +76,8 @@
 static char *
 ctype_codeset (void)
 {
+  /* This function is only used on platforms which don't have uselocale().
+     Therefore we don't need to look at the per-thread locale first, here.  */
   static char result[2 + 10 + 1];
   char buf[2 + 10 + 1];
   char locale[SETLOCALE_NULL_MAX];
@@ -184,7 +192,12 @@ nl_langinfo_unlocked (nl_item item)
 /* Prohibit renaming this symbol.  */
 #  undef gl_get_nl_langinfo_lock
 
-#  if defined _WIN32 && !defined __CYGWIN__
+#  if AVOID_ANY_THREADS
+
+/* The option '--disable-threads' explicitly requests no locking.  */
+#   define nl_langinfo_with_lock nl_langinfo_unlocked
+
+#  elif defined _WIN32 && !defined __CYGWIN__
 
 extern __declspec(dllimport) CRITICAL_SECTION *gl_get_nl_langinfo_lock (void);
 
@@ -302,6 +315,24 @@ rpl_nl_langinfo (nl_item item)
       /* We don't ship the appropriate localizations with gnulib.  Therefore,
          treat ALTMON_i like MON_i.  */
       item = item - ALTMON_1 + MON_1;
+      break;
+# endif
+# if GNULIB_defined_ABALTMON
+    case ABALTMON_1:
+    case ABALTMON_2:
+    case ABALTMON_3:
+    case ABALTMON_4:
+    case ABALTMON_5:
+    case ABALTMON_6:
+    case ABALTMON_7:
+    case ABALTMON_8:
+    case ABALTMON_9:
+    case ABALTMON_10:
+    case ABALTMON_11:
+    case ABALTMON_12:
+      /* We don't ship the appropriate localizations with gnulib.  Therefore,
+         treat ABALTMON_i like ABMON_i.  */
+      item = item - ABALTMON_1 + ABMON_1;
       break;
 # endif
 # if GNULIB_defined_ERA
@@ -449,7 +480,7 @@ nl_langinfo (nl_item item)
     {
       static char const months[][sizeof "September"] = {
         "January", "February", "March", "April", "May", "June", "July",
-        "September", "October", "November", "December"
+        "August", "September", "October", "November", "December"
       };
       case MON_1:
       case MON_2:
@@ -497,30 +528,57 @@ nl_langinfo (nl_item item)
           return result[item - ALTMON_1];
         }
     }
-    case ABMON_1:
-    case ABMON_2:
-    case ABMON_3:
-    case ABMON_4:
-    case ABMON_5:
-    case ABMON_6:
-    case ABMON_7:
-    case ABMON_8:
-    case ABMON_9:
-    case ABMON_10:
-    case ABMON_11:
-    case ABMON_12:
-      {
-        static char result[12][30];
-        static char const abmonths[][sizeof "Jan"] = {
-          "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-          "Sep", "Oct", "Nov", "Dec"
-        };
-        tmm.tm_mon = item - ABMON_1;
-        if (!strftime (buf, sizeof result[0], "%b", &tmm))
-          return (char *) abmonths[item - ABMON_1];
-        strcpy (result[item - ABMON_1], buf);
-        return result[item - ABMON_1];
-      }
+    {
+      static char const abmonths[][sizeof "Jan"] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+        "Aug", "Sep", "Oct", "Nov", "Dec"
+      };
+      case ABMON_1:
+      case ABMON_2:
+      case ABMON_3:
+      case ABMON_4:
+      case ABMON_5:
+      case ABMON_6:
+      case ABMON_7:
+      case ABMON_8:
+      case ABMON_9:
+      case ABMON_10:
+      case ABMON_11:
+      case ABMON_12:
+        {
+          static char result[12][30];
+          tmm.tm_mon = item - ABMON_1;
+          if (!strftime (buf, sizeof result[0], "%b", &tmm))
+            return (char *) abmonths[item - ABMON_1];
+          strcpy (result[item - ABMON_1], buf);
+          return result[item - ABMON_1];
+        }
+      case ABALTMON_1:
+      case ABALTMON_2:
+      case ABALTMON_3:
+      case ABALTMON_4:
+      case ABALTMON_5:
+      case ABALTMON_6:
+      case ABALTMON_7:
+      case ABALTMON_8:
+      case ABALTMON_9:
+      case ABALTMON_10:
+      case ABALTMON_11:
+      case ABALTMON_12:
+        {
+          static char result[12][50];
+          tmm.tm_mon = item - ABALTMON_1;
+          /* The platforms without nl_langinfo() don't support strftime with
+             %Ob.  We don't even need to try.  */
+          #if 0
+          if (!strftime (buf, sizeof result[0], "%Ob", &tmm))
+          #endif
+            if (!strftime (buf, sizeof result[0], "%b", &tmm))
+              return (char *) abmonths[item - ABALTMON_1];
+          strcpy (result[item - ABALTMON_1], buf);
+          return result[item - ABALTMON_1];
+        }
+    }
     case ERA:
       return (char *) "";
     case ALT_DIGITS:

@@ -1,5 +1,5 @@
 /* Username <--> uid and groupname <--> gid conversions, with cache for speed.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,13 +17,23 @@
 /* Written by Jim Meyering, 2007.  */
 
 #ifndef IDCACHE_H
-# define IDCACHE_H 1
+#define IDCACHE_H 1
 
-# include <sys/types.h>
+#include <sys/types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 extern char *getuser (uid_t uid);
 extern char *getgroup (gid_t gid);
 extern uid_t *getuidbyname (const char *user);
 extern gid_t *getgidbyname (const char *group);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

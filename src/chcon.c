@@ -1,5 +1,5 @@
 /* chcon -- change security context of files
-   Copyright (C) 2005-2022 Free Software Foundation, Inc.
+   Copyright (C) 2005-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 
 #include "system.h"
 #include "dev-ino.h"
-#include "die.h"
-#include "error.h"
 #include "ignore-value.h"
 #include "quote.h"
 #include "root-dev-ino.h"
@@ -48,7 +46,7 @@ static bool recurse;
 static bool verbose;
 
 /* Pointer to the device and inode numbers of '/', when --recursive.
-   Otherwise NULL.  */
+   Otherwise nullptr.  */
 static struct dev_ino *root_dev_ino;
 
 /* The name of the context file is being given. */
@@ -72,20 +70,20 @@ enum
 
 static struct option const long_options[] =
 {
-  {"recursive", no_argument, NULL, 'R'},
-  {"dereference", no_argument, NULL, DEREFERENCE_OPTION},
-  {"no-dereference", no_argument, NULL, 'h'},
-  {"no-preserve-root", no_argument, NULL, NO_PRESERVE_ROOT},
-  {"preserve-root", no_argument, NULL, PRESERVE_ROOT},
-  {"reference", required_argument, NULL, REFERENCE_FILE_OPTION},
-  {"user", required_argument, NULL, 'u'},
-  {"role", required_argument, NULL, 'r'},
-  {"type", required_argument, NULL, 't'},
-  {"range", required_argument, NULL, 'l'},
-  {"verbose", no_argument, NULL, 'v'},
+  {"recursive", no_argument, nullptr, 'R'},
+  {"dereference", no_argument, nullptr, DEREFERENCE_OPTION},
+  {"no-dereference", no_argument, nullptr, 'h'},
+  {"no-preserve-root", no_argument, nullptr, NO_PRESERVE_ROOT},
+  {"preserve-root", no_argument, nullptr, PRESERVE_ROOT},
+  {"reference", required_argument, nullptr, REFERENCE_FILE_OPTION},
+  {"user", required_argument, nullptr, 'u'},
+  {"role", required_argument, nullptr, 'r'},
+  {"type", required_argument, nullptr, 't'},
+  {"range", required_argument, nullptr, 'l'},
+  {"verbose", no_argument, nullptr, 'v'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Given a security context, CONTEXT, derive a context_t (*RET),
@@ -141,12 +139,12 @@ compute_context_from_mask (char const *context, context_t *ret)
 static int
 change_file_context (int fd, char const *file)
 {
-  char *file_context = NULL;
+  char *file_context = nullptr;
   context_t context IF_LINT (= 0);
   char const * context_string;
   int errors = 0;
 
-  if (specified_context == NULL)
+  if (specified_context == nullptr)
     {
       int status = (affect_symlink_referent
                     ? getfileconat (fd, file, &file_context)
@@ -162,7 +160,7 @@ change_file_context (int fd, char const *file)
       /* If the file doesn't have a context, and we're not setting all of
          the context components, there isn't really an obvious default.
          Thus, we just give up. */
-      if (file_context == NULL)
+      if (file_context == nullptr)
         {
           error (0, 0, _("can't apply partial context to unlabeled file %s"),
                  quoteaf (file));
@@ -179,7 +177,7 @@ change_file_context (int fd, char const *file)
       context_string = specified_context;
     }
 
-  if (file_context == NULL || ! STREQ (context_string, file_context))
+  if (file_context == nullptr || ! STREQ (context_string, file_context))
     {
       int fail = (affect_symlink_referent
                   ?  setfileconat (fd, file, context_string)
@@ -193,7 +191,7 @@ change_file_context (int fd, char const *file)
         }
     }
 
-  if (specified_context == NULL)
+  if (specified_context == nullptr)
     {
       context_free (context);
       freecon (file_context);
@@ -305,7 +303,7 @@ process_file (FTS *fts, FTSENT *ent)
 }
 
 /* Recursively operate on the specified FILES (the last entry
-   of which is NULL).  BIT_FLAGS controls how fts works.
+   of which is null).  BIT_FLAGS controls how fts works.
    Return true if successful.  */
 
 static bool
@@ -313,14 +311,14 @@ process_files (char **files, int bit_flags)
 {
   bool ok = true;
 
-  FTS *fts = xfts_open (files, bit_flags, NULL);
+  FTS *fts = xfts_open (files, bit_flags, nullptr);
 
   while (true)
     {
       FTSENT *ent;
 
       ent = fts_read (fts);
-      if (ent == NULL)
+      if (ent == nullptr)
         {
           if (errno != 0)
             {
@@ -421,7 +419,7 @@ main (int argc, char **argv)
   bool ok;
   bool preserve_root = false;
   bool component_specified = false;
-  char *reference_file = NULL;
+  char *reference_file = nullptr;
   int optc;
 
   initialize_main (&argc, &argv);
@@ -432,7 +430,8 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((optc = getopt_long (argc, argv, "HLPRhvu:r:t:l:", long_options, NULL))
+  while ((optc = getopt_long (argc, argv, "HLPRhvu:r:t:l:",
+                              long_options, nullptr))
          != -1)
     {
       switch (optc)
@@ -514,14 +513,14 @@ main (int argc, char **argv)
       if (bit_flags == FTS_PHYSICAL)
         {
           if (dereference == 1)
-            die (EXIT_FAILURE, 0,
-                 _("-R --dereference requires either -H or -L"));
+            error (EXIT_FAILURE, 0,
+                   _("-R --dereference requires either -H or -L"));
           affect_symlink_referent = false;
         }
       else
         {
           if (dereference == 0)
-            die (EXIT_FAILURE, 0, _("-R -h requires -P"));
+            error (EXIT_FAILURE, 0, _("-R -h requires -P"));
           affect_symlink_referent = true;
         }
     }
@@ -542,26 +541,26 @@ main (int argc, char **argv)
 
   if (reference_file)
     {
-      char *ref_context = NULL;
+      char *ref_context = nullptr;
 
       if (getfilecon (reference_file, &ref_context) < 0)
-        die (EXIT_FAILURE, errno, _("failed to get security context of %s"),
-             quoteaf (reference_file));
+        error (EXIT_FAILURE, errno, _("failed to get security context of %s"),
+               quoteaf (reference_file));
 
       specified_context = ref_context;
     }
   else if (component_specified)
     {
       /* FIXME: it's already null, so this is a no-op. */
-      specified_context = NULL;
+      specified_context = nullptr;
     }
   else
     {
       specified_context = argv[optind++];
       if (0 < is_selinux_enabled ()
           && security_check_context (specified_context) < 0)
-        die (EXIT_FAILURE, errno, _("invalid context: %s"),
-             quote (specified_context));
+        error (EXIT_FAILURE, errno, _("invalid context: %s"),
+               quote (specified_context));
     }
 
   if (reference_file && component_specified)
@@ -574,13 +573,13 @@ main (int argc, char **argv)
     {
       static struct dev_ino dev_ino_buf;
       root_dev_ino = get_root_dev_ino (&dev_ino_buf);
-      if (root_dev_ino == NULL)
-        die (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
-             quoteaf ("/"));
+      if (root_dev_ino == nullptr)
+        error (EXIT_FAILURE, errno, _("failed to get attributes of %s"),
+               quoteaf ("/"));
     }
   else
     {
-      root_dev_ino = NULL;
+      root_dev_ino = nullptr;
     }
 
   ok = process_files (argv + optind, bit_flags | FTS_NOSTAT);

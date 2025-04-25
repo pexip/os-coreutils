@@ -1,5 +1,5 @@
 /* chown-core.c -- core functions for changing ownership.
-   Copyright (C) 2000-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,8 +23,8 @@
 #include <grp.h>
 
 #include "system.h"
+#include "assure.h"
 #include "chown-core.h"
-#include "error.h"
 #include "ignore-value.h"
 #include "root-dev-ino.h"
 #include "xfts.h"
@@ -43,7 +43,7 @@ enum RCH_status
     /* required_uid and/or required_gid are specified, but don't match */
     RC_excluded,
 
-    /* SAME_INODE check failed */
+    /* The file was replaced by another file during the requested change.  */
     RC_inode_changed,
 
     /* open/fchown isn't needed, isn't safe, or doesn't work due to
@@ -58,12 +58,12 @@ extern void
 chopt_init (struct Chown_option *chopt)
 {
   chopt->verbosity = V_off;
-  chopt->root_dev_ino = NULL;
+  chopt->root_dev_ino = nullptr;
   chopt->affect_symlink_referent = true;
   chopt->recurse = false;
   chopt->force_silent = false;
-  chopt->user_name = NULL;
-  chopt->group_name = NULL;
+  chopt->user_name = nullptr;
+  chopt->group_name = nullptr;
 }
 
 extern void
@@ -122,7 +122,7 @@ uid_to_name (uid_t uid)
 static char *
 user_group_str (char const *user, char const *group)
 {
-  char *spec = NULL;
+  char *spec = nullptr;
 
   if (user)
     {
@@ -145,7 +145,7 @@ user_group_str (char const *user, char const *group)
 }
 
 /* Tell the user how/if the user and group of FILE have been changed.
-   If USER is NULL, give the group-oriented messages.
+   If USER is null, give the group-oriented messages.
    CHANGED describes what (if anything) has happened. */
 
 static void
@@ -165,7 +165,8 @@ describe_change (char const *file, enum Change_status changed,
     }
 
   spec = user_group_str (user, group);
-  old_spec = user_group_str (user ? old_user : NULL, group ? old_group : NULL);
+  old_spec = user_group_str (user ? old_user : nullptr,
+                             group ? old_group : nullptr);
 
   switch (changed)
     {
@@ -188,7 +189,7 @@ describe_change (char const *file, enum Change_status changed,
                  : _("failed to change ownership of %s\n"));
           free (old_spec);
           old_spec = spec;
-          spec = NULL;
+          spec = nullptr;
         }
       break;
     case CH_NO_CHANGE_REQUESTED:
@@ -196,8 +197,9 @@ describe_change (char const *file, enum Change_status changed,
              : group ? _("group of %s retained as %s\n")
              : _("ownership of %s retained\n"));
       break;
+    case CH_NOT_APPLIED:
     default:
-      abort ();
+      affirm (false);
     }
 
   printf (fmt, quoteaf (file), old_spec, spec);
@@ -254,21 +256,16 @@ restricted_chown (int cwd_fd, char const *file,
 
   if (fstat (fd, &st) != 0)
     status = RC_error;
-  else if (! SAME_INODE (*orig_st, st))
+  else if (! psame_inode (orig_st, &st))
     status = RC_inode_changed;
   else if ((required_uid == (uid_t) -1 || required_uid == st.st_uid)
            && (required_gid == (gid_t) -1 || required_gid == st.st_gid))
     {
+#if HAVE_FCHOWN
       if (fchown (fd, uid, gid) == 0)
-        {
-          status = (close (fd) == 0
-                    ? RC_ok : RC_error);
-          return status;
-        }
-      else
-        {
-          status = RC_error;
-        }
+        return close (fd) < 0 ? RC_error : RC_ok;
+#endif
+      status = RC_error;
     }
 
   int saved_errno = errno;
@@ -370,7 +367,7 @@ change_file_owner (FTS *fts, FTSENT *ent,
   if (!ok)
     {
       do_chown = false;
-      file_stats = NULL;
+      file_stats = nullptr;
     }
   else if (required_uid == (uid_t) -1 && required_gid == (gid_t) -1
            && chopt->verbosity == V_off
@@ -424,7 +421,7 @@ change_file_owner (FTS *fts, FTSENT *ent,
           /* Ignore any error due to lack of support; POSIX requires
              this behavior for top-level symbolic links with -h, and
              implies that it's required for all symbolic links.  */
-          if (!ok && errno == EOPNOTSUPP)
+          if (!ok && is_ENOTSUP (errno))
             {
               ok = true;
               symlink_changed = false;
@@ -466,7 +463,7 @@ change_file_owner (FTS *fts, FTSENT *ent,
               break;
 
             default:
-              abort ();
+              unreachable ();
             }
         }
 
@@ -498,14 +495,16 @@ change_file_owner (FTS *fts, FTSENT *ent,
              : !symlink_changed ? CH_NOT_APPLIED
              : !changed ? CH_NO_CHANGE_REQUESTED
              : CH_SUCCEEDED);
-          char *old_usr = file_stats ? uid_to_name (file_stats->st_uid) : NULL;
-          char *old_grp = file_stats ? gid_to_name (file_stats->st_gid) : NULL;
+          char *old_usr = (file_stats
+                           ? uid_to_name (file_stats->st_uid) : nullptr);
+          char *old_grp = (file_stats
+                           ? gid_to_name (file_stats->st_gid) : nullptr);
           char *new_usr = chopt->user_name
                           ? chopt->user_name : uid != -1
-                                               ? uid_to_str (uid) : NULL;
+                                               ? uid_to_str (uid) : nullptr;
           char *new_grp = chopt->group_name
                           ? chopt->group_name : gid != -1
-                                               ? gid_to_str (gid) : NULL;
+                                               ? gid_to_str (gid) : nullptr;
           describe_change (file_full_name, ch_status,
                            old_usr, old_grp,
                            new_usr, new_grp);
@@ -548,14 +547,14 @@ chown_files (char **files, int bit_flags,
                     ? 0
                     : FTS_NOSTAT);
 
-  FTS *fts = xfts_open (files, bit_flags | stat_flags, NULL);
+  FTS *fts = xfts_open (files, bit_flags | stat_flags, nullptr);
 
   while (true)
     {
       FTSENT *ent;
 
       ent = fts_read (fts);
-      if (ent == NULL)
+      if (ent == nullptr)
         {
           if (errno != 0)
             {

@@ -1,5 +1,5 @@
 /* sum -- checksum and count the blocks in a file
-   Copyright (C) 1986-2022 Free Software Foundation, Inc.
+   Copyright (C) 1986-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <sys/types.h>
+#include <endian.h>
 #include "system.h"
 #include "human.h"
 #include "sum.h"
@@ -184,9 +185,17 @@ cleanup_buffer:
 
 void
 output_bsd (char const *file, int binary_file, void const *digest,
-            bool tagged, unsigned char delim, bool args,
+            bool raw, bool tagged, unsigned char delim, bool args,
             uintmax_t length)
 {
+  if (raw)
+    {
+      /* Output in network byte order (big endian).  */
+      uint16_t out_int = *(int *)digest;
+      out_int = htobe16 (out_int);
+      fwrite (&out_int, 1, 16/8, stdout);
+      return;
+    }
 
   char hbuf[LONGEST_HUMAN_READABLE + 1];
   printf ("%05d %5s", *(int *)digest,
@@ -201,9 +210,17 @@ output_bsd (char const *file, int binary_file, void const *digest,
 
 void
 output_sysv (char const *file, int binary_file, void const *digest,
-             bool tagged, unsigned char delim, bool args,
+             bool raw, bool tagged, unsigned char delim, bool args,
              uintmax_t length)
 {
+  if (raw)
+    {
+      /* Output in network byte order (big endian).  */
+      uint16_t out_int = *(int *)digest;
+      out_int = htobe16 (out_int);
+      fwrite (&out_int, 1, 16/8, stdout);
+      return;
+    }
 
   char hbuf[LONGEST_HUMAN_READABLE + 1];
   printf ("%d %s", *(int *)digest,

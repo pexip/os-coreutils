@@ -3,7 +3,7 @@
 # Show that du fails with ELOOP (Too many levels of symbolic links)
 # when it encounters that condition.
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,7 +63,8 @@ too_many=$(sed 's/.*: //' err)
 # With coreutils-5.94 we get the desired diagnostic:
 # du: cannot access '1/s/s/s/.../s': Too many levels of symbolic links
 du -L 1 > /dev/null 2> out1 && fail=1
-sed "s, .1/s/s/s/[/s]*',," out1 > out || framework_failure_
+sed "s, .1/s/s/s/[/s]*',," out1 > out2 || framework_failure_
+sed "s/cannot read directory/cannot access/" out2 > out || framework_failure_
 
 echo "du: cannot access: $too_many" > exp || framework_failure_
 

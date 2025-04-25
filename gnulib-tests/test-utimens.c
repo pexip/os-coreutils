@@ -1,5 +1,5 @@
 /* Tests of utimens.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 
 #include "utimens.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -76,5 +75,6 @@ main (void)
   result3 = test_lutimens (lutimens, (result1 + result2) == 0);
   /* We expect 0/0, 0/77, or 77/77, but not 77/0.  */
   ASSERT (result1 <= result3);
-  return result1 | result2 | result3;
+  int result = result1 | result2 | result3;
+  return (result ? result : test_exit_status);
 }

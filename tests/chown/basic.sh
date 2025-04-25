@@ -1,7 +1,7 @@
 #!/bin/sh
 # make sure chown --from=... works
 
-# Copyright (C) 2001-2022 Free Software Foundation, Inc.
+# Copyright (C) 2001-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ set _ $(ls -n f); shift; test "$3:$4" = 0:1 || fail=1
 # Make sure the correct diagnostic is output
 # Note we output a name even though an id was specified.
 chown -v --from=42 43 f > out || fail=1
-printf "ownership of 'f' retained as $(id -nu)\n" > exp
+printf "ownership of 'f' retained as $(id -nu 0)\n" > exp
 compare exp out || fail=1
 
 # Ensure diagnostics work for non existent files.

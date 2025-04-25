@@ -2,7 +2,7 @@
 # Ensure that mv prints the right diagnostic for a dir->dir move
 # where the destination directory is not empty.
 
-# Copyright (C) 2006-2022 Free Software Foundation, Inc.
+# Copyright (C) 2006-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ sed             's/: File exists/: Directory not empty/'<out>o1;mv o1 out
 sed 's/: Device or resource busy/: Directory not empty/'<out>o1;mv o1 out
 
 cat <<\EOF > exp || framework_failure_
-mv: cannot move 'b/t' to 'a/t': Directory not empty
+mv: cannot overwrite 'a/t': Directory not empty
 EOF
 
 compare exp out || fail=1

@@ -1,7 +1,7 @@
 /* readlink wrapper to return the link name in malloc'd storage.
    Unlike xreadlink and xreadlink_with_size, don't ever call exit.
 
-   Copyright (C) 2001, 2003-2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2003-2007, 2009-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -28,10 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#ifndef SSIZE_MAX
-# define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
-#endif
 
 /* SYMLINK_MAX is used only for an initial memory-allocation sanity
    check, so it's OK to guess too small on hosts where there is no

@@ -1,5 +1,5 @@
 /* unexpand - convert blanks to tabs
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,12 +35,11 @@
 
 #include <config.h>
 
+#include <ctype.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/types.h>
 #include "system.h"
-#include "die.h"
-
 #include "expand-common.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
@@ -59,12 +58,12 @@ enum
 
 static struct option const longopts[] =
 {
-  {"tabs", required_argument, NULL, 't'},
-  {"all", no_argument, NULL, 'a'},
-  {"first-only", no_argument, NULL, CONVERT_FIRST_ONLY_OPTION},
+  {"tabs", required_argument, nullptr, 't'},
+  {"all", no_argument, nullptr, 'a'},
+  {"first-only", no_argument, nullptr, CONVERT_FIRST_ONLY_OPTION},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -105,7 +104,7 @@ static void
 unexpand (void)
 {
   /* Input stream.  */
-  FILE *fp = next_file (NULL);
+  FILE *fp = next_file (nullptr);
 
   /* The array of pending blanks.  In non-POSIX locales, blanks can
      include characters other than spaces, so the blanks must be
@@ -118,7 +117,7 @@ unexpand (void)
   /* The worst case is a non-blank character, then one blank, then a
      tab stop, then MAX_COLUMN_WIDTH - 1 blanks, then a non-blank; so
      allocate MAX_COLUMN_WIDTH bytes to store the blanks.  */
-  pending_blank = xmalloc (max_column_width);
+  pending_blank = ximalloc (max_column_width);
 
   while (true)
     {
@@ -133,13 +132,13 @@ unexpand (void)
          is true:  */
 
       /* Column of next input character.  */
-      uintmax_t column = 0;
+      colno column = 0;
 
       /* Column the next input tab stop is on.  */
-      uintmax_t next_tab_column = 0;
+      colno next_tab_column = 0;
 
       /* Index in TAB_LIST of next tab stop to examine.  */
-      size_t tab_index = 0;
+      idx_t tab_index = 0;
 
       /* If true, the first pending blank came just before a tab stop.  */
       bool one_blank_before_tab_stop = false;
@@ -150,7 +149,7 @@ unexpand (void)
       bool prev_blank = true;
 
       /* Number of pending columns of blanks.  */
-      size_t pending = 0;
+      idx_t pending = 0;
 
 
       /* Convert a line of text.  */
@@ -176,9 +175,6 @@ unexpand (void)
 
                   if (convert)
                     {
-                      if (next_tab_column < column)
-                        die (EXIT_FAILURE, 0, _("input line is too long"));
-
                       if (c == '\t')
                         {
                           column = next_tab_column;
@@ -222,7 +218,7 @@ unexpand (void)
                 {
                   column++;
                   if (!column)
-                    die (EXIT_FAILURE, 0, _("input line is too long"));
+                    error (EXIT_FAILURE, 0, _("input line is too long"));
                 }
 
               if (pending)
@@ -230,7 +226,7 @@ unexpand (void)
                   if (pending > 1 && one_blank_before_tab_stop)
                     pending_blank[0] = '\t';
                   if (fwrite (pending_blank, 1, pending, stdout) != pending)
-                    die (EXIT_FAILURE, errno, _("write error"));
+                    write_error ();
                   pending = 0;
                   one_blank_before_tab_stop = false;
                 }
@@ -246,7 +242,7 @@ unexpand (void)
             }
 
           if (putchar (c) < 0)
-            die (EXIT_FAILURE, errno, _("write error"));
+            write_error ();
         }
       while (c != '\n');
     }
@@ -256,7 +252,7 @@ int
 main (int argc, char **argv)
 {
   bool have_tabval = false;
-  uintmax_t tabval IF_LINT ( = 0);
+  colno tabval IF_LINT ( = 0);
   int c;
 
   /* If true, cancel the effect of any -a (explicit or implicit in -t),
@@ -271,7 +267,7 @@ main (int argc, char **argv)
 
   atexit (close_stdout);
 
-  while ((c = getopt_long (argc, argv, ",0123456789at:", longopts, NULL))
+  while ((c = getopt_long (argc, argv, ",0123456789at:", longopts, nullptr))
          != -1)
     {
       switch (c)
@@ -301,8 +297,8 @@ main (int argc, char **argv)
               tabval = 0;
               have_tabval = true;
             }
-          if (!DECIMAL_DIGIT_ACCUMULATE (tabval, c - '0', uintmax_t))
-            die (EXIT_FAILURE, 0, _("tab stop value is too large"));
+          if (!DECIMAL_DIGIT_ACCUMULATE (tabval, c - '0'))
+            error (EXIT_FAILURE, 0, _("tab stop value is too large"));
           break;
         }
     }
@@ -315,7 +311,7 @@ main (int argc, char **argv)
 
   finalize_tab_stops ();
 
-  set_file_list ((optind < argc) ? &argv[optind] : NULL);
+  set_file_list ((optind < argc) ? &argv[optind] : nullptr);
 
   unexpand ();
 

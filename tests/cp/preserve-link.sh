@@ -1,7 +1,7 @@
 #!/bin/sh
 # Exercise the fix for https://bugs.gnu.org/8419
 
-# Copyright (C) 2011-2022 Free Software Foundation, Inc.
+# Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ create_target_tree()
 # The path taken by cp is dependent on which cp encounters
 # first in the source, which is non deterministic currently
 # (I'm guessing that results are sorted by inode and
-# beauses they're the same here, and due to the sort
+# because they're the same here, and due to the sort
 # being unstable, either can be processed first).
 create_source_tree
 

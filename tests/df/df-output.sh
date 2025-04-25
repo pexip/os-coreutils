@@ -1,7 +1,7 @@
 #!/bin/sh
 # Exercise df's --output option.
 
-# Copyright (C) 2012-2022 Free Software Foundation, Inc.
+# Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ EOF
 df --output=target,source,target '.' 2>out && fail=1
 compare exp out || fail=1
 
-# Ensure that this limitation also works for splitted --output options.
+# Ensure that this limitation also works for split --output options.
 df --out=target,source --out=target '.' 2>out && fail=1
 compare exp out || fail=1
 

@@ -1,6 +1,6 @@
 /* utimecmp.h -- compare file timestamps
 
-   Copyright (C) 2004, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* Options for utimecmp.  */
 enum
 {
@@ -35,5 +40,10 @@ enum
 int utimecmp (char const *, struct stat const *, struct stat const *, int);
 int utimecmpat (int, char const *, struct stat const *, struct stat const *,
                 int);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

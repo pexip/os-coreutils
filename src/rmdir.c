@@ -1,6 +1,6 @@
 /* rmdir -- remove directories
 
-   Copyright (C) 1990-2022 Free Software Foundation, Inc.
+   Copyright (C) 1990-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@
 #include <sys/types.h>
 
 #include "system.h"
-#include "error.h"
 #include "prog-fprintf.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
@@ -57,15 +56,15 @@ static struct option const longopts[] =
 {
   /* Don't name this '--force' because it's not close enough in meaning
      to e.g. rm's -f option.  */
-  {"ignore-fail-on-non-empty", no_argument, NULL,
+  {"ignore-fail-on-non-empty", no_argument, nullptr,
    IGNORE_FAIL_ON_NON_EMPTY_OPTION},
 
-  {"path", no_argument, NULL, 'p'},  /* Deprecated.  */
-  {"parents", no_argument, NULL, 'p'},
-  {"verbose", no_argument, NULL, 'v'},
+  {"path", no_argument, nullptr, 'p'},  /* Deprecated.  */
+  {"parents", no_argument, nullptr, 'p'},
+  {"verbose", no_argument, nullptr, 'v'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Return true if ERROR_NUMBER is one of the values associated
@@ -101,8 +100,7 @@ ignorable_failure (int error_number, char const *dir)
   return (ignore_fail_on_non_empty
           && (errno_rmdir_non_empty (error_number)
               || (errno_may_be_non_empty (error_number)
-                  && ! is_empty_dir (AT_FDCWD, dir)
-                  && errno == 0 /* definitely non empty  */)));
+                  && directory_status (AT_FDCWD, dir) == DS_NONEMPTY)));
 }
 
 /* Remove any empty parent directories of DIR.
@@ -120,7 +118,7 @@ remove_parents (char *dir)
   while (true)
     {
       slash = strrchr (dir, '/');
-      if (slash == NULL)
+      if (slash == nullptr)
         break;
       /* Remove any characters after the slash, skipping any extra
          slashes in a row. */
@@ -178,14 +176,11 @@ Remove the DIRECTORY(ies), if they are empty.\n\
 "), stdout);
       fputs (_("\
       --ignore-fail-on-non-empty\n\
-                    ignore each failure that is solely because a directory\n\
-                    is non-empty\n\
-\n\
+                    ignore each failure to remove a non-empty directory\n\
 "), stdout);
       fputs (_("\
-  -p, --parents     remove DIRECTORY and its ancestors; e.g., 'rmdir -p a/b/c'\
-\n\
-                    is similar to 'rmdir a/b/c a/b a'\n\
+  -p, --parents     remove DIRECTORY and its ancestors;\n\
+                    e.g., 'rmdir -p a/b' is similar to 'rmdir a/b a'\n\
 \n\
 "), stdout);
       fputs (_("\
@@ -214,7 +209,7 @@ main (int argc, char **argv)
 
   remove_empty_parents = false;
 
-  while ((optc = getopt_long (argc, argv, "pv", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "pv", longopts, nullptr)) != -1)
     {
       switch (optc)
         {

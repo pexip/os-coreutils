@@ -1,5 +1,5 @@
 #!/bin/sh
-: ${srcdir=.}
+: "${srcdir=.}"
 . "$srcdir/init.sh"; path_prepend_ .
 
 too_big=99999999999999999999999999999999999999999999999999999999999999999999
@@ -67,5 +67,8 @@ invalid suffix in X argument '1bB'
 EOF
 
 compare expected out || result=1
+
+# Other misc tests.
+${CHECKER} test-xstrtol || result=1
 
 Exit $result

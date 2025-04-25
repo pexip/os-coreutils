@@ -1,5 +1,5 @@
 /* cut - remove parts of lines of files
-   Copyright (C) 1997-2022 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
    Copyright (C) 1984 David M. Ihnat
 
    This program is free software: you can redistribute it and/or modify
@@ -25,15 +25,13 @@
 #include <config.h>
 
 #include <stdio.h>
-#include <assert.h>
 #include <getopt.h>
 #include <sys/types.h>
 #include "system.h"
 
-#include "error.h"
+#include "assure.h"
 #include "fadvise.h"
 #include "getndelim2.h"
-#include "hash.h"
 
 #include "set-fields.h"
 
@@ -57,7 +55,7 @@
 /* Pointer inside RP.  When checking if a byte or field is selected
    by a finite range, we check if it is between CURRENT_RP.LO
    and CURRENT_RP.HI.  If the byte or field index is greater than
-   CURRENT_RP.HI then we make CURRENT_RP to point to the next range pair. */
+   CURRENT_RP.HI then we make CURRENT_RP to point to the next range pair.  */
 static struct field_range_pair *current_rp;
 
 /* This buffer is used to support the semantics of the -s option
@@ -72,7 +70,7 @@ static char *field_1_buffer;
 /* The number of bytes allocated for FIELD_1_BUFFER.  */
 static size_t field_1_bufsize;
 
-/* If true do not output lines containing no delimiter characters.
+/* If true, do not output lines containing no delimiter characters.
    Otherwise, all such lines are printed.  This option is valid only
    with field mode.  */
 static bool suppress_non_delimited;
@@ -81,10 +79,10 @@ static bool suppress_non_delimited;
    those that were specified.  */
 static bool complement;
 
-/* The delimiter character for field mode. */
+/* The delimiter character for field mode.  */
 static unsigned char delim;
 
-/* The delimiter for each line/record. */
+/* The delimiter for each line/record.  */
 static unsigned char line_delim = '\n';
 
 /* The length of output_delimiter_string.  */
@@ -97,7 +95,7 @@ static char *output_delimiter_string;
 /* The output delimiter string contents, if the default.  */
 static char output_delimiter_default[1];
 
-/* True if we have ever read standard input. */
+/* True if we have ever read standard input.  */
 static bool have_read_stdin;
 
 /* For long options that have no equivalent short option, use a
@@ -110,17 +108,17 @@ enum
 
 static struct option const longopts[] =
 {
-  {"bytes", required_argument, NULL, 'b'},
-  {"characters", required_argument, NULL, 'c'},
-  {"fields", required_argument, NULL, 'f'},
-  {"delimiter", required_argument, NULL, 'd'},
-  {"only-delimited", no_argument, NULL, 's'},
-  {"output-delimiter", required_argument, NULL, OUTPUT_DELIMITER_OPTION},
-  {"complement", no_argument, NULL, COMPLEMENT_OPTION},
-  {"zero-terminated", no_argument, NULL, 'z'},
+  {"bytes", required_argument, nullptr, 'b'},
+  {"characters", required_argument, nullptr, 'c'},
+  {"fields", required_argument, nullptr, 'f'},
+  {"delimiter", required_argument, nullptr, 'd'},
+  {"only-delimited", no_argument, nullptr, 's'},
+  {"output-delimiter", required_argument, nullptr, OUTPUT_DELIMITER_OPTION},
+  {"complement", no_argument, nullptr, COMPLEMENT_OPTION},
+  {"zero-terminated", no_argument, nullptr, 'z'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -162,7 +160,7 @@ Print selected parts of lines from each FILE to standard output.\n\
                             the default is to use the input delimiter\n\
 "), stdout);
       fputs (_("\
-  -z, --zero-terminated    line delimiter is NUL, not newline\n\
+  -z, --zero-terminated   line delimiter is NUL, not newline\n\
 "), stdout);
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
@@ -197,7 +195,7 @@ next_item (uintmax_t *item_idx)
     current_rp++;
 }
 
-/* Return nonzero if the K'th field or byte is printable. */
+/* Return nonzero if the K'th field or byte is printable.  */
 
 static inline bool
 print_kth (uintmax_t k)
@@ -205,7 +203,7 @@ print_kth (uintmax_t k)
   return current_rp->lo <= k;
 }
 
-/* Return nonzero if K'th byte is the beginning of a range. */
+/* Return nonzero if K'th byte is the beginning of a range.  */
 
 static inline bool
 is_range_start_index (uintmax_t k)
@@ -218,7 +216,7 @@ is_range_start_index (uintmax_t k)
 static void
 cut_bytes (FILE *stream)
 {
-  uintmax_t byte_idx;	/* Number of bytes in the line so far. */
+  uintmax_t byte_idx;	/* Number of bytes in the line so far.  */
   /* Whether to begin printing delimiters between ranges for the current line.
      Set after we've begun printing data corresponding to the first range.  */
   bool print_delimiter;
@@ -228,13 +226,14 @@ cut_bytes (FILE *stream)
   current_rp = frp;
   while (true)
     {
-      int c;		/* Each character from the file. */
+      int c;		/* Each character from the file.  */
 
       c = getc (stream);
 
       if (c == line_delim)
         {
-          putchar (c);
+          if (putchar (c) < 0)
+            write_error ();
           byte_idx = 0;
           print_delimiter = false;
           current_rp = frp;
@@ -242,7 +241,10 @@ cut_bytes (FILE *stream)
       else if (c == EOF)
         {
           if (byte_idx > 0)
-            putchar (line_delim);
+          {
+            if (putchar (line_delim) < 0)
+              write_error ();
+          }
           break;
         }
       else
@@ -254,13 +256,16 @@ cut_bytes (FILE *stream)
                 {
                   if (print_delimiter && is_range_start_index (byte_idx))
                     {
-                      fwrite (output_delimiter_string, sizeof (char),
-                              output_delimiter_length, stdout);
+                      if (fwrite (output_delimiter_string, sizeof (char),
+                                  output_delimiter_length, stdout)
+                          != output_delimiter_length)
+                        write_error ();
                     }
                   print_delimiter = true;
                 }
 
-              putchar (c);
+              if (putchar (c) < 0)
+                write_error ();
             }
         }
     }
@@ -271,7 +276,7 @@ cut_bytes (FILE *stream)
 static void
 cut_fields (FILE *stream)
 {
-  int c;
+  int c;	/* Each character from the file.  */
   uintmax_t field_idx = 1;
   bool found_any_selected_field = false;
   bool buffer_first_field;
@@ -305,14 +310,14 @@ cut_fields (FILE *stream)
           if (len < 0)
             {
               free (field_1_buffer);
-              field_1_buffer = NULL;
+              field_1_buffer = nullptr;
               if (ferror (stream) || feof (stream))
                 break;
               xalloc_die ();
             }
 
           n_bytes = len;
-          assert (n_bytes != 0);
+          affirm (n_bytes != 0);
 
           c = 0;
 
@@ -327,18 +332,26 @@ cut_fields (FILE *stream)
                 }
               else
                 {
-                  fwrite (field_1_buffer, sizeof (char), n_bytes, stdout);
+                  if (fwrite (field_1_buffer, sizeof (char), n_bytes, stdout)
+                      != n_bytes)
+                    write_error ();
                   /* Make sure the output line is newline terminated.  */
                   if (field_1_buffer[n_bytes - 1] != line_delim)
-                    putchar (line_delim);
+                    {
+                      if (putchar (line_delim) < 0)
+                        write_error ();
+                    }
                   c = line_delim;
                 }
               continue;
             }
+
           if (print_kth (1))
             {
               /* Print the field, but not the trailing delimiter.  */
-              fwrite (field_1_buffer, sizeof (char), n_bytes - 1, stdout);
+              if (fwrite (field_1_buffer, sizeof (char), n_bytes - 1, stdout)
+                  != n_bytes - 1)
+                write_error ();
 
               /* With -d$'\n' don't treat the last '\n' as a delimiter.  */
               if (delim == line_delim)
@@ -351,7 +364,9 @@ cut_fields (FILE *stream)
                     }
                 }
               else
-                found_any_selected_field = true;
+                {
+                  found_any_selected_field = true;
+                }
             }
           next_item (&field_idx);
         }
@@ -362,23 +377,24 @@ cut_fields (FILE *stream)
         {
           if (found_any_selected_field)
             {
-              fwrite (output_delimiter_string, sizeof (char),
-                      output_delimiter_length, stdout);
+              if (fwrite (output_delimiter_string, sizeof (char),
+                          output_delimiter_length, stdout)
+                  != output_delimiter_length)
+                write_error ();
             }
           found_any_selected_field = true;
 
           while ((c = getc (stream)) != delim && c != line_delim && c != EOF)
             {
-              putchar (c);
+              if (putchar (c) < 0)
+                write_error ();
               prev_c = c;
             }
         }
       else
         {
           while ((c = getc (stream)) != delim && c != line_delim && c != EOF)
-            {
-              prev_c = c;
-            }
+            prev_c = c;
         }
 
       /* With -d$'\n' don't treat the last '\n' as a delimiter.  */
@@ -398,12 +414,18 @@ cut_fields (FILE *stream)
           if (found_any_selected_field
               || !(suppress_non_delimited && field_idx == 1))
             {
+              /* Make sure the output line is newline terminated.  */
               if (c == line_delim || prev_c != line_delim
                   || delim == line_delim)
-                putchar (line_delim);
+                {
+                  if (putchar (line_delim) < 0)
+                    write_error ();
+                }
             }
           if (c == EOF)
             break;
+
+          /* Start processing the next input line.  */
           field_idx = 1;
           current_rp = frp;
           found_any_selected_field = false;
@@ -423,11 +445,12 @@ cut_file (char const *file, void (*cut_stream) (FILE *))
     {
       have_read_stdin = true;
       stream = stdin;
+      assume (stream);  /* Pacify GCC bug#109613.  */
     }
   else
     {
       stream = fopen (file, "r");
-      if (stream == NULL)
+      if (stream == nullptr)
         {
           error (0, errno, "%s", quotef (file));
           return false;
@@ -442,7 +465,7 @@ cut_file (char const *file, void (*cut_stream) (FILE *))
   if (!ferror (stream))
     err = 0;
   if (STREQ (file, "-"))
-    clearerr (stream);		/* Also clear EOF. */
+    clearerr (stream);		/* Also clear EOF.  */
   else if (fclose (stream) == EOF)
     err = errno;
   if (err)
@@ -460,7 +483,7 @@ main (int argc, char **argv)
   bool ok;
   bool delim_specified = false;
   bool byte_mode = false;
-  char *spec_list_string = NULL;
+  char *spec_list_string = nullptr;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -476,24 +499,25 @@ main (int argc, char **argv)
   delim = '\0';
   have_read_stdin = false;
 
-  while ((optc = getopt_long (argc, argv, "b:c:d:f:nsz", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "b:c:d:f:nsz", longopts, nullptr))
+         != -1)
     {
       switch (optc)
         {
         case 'b':
         case 'c':
-          /* Build the byte list. */
+          /* Build the byte list.  */
           byte_mode = true;
           FALLTHROUGH;
         case 'f':
-          /* Build the field list. */
+          /* Build the field list.  */
           if (spec_list_string)
             FATAL_ERROR (_("only one list may be specified"));
           spec_list_string = optarg;
           break;
 
         case 'd':
-          /* New delimiter. */
+          /* New delimiter.  */
           /* Interpret -d '' to mean 'use the NUL byte as the delimiter.'  */
           if (optarg[0] != '\0' && optarg[1] != '\0')
             FATAL_ERROR (_("the delimiter must be a single character"));
@@ -525,9 +549,7 @@ main (int argc, char **argv)
           break;
 
         case_GETOPT_HELP_CHAR;
-
         case_GETOPT_VERSION_CHAR (PROGRAM_NAME, AUTHORS);
-
         default:
           usage (EXIT_FAILURE);
         }
@@ -554,7 +576,7 @@ main (int argc, char **argv)
   if (!delim_specified)
     delim = '\t';
 
-  if (output_delimiter_string == NULL)
+  if (output_delimiter_string == nullptr)
     {
       output_delimiter_default[0] = delim;
       output_delimiter_string = output_delimiter_default;
