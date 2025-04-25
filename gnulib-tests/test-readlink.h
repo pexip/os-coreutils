@@ -1,5 +1,5 @@
 /* Tests of readlink.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,8 @@ test_readlink (ssize_t (*func) (char const *, char *, size_t), bool print)
   ASSERT (errno == ENOENT);
   errno = 0;
   ASSERT (func ("", buf, sizeof buf) == -1);
-  ASSERT (errno == ENOENT || errno == EINVAL);
+  ASSERT (errno == ENOENT || errno == EINVAL
+          || errno == EBADF /* Cygwin < 3.5 */);
   errno = 0;
   ASSERT (func (".", buf, sizeof buf) == -1);
   ASSERT (errno == EINVAL);
@@ -111,6 +112,12 @@ test_readlink (ssize_t (*func) (char const *, char *, size_t), bool print)
     /* POSIX says rest of buf is unspecified; but in practice, it is
        either left alone, or NUL-terminated.  */
     ASSERT (buf[len] == '\0' || buf[len] == (char) 0xff);
+  }
+  {
+    /* On Cygwin 3.3.6, readlink("/dev/null") returns "\\Device\\Null", which
+       is unusable.  Verify that gnulib works around this nonsense.  */
+    ssize_t result = func ("/dev/null", buf, sizeof buf);
+    ASSERT (result == -1 || buf[0] != '\\');
   }
   ASSERT (rmdir (BASE "dir") == 0);
   ASSERT (unlink (BASE "link") == 0);

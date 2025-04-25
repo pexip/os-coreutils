@@ -1,5 +1,5 @@
 /* echo.c, derived from code echo.c in Bash.
-   Copyright (C) 1987-2022 Free Software Foundation, Inc.
+   Copyright (C) 1987-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,9 +16,10 @@
 
 #include <config.h>
 #include <stdio.h>
-#include <assert.h>
 #include <sys/types.h>
 #include "system.h"
+#include "assure.h"
+#include "c-ctype.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "echo"
@@ -37,7 +38,7 @@ usage (int status)
 {
   /* STATUS should always be EXIT_SUCCESS (unlike in most other
      utilities which would call emit_try_help otherwise).  */
-  assert (status == EXIT_SUCCESS);
+  affirm (status == EXIT_SUCCESS);
 
   printf (_("\
 Usage: %s [SHORT-OPTION]... [STRING]...\n\
@@ -81,8 +82,8 @@ If -e is in effect, the following sequences are recognized:\n\
 "), stdout);
   printf (USAGE_BUILTIN_WARNING, PROGRAM_NAME);
   fputs (_("\n\
-NOTE: printf(1) is a preferred alternative,\n\
-which does not have issues outputting option-like strings.\n\
+Consider using the printf(1) command instead,\n\
+as it avoids problems when outputting option-like strings.\n\
 "), stdout);
   emit_ancillary_info (PROGRAM_NAME);
   exit (status);
@@ -140,7 +141,7 @@ main (int argc, char **argv)
       if (STREQ (argv[1], "--version"))
         {
           version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version, AUTHORS,
-                       (char *) NULL);
+                       (char *) nullptr);
           return EXIT_SUCCESS;
         }
     }
@@ -219,12 +220,12 @@ just_echo:
                     case 'x':
                       {
                         unsigned char ch = *s;
-                        if (! isxdigit (ch))
+                        if (! c_isxdigit (ch))
                           goto not_an_escape;
                         s++;
                         c = hextobin (ch);
                         ch = *s;
-                        if (isxdigit (ch))
+                        if (c_isxdigit (ch))
                           {
                             s++;
                             c = c * 16 + hextobin (ch);

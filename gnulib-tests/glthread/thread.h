@@ -1,5 +1,5 @@
 /* Creating and controlling threads.
-   Copyright (C) 2005-2022 Free Software Foundation, Inc.
+   Copyright (C) 2005-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -70,6 +70,11 @@
 #ifndef _GLTHREAD_THREAD_H
 #define _GLTHREAD_THREAD_H
 
+/* This file uses _Noreturn, HAVE_THREADS_H, HAVE_PTHREAD_ATFORK.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 
@@ -124,6 +129,9 @@ extern _Noreturn void gl_thread_exit (void *return_value);
 /* Use the POSIX threads library.  */
 
 # include <pthread.h>
+
+/* Get intptr_t.  */
+# include <stdint.h>
 
 /* On IRIX, pthread_atfork is declared in <unistd.h>, not in <pthread.h>.  */
 # if defined __sgi
@@ -228,7 +236,7 @@ extern const gl_thread_t gl_null_thread;
 #  define gl_thread_self() \
      (pthread_in_use () ? pthread_self () : (pthread_t) 0)
 #  define gl_thread_self_pointer() \
-     (pthread_in_use () ? (void *) pthread_self () : NULL)
+     (pthread_in_use () ? (void *) (intptr_t) (pthread_t) pthread_self () : NULL)
 # endif
 # define gl_thread_exit(RETVAL) \
     (void) (pthread_in_use () ? (pthread_exit (RETVAL), 0) : 0)

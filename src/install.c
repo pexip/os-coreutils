@@ -1,5 +1,5 @@
 /* install - copy files and set attributes
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,10 +28,8 @@
 
 #include "system.h"
 #include "backupfile.h"
-#include "error.h"
 #include "cp-hash.h"
 #include "copy.h"
-#include "die.h"
 #include "filenamecat.h"
 #include "full-read.h"
 #include "mkancesdirs.h"
@@ -62,14 +60,14 @@ static bool use_default_selinux_context = true;
 # define endpwent() ((void) 0)
 #endif
 
-/* The user name that will own the files, or NULL to make the owner
+/* The user name that will own the files, or nullptr to make the owner
    the current user ID. */
 static char *owner_name;
 
 /* The user ID corresponding to 'owner_name'. */
 static uid_t owner_id;
 
-/* The group name that will own the files, or NULL to make the group
+/* The group name that will own the files, or nullptr to make the group
    the current group ID. */
 static char *group_name;
 
@@ -107,30 +105,32 @@ static char const *strip_program = "strip";
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
 enum
 {
-  PRESERVE_CONTEXT_OPTION = CHAR_MAX + 1,
+  DEBUG_OPTION = CHAR_MAX + 1,
+  PRESERVE_CONTEXT_OPTION,
   STRIP_PROGRAM_OPTION
 };
 
 static struct option const long_options[] =
 {
-  {"backup", optional_argument, NULL, 'b'},
-  {"compare", no_argument, NULL, 'C'},
+  {"backup", optional_argument, nullptr, 'b'},
+  {"compare", no_argument, nullptr, 'C'},
   {GETOPT_SELINUX_CONTEXT_OPTION_DECL},
-  {"directory", no_argument, NULL, 'd'},
-  {"group", required_argument, NULL, 'g'},
-  {"mode", required_argument, NULL, 'm'},
-  {"no-target-directory", no_argument, NULL, 'T'},
-  {"owner", required_argument, NULL, 'o'},
-  {"preserve-timestamps", no_argument, NULL, 'p'},
-  {"preserve-context", no_argument, NULL, PRESERVE_CONTEXT_OPTION},
-  {"strip", no_argument, NULL, 's'},
-  {"strip-program", required_argument, NULL, STRIP_PROGRAM_OPTION},
-  {"suffix", required_argument, NULL, 'S'},
-  {"target-directory", required_argument, NULL, 't'},
-  {"verbose", no_argument, NULL, 'v'},
+  {"debug", no_argument, nullptr, DEBUG_OPTION},
+  {"directory", no_argument, nullptr, 'd'},
+  {"group", required_argument, nullptr, 'g'},
+  {"mode", required_argument, nullptr, 'm'},
+  {"no-target-directory", no_argument, nullptr, 'T'},
+  {"owner", required_argument, nullptr, 'o'},
+  {"preserve-timestamps", no_argument, nullptr, 'p'},
+  {"preserve-context", no_argument, nullptr, PRESERVE_CONTEXT_OPTION},
+  {"strip", no_argument, nullptr, 's'},
+  {"strip-program", required_argument, nullptr, STRIP_PROGRAM_OPTION},
+  {"suffix", required_argument, nullptr, 'S'},
+  {"target-directory", required_argument, nullptr, 't'},
+  {"verbose", no_argument, nullptr, 'v'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Compare content of opened files using file descriptors A_FD and B_FD. Return
@@ -142,7 +142,7 @@ have_same_content (int a_fd, int b_fd)
   static char a_buff[CMP_BLOCK_SIZE];
   static char b_buff[CMP_BLOCK_SIZE];
 
-  size_t size;
+  idx_t size;
   while (0 < (size = full_read (a_fd, a_buff, sizeof a_buff))) {
     if (size != full_read (b_fd, b_buff, sizeof b_buff))
       return false;
@@ -177,7 +177,7 @@ need_copy (char const *src_name, char const *dest_name,
     return true;
 
   /* compare files using stat */
-  if (lstat (src_name, &src_sb) != 0)
+  if (stat (src_name, &src_sb) != 0)
     return true;
 
   if (fstatat (dest_dirfd, dest_relname, &dest_sb, AT_SYMLINK_NOFOLLOW) != 0)
@@ -214,23 +214,23 @@ need_copy (char const *src_name, char const *dest_name,
   /* compare SELinux context if preserving */
   if (selinux_enabled && x->preserve_security_context)
     {
-      char *file_scontext = NULL;
-      char *to_scontext = NULL;
+      char *file_scontext_raw = nullptr;
+      char *to_scontext_raw = nullptr;
       bool scontext_match;
 
-      if (getfilecon (src_name, &file_scontext) == -1)
+      if (getfilecon_raw (src_name, &file_scontext_raw) == -1)
         return true;
 
-      if (getfilecon (dest_name, &to_scontext) == -1)
+      if (getfilecon_raw (dest_name, &to_scontext_raw) == -1)
         {
-          freecon (file_scontext);
+          freecon (file_scontext_raw);
           return true;
         }
 
-      scontext_match = STREQ (file_scontext, to_scontext);
+      scontext_match = STREQ (file_scontext_raw, to_scontext_raw);
 
-      freecon (file_scontext);
-      freecon (to_scontext);
+      freecon (file_scontext_raw);
+      freecon (to_scontext_raw);
       if (!scontext_match)
         return true;
     }
@@ -290,14 +290,14 @@ cp_option_init (struct cp_options *x)
   x->stdin_tty = false;
 
   x->open_dangling_dest_symlink = false;
-  x->update = false;
+  x->update = UPDATE_ALL;
   x->require_preserve_context = false;  /* Not used by install currently.  */
   x->preserve_security_context = false; /* Whether to copy context from src.  */
-  x->set_security_context = NULL;     /* Whether to set sys default context.  */
+  x->set_security_context = nullptr; /* Whether to set sys default context.  */
   x->preserve_xattr = false;
   x->verbose = false;
-  x->dest_info = NULL;
-  x->src_info = NULL;
+  x->dest_info = nullptr;
+  x->src_info = nullptr;
 }
 
 static struct selabel_handle *
@@ -308,7 +308,7 @@ get_labeling_handle (void)
   if (!initialized)
     {
       initialized = true;
-      hnd = selabel_open (SELABEL_CTX_FILE, NULL, 0);
+      hnd = selabel_open (SELABEL_CTX_FILE, nullptr, 0);
       if (!hnd)
         error (0, errno, _("warning: security labeling handle failed"));
     }
@@ -323,7 +323,7 @@ static void
 setdefaultfilecon (char const *file)
 {
   struct stat st;
-  char *scontext = NULL;
+  char *scontext_raw = nullptr;
 
   if (selinux_enabled != 1)
     {
@@ -336,7 +336,7 @@ setdefaultfilecon (char const *file)
   struct selabel_handle *hnd = get_labeling_handle ();
   if (!hnd)
     return;
-  if (selabel_lookup (hnd, &scontext, file, st.st_mode) != 0)
+  if (selabel_lookup_raw (hnd, &scontext_raw, file, st.st_mode) != 0)
     {
       if (errno != ENOENT && ! ignorable_ctx_err (errno))
         error (0, errno, _("warning: %s: context lookup failed"),
@@ -344,12 +344,12 @@ setdefaultfilecon (char const *file)
       return;
     }
 
-  if (lsetfilecon (file, scontext) < 0 && errno != ENOTSUP)
+  if (lsetfilecon_raw (file, scontext_raw) < 0 && errno != ENOTSUP)
     error (0, errno,
            _("warning: %s: failed to change context to %s"),
-           quotef_n (0, file), quote_n (1, scontext));
+           quotef_n (0, file), quote_n (1, scontext_raw));
 
-  freecon (scontext);
+  freecon (scontext_raw);
 }
 
 /* Report that directory DIR was made, if OPTIONS requests this.  */
@@ -426,7 +426,7 @@ copy_file (char const *from, char const *to,
      However, since !x->recursive, the call to "copy" will fail if FROM
      is a directory.  */
 
-  return copy (from, to, to_dirfd, to_relname, 0, x, &copy_into_self, NULL);
+  return copy (from, to, to_dirfd, to_relname, 0, x, &copy_into_self, nullptr);
 }
 
 /* Set the attributes of file or directory NAME aka DIRFD+RELNAME.
@@ -500,8 +500,14 @@ strip (char const *name)
       error (0, errno, _("fork system call failed"));
       break;
     case 0:			/* Child. */
-      execlp (strip_program, strip_program, name, NULL);
-      die (EXIT_FAILURE, errno, _("cannot run %s"), quoteaf (strip_program));
+      {
+        char const *safe_name = name;
+        if (name && *name == '-')
+          safe_name = file_name_concat (".", name, nullptr);
+        execlp (strip_program, strip_program, safe_name, nullptr);
+        error (EXIT_FAILURE, errno, _("cannot run %s"),
+               quoteaf (strip_program));
+      }
     default:			/* Parent. */
       if (waitpid (pid, &status, 0) < 0)
         error (0, errno, _("waiting for strip"));
@@ -525,13 +531,13 @@ get_ids (void)
   if (owner_name)
     {
       pw = getpwnam (owner_name);
-      if (pw == NULL)
+      if (pw == nullptr)
         {
           uintmax_t tmp;
-          if (xstrtoumax (owner_name, NULL, 0, &tmp, "") != LONGINT_OK
+          if (xstrtoumax (owner_name, nullptr, 0, &tmp, "") != LONGINT_OK
               || UID_T_MAX < tmp)
-            die (EXIT_FAILURE, 0, _("invalid user %s"),
-                 quote (owner_name));
+            error (EXIT_FAILURE, 0, _("invalid user %s"),
+                   quoteaf (owner_name));
           owner_id = tmp;
         }
       else
@@ -544,13 +550,13 @@ get_ids (void)
   if (group_name)
     {
       gr = getgrnam (group_name);
-      if (gr == NULL)
+      if (gr == nullptr)
         {
           uintmax_t tmp;
-          if (xstrtoumax (group_name, NULL, 0, &tmp, "") != LONGINT_OK
+          if (xstrtoumax (group_name, nullptr, 0, &tmp, "") != LONGINT_OK
               || GID_T_MAX < tmp)
-            die (EXIT_FAILURE, 0, _("invalid group %s"),
-                 quote (group_name));
+            error (EXIT_FAILURE, 0, _("invalid group %s"),
+                   quoteaf (group_name));
           group_id = tmp;
         }
       else
@@ -603,6 +609,11 @@ In the 4th form, create all components of the given DIRECTORY(ies).\n\
   -D                  create all leading components of DEST except the last,\n\
                         or all components of --target-directory,\n\
                         then copy SOURCE to DEST\n\
+"), stdout);
+      fputs (_("\
+      --debug         explain how a file is copied.  Implies -v\n\
+"), stdout);
+      fputs (_("\
   -g, --group=GROUP   set group ownership, instead of process' current group\n\
   -m, --mode=MODE     set permission mode (as in chmod), instead of rwxr-xr-x\n\
   -o, --owner=OWNER   set ownership (super-user only)\n\
@@ -615,7 +626,9 @@ In the 4th form, create all components of the given DIRECTORY(ies).\n\
   -S, --suffix=SUFFIX  override the usual backup suffix\n\
   -t, --target-directory=DIRECTORY  copy all SOURCE arguments into DIRECTORY\n\
   -T, --no-target-directory  treat DEST as a normal file\n\
-  -v, --verbose       print the name of each directory as it is created\n\
+"), stdout);
+      fputs (_("\
+  -v, --verbose       print the name of each created file or directory\n\
 "), stdout);
       fputs (_("\
       --preserve-context  preserve SELinux security context\n\
@@ -654,7 +667,7 @@ install_file_in_file (char const *from, char const *to,
     if (! strip (to))
       {
         if (unlinkat (to_dirfd, to_relname, 0) != 0)  /* Cleanup.  */
-          die (EXIT_FAILURE, errno, _("cannot unlink %s"), quoteaf (to));
+          error (EXIT_FAILURE, errno, _("cannot unlink %s"), quoteaf (to));
         return false;
       }
   if (x->preserve_timestamps && (strip_files || ! S_ISREG (from_sb.st_mode))
@@ -763,18 +776,18 @@ main (int argc, char **argv)
 {
   int optc;
   int exit_status = EXIT_SUCCESS;
-  char const *specified_mode = NULL;
+  char const *specified_mode = nullptr;
   bool make_backups = false;
-  char const *backup_suffix = NULL;
-  char *version_control_string = NULL;
+  char const *backup_suffix = nullptr;
+  char *version_control_string = nullptr;
   bool mkdir_and_install = false;
   struct cp_options x;
-  char const *target_directory = NULL;
+  char const *target_directory = nullptr;
   bool no_target_directory = false;
   int n_files;
   char **file;
   bool strip_program_specified = false;
-  char const *scontext = NULL;
+  char const *scontext = nullptr;
   /* set iff kernel has extra selinux system calls */
   selinux_enabled = (0 < is_selinux_enabled ());
 
@@ -788,14 +801,15 @@ main (int argc, char **argv)
 
   cp_option_init (&x);
 
-  owner_name = NULL;
-  group_name = NULL;
+  owner_name = nullptr;
+  group_name = nullptr;
   strip_files = false;
   dir_arg = false;
   umask (0);
 
   while ((optc = getopt_long (argc, argv, "bcCsDdg:m:o:pt:TvS:Z", long_options,
-                              NULL)) != -1)
+                              nullptr))
+         != -1)
     {
       switch (optc)
         {
@@ -815,6 +829,9 @@ main (int argc, char **argv)
           /* System V fork+wait does not work if SIGCHLD is ignored.  */
           signal (SIGCHLD, SIG_DFL);
 #endif
+          break;
+        case DEBUG_OPTION:
+          x.debug = x.verbose = true;
           break;
         case STRIP_PROGRAM_OPTION:
           strip_program = xstrdup (optarg);
@@ -847,8 +864,8 @@ main (int argc, char **argv)
           break;
         case 't':
           if (target_directory)
-            die (EXIT_FAILURE, 0,
-                 _("multiple target directories specified"));
+            error (EXIT_FAILURE, 0,
+                   _("multiple target directories specified"));
           target_directory = optarg;
           break;
         case 'T':
@@ -897,11 +914,11 @@ main (int argc, char **argv)
 
   /* Check for invalid combinations of arguments. */
   if (dir_arg && strip_files)
-    die (EXIT_FAILURE, 0,
-         _("the strip option may not be used when installing a directory"));
+    error (EXIT_FAILURE, 0,
+           _("the strip option may not be used when installing a directory"));
   if (dir_arg && target_directory)
-    die (EXIT_FAILURE, 0,
-         _("target directory not allowed when installing a directory"));
+    error (EXIT_FAILURE, 0,
+           _("target directory not allowed when installing a directory"));
 
   x.backup_type = (make_backups
                    ? xget_version (_("backup type"),
@@ -910,12 +927,12 @@ main (int argc, char **argv)
   set_simple_backup_suffix (backup_suffix);
 
   if (x.preserve_security_context && (x.set_security_context || scontext))
-    die (EXIT_FAILURE, 0,
-         _("cannot set target context and preserve it"));
+    error (EXIT_FAILURE, 0,
+           _("cannot set target context and preserve it"));
 
   if (scontext && setfscreatecon (scontext) < 0)
-    die (EXIT_FAILURE, errno,
-         _("failed to set default file creation context to %s"),
+    error (EXIT_FAILURE, errno,
+           _("failed to set default file creation context to %s"),
          quote (scontext));
 
   n_files = argc - optind;
@@ -936,9 +953,9 @@ main (int argc, char **argv)
   if (no_target_directory)
     {
       if (target_directory)
-        die (EXIT_FAILURE, 0,
-             _("cannot combine --target-directory (-t) "
-               "and --no-target-directory (-T)"));
+        error (EXIT_FAILURE, 0,
+               _("cannot combine --target-directory (-t) "
+                 "and --no-target-directory (-T)"));
       if (2 < n_files)
         {
           error (0, 0, _("extra operand %s"), quoteaf (file[2]));
@@ -950,8 +967,8 @@ main (int argc, char **argv)
       target_dirfd = target_directory_operand (target_directory, &sb);
       if (! (target_dirfd_valid (target_dirfd)
              || (mkdir_and_install && errno == ENOENT)))
-        die (EXIT_FAILURE, errno, _("failed to access %s"),
-             quoteaf (target_directory));
+        error (EXIT_FAILURE, errno, _("failed to access %s"),
+               quoteaf (target_directory));
     }
   else if (!dir_arg)
     {
@@ -964,15 +981,15 @@ main (int argc, char **argv)
           n_files--;
         }
       else if (2 < n_files)
-        die (EXIT_FAILURE, errno, _("target %s"), quoteaf (lastfile));
+        error (EXIT_FAILURE, errno, _("target %s"), quoteaf (lastfile));
     }
 
   if (specified_mode)
     {
       struct mode_change *change = mode_compile (specified_mode);
       if (!change)
-        die (EXIT_FAILURE, 0, _("invalid mode %s"), quote (specified_mode));
-      mode = mode_adjust (0, false, 0, change, NULL);
+        error (EXIT_FAILURE, 0, _("invalid mode %s"), quote (specified_mode));
+      mode = mode_adjust (0, false, 0, change, nullptr);
       dir_mode = mode_adjust (0, true, 0, change, &dir_mode_bits);
       free (change);
     }

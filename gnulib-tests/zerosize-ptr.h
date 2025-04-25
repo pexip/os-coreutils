@@ -1,5 +1,5 @@
 /* Return a pointer to a zero-size object in memory.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ zerosize_ptr (void)
   if (fd >= 0)
 # endif
     {
-      int pagesize = getpagesize ();
+      size_t pagesize = sysconf (_SC_PAGESIZE);
       char *two_pages =
         (char *) mmap (NULL, 2 * pagesize, PROT_READ | PROT_WRITE,
                        flags, fd, 0);

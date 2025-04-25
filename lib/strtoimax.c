@@ -1,6 +1,6 @@
 /* Convert string representation of a number into an intmax_t value.
 
-   Copyright (C) 1999, 2001-2004, 2006, 2009-2022 Free Software Foundation,
+   Copyright (C) 1999, 2001-2004, 2006, 2009-2025 Free Software Foundation,
    Inc.
 
    This file is free software: you can redistribute it and/or modify
@@ -24,8 +24,6 @@
 #include <inttypes.h>
 
 #include <stdlib.h>
-
-#include "verify.h"
 
 #ifdef UNSIGNED
 # ifndef HAVE_DECL_STRTOULL
@@ -62,8 +60,8 @@ long long int strtoll (char const *, char **, int);
 Int
 Strtoimax (char const *ptr, char **endptr, int base)
 {
-  verify (sizeof (Int) == sizeof (Unsigned long int)
-          || sizeof (Int) == sizeof (Unsigned long long int));
+  static_assert (sizeof (Int) == sizeof (Unsigned long int)
+                 || sizeof (Int) == sizeof (Unsigned long long int));
 
   if (sizeof (Int) != sizeof (Unsigned long int))
     return Strtoll (ptr, endptr, base);

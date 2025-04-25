@@ -1,6 +1,6 @@
 /* Locale-specific memory comparison.
 
-   Copyright (C) 2002-2004, 2006, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002-2004, 2006, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@
 #include <stdlib.h>
 
 #include "gettext.h"
-#define _(msgid) gettext (msgid)
+#define _(msgid) dgettext ("gnulib", msgid)
 
-#include "error.h"
+#include <error.h>
 #include "exitfail.h"
 #include "memcoll.h"
 #include "quotearg.h"
@@ -36,8 +36,8 @@ collate_error (int collation_errno,
                char const *s1, size_t s1len,
                char const *s2, size_t s2len)
 {
-  error (0, collation_errno, _("string comparison failed"));
-  error (0, 0, _("Set LC_ALL='C' to work around the problem."));
+  error (0, collation_errno, "%s", _("string comparison failed"));
+  error (0, 0, "%s", _("Set LC_ALL='C' to work around the problem."));
   error (exit_failure, 0,
          _("The strings compared were %s and %s."),
          quotearg_n_style_mem (0, locale_quoting_style, s1, s1len),

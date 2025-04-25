@@ -1,14 +1,14 @@
 # List of files which contain translatable strings.
-# Copyright (C) 1996-2022 Free Software Foundation, Inc.
+# Copyright (C) 1996-2025 Free Software Foundation, Inc.
 
 # These are nominally temporary...
 lib/argmatch.c
 lib/argmatch.h
+lib/c-file-type.c
 lib/closein.c
 lib/closeout.c
 lib/copy-acl.c
 lib/error.c
-lib/file-type.c
 lib/gai_strerror.c
 lib/getopt.c
 lib/mkdir-p.c
@@ -24,7 +24,6 @@ lib/siglist.h
 lib/strsignal.c
 lib/unicodeio.c
 lib/userspec.c
-lib/verror.c
 lib/version-etc.c
 lib/xalloc-die.c
 lib/xbinary-io.c
@@ -38,7 +37,6 @@ src/basename.c
 src/basenc.c
 src/cat.c
 src/chcon.c
-src/chgrp.c
 src/chmod.c
 src/chown-core.c
 src/chown.c
@@ -111,6 +109,7 @@ src/rmdir.c
 src/runcon.c
 src/seq.c
 src/set-fields.c
+src/show-date.c
 src/shred.c
 src/shuf.c
 src/sleep.c
@@ -125,6 +124,7 @@ src/tac-pipe.c
 src/tac.c
 src/tail.c
 src/tee.c
+src/temp-stream.c
 src/test.c
 src/timeout.c
 src/touch.c

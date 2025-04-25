@@ -1,7 +1,7 @@
 #!/bin/sh
 # Compare actual numbers from du, assuming block size matches mine.
 
-# Copyright (C) 2003-2022 Free Software Foundation, Inc.
+# Copyright (C) 2003-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,7 +59,9 @@ compare exp out || fail=1
 
 # Perform this test only if "." is on a local file system.
 # Otherwise, it would fail e.g., on an NFS-mounted Solaris ZFS file system.
-if is_local_dir_ .; then
+# Also skip local ZFS as that was seen to fail intermittently
+# (perhaps due to async compression affecting allocations)
+if is_local_dir_ . && ! df -T -t zfs .; then
   rm -f out exp
   du --block-size=$B -a d | sort -r -k2,2 > out || fail=1
   echo === >> out

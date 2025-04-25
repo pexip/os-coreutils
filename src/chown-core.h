@@ -1,6 +1,6 @@
 /* chown-core.h -- types and prototypes shared by chown and chgrp.
 
-   Copyright (C) 2000-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ struct Chown_option
   bool recurse;
 
   /* Pointer to the device and inode numbers of '/', when --recursive.
-     Need not be freed.  Otherwise NULL.  */
+     Need not be freed.  Otherwise nullptr.  */
   struct dev_ino *root_dev_ino;
 
   /* This corresponds to the --dereference (opposite of -h) option.  */

@@ -1,5 +1,5 @@
 /* group-list.c --Print a list of group IDs or names.
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@
 #include <grp.h>
 
 #include "system.h"
-#include "error.h"
 #include "mgetgroups.h"
 #include "quote.h"
 #include "group-list.h"
@@ -38,12 +37,12 @@ print_group_list (char const *username,
                   bool use_names, char delim)
 {
   bool ok = true;
-  struct passwd *pwd = NULL;
+  struct passwd *pwd = nullptr;
 
   if (username)
     {
       pwd = getpwuid (ruid);
-      if (pwd == NULL)
+      if (pwd == nullptr)
         ok = false;
     }
 
@@ -87,36 +86,35 @@ print_group_list (char const *username,
   return ok;
 }
 
-/* Convert a gid_t to string.  Do not use this function directly.
-   Instead, use it via the gidtostr macro.
-   Beware that it returns a pointer to static storage.  */
-static char *
-gidtostr_ptr (gid_t const *gid)
-{
-  static char buf[INT_BUFSIZE_BOUND (uintmax_t)];
-  return umaxtostr (*gid, buf);
-}
-#define gidtostr(g) gidtostr_ptr (&(g))
-
 /* Print the name or value of group ID GID. */
 extern bool
 print_group (gid_t gid, bool use_name)
 {
-  struct group *grp = NULL;
+  struct group *grp = nullptr;
   bool ok = true;
 
   if (use_name)
     {
       grp = getgrgid (gid);
-      if (grp == NULL)
+      if (grp == nullptr)
         {
-          error (0, 0, _("cannot find name for group ID %lu"),
-                 (unsigned long int) gid);
+          if (TYPE_SIGNED (gid_t))
+            {
+              intmax_t g = gid;
+              error (0, 0, _("cannot find name for group ID %jd"), g);
+            }
+          else
+            {
+              uintmax_t g = gid;
+              error (0, 0, _("cannot find name for group ID %ju"), g);
+            }
           ok = false;
         }
     }
 
-  char *s = grp ? grp->gr_name : gidtostr (gid);
-  fputs (s, stdout);
+  if (grp)
+    printf ("%s", grp->gr_name);
+  else
+    printf ("%ju", (uintmax_t) gid);
   return ok;
 }

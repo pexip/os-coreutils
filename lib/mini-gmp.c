@@ -1,8 +1,9 @@
 /* mini-gmp, a minimalistic implementation of a GNU GMP subset.
 
    Contributed to the GNU project by Niels Möller
+   Additional functionalities and improvements by Marco Bodrato.
 
-Copyright 1991-1997, 1999-2021 Free Software Foundation, Inc.
+Copyright 1991-1997, 1999-2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -90,6 +91,7 @@ see https://www.gnu.org/licenses/.  */
 #define gmp_assert_nocarry(x) do { \
     mp_limb_t __cy = (x);	   \
     assert (__cy == 0);		   \
+    (void) (__cy);		   \
   } while (0)
 
 #define gmp_clz(count, x) do {						\
@@ -170,12 +172,19 @@ see https://www.gnu.org/licenses/.  */
     }									\
   } while (0)
 
+/* If mp_limb_t is of size smaller than int, plain u*v implies
+   automatic promotion to *signed* int, and then multiply may overflow
+   and cause undefined behavior. Explicitly cast to unsigned int for
+   that case. */
+#define gmp_umullo_limb(u, v) \
+  ((sizeof(mp_limb_t) >= sizeof(int)) ? (u)*(v) : (unsigned int)(u) * (v))
+
 #define gmp_udiv_qrnnd_preinv(q, r, nh, nl, d, di)			\
   do {									\
     mp_limb_t _qh, _ql, _r, _mask;					\
     gmp_umul_ppmm (_qh, _ql, (nh), (di));				\
     gmp_add_ssaaaa (_qh, _ql, _qh, _ql, (nh) + 1, (nl));		\
-    _r = (nl) - _qh * (d);						\
+    _r = (nl) - gmp_umullo_limb (_qh, (d));				\
     _mask = -(mp_limb_t) (_r > _ql); /* both > and >= are OK */		\
     _qh += _mask;							\
     _r += _mask & (d);							\
@@ -196,7 +205,7 @@ see https://www.gnu.org/licenses/.  */
     gmp_add_ssaaaa ((q), _q0, (q), _q0, (n2), (n1));			\
 									\
     /* Compute the two most significant limbs of n - q'd */		\
-    (r1) = (n1) - (d1) * (q);						\
+    (r1) = (n1) - gmp_umullo_limb ((d1), (q));				\
     gmp_sub_ddmmss ((r1), (r0), (r1), (n0), (d1), (d0));		\
     gmp_umul_ppmm (_t1, _t0, (d0), (q));				\
     gmp_sub_ddmmss ((r1), (r0), (r1), (r0), _t1, _t0);			\
@@ -2697,6 +2706,66 @@ mpn_gcd_11 (mp_limb_t u, mp_limb_t v)
   return u << shift;
 }
 
+mp_size_t
+mpn_gcd (mp_ptr rp, mp_ptr up, mp_size_t un, mp_ptr vp, mp_size_t vn)
+{
+  assert (un >= vn);
+  assert (vn > 0);
+  assert (!GMP_MPN_OVERLAP_P (up, un, vp, vn));
+  assert (vp[vn-1] > 0);
+  assert ((up[0] | vp[0]) & 1);
+
+  if (un > vn)
+    mpn_div_qr (NULL, up, un, vp, vn);
+
+  un = mpn_normalized_size (up, vn);
+  if (un == 0)
+    {
+      mpn_copyi (rp, vp, vn);
+      return vn;
+    }
+
+  if (!(vp[0] & 1))
+    MPN_PTR_SWAP (up, un, vp, vn);
+
+  while (un > 1 || vn > 1)
+    {
+      int shift;
+      assert (vp[0] & 1);
+
+      while (up[0] == 0)
+	{
+	  up++;
+	  un--;
+	}
+      gmp_ctz (shift, up[0]);
+      if (shift > 0)
+	{
+	  gmp_assert_nocarry (mpn_rshift(up, up, un, shift));
+	  un -= (up[un-1] == 0);
+	}
+
+      if (un < vn)
+	MPN_PTR_SWAP (up, un, vp, vn);
+      else if (un == vn)
+	{
+	  int c = mpn_cmp (up, vp, un);
+	  if (c == 0)
+	    {
+	      mpn_copyi (rp, up, un);
+	      return un;
+	    }
+	  else if (c < 0)
+	    MP_PTR_SWAP (up, vp);
+	}
+
+      gmp_assert_nocarry (mpn_sub (up, up, un, vp, vn));
+      un = mpn_normalized_size (up, un);
+    }
+  rp[0] = mpn_gcd_11 (up[0], vp[0]);
+  return 1;
+}
+
 unsigned long
 mpz_gcd_ui (mpz_t g, const mpz_t u, unsigned long v)
 {
@@ -2756,42 +2825,11 @@ mpz_gcd (mpz_t g, const mpz_t u, const mpz_t v)
   if (tu->_mp_size < tv->_mp_size)
     mpz_swap (tu, tv);
 
-  mpz_tdiv_r (tu, tu, tv);
-  if (tu->_mp_size == 0)
-    {
-      mpz_swap (g, tv);
-    }
-  else
-    for (;;)
-      {
-	int c;
+  tu->_mp_size = mpn_gcd (tu->_mp_d, tu->_mp_d, tu->_mp_size, tv->_mp_d, tv->_mp_size);
+  mpz_mul_2exp (g, tu, gz);
 
-	mpz_make_odd (tu);
-	c = mpz_cmp (tu, tv);
-	if (c == 0)
-	  {
-	    mpz_swap (g, tu);
-	    break;
-	  }
-	if (c < 0)
-	  mpz_swap (tu, tv);
-
-	if (tv->_mp_size == 1)
-	  {
-	    mp_limb_t *gp;
-
-	    mpz_tdiv_r (tu, tu, tv);
-	    gp = MPZ_REALLOC (g, 1); /* gp = mpz_limbs_modify (g, 1); */
-	    *gp = mpn_gcd_11 (tu->_mp_d[0], tv->_mp_d[0]);
-
-	    g->_mp_size = *gp != 0; /* mpz_limbs_finish (g, 1); */
-	    break;
-	  }
-	mpz_sub (tu, tu, tv);
-      }
   mpz_clear (tu);
   mpz_clear (tv);
-  mpz_mul_2exp (g, g, gz);
 }
 
 void
@@ -2800,6 +2838,7 @@ mpz_gcdext (mpz_t g, mpz_t s, mpz_t t, const mpz_t u, const mpz_t v)
   mpz_t tu, tv, s0, s1, t0, t1;
   mp_bitcnt_t uz, vz, gz;
   mp_bitcnt_t power;
+  int cmp;
 
   if (u->_mp_size == 0)
     {
@@ -2951,12 +2990,21 @@ mpz_gcdext (mpz_t g, mpz_t s, mpz_t t, const mpz_t u, const mpz_t v)
       mpz_tdiv_q_2exp (t0, t0, 1);
     }
 
-  /* Arrange so that |s| < |u| / 2g */
+  /* Choose small cofactors (they should generally satify
+
+       |s| < |u| / 2g and |t| < |v| / 2g,
+
+     with some documented exceptions). Always choose the smallest s,
+     if there are two choices for s with same absolute value, choose
+     the one with smallest corresponding t (this asymmetric condition
+     is needed to prefer s = 0, |t| = 1 when g = |a| = |b|). */
   mpz_add (s1, s0, s1);
-  if (mpz_cmpabs (s0, s1) > 0)
+  mpz_sub (t1, t0, t1);
+  cmp = mpz_cmpabs (s0, s1);
+  if (cmp > 0 || (cmp == 0 && mpz_cmpabs (t0, t1) > 0))
     {
       mpz_swap (s0, s1);
-      mpz_sub (t0, t0, t1);
+      mpz_swap (t0, t1);
     }
   if (u->_mp_size < 0)
     mpz_neg (s0, s0);
@@ -3097,7 +3145,7 @@ mpz_powm (mpz_t r, const mpz_t b, const mpz_t e, const mpz_t m)
 
   if (en == 0)
     {
-      mpz_set_ui (r, 1);
+      mpz_set_ui (r, mpz_cmpabs_ui (m, 1));
       return;
     }
 

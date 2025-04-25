@@ -1,7 +1,7 @@
 # Make coreutils man pages.				-*-Makefile-*-
 # This is included by the top-level Makefile.am.
 
-# Copyright (C) 2002-2022 Free Software Foundation, Inc.
+# Copyright (C) 2002-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ if HAVE_PERL
 if BOLD_MAN_REFS
 help2man_OPTS=--bold-refs
 endif
-run_help2man = $(PERL) -- $(srcdir)/man/help2man $(help2man_OPTS)
+run_help2man = $(PERL) -- $(srcdir)/man/help2man --loose-indent $(help2man_OPTS)
 else
 run_help2man = $(SHELL) $(srcdir)/man/dummy-man
 endif
@@ -194,7 +194,8 @@ endif
 	  && $(MKDIR_P) $$t						\
 	  && (cd $$t && $(LN_S) '$(abs_top_builddir)/src/'$$prog$(EXEEXT) \
 				$$argv$(EXEEXT))			\
-	&& : $${SOURCE_DATE_EPOCH=`cat $(srcdir)/.timestamp 2>/dev/null || :`} \
+	&& : $${SOURCE_DATE_EPOCH=`date -r $(srcdir)/.tarball-version +%s \
+				   2>/dev/null || :`} \
 	&& : $${TZ=UTC0} && export TZ					\
 	&& export SOURCE_DATE_EPOCH && $(run_help2man)			\
 		     --source='$(PACKAGE_STRING)'			\

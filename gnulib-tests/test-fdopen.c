@@ -1,5 +1,5 @@
 /* Test opening a stream with a file descriptor.
-   Copyright (C) 2011-2022 Free Software Foundation, Inc.
+   Copyright (C) 2011-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,9 +33,14 @@ main (void)
      failure, since the behavior is not well-defined on invalid file
      descriptors, so try fdopen 1000 times and if that's not enough to
      fail due to EMFILE, so be it.  */
+  #if defined __ANDROID__ /* fdsan */
+    #define COUNT 1
+  #else
+    #define COUNT 1000
+  #endif
 
   int i;
-  for (i = 0; i < 1000; i++)
+  for (i = 0; i < COUNT; i++)
     {
       errno = 0;
       if (! fdopen (STDOUT_FILENO, "w"))
@@ -45,5 +50,5 @@ main (void)
         }
     }
 
-  return 0;
+  return test_exit_status;
 }

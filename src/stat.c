@@ -1,5 +1,5 @@
 /* stat.c -- display file or file system status
-   Copyright (C) 2001-2022 Free Software Foundation, Inc.
+   Copyright (C) 2001-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,9 +28,7 @@
 # define USE_STATVFS 0
 #endif
 
-#include <stddef.h>
 #include <stdio.h>
-#include <stdalign.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <grp.h>
@@ -55,18 +53,18 @@
 # include <fs_info.h>
 #endif
 #include <selinux/selinux.h>
+#include <getopt.h>
 
 #include "system.h"
 
 #include "areadlink.h"
 #include "argmatch.h"
-#include "die.h"
-#include "error.h"
+#include "c-ctype.h"
 #include "file-type.h"
 #include "filemode.h"
 #include "fs.h"
-#include "getopt.h"
 #include "mountlist.h"
+#include "octhexdigits.h"
 #include "quote.h"
 #include "stat-size.h"
 #include "stat-time.h"
@@ -170,16 +168,10 @@ statfs (char const *filename, struct fs_info *buf)
 # include <sys/nvpair.h>
 #endif
 
-/* FIXME: these are used by printf.c, too */
-#define isodigit(c) ('0' <= (c) && (c) <= '7')
-#define octtobin(c) ((c) - '0')
-#define hextobin(c) ((c) >= 'a' && (c) <= 'f' ? (c) - 'a' + 10 : \
-                     (c) >= 'A' && (c) <= 'F' ? (c) - 'A' + 10 : (c) - '0')
-
 static char const digits[] = "0123456789";
 
 /* Flags that are portable for use in printf, for at least one
-   conversion specifier; make_format removes unportable flags as
+   conversion specifier; make_format removes non-portable flags as
    needed for particular specifiers.  The glibc 2.2 extension "I" is
    listed here; it is removed by make_format because it has undefined
    behavior elsewhere and because it is incompatible with
@@ -211,7 +203,7 @@ enum cached_mode
 
 static char const *const cached_args[] =
 {
-  "default", "never", "always", NULL
+  "default", "never", "always", nullptr
 };
 
 static enum cached_mode const cached_modes[] =
@@ -221,15 +213,15 @@ static enum cached_mode const cached_modes[] =
 
 static struct option const long_options[] =
 {
-  {"dereference", no_argument, NULL, 'L'},
-  {"file-system", no_argument, NULL, 'f'},
-  {"format", required_argument, NULL, 'c'},
-  {"printf", required_argument, NULL, PRINTF_OPTION},
-  {"terse", no_argument, NULL, 't'},
-  {"cached", required_argument, NULL, 0},
+  {"dereference", no_argument, nullptr, 'L'},
+  {"file-system", no_argument, nullptr, 'f'},
+  {"format", required_argument, nullptr, 'c'},
+  {"printf", required_argument, nullptr, PRINTF_OPTION},
+  {"terse", no_argument, nullptr, 't'},
+  {"cached", required_argument, nullptr, 0},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Whether to follow symbolic links;  True for --dereference (-L).  */
@@ -309,6 +301,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "autofs";
     case S_MAGIC_BALLOON_KVM: /* 0x13661366 local */
       return "balloon-kvm-fs";
+    case S_MAGIC_BCACHEFS: /* 0xCA451A4E local */
+      return "bcachefs";
     case S_MAGIC_BEFS: /* 0x42465331 local */
       return "befs";
     case S_MAGIC_BDEVFS: /* 0x62646576 local */
@@ -381,8 +375,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "fat";
     case S_MAGIC_FHGFS: /* 0x19830326 remote */
       return "fhgfs";
-    case S_MAGIC_FUSEBLK: /* 0x65735546 remote */
-      return "fuseblk";
+    case S_MAGIC_FUSE: /* 0x65735546 remote */
+      return "fuse";
     case S_MAGIC_FUSECTL: /* 0x65735543 remote */
       return "fusectl";
     case S_MAGIC_FUTEXFS: /* 0x0BAD1DEA local */
@@ -466,6 +460,8 @@ human_fstype (STRUCT_STATVFS const *statfsbuf)
       return "overlayfs";
     case S_MAGIC_PANFS: /* 0xAAD7AAEA remote */
       return "panfs";
+    case S_MAGIC_PID_FS: /* 0x50494446 local */
+      return "pidfs";
     case S_MAGIC_PIPEFS: /* 0x50495045 remote */
       /* FIXME: change syntax or add an optional attribute like "inotify:no".
          pipefs and prlfs are labeled as "remote" so that tail always polls,
@@ -697,25 +693,25 @@ out_string (char *pformat, size_t prefix_len, char const *arg)
 static int
 out_int (char *pformat, size_t prefix_len, intmax_t arg)
 {
-  make_format (pformat, prefix_len, "'-+ 0", PRIdMAX);
+  make_format (pformat, prefix_len, "'-+ 0", "jd");
   return printf (pformat, arg);
 }
 static int
 out_uint (char *pformat, size_t prefix_len, uintmax_t arg)
 {
-  make_format (pformat, prefix_len, "'-0", PRIuMAX);
+  make_format (pformat, prefix_len, "'-0", "ju");
   return printf (pformat, arg);
 }
 static void
 out_uint_o (char *pformat, size_t prefix_len, uintmax_t arg)
 {
-  make_format (pformat, prefix_len, "-#0", PRIoMAX);
+  make_format (pformat, prefix_len, "-#0", "jo");
   printf (pformat, arg);
 }
 static void
 out_uint_x (char *pformat, size_t prefix_len, uintmax_t arg)
 {
-  make_format (pformat, prefix_len, "-#0", PRIxMAX);
+  make_format (pformat, prefix_len, "-#0", "jx");
   printf (pformat, arg);
 }
 static int
@@ -742,9 +738,9 @@ out_epoch_sec (char *pformat, size_t prefix_len,
       sec_prefix_len = dot - pformat;
       pformat[prefix_len] = '\0';
 
-      if (ISDIGIT (dot[1]))
+      if (c_isdigit (dot[1]))
         {
-          long int lprec = strtol (dot + 1, NULL, 10);
+          long int lprec = strtol (dot + 1, nullptr, 10);
           precision = (lprec <= INT_MAX ? lprec : INT_MAX);
         }
       else
@@ -752,7 +748,7 @@ out_epoch_sec (char *pformat, size_t prefix_len,
           precision = 9;
         }
 
-      if (precision && ISDIGIT (dot[-1]))
+      if (precision && c_isdigit (dot[-1]))
         {
           /* If a nontrivial width is given, subtract the width of the
              decimal point and PRECISION digits that will be output
@@ -762,9 +758,9 @@ out_epoch_sec (char *pformat, size_t prefix_len,
 
           do
             --p;
-          while (ISDIGIT (p[-1]));
+          while (c_isdigit (p[-1]));
 
-          long int lwidth = strtol (p, NULL, 10);
+          long int lwidth = strtol (p, nullptr, 10);
           width = (lwidth <= INT_MAX ? lwidth : INT_MAX);
           if (1 < width)
             {
@@ -847,7 +843,7 @@ out_file_context (char *pformat, size_t prefix_len, char const *filename)
     {
       error (0, errno, _("failed to get security context of %s"),
              quoteaf (filename));
-      scontext = NULL;
+      scontext = nullptr;
       fail = true;
     }
   strcpy (pformat + prefix_len, "s");
@@ -879,9 +875,10 @@ print_statfs (char *pformat, size_t prefix_len, MAYBE_UNUSED char mod, char m,
         uintmax_t fsid = statfsbuf->f_fsid;
 #else
         typedef unsigned int fsid_word;
-        verify (alignof (STRUCT_STATVFS) % alignof (fsid_word) == 0);
-        verify (offsetof (STRUCT_STATVFS, f_fsid) % alignof (fsid_word) == 0);
-        verify (sizeof statfsbuf->f_fsid % alignof (fsid_word) == 0);
+        static_assert (alignof (STRUCT_STATVFS) % alignof (fsid_word) == 0);
+        static_assert (offsetof (STRUCT_STATVFS, f_fsid) % alignof (fsid_word)
+                       == 0);
+        static_assert (sizeof statfsbuf->f_fsid % alignof (fsid_word) == 0);
         fsid_word const *p = (fsid_word *) &statfsbuf->f_fsid;
 
         /* Assume a little-endian word order, as that is compatible
@@ -946,12 +943,12 @@ print_statfs (char *pformat, size_t prefix_len, MAYBE_UNUSED char mod, char m,
 
 /* Return any bind mounted source for a path.
    The caller should not free the returned buffer.
-   Return NULL if no bind mount found.  */
+   Return nullptr if no bind mount found.  */
 NODISCARD
 static char const *
 find_bind_mount (char const * name)
 {
-  char const * bind_mount = NULL;
+  char const * bind_mount = nullptr;
 
   static struct mount_entry *mount_list;
   static bool tried_mount_list = false;
@@ -964,7 +961,7 @@ find_bind_mount (char const * name)
 
   struct stat name_stats;
   if (stat (name, &name_stats) != 0)
-    return NULL;
+    return nullptr;
 
   struct mount_entry *me;
   for (me = mount_list; me; me = me->me_next)
@@ -975,7 +972,7 @@ find_bind_mount (char const * name)
           struct stat dev_stats;
 
           if (stat (me->me_devname, &dev_stats) == 0
-              && SAME_INODE (name_stats, dev_stats))
+              && psame_inode (&name_stats, &dev_stats))
             {
               bind_mount = me->me_devname;
               break;
@@ -993,8 +990,8 @@ out_mount_point (char const *filename, char *pformat, size_t prefix_len,
                  const struct stat *statp)
 {
 
-  char const *np = "?", *bp = NULL;
-  char *mp = NULL;
+  char const *np = "?", *bp = nullptr;
+  char *mp = nullptr;
   bool fail = true;
 
   /* Look for bind mounts first.  Note we output the immediate alias,
@@ -1042,7 +1039,7 @@ neg_to_zero (struct timespec ts)
 {
   if (0 <= ts.tv_nsec)
     return ts;
-  struct timespec z = {0, 0};
+  struct timespec z = {0};
   return z;
 }
 
@@ -1057,20 +1054,20 @@ getenv_quoting_style (void)
     {
       int i = ARGMATCH (q_style, quoting_style_args, quoting_style_vals);
       if (0 <= i)
-        set_quoting_style (NULL, quoting_style_vals[i]);
+        set_quoting_style (nullptr, quoting_style_vals[i]);
       else
         {
-          set_quoting_style (NULL, shell_escape_always_quoting_style);
+          set_quoting_style (nullptr, shell_escape_always_quoting_style);
           error (0, 0, _("ignoring invalid value of environment "
                          "variable QUOTING_STYLE: %s"), quote (q_style));
         }
     }
   else
-    set_quoting_style (NULL, shell_escape_always_quoting_style);
+    set_quoting_style (nullptr, shell_escape_always_quoting_style);
 }
 
 /* Equivalent to quotearg(), but explicit to avoid syntax checks.  */
-#define quoteN(x) quotearg_style (get_quoting_style (NULL), x)
+#define quoteN(x) quotearg_style (get_quoting_style (nullptr), x)
 
 /* Output a single-character \ escape.  */
 
@@ -1142,8 +1139,8 @@ print_it (char const *format, int fd, char const *filename,
   enum
     {
       MAX_ADDITIONAL_BYTES =
-        (MAX (sizeof PRIdMAX,
-              MAX (sizeof PRIoMAX, MAX (sizeof PRIuMAX, sizeof PRIxMAX)))
+        (MAX (sizeof "jd",
+              MAX (sizeof "jo", MAX (sizeof "ju", sizeof "jx")))
          - 1)
     };
   size_t n_alloc = strlen (format) + MAX_ADDITIONAL_BYTES + 1;
@@ -1171,8 +1168,8 @@ print_it (char const *format, int fd, char const *filename,
                   {
                     dest[len] = fmt_char;
                     dest[len + 1] = '\0';
-                    die (EXIT_FAILURE, 0, _("%s: invalid directive"),
-                         quote (dest));
+                    error (EXIT_FAILURE, 0, _("%s: invalid directive"),
+                           quote (dest));
                   }
                 putchar ('%');
                 break;
@@ -1206,28 +1203,28 @@ print_it (char const *format, int fd, char const *filename,
               break;
             }
           ++b;
-          if (isodigit (*b))
+          if (isoct (*b))
             {
-              int esc_value = octtobin (*b);
+              int esc_value = fromoct (*b);
               int esc_length = 1;	/* number of octal digits */
-              for (++b; esc_length < 3 && isodigit (*b);
+              for (++b; esc_length < 3 && isoct (*b);
                    ++esc_length, ++b)
                 {
-                  esc_value = esc_value * 8 + octtobin (*b);
+                  esc_value = esc_value * 8 + fromoct (*b);
                 }
               putchar (esc_value);
               --b;
             }
-          else if (*b == 'x' && isxdigit (to_uchar (b[1])))
+          else if (*b == 'x' && c_isxdigit (b[1]))
             {
-              int esc_value = hextobin (b[1]);	/* Value of \xhh escape. */
+              int esc_value = fromhex (b[1]);	/* Value of \xhh escape. */
               /* A hexadecimal \xhh escape sequence must have
                  1 or 2 hex. digits.  */
               ++b;
-              if (isxdigit (to_uchar (b[1])))
+              if (c_isxdigit (b[1]))
                 {
                   ++b;
-                  esc_value = esc_value * 16 + hextobin (*b);
+                  esc_value = esc_value * 16 + fromhex (*b);
                 }
               putchar (esc_value);
             }
@@ -1373,11 +1370,11 @@ do_stat (char const *filename, char const *format, char const *format2)
   int fd = STREQ (filename, "-") ? 0 : AT_FDCWD;
   int flags = 0;
   struct stat st;
-  struct statx stx = { 0, };
+  struct statx stx = {0};
   char const *pathname = filename;
   struct print_args pa;
   pa.st = &st;
-  pa.btime = (struct timespec) {-1, -1};
+  pa.btime = (struct timespec) {.tv_sec = -1, .tv_nsec = -1};
 
   if (AT_FDCWD != fd)
     {
@@ -1463,7 +1460,7 @@ do_stat (char const *filename, char const *format,
   struct stat statbuf;
   struct print_args pa;
   pa.st = &statbuf;
-  pa.btime = (struct timespec) {-1, -1};
+  pa.btime = (struct timespec) {.tv_sec = -1, .tv_nsec = -1};
 
   if (0 <= fd)
     {
@@ -1492,6 +1489,14 @@ do_stat (char const *filename, char const *format,
 }
 #endif /* USE_STATX */
 
+/* POSIX requires 'ls' to print file sizes without a sign, even
+   when negative.  Be consistent with that.  */
+
+static uintmax_t
+unsigned_file_size (off_t size)
+{
+  return size + (size < 0) * ((uintmax_t) OFF_T_MAX - OFF_T_MIN + 1);
+}
 
 /* Print stat info.  Return zero upon success, nonzero upon failure.  */
 static bool
@@ -1515,7 +1520,7 @@ print_stat (char *pformat, size_t prefix_len, char mod, char m,
       if (S_ISLNK (statbuf->st_mode))
         {
           char *linkname = areadlink_with_size (filename, statbuf->st_size);
-          if (linkname == NULL)
+          if (linkname == nullptr)
             {
               error (0, errno, _("cannot read symbolic link %s"),
                      quoteaf (filename));
@@ -1575,7 +1580,7 @@ print_stat (char *pformat, size_t prefix_len, char mod, char m,
       fail |= out_mount_point (filename, pformat, prefix_len, statbuf);
       break;
     case 's':
-      out_int (pformat, prefix_len, statbuf->st_size);
+      out_uint (pformat, prefix_len, unsigned_file_size (statbuf->st_size));
       break;
     case 'r':
       if (mod == 'H')
@@ -1598,10 +1603,10 @@ print_stat (char *pformat, size_t prefix_len, char mod, char m,
       out_uint (pformat, prefix_len, ST_NBLOCKSIZE);
       break;
     case 'b':
-      out_uint (pformat, prefix_len, ST_NBLOCKS (*statbuf));
+      out_uint (pformat, prefix_len, STP_NBLOCKS (statbuf));
       break;
     case 'o':
-      out_uint (pformat, prefix_len, ST_BLKSIZE (*statbuf));
+      out_uint (pformat, prefix_len, STP_BLKSIZE (statbuf));
       break;
     case 'w':
       {
@@ -1727,9 +1732,10 @@ default_format (bool fs, bool terse, bool device)
             }
 
           temp = format;
-          /* TRANSLATORS: This string uses format specifiers from
-             'stat --help' without --file-system, and NOT from printf.  */
           format = xasprintf ("%s%s", format,
+                              /* TRANSLATORS: This string uses format specifiers
+                                 from 'stat --help' without --file-system, and
+                                 NOT from printf.  */
                               _("Access: %x\n"
                                 "Modify: %y\n"
                                 "Change: %z\n"
@@ -1783,7 +1789,7 @@ The MODE argument of --cached can be: always, never, or default.\n\
       fputs (_("\n\
 The valid format sequences for files (without --file-system):\n\
 \n\
-  %a   permission bits in octal (note '#' and '0' printf flags)\n\
+  %a   permission bits in octal (see '#' and '0' printf flags)\n\
   %A   permission bits and file type in human readable form\n\
   %b   number of blocks allocated (see %B)\n\
   %B   the size in bytes of each block reported by %b\n\
@@ -1875,7 +1881,7 @@ main (int argc, char *argv[])
   int c;
   bool fs = false;
   bool terse = false;
-  char *format = NULL;
+  char *format = nullptr;
   char *format2;
   bool ok = true;
 
@@ -1891,7 +1897,7 @@ main (int argc, char *argv[])
 
   atexit (close_stdout);
 
-  while ((c = getopt_long (argc, argv, "c:fLt", long_options, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, "c:fLt", long_options, nullptr)) != -1)
     {
       switch (c)
         {

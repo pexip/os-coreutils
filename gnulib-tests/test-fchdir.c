@@ -1,5 +1,5 @@
 /* Test changing to a directory named by a file descriptor.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +56,13 @@ main (void)
     ASSERT (fchdir (99) == -1);
     ASSERT (errno == EBADF);
   }
+#ifdef FD_ATCWD
+  {
+    errno = 0;
+    ASSERT (fchdir (FD_ATCWD) == -1);
+    ASSERT (errno == EBADF);
+  }
+#endif
 
   /* Check for other failure cases.  */
   {
@@ -106,5 +113,5 @@ main (void)
     }
 
   free (cwd);
-  return 0;
+  return test_exit_status;
 }

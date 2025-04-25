@@ -1,7 +1,7 @@
 /* readlinkat wrapper to return the link name in malloc'd storage.
    Unlike xreadlinkat, only call exit on failure to change directory.
 
-   Copyright (C) 2001, 2003-2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2003-2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,10 +31,6 @@
 #include <unistd.h>
 
 #if HAVE_READLINKAT
-
-# ifndef SSIZE_MAX
-#  define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
-# endif
 
 /* SYMLINK_MAX is used only for an initial memory-allocation sanity
    check, so it's OK to guess too small on hosts where there is no

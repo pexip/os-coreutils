@@ -1,6 +1,6 @@
 /* Parse a string into an internal timestamp.
 
-   Copyright (C) 1995, 1997-1998, 2003-2004, 2007, 2009-2022 Free Software
+   Copyright (C) 1995, 1997-1998, 2003-2004, 2007, 2009-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,8 +16,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
-#include <stdbool.h>
 #include <time.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 bool parse_datetime (struct timespec *restrict,
                      char const *, struct timespec const *);
@@ -29,3 +33,8 @@ bool parse_datetime (struct timespec *restrict,
 bool parse_datetime2 (struct timespec *restrict,
                       char const *, struct timespec const *,
                       unsigned int flags, timezone_t, char const *);
+
+
+#ifdef __cplusplus
+}
+#endif

@@ -1,6 +1,6 @@
 /* Parse dates for touch and date.
 
-   Copyright (C) 1998, 2003, 2005, 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 1998, 2003, 2005, 2007-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,21 +19,30 @@
    Rewritten by Jim Meyering.  */
 
 #ifndef POSIXTM_H_
-# define POSIXTM_H_
+#define POSIXTM_H_
 
-# include <stdbool.h>
-# include <time.h>
+#include <time.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* POSIX Date Syntax flags.  */
-# define PDS_TRAILING_YEAR 1
-# define PDS_CENTURY 2
-# define PDS_SECONDS 4
-# define PDS_PRE_2000 8
+#define PDS_TRAILING_YEAR 1
+#define PDS_CENTURY 2
+#define PDS_SECONDS 4
+#define PDS_PRE_2000 8
 
 /* For compatibility with older versions of this header, in which
    PDS_LEADING_YEAR had its own bit.  */
-# define PDS_LEADING_YEAR 0
+#define PDS_LEADING_YEAR 0
 
 bool posixtime (time_t *p, const char *s, unsigned int syntax_bits);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,8 +1,8 @@
-#serial 114   -*- autoconf -*-
+#serial 116   -*- autoconf -*-
 
 dnl Misc type-related macros for coreutils.
 
-# Copyright (C) 1998-2022 Free Software Foundation, Inc.
+# Copyright (C) 1998-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,16 +67,11 @@ AC_DEFUN([coreutils_MACROS],
     fallocate
     fchown
     fchmod
-    ftruncate
-    iswspace
-    mkfifo
-    mbrlen
     setgroups
     sethostname
     siginterrupt
     sync
     syncfs
-    sysctl
     sysinfo
     tcgetpgrp
   ])
@@ -93,22 +88,6 @@ AC_DEFUN([coreutils_MACROS],
 
   dnl This can't use AC_REQUIRE; I'm not quite sure why.
   cu_PREREQ_STAT_PROG
-
-  # for dd.c and shred.c
-  #
-  # Use fdatasync only if declared.  On MacOS X 10.7, fdatasync exists but
-  # is not declared, and is ineffective.
-  LIB_FDATASYNC=
-  AC_SUBST([LIB_FDATASYNC])
-  AC_CHECK_DECLS_ONCE([fdatasync])
-  if test $ac_cv_have_decl_fdatasync = yes; then
-    coreutils_saved_libs=$LIBS
-    AC_SEARCH_LIBS([fdatasync], [rt posix4],
-                   [test "$ac_cv_search_fdatasync" = "none required" ||
-                    LIB_FDATASYNC=$ac_cv_search_fdatasync])
-    AC_CHECK_FUNCS([fdatasync])
-    LIBS=$coreutils_saved_libs
-  fi
 
   # Check whether libcap is usable -- for ls --color support
   LIB_CAP=
@@ -236,18 +215,25 @@ AC_DEFUN([gl_CHECK_ALL_TYPES],
   AC_REQUIRE([AC_STRUCT_ST_BLOCKS])
 
   AC_REQUIRE([AC_TYPE_GETGROUPS])
+
+  dnl FIXME is this section still needed?
+  dnl These types are universally available now.
   AC_REQUIRE([AC_TYPE_MBSTATE_T])
   AC_REQUIRE([AC_TYPE_MODE_T])
   AC_REQUIRE([AC_TYPE_OFF_T])
   AC_REQUIRE([AC_TYPE_PID_T])
   AC_REQUIRE([AC_TYPE_SIZE_T])
   AC_REQUIRE([AC_TYPE_UID_T])
-  AC_CHECK_TYPE([ino_t], [unsigned long int])
+  AC_CHECK_TYPE([ino_t], [],
+    [AC_DEFINE([ino_t], [unsigned long int],
+       [Type of file serial numbers, also known as inode numbers.])])
 
   dnl This relies on the fact that Autoconf's implementation of
   dnl AC_CHECK_TYPE checks includes unistd.h.
-  AC_CHECK_TYPE([major_t], [unsigned int])
-  AC_CHECK_TYPE([minor_t], [unsigned int])
+  AC_CHECK_TYPE([major_t], [],
+    [AC_DEFINE([major_t], [unsigned int], [Type of major device numbers.])])
+  AC_CHECK_TYPE([minor_t], [],
+    [AC_DEFINE([minor_t], [unsigned int], [Type of minor device numbers.])])
 
   AC_REQUIRE([AC_HEADER_MAJOR])
 ])

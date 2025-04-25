@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2000-2022 Free Software Foundation, Inc.
+# Copyright (C) 2000-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,5 +65,11 @@ p=$(ls -ld g/sym/b/c|cut -b-10); case $p in drwxr-xr-x);; *) fail=1;; esac
 } || framework_failure_
 cp --parents --no-preserve=mode np/b/file np_dest/ || fail=1
 p=$(ls -ld np_dest/np|cut -b-10); case $p in drwxr-xr-x);; *) fail=1;; esac
+
+# coreutils 9.1-9.3 inclusive would fail to copy acls for absolute dirs
+mkdir dest || framework_failure_
+if test -f /bin/ls; then
+  cp -t dest --parents -p /bin/ls || fail=1
+fi
 
 Exit $fail

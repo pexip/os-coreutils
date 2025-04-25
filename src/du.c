@@ -1,5 +1,5 @@
 /* du -- summarize device usage
-   Copyright (C) 1988-2022 Free Software Foundation, Inc.
+   Copyright (C) 1988-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
    * Doesn't simply ignore the names of regular files given as arguments
      when -a is given.
 
-   By tege@sics.se, Torbjorn Granlund,
+   By tege@sics.se, Torbjörn Granlund,
    and djm@ai.mit.edu, David MacKenzie.
    Variable blocks added by lm@sgi.com and eggert@twinsun.com.
    Rewritten to use nftw, then to use fts by Jim Meyering.  */
@@ -26,18 +26,16 @@
 #include <config.h>
 #include <getopt.h>
 #include <sys/types.h>
-#include <assert.h>
 #include "system.h"
 #include "argmatch.h"
 #include "argv-iter.h"
+#include "assure.h"
 #include "di-set.h"
-#include "die.h"
-#include "error.h"
 #include "exclude.h"
-#include "fprintftime.h"
 #include "human.h"
 #include "mountlist.h"
 #include "quote.h"
+#include "show-date.h"
 #include "stat-size.h"
 #include "stat-time.h"
 #include "stdio--.h"
@@ -45,22 +43,14 @@
 #include "xstrtol.h"
 #include "xstrtol-error.h"
 
-extern bool fts_debug;
-
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "du"
 
 #define AUTHORS \
-  proper_name ("Torbjorn Granlund"), \
+  proper_name_lite ("Torbjorn Granlund", "Torbj\303\266rn Granlund"), \
   proper_name ("David MacKenzie"), \
   proper_name ("Paul Eggert"), \
   proper_name ("Jim Meyering")
-
-#if DU_DEBUG
-# define FTS_CROSS_CHECK(Fts) fts_cross_check (Fts)
-#else
-# define FTS_CROSS_CHECK(Fts)
-#endif
 
 /* A set of dev/ino pairs to help identify files and directories
    whose sizes have already been counted.  */
@@ -71,7 +61,7 @@ static struct di_set *di_mnt;
 
 /* Keep track of the preceding "level" (depth in hierarchy)
    from one call of process_file to the next.  */
-static size_t prev_level;
+static idx_t prev_level;
 
 /* Define a class for collecting directory information. */
 struct duinfo
@@ -131,7 +121,7 @@ struct dulevel
 static bool opt_all = false;
 
 /* If true, rather than using the device usage of each file,
-   use the apparent size (a la stat.st_size).  */
+   use the apparent size (stat.st_size if usable, 0 otherwise).  */
 static bool apparent_size = false;
 
 /* If true, count each hard link of files with multiple links.  */
@@ -152,7 +142,7 @@ static bool opt_separate_dirs = false;
 /* Show the total for each directory (and file if --all) that is at
    most MAX_DEPTH levels down from the root of the hierarchy.  The root
    is at level 0, so 'du --max-depth=0' is equivalent to 'du -s'.  */
-static size_t max_depth = SIZE_MAX;
+static idx_t max_depth = IDX_MAX;
 
 /* Only output entries with at least this SIZE if positive,
    or at most if negative.  See --threshold option.  */
@@ -179,10 +169,10 @@ enum time_type
 static enum time_type time_type = time_mtime;
 
 /* User specified date / time style */
-static char const *time_style = NULL;
+static char const *time_style = nullptr;
 
 /* Format used to display date / time. Controlled by --time-style */
-static char const *time_format = NULL;
+static char const *time_format = nullptr;
 
 /* The local time zone rules, as per the TZ environment variable.  */
 static timezone_t localtz;
@@ -208,7 +198,9 @@ enum
   EXCLUDE_OPTION,
   FILES0_FROM_OPTION,
   HUMAN_SI_OPTION,
+#if GNULIB_FTS_DEBUG
   FTS_DEBUG,
+#endif
   TIME_OPTION,
   TIME_STYLE_OPTION,
   INODES_OPTION
@@ -216,38 +208,40 @@ enum
 
 static struct option const long_options[] =
 {
-  {"all", no_argument, NULL, 'a'},
-  {"apparent-size", no_argument, NULL, APPARENT_SIZE_OPTION},
-  {"block-size", required_argument, NULL, 'B'},
-  {"bytes", no_argument, NULL, 'b'},
-  {"count-links", no_argument, NULL, 'l'},
-  /* {"-debug", no_argument, NULL, FTS_DEBUG}, */
-  {"dereference", no_argument, NULL, 'L'},
-  {"dereference-args", no_argument, NULL, 'D'},
-  {"exclude", required_argument, NULL, EXCLUDE_OPTION},
-  {"exclude-from", required_argument, NULL, 'X'},
-  {"files0-from", required_argument, NULL, FILES0_FROM_OPTION},
-  {"human-readable", no_argument, NULL, 'h'},
-  {"inodes", no_argument, NULL, INODES_OPTION},
-  {"si", no_argument, NULL, HUMAN_SI_OPTION},
-  {"max-depth", required_argument, NULL, 'd'},
-  {"null", no_argument, NULL, '0'},
-  {"no-dereference", no_argument, NULL, 'P'},
-  {"one-file-system", no_argument, NULL, 'x'},
-  {"separate-dirs", no_argument, NULL, 'S'},
-  {"summarize", no_argument, NULL, 's'},
-  {"total", no_argument, NULL, 'c'},
-  {"threshold", required_argument, NULL, 't'},
-  {"time", optional_argument, NULL, TIME_OPTION},
-  {"time-style", required_argument, NULL, TIME_STYLE_OPTION},
+  {"all", no_argument, nullptr, 'a'},
+  {"apparent-size", no_argument, nullptr, APPARENT_SIZE_OPTION},
+  {"block-size", required_argument, nullptr, 'B'},
+  {"bytes", no_argument, nullptr, 'b'},
+  {"count-links", no_argument, nullptr, 'l'},
+#if GNULIB_FTS_DEBUG
+  {"-debug", no_argument, nullptr, FTS_DEBUG},
+#endif
+  {"dereference", no_argument, nullptr, 'L'},
+  {"dereference-args", no_argument, nullptr, 'D'},
+  {"exclude", required_argument, nullptr, EXCLUDE_OPTION},
+  {"exclude-from", required_argument, nullptr, 'X'},
+  {"files0-from", required_argument, nullptr, FILES0_FROM_OPTION},
+  {"human-readable", no_argument, nullptr, 'h'},
+  {"inodes", no_argument, nullptr, INODES_OPTION},
+  {"si", no_argument, nullptr, HUMAN_SI_OPTION},
+  {"max-depth", required_argument, nullptr, 'd'},
+  {"null", no_argument, nullptr, '0'},
+  {"no-dereference", no_argument, nullptr, 'P'},
+  {"one-file-system", no_argument, nullptr, 'x'},
+  {"separate-dirs", no_argument, nullptr, 'S'},
+  {"summarize", no_argument, nullptr, 's'},
+  {"total", no_argument, nullptr, 'c'},
+  {"threshold", required_argument, nullptr, 't'},
+  {"time", optional_argument, nullptr, TIME_OPTION},
+  {"time-style", required_argument, nullptr, TIME_STYLE_OPTION},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 static char const *const time_args[] =
 {
-  "atime", "access", "use", "ctime", "status", NULL
+  "atime", "access", "use", "ctime", "status", nullptr
 };
 static enum time_type const time_types[] =
 {
@@ -267,7 +261,7 @@ enum time_style
 
 static char const *const time_style_args[] =
 {
-  "full-iso", "long-iso", "iso", NULL
+  "full-iso", "long-iso", "iso", nullptr
 };
 static enum time_style const time_style_types[] =
 {
@@ -372,25 +366,6 @@ hash_ins (struct di_set *di_set, ino_t ino, dev_t dev)
   return inserted;
 }
 
-/* FIXME: this code is nearly identical to code in date.c  */
-/* Display the date and time in WHEN according to the format specified
-   in FORMAT.  */
-
-static void
-show_date (char const *format, struct timespec when, timezone_t tz)
-{
-  struct tm tm;
-  if (localtime_rz (tz, &when.tv_sec, &tm))
-    fprintftime (stdout, format, &tm, tz, when.tv_nsec);
-  else
-    {
-      char buf[INT_BUFSIZE_BOUND (intmax_t)];
-      char *when_str = timetostr (when.tv_sec, buf);
-      error (0, 0, _("time %s is out of range"), quote (when_str));
-      fputs (when_str, stdout);
-    }
-}
-
 /* Print N_BYTES.  Convert it to a readable value before printing.  */
 
 static void
@@ -416,7 +391,13 @@ print_size (const struct duinfo *pdui, char const *string)
   if (opt_time)
     {
       putchar ('\t');
-      show_date (time_format, pdui->tmax, localtz);
+      bool ok = show_date (time_format, pdui->tmax, localtz);
+      if (!ok)
+        {
+          /* If failed to format date, print raw seconds instead.  */
+          char buf[INT_BUFSIZE_BOUND (intmax_t)];
+          fputs (timetostr (pdui->tmax.tv_sec, buf), stdout);
+        }
     }
   printf ("\t%s%c", string, opt_nul_terminate_output ? '\0' : '\n');
   fflush (stdout);
@@ -491,11 +472,10 @@ process_file (FTS *fts, FTSENT *ent)
   bool ok = true;
   struct duinfo dui;
   struct duinfo dui_to_print;
-  size_t level;
-  static size_t n_alloc;
+  static idx_t n_alloc;
   /* First element of the structure contains:
-     The sum of the st_size values of all entries in the single directory
-     at the corresponding level.  Although this does include the st_size
+     The sum of the sizes of all entries in the single directory
+     at the corresponding level.  Although this does include the sizes
      corresponding to each subdirectory, it does not include the size of
      any file in a subdirectory. Also corresponding last modified date.
      Second element of the structure contains:
@@ -523,8 +503,8 @@ process_file (FTS *fts, FTSENT *ent)
           if (info == FTS_NSOK)
             {
               fts_set (fts, ent, FTS_AGAIN);
-              FTSENT const *e = fts_read (fts);
-              assert (e == ent);
+              MAYBE_UNUSED FTSENT const *e = fts_read (fts);
+              affirm (e == ent);
               info = ent->fts_info;
             }
 
@@ -556,8 +536,8 @@ process_file (FTS *fts, FTSENT *ent)
           if (info == FTS_D)
             {
               fts_set (fts, ent, FTS_SKIP);
-              FTSENT const *e = fts_read (fts);
-              assert (e == ent);
+              MAYBE_UNUSED FTSENT const *e = fts_read (fts);
+              affirm (e == ent);
             }
 
           return true;
@@ -588,13 +568,13 @@ process_file (FTS *fts, FTSENT *ent)
 
   duinfo_set (&dui,
               (apparent_size
-               ? MAX (0, sb->st_size)
-               : (uintmax_t) ST_NBLOCKS (*sb) * ST_NBLOCKSIZE),
+               ? (usable_st_size (sb) ? MAX (0, sb->st_size) : 0)
+               : (uintmax_t) STP_NBLOCKS (sb) * ST_NBLOCKSIZE),
               (time_type == time_mtime ? get_stat_mtime (sb)
                : time_type == time_atime ? get_stat_atime (sb)
                : get_stat_ctime (sb)));
 
-  level = ent->fts_level;
+  idx_t level = ent->fts_level;
   dui_to_print = dui;
 
   if (n_alloc == 0)
@@ -616,12 +596,10 @@ process_file (FTS *fts, FTSENT *ent)
              e.g., from 1 to 10.  */
 
           if (n_alloc <= level)
-            {
-              dulvl = xnrealloc (dulvl, level, 2 * sizeof *dulvl);
-              n_alloc = level * 2;
-            }
+            dulvl = xpalloc (dulvl, &n_alloc, level - n_alloc + 1, -1,
+                             sizeof *dulvl);
 
-          for (size_t i = prev_level + 1; i <= level; i++)
+          for (idx_t i = prev_level + 1; i <= level; i++)
             {
               duinfo_init (&dulvl[i].ent);
               duinfo_init (&dulvl[i].subdir);
@@ -635,7 +613,7 @@ process_file (FTS *fts, FTSENT *ent)
              propagate sums from the children (prev_level) to the parent.
              Here, the current level is always one smaller than the
              previous one.  */
-          assert (level == prev_level - 1);
+          affirm (level == prev_level - 1);
           duinfo_add (&dui_to_print, &dulvl[prev_level].ent);
           if (!opt_separate_dirs)
             duinfo_add (&dui_to_print, &dulvl[prev_level].subdir);
@@ -671,7 +649,7 @@ process_file (FTS *fts, FTSENT *ent)
 }
 
 /* Recursively print the sizes of the directories (and, if selected, files)
-   named in FILES, the last entry of which is NULL.
+   named in FILES, the last entry of which is null.
    BIT_FLAGS controls how fts works.
    Return true if successful.  */
 
@@ -682,14 +660,14 @@ du_files (char **files, int bit_flags)
 
   if (*files)
     {
-      FTS *fts = xfts_open (files, bit_flags, NULL);
+      FTS *fts = xfts_open (files, bit_flags, nullptr);
 
       while (true)
         {
           FTSENT *ent;
 
           ent = fts_read (fts);
-          if (ent == NULL)
+          if (ent == nullptr)
             {
               if (errno != 0)
                 {
@@ -704,7 +682,11 @@ du_files (char **files, int bit_flags)
               prev_level = 0;
               break;
             }
-          FTS_CROSS_CHECK (fts);
+
+#if GNULIB_FTS_DEBUG
+          if (fts_debug)
+            fts_cross_check (fts);
+#endif
 
           ok &= process_file (fts, ent);
         }
@@ -725,7 +707,7 @@ main (int argc, char **argv)
   char *cwd_only[2];
   bool max_depth_specified = false;
   bool ok = true;
-  char *files_from = NULL;
+  char *files_from = nullptr;
 
   /* Bit flags that control how fts works.  */
   int bit_flags = FTS_NOSTAT;
@@ -738,7 +720,7 @@ main (int argc, char **argv)
   bool opt_summarize_only = false;
 
   cwd_only[0] = bad_cast (".");
-  cwd_only[1] = NULL;
+  cwd_only[1] = nullptr;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -763,7 +745,7 @@ main (int argc, char **argv)
 
       switch (c)
         {
-#if DU_DEBUG
+#if GNULIB_FTS_DEBUG
         case FTS_DEBUG:
           fts_debug = true;
           break;
@@ -808,9 +790,9 @@ main (int argc, char **argv)
 
         case 'd':		/* --max-depth=N */
           {
-            uintmax_t tmp;
-            if (xstrtoumax (optarg, NULL, 0, &tmp, "") == LONGINT_OK
-                && tmp <= SIZE_MAX)
+            intmax_t tmp;
+            if (xstrtoimax (optarg, nullptr, 0, &tmp, "") == LONGINT_OK
+                && tmp <= IDX_MAX)
               {
                 max_depth_specified = true;
                 max_depth = tmp;
@@ -840,13 +822,14 @@ main (int argc, char **argv)
         case 't':
           {
             enum strtol_error e;
-            e = xstrtoimax (optarg, NULL, 0, &opt_threshold, "kKmMGTPEZY0");
+            e = xstrtoimax (optarg, nullptr, 0, &opt_threshold,
+                            "kKmMGTPEZYRQ0");
             if (e != LONGINT_OK)
               xstrtol_fatal (e, oi, c, long_options, optarg);
             if (opt_threshold == 0 && *optarg == '-')
               {
                 /* Do not allow -0, as this wouldn't make sense anyway.  */
-                die (EXIT_FAILURE, 0, _("invalid --threshold argument '-0'"));
+                error (EXIT_FAILURE, 0, _("invalid --threshold argument '-0'"));
               }
           }
           break;
@@ -941,8 +924,8 @@ main (int argc, char **argv)
 
   if (opt_summarize_only && max_depth_specified && max_depth != 0)
     {
-      unsigned long int d = max_depth;
-      error (0, 0, _("warning: summarizing conflicts with --max-depth=%lu"), d);
+      error (0, 0, _("warning: summarizing conflicts with --max-depth=%td"),
+             max_depth);
       usage (EXIT_FAILURE);
     }
 
@@ -1023,8 +1006,8 @@ main (int argc, char **argv)
         }
 
       if (! (STREQ (files_from, "-") || freopen (files_from, "r", stdin)))
-        die (EXIT_FAILURE, errno, _("cannot open %s for reading"),
-             quoteaf (files_from));
+        error (EXIT_FAILURE, errno, _("cannot open %s for reading"),
+               quoteaf (files_from));
 
       ai = argv_iter_init_stream (stdin);
 
@@ -1057,7 +1040,7 @@ main (int argc, char **argv)
     bit_flags |= FTS_TIGHT_CYCLE_CHECK;
 
   bit_flags |= symlink_deref_bits;
-  static char *temp_argv[] = { NULL, NULL };
+  static char *temp_argv[] = { nullptr, nullptr };
 
   while (true)
     {
@@ -1077,8 +1060,8 @@ main (int argc, char **argv)
               goto argv_iter_done;
             case AI_ERR_MEM:
               xalloc_die ();
-            default:
-              assert (!"unexpected error code from argv_iter");
+            case AI_ERR_OK: default:
+              affirm (!"unexpected error code from argv_iter");
             }
         }
       if (files_from && STREQ (files_from, "-") && STREQ (file_name, "-"))
@@ -1101,15 +1084,15 @@ main (int argc, char **argv)
              among many, knowing the record number may help.
              FIXME: currently print the record number only with
              --files0-from=FILE.  Maybe do it for argv, too?  */
-          if (files_from == NULL)
+          if (files_from == nullptr)
             error (0, 0, "%s", _("invalid zero-length file name"));
           else
             {
               /* Using the standard 'filename:line-number:' prefix here is
                  not totally appropriate, since NUL is the separator, not NL,
                  but it might be better than nothing.  */
-              unsigned long int file_number = argv_iter_n_args (ai);
-              error (0, 0, "%s:%lu: %s", quotef (files_from),
+              idx_t file_number = argv_iter_n_args (ai);
+              error (0, 0, "%s:%td: %s", quotef (files_from),
                      file_number, _("invalid zero-length file name"));
             }
           skip_file = true;
@@ -1131,7 +1114,7 @@ main (int argc, char **argv)
     di_set_free (di_mnt);
 
   if (files_from && (ferror (stdin) || fclose (stdin) != 0) && ok)
-    die (EXIT_FAILURE, 0, _("error reading %s"), quoteaf (files_from));
+    error (EXIT_FAILURE, 0, _("error reading %s"), quoteaf (files_from));
 
   if (print_grand_total)
     print_size (&tot_dui, _("total"));

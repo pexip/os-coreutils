@@ -2,6 +2,7 @@
 src_libsinglebin_dir_a_DEPENDENCIES = src/libsinglebin_ls.a
 src_libsinglebin_vdir_a_DEPENDENCIES = src/libsinglebin_ls.a
 src_libsinglebin_arch_a_DEPENDENCIES = src/libsinglebin_uname.a
+src_libsinglebin_chgrp_a_DEPENDENCIES = src/libsinglebin_chown.a
 # Command arch
 noinst_LIBRARIES += src/libsinglebin_arch.a
 src_libsinglebin_arch_a_SOURCES = src/coreutils-arch.c
@@ -36,7 +37,7 @@ src_libsinglebin_nice_a_CFLAGS = "-Dmain=single_binary_main_nice (int, char **);
 # Command pinky
 noinst_LIBRARIES += src/libsinglebin_pinky.a
 src_libsinglebin_pinky_a_SOURCES = src/pinky.c
-src_libsinglebin_pinky_a_ldadd =   $(GETADDRINFO_LIB)
+src_libsinglebin_pinky_a_ldadd =   $(GETADDRINFO_LIB)  $(READUTMP_LIB)
 src_libsinglebin_pinky_a_DEPENDENCIES = $(src_pinky_DEPENDENCIES)
 src_libsinglebin_pinky_a_CFLAGS = "-Dmain=single_binary_main_pinky (int, char **);  int single_binary_main_pinky"  -Dusage=_usage_pinky $(src_coreutils_CFLAGS)
 # Command stdbuf
@@ -52,24 +53,19 @@ src_libsinglebin_stty_a_CFLAGS = "-Dmain=single_binary_main_stty (int, char **);
 # Command timeout
 noinst_LIBRARIES += src/libsinglebin_timeout.a
 src_libsinglebin_timeout_a_SOURCES =   src/timeout.c src/operand2sig.c
-src_libsinglebin_timeout_a_ldadd =   $(LIB_TIMER_TIME)
+src_libsinglebin_timeout_a_ldadd =   $(TIMER_TIME_LIB)
 src_libsinglebin_timeout_a_DEPENDENCIES = $(src_timeout_DEPENDENCIES)
 src_libsinglebin_timeout_a_CFLAGS = "-Dmain=single_binary_main_timeout (int, char **);  int single_binary_main_timeout"  -Dusage=_usage_timeout $(src_coreutils_CFLAGS)
-# Command uptime
-noinst_LIBRARIES += src/libsinglebin_uptime.a
-src_libsinglebin_uptime_a_SOURCES = src/uptime.c
-src_libsinglebin_uptime_a_ldadd =   $(GETLOADAVG_LIBS)
-src_libsinglebin_uptime_a_DEPENDENCIES = $(src_uptime_DEPENDENCIES)
-src_libsinglebin_uptime_a_CFLAGS = "-Dmain=single_binary_main_uptime (int, char **);  int single_binary_main_uptime"  -Dusage=_usage_uptime $(src_coreutils_CFLAGS)
 # Command users
 noinst_LIBRARIES += src/libsinglebin_users.a
 src_libsinglebin_users_a_SOURCES = src/users.c
+src_libsinglebin_users_a_ldadd =   $(READUTMP_LIB)
 src_libsinglebin_users_a_DEPENDENCIES = $(src_users_DEPENDENCIES)
 src_libsinglebin_users_a_CFLAGS = "-Dmain=single_binary_main_users (int, char **);  int single_binary_main_users"  -Dusage=_usage_users $(src_coreutils_CFLAGS)
 # Command who
 noinst_LIBRARIES += src/libsinglebin_who.a
 src_libsinglebin_who_a_SOURCES = src/who.c
-src_libsinglebin_who_a_ldadd =   $(GETADDRINFO_LIB)
+src_libsinglebin_who_a_ldadd =   $(GETADDRINFO_LIB)  $(READUTMP_LIB)
 src_libsinglebin_who_a_DEPENDENCIES = $(src_who_DEPENDENCIES)
 src_libsinglebin_who_a_CFLAGS = "-Dmain=single_binary_main_who (int, char **);  int single_binary_main_who"  -Dusage=_usage_who $(src_coreutils_CFLAGS)
 # Command _
@@ -120,8 +116,8 @@ src_libsinglebin_chcon_a_DEPENDENCIES = $(src_chcon_DEPENDENCIES)
 src_libsinglebin_chcon_a_CFLAGS = "-Dmain=single_binary_main_chcon (int, char **);  int single_binary_main_chcon"  -Dusage=_usage_chcon $(src_coreutils_CFLAGS)
 # Command chgrp
 noinst_LIBRARIES += src/libsinglebin_chgrp.a
-src_libsinglebin_chgrp_a_SOURCES =   src/chgrp.c src/chown-core.c
-src_libsinglebin_chgrp_a_DEPENDENCIES = $(src_chgrp_DEPENDENCIES)
+src_libsinglebin_chgrp_a_SOURCES = src/coreutils-chgrp.c
+src_libsinglebin_chgrp_a_ldadd =   $(src_chown_LDADD) src/libsinglebin_chown.a
 src_libsinglebin_chgrp_a_CFLAGS = "-Dmain=single_binary_main_chgrp (int, char **);  int single_binary_main_chgrp"  -Dusage=_usage_chgrp $(src_coreutils_CFLAGS)
 # Command chmod
 noinst_LIBRARIES += src/libsinglebin_chmod.a
@@ -130,13 +126,13 @@ src_libsinglebin_chmod_a_DEPENDENCIES = $(src_chmod_DEPENDENCIES)
 src_libsinglebin_chmod_a_CFLAGS = "-Dmain=single_binary_main_chmod (int, char **);  int single_binary_main_chmod"  -Dusage=_usage_chmod $(src_coreutils_CFLAGS)
 # Command chown
 noinst_LIBRARIES += src/libsinglebin_chown.a
-src_libsinglebin_chown_a_SOURCES =   src/chown.c src/chown-core.c
+src_libsinglebin_chown_a_SOURCES =   src/chown.c src/chown-core.c src/chown-chown.c
 src_libsinglebin_chown_a_DEPENDENCIES = $(src_chown_DEPENDENCIES)
 src_libsinglebin_chown_a_CFLAGS = "-Dmain=single_binary_main_chown (int, char **);  int single_binary_main_chown"  -Dusage=_usage_chown $(src_coreutils_CFLAGS)
 # Command cksum
 noinst_LIBRARIES += src/libsinglebin_cksum.a
 src_libsinglebin_cksum_a_SOURCES =   $(src_b2sum_SOURCES) src/sum.c src/sum.h src/cksum.c src/cksum.h src/crctab.c
-src_libsinglebin_cksum_a_ldadd =   $(LIB_CRYPTO)  $(cksum_pclmul_ldadd)
+src_libsinglebin_cksum_a_ldadd =   $(LIB_CRYPTO)  $(cksum_avx512_ldadd)  $(cksum_avx2_ldadd)  $(cksum_pclmul_ldadd)  $(cksum_vmull_ldadd)
 src_libsinglebin_cksum_a_DEPENDENCIES = $(src_cksum_DEPENDENCIES)
 src_libsinglebin_cksum_a_CFLAGS = "-Dmain=single_binary_main_cksum (int, char **);  int single_binary_main_cksum"  -Dusage=_usage_cksum $(src_coreutils_CFLAGS)
 src_libsinglebin_cksum_a_CPPFLAGS =   -DHASH_ALGO_CKSUM=1 -DHAVE_CONFIG_H $(AM_CPPFLAGS)
@@ -163,14 +159,14 @@ src_libsinglebin_cut_a_DEPENDENCIES = $(src_cut_DEPENDENCIES)
 src_libsinglebin_cut_a_CFLAGS = "-Dmain=single_binary_main_cut (int, char **);  int single_binary_main_cut"  -Dusage=_usage_cut $(src_coreutils_CFLAGS)
 # Command date
 noinst_LIBRARIES += src/libsinglebin_date.a
-src_libsinglebin_date_a_SOURCES = src/date.c
-src_libsinglebin_date_a_ldadd =   $(LIB_CLOCK_GETTIME)
+src_libsinglebin_date_a_SOURCES =   src/date.c src/show-date.c
+src_libsinglebin_date_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_date_a_DEPENDENCIES = $(src_date_DEPENDENCIES)
 src_libsinglebin_date_a_CFLAGS = "-Dmain=single_binary_main_date (int, char **);  int single_binary_main_date"  -Dusage=_usage_date $(src_coreutils_CFLAGS)
 # Command dd
 noinst_LIBRARIES += src/libsinglebin_dd.a
 src_libsinglebin_dd_a_SOURCES = src/dd.c
-src_libsinglebin_dd_a_ldadd =   $(LIB_GETHRXTIME)  $(LIB_FDATASYNC)
+src_libsinglebin_dd_a_ldadd =   $(GETHRXTIME_LIB)  $(FDATASYNC_LIB)
 src_libsinglebin_dd_a_DEPENDENCIES = $(src_dd_DEPENDENCIES)
 src_libsinglebin_dd_a_CFLAGS = "-Dmain=single_binary_main_dd (int, char **);  int single_binary_main_dd"  -Dusage=_usage_dd $(src_coreutils_CFLAGS)
 # Command dir
@@ -190,7 +186,7 @@ src_libsinglebin_dirname_a_DEPENDENCIES = $(src_dirname_DEPENDENCIES)
 src_libsinglebin_dirname_a_CFLAGS = "-Dmain=single_binary_main_dirname (int, char **);  int single_binary_main_dirname"  -Dusage=_usage_dirname $(src_coreutils_CFLAGS)
 # Command du
 noinst_LIBRARIES += src/libsinglebin_du.a
-src_libsinglebin_du_a_SOURCES = src/du.c
+src_libsinglebin_du_a_SOURCES =   src/du.c src/show-date.c
 src_libsinglebin_du_a_DEPENDENCIES = $(src_du_DEPENDENCIES)
 src_libsinglebin_du_a_CFLAGS = "-Dmain=single_binary_main_du (int, char **);  int single_binary_main_du"  -Dusage=_usage_du $(src_coreutils_CFLAGS)
 # Command echo
@@ -217,7 +213,7 @@ src_libsinglebin_expr_a_CFLAGS = "-Dmain=single_binary_main_expr (int, char **);
 # Command factor
 noinst_LIBRARIES += src/libsinglebin_factor.a
 src_libsinglebin_factor_a_SOURCES = src/factor.c
-src_libsinglebin_factor_a_ldadd =   $(LIBGMP)  $(LIBICONV)
+src_libsinglebin_factor_a_ldadd =   $(LIBGMP)
 src_libsinglebin_factor_a_DEPENDENCIES = $(src_factor_DEPENDENCIES)
 src_libsinglebin_factor_a_CFLAGS = "-Dmain=single_binary_main_factor (int, char **);  int single_binary_main_factor"  -Dusage=_usage_factor $(src_coreutils_CFLAGS)
 # Command false
@@ -238,7 +234,7 @@ src_libsinglebin_fold_a_CFLAGS = "-Dmain=single_binary_main_fold (int, char **);
 # Command ginstall
 noinst_LIBRARIES += src/libsinglebin_ginstall.a
 src_libsinglebin_ginstall_a_SOURCES =   src/install.c src/prog-fprintf.c $(copy_sources) $(selinux_sources)
-src_libsinglebin_ginstall_a_ldadd =   $(copy_ldadd)  $(LIB_SELINUX)  $(LIB_CLOCK_GETTIME)
+src_libsinglebin_ginstall_a_ldadd =   $(copy_ldadd)  $(LIB_SELINUX)  $(CLOCK_TIME_LIB)
 src_libsinglebin_ginstall_a_DEPENDENCIES = $(src_ginstall_DEPENDENCIES)
 src_libsinglebin_ginstall_a_CFLAGS = "-Dmain=single_binary_main_ginstall (int, char **);  int single_binary_main_ginstall"  -Dusage=_usage_ginstall $(src_coreutils_CFLAGS)
 # Command groups
@@ -276,7 +272,7 @@ src_libsinglebin_link_a_CFLAGS = "-Dmain=single_binary_main_link (int, char **);
 # Command ln
 noinst_LIBRARIES += src/libsinglebin_ln.a
 src_libsinglebin_ln_a_SOURCES =   src/ln.c src/force-link.c src/force-link.h src/relpath.c src/relpath.h
-src_libsinglebin_ln_a_ldadd =   $(LIB_CLOCK_GETTIME)
+src_libsinglebin_ln_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_ln_a_DEPENDENCIES = $(src_ln_DEPENDENCIES)
 src_libsinglebin_ln_a_CFLAGS = "-Dmain=single_binary_main_ln (int, char **);  int single_binary_main_ln"  -Dusage=_usage_ln $(src_coreutils_CFLAGS)
 # Command logname
@@ -287,7 +283,7 @@ src_libsinglebin_logname_a_CFLAGS = "-Dmain=single_binary_main_logname (int, cha
 # Command ls
 noinst_LIBRARIES += src/libsinglebin_ls.a
 src_libsinglebin_ls_a_SOURCES =   src/ls.c src/ls-ls.c
-src_libsinglebin_ls_a_ldadd =   $(LIB_SELINUX)  $(LIB_SMACK)  $(LIB_CLOCK_GETTIME)  $(LIB_CAP)  $(LIB_HAS_ACL)
+src_libsinglebin_ls_a_ldadd =   $(LIB_SELINUX)  $(LIB_SMACK)  $(CLOCK_TIME_LIB)  $(LIB_CAP)  $(FILE_HAS_ACL_LIB)
 src_libsinglebin_ls_a_DEPENDENCIES = $(src_ls_DEPENDENCIES)
 src_libsinglebin_ls_a_CFLAGS = "-Dmain=single_binary_main_ls (int, char **);  int single_binary_main_ls"  -Dusage=_usage_ls $(src_coreutils_CFLAGS)
 # Command md5sum
@@ -318,7 +314,7 @@ src_libsinglebin_mknod_a_CFLAGS = "-Dmain=single_binary_main_mknod (int, char **
 # Command mktemp
 noinst_LIBRARIES += src/libsinglebin_mktemp.a
 src_libsinglebin_mktemp_a_SOURCES = src/mktemp.c
-src_libsinglebin_mktemp_a_ldadd =   $(LIB_CLOCK_GETTIME)
+src_libsinglebin_mktemp_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_mktemp_a_DEPENDENCIES = $(src_mktemp_DEPENDENCIES)
 src_libsinglebin_mktemp_a_CFLAGS = "-Dmain=single_binary_main_mktemp (int, char **);  int single_binary_main_mktemp"  -Dusage=_usage_mktemp $(src_coreutils_CFLAGS)
 # Command mv
@@ -365,7 +361,7 @@ src_libsinglebin_pathchk_a_CFLAGS = "-Dmain=single_binary_main_pathchk (int, cha
 # Command pr
 noinst_LIBRARIES += src/libsinglebin_pr.a
 src_libsinglebin_pr_a_SOURCES = src/pr.c
-src_libsinglebin_pr_a_ldadd =   $(LIB_CLOCK_GETTIME)
+src_libsinglebin_pr_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_pr_a_DEPENDENCIES = $(src_pr_DEPENDENCIES)
 src_libsinglebin_pr_a_CFLAGS = "-Dmain=single_binary_main_pr (int, char **);  int single_binary_main_pr"  -Dusage=_usage_pr $(src_coreutils_CFLAGS)
 # Command printenv
@@ -382,7 +378,6 @@ src_libsinglebin_printf_a_CFLAGS = "-Dmain=single_binary_main_printf (int, char 
 # Command ptx
 noinst_LIBRARIES += src/libsinglebin_ptx.a
 src_libsinglebin_ptx_a_SOURCES = src/ptx.c
-src_libsinglebin_ptx_a_ldadd =   $(LIBICONV)
 src_libsinglebin_ptx_a_DEPENDENCIES = $(src_ptx_DEPENDENCIES)
 src_libsinglebin_ptx_a_CFLAGS = "-Dmain=single_binary_main_ptx (int, char **);  int single_binary_main_ptx"  -Dusage=_usage_ptx $(src_coreutils_CFLAGS)
 # Command pwd
@@ -460,7 +455,7 @@ src_libsinglebin_sha512sum_a_CPPFLAGS =   -DHASH_ALGO_SHA512=1 $(AM_CPPFLAGS)
 # Command shred
 noinst_LIBRARIES += src/libsinglebin_shred.a
 src_libsinglebin_shred_a_SOURCES = src/shred.c
-src_libsinglebin_shred_a_ldadd =   $(LIB_FDATASYNC)
+src_libsinglebin_shred_a_ldadd =   $(FDATASYNC_LIB)
 src_libsinglebin_shred_a_DEPENDENCIES = $(src_shred_DEPENDENCIES)
 src_libsinglebin_shred_a_CFLAGS = "-Dmain=single_binary_main_shred (int, char **);  int single_binary_main_shred"  -Dusage=_usage_shred $(src_coreutils_CFLAGS)
 # Command shuf
@@ -471,18 +466,19 @@ src_libsinglebin_shuf_a_CFLAGS = "-Dmain=single_binary_main_shuf (int, char **);
 # Command sleep
 noinst_LIBRARIES += src/libsinglebin_sleep.a
 src_libsinglebin_sleep_a_SOURCES = src/sleep.c
-src_libsinglebin_sleep_a_ldadd =   $(LIB_NANOSLEEP)
+src_libsinglebin_sleep_a_ldadd =   $(NANOSLEEP_LIB)
 src_libsinglebin_sleep_a_DEPENDENCIES = $(src_sleep_DEPENDENCIES)
 src_libsinglebin_sleep_a_CFLAGS = "-Dmain=single_binary_main_sleep (int, char **);  int single_binary_main_sleep"  -Dusage=_usage_sleep $(src_coreutils_CFLAGS)
 # Command sort
 noinst_LIBRARIES += src/libsinglebin_sort.a
 src_libsinglebin_sort_a_SOURCES = src/sort.c
-src_libsinglebin_sort_a_ldadd =   $(LIB_EACCESS)  $(LIB_NANOSLEEP)  $(LIB_CRYPTO)  $(LIBPMULTITHREAD)  $(LIB_PTHREAD_SIGMASK)
+src_libsinglebin_sort_a_ldadd =   $(EUIDACCESS_LIBGEN)  $(CLOCK_TIME_LIB)  $(NANOSLEEP_LIB)  $(LIB_DL) $(LIB_CRYPTO)  $(LIBPMULTITHREAD)  $(PTHREAD_SIGMASK_LIB)
 src_libsinglebin_sort_a_DEPENDENCIES = $(src_sort_DEPENDENCIES)
 src_libsinglebin_sort_a_CFLAGS = "-Dmain=single_binary_main_sort (int, char **);  int single_binary_main_sort"  -Dusage=_usage_sort $(src_coreutils_CFLAGS)
 # Command split
 noinst_LIBRARIES += src/libsinglebin_split.a
-src_libsinglebin_split_a_SOURCES = src/split.c
+src_libsinglebin_split_a_SOURCES =   src/split.c src/temp-stream.c
+src_libsinglebin_split_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_split_a_DEPENDENCIES = $(src_split_DEPENDENCIES)
 src_libsinglebin_split_a_CFLAGS = "-Dmain=single_binary_main_split (int, char **);  int single_binary_main_split"  -Dusage=_usage_split $(src_coreutils_CFLAGS)
 # Command stat
@@ -500,36 +496,36 @@ src_libsinglebin_sum_a_CPPFLAGS =   -DHASH_ALGO_SUM=1 $(AM_CPPFLAGS)
 # Command sync
 noinst_LIBRARIES += src/libsinglebin_sync.a
 src_libsinglebin_sync_a_SOURCES = src/sync.c
-src_libsinglebin_sync_a_ldadd =   $(LIB_FDATASYNC)
+src_libsinglebin_sync_a_ldadd =   $(FDATASYNC_LIB)
 src_libsinglebin_sync_a_DEPENDENCIES = $(src_sync_DEPENDENCIES)
 src_libsinglebin_sync_a_CFLAGS = "-Dmain=single_binary_main_sync (int, char **);  int single_binary_main_sync"  -Dusage=_usage_sync $(src_coreutils_CFLAGS)
 # Command tac
 noinst_LIBRARIES += src/libsinglebin_tac.a
-src_libsinglebin_tac_a_SOURCES = src/tac.c
-src_libsinglebin_tac_a_ldadd =   $(LIB_CLOCK_GETTIME)
+src_libsinglebin_tac_a_SOURCES =   src/tac.c src/temp-stream.c
+src_libsinglebin_tac_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_tac_a_DEPENDENCIES = $(src_tac_DEPENDENCIES)
 src_libsinglebin_tac_a_CFLAGS = "-Dmain=single_binary_main_tac (int, char **);  int single_binary_main_tac"  -Dusage=_usage_tac $(src_coreutils_CFLAGS)
 # Command tail
 noinst_LIBRARIES += src/libsinglebin_tail.a
-src_libsinglebin_tail_a_SOURCES = src/tail.c
-src_libsinglebin_tail_a_ldadd =   $(LIB_NANOSLEEP)
+src_libsinglebin_tail_a_SOURCES =   src/tail.c src/iopoll.c
+src_libsinglebin_tail_a_ldadd =   $(NANOSLEEP_LIB)
 src_libsinglebin_tail_a_DEPENDENCIES = $(src_tail_DEPENDENCIES)
 src_libsinglebin_tail_a_CFLAGS = "-Dmain=single_binary_main_tail (int, char **);  int single_binary_main_tail"  -Dusage=_usage_tail $(src_coreutils_CFLAGS)
 # Command tee
 noinst_LIBRARIES += src/libsinglebin_tee.a
-src_libsinglebin_tee_a_SOURCES = src/tee.c
+src_libsinglebin_tee_a_SOURCES =   src/tee.c src/iopoll.c
 src_libsinglebin_tee_a_DEPENDENCIES = $(src_tee_DEPENDENCIES)
 src_libsinglebin_tee_a_CFLAGS = "-Dmain=single_binary_main_tee (int, char **);  int single_binary_main_tee"  -Dusage=_usage_tee $(src_coreutils_CFLAGS)
 # Command test
 noinst_LIBRARIES += src/libsinglebin_test.a
 src_libsinglebin_test_a_SOURCES = src/test.c
-src_libsinglebin_test_a_ldadd =   $(LIB_EACCESS)
+src_libsinglebin_test_a_ldadd =   $(EUIDACCESS_LIBGEN)
 src_libsinglebin_test_a_DEPENDENCIES = $(src_test_DEPENDENCIES)
 src_libsinglebin_test_a_CFLAGS = "-Dmain=single_binary_main_test (int, char **);  int single_binary_main_test"  -Dusage=_usage_test $(src_coreutils_CFLAGS)
 # Command touch
 noinst_LIBRARIES += src/libsinglebin_touch.a
 src_libsinglebin_touch_a_SOURCES = src/touch.c
-src_libsinglebin_touch_a_ldadd =   $(LIB_CLOCK_GETTIME)
+src_libsinglebin_touch_a_ldadd =   $(CLOCK_TIME_LIB)
 src_libsinglebin_touch_a_DEPENDENCIES = $(src_touch_DEPENDENCIES)
 src_libsinglebin_touch_a_CFLAGS = "-Dmain=single_binary_main_touch (int, char **);  int single_binary_main_touch"  -Dusage=_usage_touch $(src_coreutils_CFLAGS)
 # Command tr
@@ -578,6 +574,12 @@ noinst_LIBRARIES += src/libsinglebin_unlink.a
 src_libsinglebin_unlink_a_SOURCES = src/unlink.c
 src_libsinglebin_unlink_a_DEPENDENCIES = $(src_unlink_DEPENDENCIES)
 src_libsinglebin_unlink_a_CFLAGS = "-Dmain=single_binary_main_unlink (int, char **);  int single_binary_main_unlink"  -Dusage=_usage_unlink $(src_coreutils_CFLAGS)
+# Command uptime
+noinst_LIBRARIES += src/libsinglebin_uptime.a
+src_libsinglebin_uptime_a_SOURCES = src/uptime.c
+src_libsinglebin_uptime_a_ldadd =   $(GETLOADAVG_LIBS)  $(READUTMP_LIB)
+src_libsinglebin_uptime_a_DEPENDENCIES = $(src_uptime_DEPENDENCIES)
+src_libsinglebin_uptime_a_CFLAGS = "-Dmain=single_binary_main_uptime (int, char **);  int single_binary_main_uptime"  -Dusage=_usage_uptime $(src_coreutils_CFLAGS)
 # Command vdir
 noinst_LIBRARIES += src/libsinglebin_vdir.a
 src_libsinglebin_vdir_a_SOURCES = src/coreutils-vdir.c

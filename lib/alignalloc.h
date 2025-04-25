@@ -1,18 +1,18 @@
 /* aligned memory allocation
 
-   Copyright 2022 Free Software Foundation, Inc.
+   Copyright 2022-2025 Free Software Foundation, Inc.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+   This file is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   This file is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GNU Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
+   You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Paul Eggert.  */
@@ -20,22 +20,33 @@
 #ifndef ALIGNALLOC_H_
 #define ALIGNALLOC_H_
 
+/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE, _GL_ATTRIBUTE_ALLOC_SIZE,
+   _GL_ATTRIBUTE_MALLOC, _GL_ATTRIBUTE_RETURNS_NONNULL, HAVE_POSIX_MEMALIGN.  */
+#if !_GL_CONFIG_H_INCLUDED
+ #error "Please include config.h first."
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include "idx.h"
-
-#ifndef _GL_INLINE_HEADER_BEGIN
- #error "Please include config.h first."
+#if defined __CHERI_PURE_CAPABILITY__
+# include <cheri.h>
 #endif
+
 _GL_INLINE_HEADER_BEGIN
 #ifndef ALIGNALLOC_INLINE
 # define ALIGNALLOC_INLINE _GL_INLINE
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* Whether aligned_alloc supports any power-of-two alignment,
    returns a nonnull pointer for size-zero allocations,
    and sets errno on failure.  */
-#if 2 < __GLIBC__ + (15 <= __GLIBC_MINOR__)
+#if 2 < __GLIBC__ + (16 <= __GLIBC_MINOR__)
 # define ALIGNALLOC_VIA_ALIGNED_ALLOC 1
 #else
 # define ALIGNALLOC_VIA_ALIGNED_ALLOC 0
@@ -89,7 +100,13 @@ alignalloc (idx_t alignment, idx_t size)
   void *ptr = NULL;
   if (alignment < sizeof (void *))
     alignment = sizeof (void *);
-  errno = posix_memalign (&ptr, alignment, size | !size);
+  /* Work around posix_memalign glitch by treating a 0 size as if it were 1,
+     so that returning NULL is equivalent to failing.  */
+  errno = posix_memalign (&ptr, alignment, size ? size : 1);
+#  if defined __CHERI_PURE_CAPABILITY__
+  if (ptr != NULL)
+    ptr = cheri_bounds_set (ptr, size);
+#  endif
   return ptr;
 # endif
 }
@@ -107,6 +124,11 @@ void *alignalloc (idx_t, idx_t)
 void *xalignalloc (idx_t, idx_t)
   _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_ALLOC_SIZE ((2))
   _GL_ATTRIBUTE_RETURNS_NONNULL /* _GL_ATTRIBUTE_DEALLOC (alignfree, 1) */;
+
+
+#ifdef __cplusplus
+}
+#endif
 
 _GL_INLINE_HEADER_END
 

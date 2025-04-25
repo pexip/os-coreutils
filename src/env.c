@@ -1,5 +1,5 @@
 /* env - run a program in a modified environment
-   Copyright (C) 1986-2022 Free Software Foundation, Inc.
+   Copyright (C) 1986-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,9 +24,6 @@
 #include <signal.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
-#include "idx.h"
 #include "operand2sig.h"
 #include "quote.h"
 #include "sig2str.h"
@@ -41,7 +38,7 @@
 
 /* Array of envvars to unset.  */
 static char const **usvars;
-static size_t usvars_alloc;
+static idx_t usvars_alloc;
 static idx_t usvars_used;
 
 /* Annotate the output with extra info to aid the user.  */
@@ -76,7 +73,7 @@ static bool report_signal_handling;
 /* The isspace characters in the C locale.  */
 #define C_ISSPACE_CHARS " \t\n\v\f\r"
 
-static char const shortopts[] = "+C:iS:u:v0" C_ISSPACE_CHARS;
+static char const shortopts[] = "+a:C:iS:u:v0" C_ISSPACE_CHARS;
 
 /* For long options that have no equivalent short option, use a
    non-character as a pseudo short option, starting with CHAR_MAX + 1.  */
@@ -90,19 +87,20 @@ enum
 
 static struct option const longopts[] =
 {
-  {"ignore-environment", no_argument, NULL, 'i'},
-  {"null", no_argument, NULL, '0'},
-  {"unset", required_argument, NULL, 'u'},
-  {"chdir", required_argument, NULL, 'C'},
-  {"default-signal", optional_argument, NULL, DEFAULT_SIGNAL_OPTION},
-  {"ignore-signal",  optional_argument, NULL, IGNORE_SIGNAL_OPTION},
-  {"block-signal",   optional_argument, NULL, BLOCK_SIGNAL_OPTION},
-  {"list-signal-handling", no_argument, NULL,  LIST_SIGNAL_HANDLING_OPTION},
-  {"debug", no_argument, NULL, 'v'},
-  {"split-string", required_argument, NULL, 'S'},
+  {"argv0", required_argument, nullptr, 'a'},
+  {"ignore-environment", no_argument, nullptr, 'i'},
+  {"null", no_argument, nullptr, '0'},
+  {"unset", required_argument, nullptr, 'u'},
+  {"chdir", required_argument, nullptr, 'C'},
+  {"default-signal", optional_argument, nullptr, DEFAULT_SIGNAL_OPTION},
+  {"ignore-signal",  optional_argument, nullptr, IGNORE_SIGNAL_OPTION},
+  {"block-signal",   optional_argument, nullptr, BLOCK_SIGNAL_OPTION},
+  {"list-signal-handling", no_argument, nullptr,  LIST_SIGNAL_HANDLING_OPTION},
+  {"debug", no_argument, nullptr, 'v'},
+  {"split-string", required_argument, nullptr, 'S'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -121,6 +119,9 @@ Set each NAME to VALUE in the environment and run COMMAND.\n\
 
       emit_mandatory_arg_note ();
 
+      fputs (_("\
+  -a, --argv0=ARG      pass ARG as the zeroth argument of COMMAND\n\
+"), stdout);
       fputs (_("\
   -i, --ignore-environment  start with an empty environment\n\
   -0, --null           end each output line with NUL, not newline\n\
@@ -158,8 +159,9 @@ A mere - implies -i.  If no COMMAND, print the resulting environment.\n\
 \n\
 SIG may be a signal name like 'PIPE', or a signal number like '13'.\n\
 Without SIG, all known signals are included.  Multiple signals can be\n\
-comma-separated.\n\
+comma-separated.  An empty SIG argument is a no-op.\n\
 "), stdout);
+      emit_exec_status (PROGRAM_NAME);
       emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
@@ -169,7 +171,7 @@ static void
 append_unset_var (char const *var)
 {
   if (usvars_used == usvars_alloc)
-    usvars = x2nrealloc (usvars, &usvars_alloc, sizeof *usvars);
+    usvars = xpalloc (usvars, &usvars_alloc, 1, -1, sizeof *usvars);
   usvars[usvars_used++] = var;
 }
 
@@ -181,12 +183,12 @@ unset_envvars (void)
       devmsg ("unset:    %s\n", usvars[i]);
 
       if (unsetenv (usvars[i]))
-        die (EXIT_CANCELED, errno, _("cannot unset %s"),
-             quote (usvars[i]));
+        error (EXIT_CANCELED, errno, _("cannot unset %s"),
+               quote (usvars[i]));
     }
 }
 
-/* Return a pointer to the end of a valid ${VARNAME} string, or NULL.
+/* Return a pointer to the end of a valid ${VARNAME} string, or nullptr.
    'str' should point to the '$' character.
    First letter in VARNAME must be alpha or underscore,
    rest of letters are alnum or underscore.
@@ -204,14 +206,14 @@ scan_varname (char const *str)
         return end;
     }
 
-  return NULL;
+  return nullptr;
 }
 
 /* Return a pointer to a static buffer containing the VARNAME as
    extracted from a '${VARNAME}' string.
    The returned string will be NUL terminated.
    The returned pointer should not be freed.
-   Return NULL if not a valid ${VARNAME} syntax.  */
+   Return nullptr if not a valid ${VARNAME} syntax.  */
 static char *
 extract_varname (char const *str)
 {
@@ -220,15 +222,15 @@ extract_varname (char const *str)
 
   p = scan_varname (str);
   if (!p)
-    return NULL;
+    return nullptr;
 
   /* -2 and +2 (below) account for the '${' prefix.  */
   i = p - str - 2;
 
   if (i >= vnlen)
     {
-      vnlen = i + 1;
-      varname = xrealloc (varname, vnlen);
+      free (varname);
+      varname = xpalloc (nullptr, &vnlen, i + 1 - vnlen, -1, sizeof *varname);
     }
 
   memcpy (varname, str + 2, i);
@@ -423,8 +425,8 @@ build_argv (char const *str, int extra_argc, int *argc)
 
             case 'c':
               if (dq)
-                die (EXIT_CANCELED, 0,
-                     _("'\\c' must not appear in double-quoted -S string"));
+                error (EXIT_CANCELED, 0,
+                       _("'\\c' must not appear in double-quoted -S string"));
               goto eos; /* '\c' terminates the string.  */
 
             case 'f': newc = '\f'; break;
@@ -434,11 +436,12 @@ build_argv (char const *str, int extra_argc, int *argc)
             case 'v': newc = '\v'; break;
 
             case '\0':
-              die (EXIT_CANCELED, 0,
-                   _("invalid backslash at end of string in -S"));
+              error (EXIT_CANCELED, 0,
+                     _("invalid backslash at end of string in -S"));
 
             default:
-              die (EXIT_CANCELED, 0, _("invalid sequence '\\%c' in -S"), newc);
+              error (EXIT_CANCELED, 0,
+                     _("invalid sequence '\\%c' in -S"), newc);
             }
           break;
 
@@ -451,9 +454,9 @@ build_argv (char const *str, int extra_argc, int *argc)
           {
             char *n = extract_varname (str);
             if (!n)
-              die (EXIT_CANCELED, 0,
-                   _("only ${VARNAME} expansion is supported, error at: %s"),
-                   str);
+              error (EXIT_CANCELED, 0,
+                     _("only ${VARNAME} expansion is supported, error at: %s"),
+                     str);
 
             char *v = getenv (n);
             if (v)
@@ -477,7 +480,7 @@ build_argv (char const *str, int extra_argc, int *argc)
     }
 
   if (dq || sq)
-    die (EXIT_CANCELED, 0, _("no terminating quote in -S string"));
+    error (EXIT_CANCELED, 0, _("no terminating quote in -S string"));
 
  eos:
   splitbuf_append_byte (&ss, '\0');
@@ -495,7 +498,7 @@ build_argv (char const *str, int extra_argc, int *argc)
       argv[1] = "-S-i -C/tmp A=B"
       argv[2] = "foo"
       argv[3] = "bar"
-      argv[4] = NULL
+      argv[4] = nullptr
    This function will modify argv to be:
       argv[0] = "env"
       argv[1] = "-i"
@@ -503,7 +506,7 @@ build_argv (char const *str, int extra_argc, int *argc)
       argv[3] = "A=B"
       argv[4] = "foo"
       argv[5] = "bar"
-      argv[6] = NULL
+      argv[6] = nullptr
    argc will be updated from 4 to 6.
    optind will be reset to 0 to force getopt_long to rescan all arguments.  */
 static void
@@ -537,29 +540,27 @@ parse_split_string (char const *str, int *orig_optind,
 }
 
 static void
-parse_signal_action_params (char const *optarg, bool set_default)
+parse_signal_action_params (char const *arg, bool set_default)
 {
-  char signame[SIG2STR_MAX];
   char *opt_sig;
   char *optarg_writable;
 
-  if (! optarg)
+  if (! arg)
     {
       /* Without an argument, reset all signals.
          Some signals cannot be set to ignore or default (e.g., SIGKILL,
          SIGSTOP on most OSes, and SIGCONT on AIX.) - so ignore errors.  */
       for (int i = 1 ; i <= SIGNUM_BOUND; i++)
-        if (sig2str (i, signame) == 0)
-          signals[i] = set_default ? DEFAULT_NOERR : IGNORE_NOERR;
+        signals[i] = set_default ? DEFAULT_NOERR : IGNORE_NOERR;
       return;
     }
 
-  optarg_writable = xstrdup (optarg);
+  optarg_writable = xstrdup (arg);
 
   opt_sig = strtok (optarg_writable, ",");
   while (opt_sig)
     {
-      int signum = operand2sig (opt_sig, signame);
+      int signum = operand2sig (opt_sig);
       /* operand2sig accepts signal 0 (EXIT) - but we reject it.  */
       if (signum == 0)
         error (0, 0, _("%s: invalid signal"), quote (opt_sig));
@@ -568,7 +569,7 @@ parse_signal_action_params (char const *optarg, bool set_default)
 
       signals[signum] = set_default ? DEFAULT : IGNORE;
 
-      opt_sig = strtok (NULL, ",");
+      opt_sig = strtok (nullptr, ",");
     }
 
   free (optarg_writable);
@@ -590,25 +591,26 @@ reset_signal_handlers (void)
       bool set_to_default = (signals[i] == DEFAULT
                              || signals[i] == DEFAULT_NOERR);
 
-      int sig_err = sigaction (i, NULL, &act);
+      int sig_err = sigaction (i, nullptr, &act);
 
       if (sig_err && !ignore_errors)
-        die (EXIT_CANCELED, errno,
-             _("failed to get signal action for signal %d"), i);
+        error (EXIT_CANCELED, errno,
+               _("failed to get signal action for signal %d"), i);
 
       if (! sig_err)
         {
           act.sa_handler = set_to_default ? SIG_DFL : SIG_IGN;
-          sig_err = sigaction (i, &act, NULL);
+          sig_err = sigaction (i, &act, nullptr);
           if (sig_err && !ignore_errors)
-            die (EXIT_CANCELED, errno,
-                 _("failed to set signal action for signal %d"), i);
+            error (EXIT_CANCELED, errno,
+                   _("failed to set signal action for signal %d"), i);
         }
 
       if (dev_debug)
         {
           char signame[SIG2STR_MAX];
-          sig2str (i, signame);
+          if (sig2str (i, signame) != 0)
+            snprintf (signame, sizeof signame, "SIG%d", i);
           devmsg ("Reset signal %s (%d) to %s%s\n",
                   signame, i,
                   set_to_default ? "DEFAULT" : "IGNORE",
@@ -619,13 +621,12 @@ reset_signal_handlers (void)
 
 
 static void
-parse_block_signal_params (char const *optarg, bool block)
+parse_block_signal_params (char const *arg, bool block)
 {
-  char signame[SIG2STR_MAX];
   char *opt_sig;
   char *optarg_writable;
 
-  if (! optarg)
+  if (! arg)
     {
       /* Without an argument, reset all signals.  */
       sigfillset (block ? &block_signals : &unblock_signals);
@@ -640,25 +641,32 @@ parse_block_signal_params (char const *optarg, bool block)
 
   sig_mask_changed = true;
 
-  if (! optarg)
+  if (! arg)
     return;
 
-  optarg_writable = xstrdup (optarg);
+  optarg_writable = xstrdup (arg);
 
   opt_sig = strtok (optarg_writable, ",");
   while (opt_sig)
     {
-      int signum = operand2sig (opt_sig, signame);
+      int signum = operand2sig (opt_sig);
       /* operand2sig accepts signal 0 (EXIT) - but we reject it.  */
       if (signum == 0)
         error (0, 0, _("%s: invalid signal"), quote (opt_sig));
       if (signum <= 0)
         usage (exit_failure);
 
-      sigaddset (block ? &block_signals : &unblock_signals, signum);
-      sigdelset (block ? &unblock_signals : &block_signals, signum);
+      if (sigaddset (block ? &block_signals : &unblock_signals, signum) == -1)
+        {
+          if (block)
+            error (EXIT_CANCELED, errno,
+                   _("failed to block signal %d"), signum);
+          /* else diagnosed in parse_signal_action_params().  */
+        }
+      else
+        sigdelset (block ? &unblock_signals : &block_signals, signum);
 
-      opt_sig = strtok (NULL, ",");
+      opt_sig = strtok (nullptr, ",");
     }
 
   free (optarg_writable);
@@ -673,8 +681,8 @@ set_signal_proc_mask (void)
 
   sigemptyset (&set);
 
-  if (sigprocmask (0, NULL, &set))
-    die (EXIT_CANCELED, errno, _("failed to get signal process mask"));
+  if (sigprocmask (0, nullptr, &set))
+    error (EXIT_CANCELED, errno, _("failed to get signal process mask"));
 
   for (int i = 1; i <= SIGNUM_BOUND; i++)
     {
@@ -690,20 +698,21 @@ set_signal_proc_mask (void)
         }
       else
         {
-          debug_act = NULL;
+          debug_act = nullptr;
         }
 
       if (dev_debug && debug_act)
         {
           char signame[SIG2STR_MAX];
-          sig2str (i, signame);
+          if (sig2str (i, signame) != 0)
+            snprintf (signame, sizeof signame, "SIG%d", i);
           devmsg ("signal %s (%d) mask set to %s\n",
                   signame, i, debug_act);
         }
     }
 
-  if (sigprocmask (SIG_SETMASK, &set, NULL))
-    die (EXIT_CANCELED, errno, _("failed to set signal process mask"));
+  if (sigprocmask (SIG_SETMASK, &set, nullptr))
+    error (EXIT_CANCELED, errno, _("failed to set signal process mask"));
 }
 
 static void
@@ -713,13 +722,13 @@ list_signal_handling (void)
   char signame[SIG2STR_MAX];
 
   sigemptyset (&set);
-  if (sigprocmask (0, NULL, &set))
-    die (EXIT_CANCELED, errno, _("failed to get signal process mask"));
+  if (sigprocmask (0, nullptr, &set))
+    error (EXIT_CANCELED, errno, _("failed to get signal process mask"));
 
   for (int i = 1; i <= SIGNUM_BOUND; i++)
     {
       struct sigaction act;
-      if (sigaction (i, NULL, &act))
+      if (sigaction (i, nullptr, &act))
         continue;
 
       char const *ignored = act.sa_handler == SIG_IGN ? "IGNORE" : "";
@@ -729,7 +738,8 @@ list_signal_handling (void)
       if (! *ignored && ! *blocked)
         continue;
 
-      sig2str (i, signame);
+      if (sig2str (i, signame) != 0)
+        snprintf (signame, sizeof signame, "SIG%d", i);
       fprintf (stderr, "%-10s (%2d): %s%s%s\n", signame, i,
                blocked, connect, ignored);
     }
@@ -752,7 +762,8 @@ main (int argc, char **argv)
   int optc;
   bool ignore_environment = false;
   bool opt_nul_terminate_output = false;
-  char const *newdir = NULL;
+  char const *newdir = nullptr;
+  char *argv0 = nullptr;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -765,10 +776,13 @@ main (int argc, char **argv)
 
   initialize_signals ();
 
-  while ((optc = getopt_long (argc, argv, shortopts, longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, shortopts, longopts, nullptr)) != -1)
     {
       switch (optc)
         {
+        case 'a':
+          argv0 = optarg;
+          break;
         case 'i':
           ignore_environment = true;
           break;
@@ -825,7 +839,7 @@ main (int argc, char **argv)
   if (ignore_environment)
     {
       devmsg ("cleaning environ\n");
-      static char *dummy_environ[] = { NULL };
+      static char *dummy_environ[] = { nullptr };
       environ = dummy_environ;
     }
   else
@@ -839,8 +853,8 @@ main (int argc, char **argv)
       if (putenv (argv[optind]))
         {
           *eq = '\0';
-          die (EXIT_CANCELED, errno, _("cannot set %s"),
-               quote (argv[optind]));
+          error (EXIT_CANCELED, errno, _("cannot set %s"),
+                 quote (argv[optind]));
         }
       optind++;
     }
@@ -856,6 +870,12 @@ main (int argc, char **argv)
   if (newdir && ! program_specified)
     {
       error (0, 0, _("must specify command with --chdir (-C)"));
+      usage (EXIT_CANCELED);
+    }
+
+  if (argv0 && ! program_specified)
+    {
+      error (0, 0, _("must specify command with --argv0 (-a)"));
       usage (EXIT_CANCELED);
     }
 
@@ -880,23 +900,30 @@ main (int argc, char **argv)
       devmsg ("chdir:    %s\n", quoteaf (newdir));
 
       if (chdir (newdir) != 0)
-        die (EXIT_CANCELED, errno, _("cannot change directory to %s"),
-             quoteaf (newdir));
+        error (EXIT_CANCELED, errno, _("cannot change directory to %s"),
+               quoteaf (newdir));
+    }
+
+  char *program = argv[optind];
+  if (argv0)
+    {
+      devmsg ("argv0:     %s\n", quoteaf (argv0));
+      argv[optind] = argv0;
     }
 
   if (dev_debug)
     {
-      devmsg ("executing: %s\n", argv[optind]);
+      devmsg ("executing: %s\n", program);
       for (int i=optind; i<argc; ++i)
         devmsg ("   arg[%d]= %s\n", i-optind, quote (argv[i]));
     }
 
-  execvp (argv[optind], &argv[optind]);
+  execvp (program, &argv[optind]);
 
   int exit_status = errno == ENOENT ? EXIT_ENOENT : EXIT_CANNOT_INVOKE;
-  error (0, errno, "%s", quote (argv[optind]));
+  error (0, errno, "%s", quote (program));
 
-  if (exit_status == EXIT_ENOENT && strpbrk (argv[optind], C_ISSPACE_CHARS))
+  if (exit_status == EXIT_ENOENT && strpbrk (program, C_ISSPACE_CHARS))
     error (0, 0, _("use -[v]S to pass options in shebang lines"));
 
   main_exit (exit_status);

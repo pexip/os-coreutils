@@ -1,5 +1,5 @@
 /* A posix_memalign() function that works around platform bugs.
-   Copyright (C) 2020-2022 Free Software Foundation, Inc.
+   Copyright (C) 2020-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -20,16 +20,17 @@
 #include <stdlib.h>
 
 #include <errno.h>
+#include <stdckdint.h>
 
 int
 posix_memalign (void **memptr, size_t alignment, size_t size)
 #undef posix_memalign
 {
-  /* Round up SIZE to the next multiple of ALIGNMENT, namely
-     (SIZE + ALIGNMENT - 1) & ~(ALIGNMENT - 1).  */
-  size += alignment - 1;
-  if (size >= alignment - 1) /* no overflow? */
-    return posix_memalign (memptr, alignment, size & ~(size_t)(alignment - 1));
-  else
+  /* Round SIZE up to the next multiple of ALIGNMENT.
+     However, treat a zero size as if it were ALIGNMENT.  */
+  size_t aligned_size;
+  if (ckd_add (&aligned_size, size, alignment - !!size))
     return ENOMEM;
+  aligned_size &= -alignment;
+  return posix_memalign (memptr, alignment, aligned_size);
 }

@@ -1,8 +1,8 @@
 #!/bin/sh
-# Test df's behaviour when the mount list cannot be read.
+# Test df's behavior when the mount list cannot be read.
 # This test is skipped on systems that lack LD_PRELOAD support; that's fine.
 
-# Copyright (C) 2012-2022 Free Software Foundation, Inc.
+# Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,9 +24,6 @@ require_gcc_shared_
 # Protect against inaccessible remote mounts etc.
 timeout 10 df || skip_ "df fails"
 
-grep '^#define HAVE_MNTENT_H 1' $CONFIG_HEADER > /dev/null \
-      || skip_ "no mntent.h available to confirm the interface"
-
 grep '^#define HAVE_GETMNTENT 1' $CONFIG_HEADER > /dev/null \
       || skip_ "getmntent is not used on this system"
 
@@ -34,39 +31,49 @@ grep '^#define HAVE_GETMNTENT 1' $CONFIG_HEADER > /dev/null \
 cat > k.c <<EOF || framework_failure_
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <mntent.h>
 #include <string.h>
+#include <stdarg.h>
 #include <dlfcn.h>
 
 #define STREQ(a, b) (strcmp (a, b) == 0)
 
-FILE* fopen(const char *path, const char *mode)
+int open(const char *path, int flags, ...)
 {
-  static FILE* (*fopen_func)(char const *, char const *);
+  static int (*open_func)(const char *, int, ...);
 
-  /* get reference to original (libc provided) fopen */
-  if (!fopen_func)
+  /* get reference to original (libc provided) open */
+  if (!open_func)
     {
-      fopen_func = (FILE*(*)(char const *, char const *))
-                   dlsym(RTLD_NEXT, "fopen");
-      if (!fopen_func)
+      open_func = (int(*)(const char *, int, ...))
+                   dlsym(RTLD_NEXT, "open");
+      if (!open_func)
         {
-          fprintf (stderr, "Failed to find fopen()\n");
+          fprintf (stderr, "Failed to find open()\n");
           errno = ESRCH;
-          return NULL;
+          return -1;
         }
     }
+
+  va_list ap;
+  va_start (ap, flags);
+  mode_t mode = (sizeof (mode_t) < sizeof (int)
+                 ? va_arg (ap, int)
+                 : va_arg (ap, mode_t));
+  va_end (ap);
 
   /* Returning ENOENT here will get read_file_system_list()
      to fall back to using getmntent() below.  */
   if (STREQ (path, "/proc/self/mountinfo"))
     {
       errno = ENOENT;
-      return NULL;
+      return -1;
     }
   else
-    return fopen_func(path, mode);
+    return open_func(path, flags, mode);
 }
 
 struct mntent *getmntent (FILE *fp)
@@ -86,7 +93,7 @@ EOF
 
 # Then compile/link it:
 gcc_shared_ k.c k.so \
-  || framework_failure_ 'failed to build shared library'
+  || skip_ 'failed to build mntent shared library'
 
 cleanup_() { unset LD_PRELOAD; }
 

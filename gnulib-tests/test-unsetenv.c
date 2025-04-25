@@ -1,5 +1,5 @@
 /* Tests of unsetenv.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@ SIGNATURE_CHECK (unsetenv, int, (char const *));
 int
 main (void)
 {
-  char entry[] = "b=2";
+  /* Static to pacify gcc -Wanalyzer-putenv-of-auto-var.  */
+  static char entry[] = "b=2";
 
   /* Test removal when multiple entries present.  */
   ASSERT (putenv ((char *) "a=1") == 0);
@@ -51,11 +52,11 @@ main (void)
   ASSERT (errno == EINVAL);
 #if 0
   /* glibc and gnulib's implementation guarantee this, but POSIX no
-     longer requires it: http://austingroupbugs.net/view.php?id=185  */
+     longer requires it: https://austingroupbugs.net/view.php?id=185  */
   errno = 0;
   ASSERT (unsetenv (NULL) == -1);
   ASSERT (errno == EINVAL);
 #endif
 
-  return 0;
+  return test_exit_status;
 }

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Test cp --sparse=always through SEEK_DATA copy
 
-# Copyright (C) 2010-2022 Free Software Foundation, Inc.
+# Copyright (C) 2010-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ touch sparse_chk
 if seek_data_capable_ sparse_chk && ! df -t ext3 . >/dev/null; then
   : # Current partition has working extents.  Good!
 else
-  skip_ "current file system has insufficient SEEK_DATA support"
+  skip_ "insufficient SEEK_DATA support"
 
   # It's not;  we need to create one, hence we need root access.
   require_root_

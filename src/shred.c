@@ -1,6 +1,6 @@
 /* shred.c - overwrite files and devices to make it harder to recover data
 
-   Copyright (C) 1999-2022 Free Software Foundation, Inc.
+   Copyright (C) 1999-2025 Free Software Foundation, Inc.
    Copyright (C) 1997, 1998, 1999 Colin Plumb.
 
    This program is free software: you can redistribute it and/or modify
@@ -77,7 +77,6 @@
 
 #include <getopt.h>
 #include <stdio.h>
-#include <assert.h>
 #include <setjmp.h>
 #include <sys/types.h>
 #if defined __linux__ && HAVE_SYS_MTIO_H
@@ -87,9 +86,8 @@
 #include "system.h"
 #include "alignalloc.h"
 #include "argmatch.h"
+#include "assure.h"
 #include "xdectoint.h"
-#include "die.h"
-#include "error.h"
 #include "fcntl--.h"
 #include "human.h"
 #include "randint.h"
@@ -108,7 +106,7 @@ enum { VERBOSE_UPDATE = 5 };
    The size must be a power of 2.  */
 enum { SECTOR_SIZE = 512 };
 enum { SECTOR_MASK = SECTOR_SIZE - 1 };
-verify (0 < SECTOR_SIZE && (SECTOR_SIZE & SECTOR_MASK) == 0);
+static_assert (0 < SECTOR_SIZE && (SECTOR_SIZE & SECTOR_MASK) == 0);
 
 enum remove_method
 {
@@ -120,7 +118,7 @@ enum remove_method
 
 static char const *const remove_args[] =
 {
-  "unlink", "wipe", "wipesync", NULL
+  "unlink", "wipe", "wipesync", nullptr
 };
 
 static enum remove_method const remove_methods[] =
@@ -148,17 +146,17 @@ enum
 
 static struct option const long_opts[] =
 {
-  {"exact", no_argument, NULL, 'x'},
-  {"force", no_argument, NULL, 'f'},
-  {"iterations", required_argument, NULL, 'n'},
-  {"size", required_argument, NULL, 's'},
-  {"random-source", required_argument, NULL, RANDOM_SOURCE_OPTION},
-  {"remove", optional_argument, NULL, 'u'},
-  {"verbose", no_argument, NULL, 'v'},
-  {"zero", no_argument, NULL, 'z'},
+  {"exact", no_argument, nullptr, 'x'},
+  {"force", no_argument, nullptr, 'f'},
+  {"iterations", required_argument, nullptr, 'n'},
+  {"size", required_argument, nullptr, 's'},
+  {"random-source", required_argument, nullptr, RANDOM_SOURCE_OPTION},
+  {"remove", optional_argument, nullptr, 'u'},
+  {"verbose", no_argument, nullptr, 'v'},
+  {"zero", no_argument, nullptr, 'z'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -302,7 +300,6 @@ dosync (int fd, char const *qname)
 {
   int err;
 
-#if HAVE_FDATASYNC
   if (fdatasync (fd) == 0)
     return 0;
   err = errno;
@@ -312,7 +309,6 @@ dosync (int fd, char const *qname)
       errno = err;
       return -1;
     }
-#endif
 
   if (fsync (fd) == 0)
     return 0;
@@ -410,7 +406,7 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
   size_t page_size = getpagesize ();
 #define PERIODIC_OUTPUT_SIZE (60 * 1024)
 #define NONPERIODIC_OUTPUT_SIZE (64 * 1024)
-  verify (PERIODIC_OUTPUT_SIZE % 3 == 0);
+  static_assert (PERIODIC_OUTPUT_SIZE % 3 == 0);
   size_t output_size = periodic_pattern (type)
                        ? PERIODIC_OUTPUT_SIZE : NONPERIODIC_OUTPUT_SIZE;
 #define FILLPATTERN_SIZE (((output_size + 2) / 3) * 3) /* Multiple of 3 */
@@ -454,7 +450,7 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
   if (n)
     {
       error (0, 0, _("%s: pass %lu/%lu (%s)..."), qname, k, n, pass_string);
-      thresh = time (NULL) + VERBOSE_UPDATE;
+      thresh = time (nullptr) + VERBOSE_UPDATE;
       previous_human_offset = "";
     }
 
@@ -477,9 +473,7 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
       for (soff = 0; soff < lim; soff += ssize)
         {
           ssize = write (fd, pbuf + soff, lim - soff);
-          if (0 < ssize)
-            assume (ssize <= lim - soff);
-          else
+          if (ssize <= 0)
             {
               if (! known (size) && (ssize == 0 || errno == ENOSPC))
                 {
@@ -491,7 +485,6 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
               else
                 {
                   int errnum = errno;
-                  char buf[INT_BUFSIZE_BOUND (uintmax_t)];
 
                   /* Retry without direct I/O since this may not be supported
                      at all on some (file) systems, or with the current size.
@@ -504,16 +497,17 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
                       try_without_directio = true;
                       continue;
                     }
-                  error (0, errnum, _("%s: error writing at offset %s"),
-                         qname, umaxtostr (offset + soff, buf));
+                  uintmax_t error_offset = offset + soff;
+                  error (0, errnum, _("%s: error writing at offset %ju"),
+                         qname, error_offset);
 
                   /* 'shred' is often used on bad media, before throwing it
                      out.  Thus, it shouldn't give up on bad blocks.  This
                      code works because lim is always a multiple of
                      SECTOR_SIZE, except at the end.  This size constraint
                      also enables direct I/O on some (file) systems.  */
-                  verify (PERIODIC_OUTPUT_SIZE % SECTOR_SIZE == 0);
-                  verify (NONPERIODIC_OUTPUT_SIZE % SECTOR_SIZE == 0);
+                  static_assert (PERIODIC_OUTPUT_SIZE % SECTOR_SIZE == 0);
+                  static_assert (NONPERIODIC_OUTPUT_SIZE % SECTOR_SIZE == 0);
                   if (errnum == EIO && known (size)
                       && (soff | SECTOR_MASK) < lim)
                     {
@@ -548,7 +542,7 @@ dopass (int fd, struct stat const *st, char const *qname, off_t *sizep,
 
       /* Time to print progress? */
       if (n && ((done && *previous_human_offset)
-                || thresh <= (now = time (NULL))))
+                || thresh <= (now = time (nullptr))))
         {
           char offset_buf[LONGEST_HUMAN_READABLE + 1];
           char size_buf[LONGEST_HUMAN_READABLE + 1];
@@ -768,7 +762,7 @@ genpattern (int *dest, size_t num, struct randint_source *s)
         }
     }
   top = num - randpasses;	/* Top of initialized data */
-  /* assert (d == dest + top); */
+  /* affirm (d == dest + top); */
 
   /*
    * We now have fixed patterns in the dest buffer up to
@@ -809,7 +803,7 @@ genpattern (int *dest, size_t num, struct randint_source *s)
         }
       accum -= randpasses;
     }
-  /* assert (top == num); */
+  /* affirm (top == num); */
 }
 
 /*
@@ -868,12 +862,12 @@ do_wipefd (int fd, char const *qname, struct randint_source *s,
           if (! flags->exact)
             {
               /* Round up to the nearest block size to clear slack space.  */
-              off_t remainder = size % ST_BLKSIZE (st);
-              if (size && size < ST_BLKSIZE (st))
+              off_t remainder = size % STP_BLKSIZE (&st);
+              if (size && size < STP_BLKSIZE (&st))
                 i_size = size;
               if (remainder != 0)
                 {
-                  off_t size_incr = ST_BLKSIZE (st) - remainder;
+                  off_t size_incr = STP_BLKSIZE (&st) - remainder;
                   size += MIN (size_incr, OFF_T_MAX - size);
                 }
             }
@@ -893,7 +887,7 @@ do_wipefd (int fd, char const *qname, struct randint_source *s,
         }
     }
   else if (S_ISREG (st.st_mode)
-           && st.st_size < MIN (ST_BLKSIZE (st), size))
+           && st.st_size < MIN (STP_BLKSIZE (&st), size))
     i_size = st.st_size;
 
   /* Schedule the passes in random order. */
@@ -996,8 +990,7 @@ incname (char *name, size_t len)
       char const *p = strchr (nameset, name[len]);
 
       /* Given that NAME is composed of bytes from NAMESET,
-         P will never be NULL here.  */
-      assert (p);
+         P will never be null here.  */
 
       /* If this character has a successor, use it.  */
       if (p[1])
@@ -1168,12 +1161,12 @@ int
 main (int argc, char **argv)
 {
   bool ok = true;
-  struct Options flags = { 0, };
+  struct Options flags = {0};
   char **file;
   int n_files;
   int c;
   int i;
-  char const *random_source = NULL;
+  char const *random_source = nullptr;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -1186,7 +1179,7 @@ main (int argc, char **argv)
   flags.n_iterations = DEFAULT_PASSES;
   flags.size = -1;
 
-  while ((c = getopt_long (argc, argv, "fn:s:uvxz", long_opts, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, "fn:s:uvxz", long_opts, nullptr)) != -1)
     {
       switch (c)
         {
@@ -1203,12 +1196,12 @@ main (int argc, char **argv)
 
         case RANDOM_SOURCE_OPTION:
           if (random_source && !STREQ (random_source, optarg))
-            die (EXIT_FAILURE, 0, _("multiple random sources specified"));
+            error (EXIT_FAILURE, 0, _("multiple random sources specified"));
           random_source = optarg;
           break;
 
         case 'u':
-          if (optarg == NULL)
+          if (optarg == nullptr)
             flags.remove_file = remove_wipesync;
           else
             flags.remove_file = XARGMATCH ("--remove", optarg,
@@ -1216,8 +1209,8 @@ main (int argc, char **argv)
           break;
 
         case 's':
-          flags.size = xnumtoumax (optarg, 0, 0, OFF_T_MAX, "cbBkKMGTPEZY0",
-                                   _("invalid file size"), 0);
+          flags.size = xnumtoumax (optarg, 0, 0, OFF_T_MAX, "cbBkKMGTPEZYRQ0",
+                                   _("invalid file size"), 0, 0);
           break;
 
         case 'v':
@@ -1252,8 +1245,8 @@ main (int argc, char **argv)
 
   randint_source = randint_all_new (random_source, SIZE_MAX);
   if (! randint_source)
-    die (EXIT_FAILURE, errno, "%s",
-         quotef (random_source ? random_source : "getrandom"));
+    error (EXIT_FAILURE, errno, "%s",
+           quotef (random_source ? random_source : "getrandom"));
   atexit (clear_random_data);
 
   for (i = 0; i < n_files; i++)

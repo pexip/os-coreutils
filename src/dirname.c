@@ -1,6 +1,6 @@
 /* dirname -- strip suffix from file name
 
-   Copyright (C) 1990-2022 Free Software Foundation, Inc.
+   Copyright (C) 1990-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include <sys/types.h>
 
 #include "system.h"
-#include "error.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "dirname"
@@ -34,10 +33,10 @@
 
 static struct option const longopts[] =
 {
-  {"zero", no_argument, NULL, 'z'},
+  {"zero", no_argument, nullptr, 'z'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -92,7 +91,7 @@ main (int argc, char **argv)
 
   while (true)
     {
-      int c = getopt_long (argc, argv, "z", longopts, NULL);
+      int c = getopt_long (argc, argv, "z", longopts, nullptr);
 
       if (c == -1)
         break;

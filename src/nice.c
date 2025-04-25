@@ -1,5 +1,5 @@
 /* nice -- run a program with modified niceness
-   Copyright (C) 1990-2022 Free Software Foundation, Inc.
+   Copyright (C) 1990-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,8 +29,7 @@
 # include <sys/resource.h>
 #endif
 
-#include "die.h"
-#include "error.h"
+#include "c-ctype.h"
 #include "quote.h"
 #include "xstrtol.h"
 
@@ -57,10 +56,10 @@
 
 static struct option const longopts[] =
 {
-  {"adjustment", required_argument, NULL, 'n'},
+  {"adjustment", required_argument, nullptr, 'n'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -86,6 +85,7 @@ With no COMMAND, print the current niceness.  Niceness values range from\n\
       fputs (HELP_OPTION_DESCRIPTION, stdout);
       fputs (VERSION_OPTION_DESCRIPTION, stdout);
       printf (USAGE_BUILTIN_WARNING, PROGRAM_NAME);
+      emit_exec_status (PROGRAM_NAME);
       emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
@@ -102,7 +102,7 @@ main (int argc, char **argv)
 {
   int current_niceness;
   int adjustment = 10;
-  char const *adjustment_given = NULL;
+  char const *adjustment_given = nullptr;
   bool ok;
   int i;
 
@@ -119,7 +119,7 @@ main (int argc, char **argv)
     {
       char const *s = argv[i];
 
-      if (s[0] == '-' && ISDIGIT (s[1 + (s[1] == '-' || s[1] == '+')]))
+      if (s[0] == '-' && c_isdigit (s[1 + (s[1] == '-' || s[1] == '+')]))
         {
           adjustment_given = s + 1;
           ++i;
@@ -136,7 +136,7 @@ main (int argc, char **argv)
           /* Initialize getopt_long's internal state.  */
           optind = 0;
 
-          c = getopt_long (fake_argc, fake_argv, "+n:", longopts, NULL);
+          c = getopt_long (fake_argc, fake_argv, "+n:", longopts, nullptr);
           i += optind - 1;
 
           switch (c)
@@ -169,9 +169,9 @@ main (int argc, char **argv)
          "setpriority" and "nice" do.  */
       enum { MIN_ADJUSTMENT = 1 - 2 * NZERO, MAX_ADJUSTMENT = 2 * NZERO - 1 };
       long int tmp;
-      if (LONGINT_OVERFLOW < xstrtol (adjustment_given, NULL, 10, &tmp, ""))
-        die (EXIT_CANCELED, 0, _("invalid adjustment %s"),
-             quote (adjustment_given));
+      if (LONGINT_OVERFLOW < xstrtol (adjustment_given, nullptr, 10, &tmp, ""))
+        error (EXIT_CANCELED, 0, _("invalid adjustment %s"),
+               quote (adjustment_given));
       adjustment = MAX (MIN_ADJUSTMENT, MIN (tmp, MAX_ADJUSTMENT));
     }
 
@@ -186,7 +186,7 @@ main (int argc, char **argv)
       errno = 0;
       current_niceness = GET_NICENESS ();
       if (current_niceness == -1 && errno != 0)
-        die (EXIT_CANCELED, errno, _("cannot get niceness"));
+        error (EXIT_CANCELED, errno, _("cannot get niceness"));
       printf ("%d\n", current_niceness);
       return EXIT_SUCCESS;
     }
@@ -197,7 +197,7 @@ main (int argc, char **argv)
 #else
   current_niceness = GET_NICENESS ();
   if (current_niceness == -1 && errno != 0)
-    die (EXIT_CANCELED, errno, _("cannot get niceness"));
+    error (EXIT_CANCELED, errno, _("cannot get niceness"));
   ok = (setpriority (PRIO_PROCESS, 0, current_niceness + adjustment) == 0);
 #endif
   if (!ok)

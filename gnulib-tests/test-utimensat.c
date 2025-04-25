@@ -1,5 +1,5 @@
 /* Tests of utimensat.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ SIGNATURE_CHECK (utimensat, int, (int, char const *, struct timespec const[2],
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,8 +94,11 @@ main (void)
   /* Directory-relative tests.  */
   ASSERT (mkdir (BASE "dir", 0700) == 0);
   ASSERT (chdir (BASE "dir") == 0);
-  fd = creat ("file", 0600);
+  fd = open ("file", O_RDWR | O_CREAT | O_TRUNC, 0600);
   ASSERT (0 <= fd);
+
+  bool check_atime = checkable_atime (fd, NULL);
+
   errno = 0;
   ASSERT (utimensat (fd, ".", NULL, 0) == -1);
   ASSERT (errno == ENOTDIR);
@@ -109,8 +111,11 @@ main (void)
     ts[1].tv_nsec = 0;
     ASSERT (utimensat (dfd, BASE "dir/file", ts, AT_SYMLINK_NOFOLLOW) == 0);
     ASSERT (stat ("file", &st) == 0);
-    ASSERT (st.st_atime == Y2K);
-    ASSERT (get_stat_atime_ns (&st) == 0);
+    if (check_atime)
+      {
+        ASSERT (st.st_atime == Y2K);
+        ASSERT (get_stat_atime_ns (&st) == 0);
+      }
     ASSERT (st.st_mtime == Y2K);
     ASSERT (get_stat_mtime_ns (&st) == 0);
   }
@@ -124,5 +129,6 @@ main (void)
   ASSERT (chdir ("..") == 0);
   ASSERT (unlink (BASE "dir/file") == 0);
   ASSERT (rmdir (BASE "dir") == 0);
-  return result1 | result2;
+  int result = result1 | result2;
+  return (result ? result : test_exit_status);
 }

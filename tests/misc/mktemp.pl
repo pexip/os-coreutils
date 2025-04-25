@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Test "mktemp".
 
-# Copyright (C) 2007-2022 Free Software Foundation, Inc.
+# Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -165,7 +165,7 @@ my @Tests =
      ['suffix10f', 'aXXb', {EXIT => 1},
       {ERR=>"$prog: too few X's in template 'aXXb'\n"}],
      ['suffix10d', '-d --suffix=X aXX', {EXIT => 1},
-      {ERR=>"$prog: too few X's in template 'aXXX'\n"}],
+      {ERR=>"$prog: too few X's in template 'aXX'\n"}],
 
      ['suffix11f', '--suffix=.txt', {OUT=>"./tmp.ZZZZZZZZZZ.txt\n"},
       {ENV=>"TMPDIR=."},
@@ -181,6 +181,12 @@ my @Tests =
       {OUT => "./a/bZZZZ\n"},
       {POST => sub { my ($f) = @_; defined $f or return; chomp $f;
        check_tmp $f, 'F'; unlink $f; rmdir 'a' or die "rmdir a: $!\n" }}
+     ],
+
+     ['priority-t-tmpdir', "-t -p $bad_dir foo.XXX",
+      {ENV=>"TMPDIR=."},
+      {OUT_SUBST => 's,....$,.ZZZ,'},
+      {OUT => "./foo.ZZZ\n"},
      ],
 
      ['pipe-bad-tmpdir',

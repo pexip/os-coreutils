@@ -1,7 +1,7 @@
 #!/bin/sh
 # Do dereference a symlink arg if its name is written with a trailing slash.
 
-# Copyright (C) 1999-2022 Free Software Foundation, Inc.
+# Copyright (C) 1999-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ print_ver_ ls
 mkdir dir || framework_failure_
 ln -s dir symlink || framework_failure_
 
-set $(ls -l symlink/)
+set -- $(ls -l symlink/)
 
 # Prior to fileutils-4.0k, the following would have output '... symlink -> dir'.
 test "$*" = 'total 0' && : || fail=1

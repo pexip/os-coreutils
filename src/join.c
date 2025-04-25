@@ -1,5 +1,5 @@
 /* join - join lines of two files on a common field
-   Copyright (C) 1991-2022 Free Software Foundation, Inc.
+   Copyright (C) 1991-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,18 +18,18 @@
 
 #include <config.h>
 
-#include <assert.h>
 #include <sys/types.h>
 #include <getopt.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
+#include "assure.h"
 #include "fadvise.h"
 #include "hard-locale.h"
 #include "linebuffer.h"
+#include "mcel.h"
 #include "memcasecmp.h"
 #include "quote.h"
+#include "skipchars.h"
 #include "stdio--.h"
 #include "xmemcoll.h"
 #include "xstrtol.h"
@@ -57,7 +57,7 @@ struct outlist
     int file;
 
     /* Field index (zero-based), specified only when FILE is 1 or 2.  */
-    size_t field;
+    idx_t field;
 
     struct outlist *next;
   };
@@ -66,15 +66,15 @@ struct outlist
 struct field
   {
     char *beg;			/* First character in field.  */
-    size_t len;			/* The length of the field.  */
+    idx_t len;			/* The length of the field.  */
   };
 
 /* A line read from an input file.  */
 struct line
   {
     struct linebuffer buf;	/* The line itself.  */
-    size_t nfields;		/* Number of elements in 'fields'.  */
-    size_t nfields_allocated;	/* Number of elements allocated for 'fields'. */
+    idx_t nfields;		/* Number of elements in 'fields'.  */
+    idx_t nfields_allocated;	/* Number of elements allocated for 'fields'. */
     struct field *fields;
   };
 
@@ -82,13 +82,13 @@ struct line
    same join field value.  */
 struct seq
   {
-    size_t count;			/* Elements used in 'lines'.  */
-    size_t alloc;			/* Elements allocated in 'lines'.  */
+    idx_t count;		/* Elements used in 'lines'.  */
+    idx_t alloc;		/* Elements allocated in 'lines'.  */
     struct line **lines;
   };
 
 /* The previous line read from each file.  */
-static struct line *prevline[2] = {NULL, NULL};
+static struct line *prevline[2] = {nullptr, nullptr};
 
 /* The number of lines read from each file.  */
 static uintmax_t line_no[2] = {0, 0};
@@ -99,7 +99,7 @@ static char *g_names[2];
 /* This provides an extra line buffer for each file.  We need these if we
    try to read two consecutive lines into the same buffer, since we don't
    want to overwrite the previous buffer before we check order. */
-static struct line *spareline[2] = {NULL, NULL};
+static struct line *spareline[2] = {nullptr, nullptr};
 
 /* True if the LC_COLLATE locale is hard.  */
 static bool hard_LC_COLLATE;
@@ -123,12 +123,12 @@ static char const *empty_filler;
 static bool autoformat;
 /* The number of fields to output for each line.
    Only significant when autoformat is true.  */
-static size_t autocount_1;
-static size_t autocount_2;
+static idx_t autocount_1;
+static idx_t autocount_2;
 
-/* Field to join on; SIZE_MAX means they haven't been determined yet.  */
-static size_t join_field_1 = SIZE_MAX;
-static size_t join_field_2 = SIZE_MAX;
+/* Field to join on; -1 means they haven't been determined yet.  */
+static ptrdiff_t join_field_1 = -1;
+static ptrdiff_t join_field_2 = -1;
 
 /* List of fields to print.  */
 static struct outlist outlist_head;
@@ -136,10 +136,14 @@ static struct outlist outlist_head;
 /* Last element in 'outlist', where a new element can be added.  */
 static struct outlist *outlist_end = &outlist_head;
 
-/* Tab character separating fields.  If negative, fields are separated
-   by any nonempty string of blanks, otherwise by exactly one
-   tab character whose value (when cast to unsigned char) equals TAB.  */
-static int tab = -1;
+/* Tab character (or encoding error) separating fields.  If TAB.len == 0,
+   fields are separated by any nonempty string of blanks, otherwise by
+   exactly one tab character (or encoding error) equal to TAB.  */
+static mcel_t tab;
+
+/* The output separator to use, and its length in bytes.  */
+static char const *output_separator = " ";
+static idx_t output_seplen = 1;
 
 /* If nonzero, check that the input is correctly ordered. */
 static enum
@@ -159,14 +163,14 @@ enum
 
 static struct option const longopts[] =
 {
-  {"ignore-case", no_argument, NULL, 'i'},
-  {"check-order", no_argument, NULL, CHECK_ORDER_OPTION},
-  {"nocheck-order", no_argument, NULL, NOCHECK_ORDER_OPTION},
-  {"zero-terminated", no_argument, NULL, 'z'},
-  {"header", no_argument, NULL, HEADER_LINE_OPTION},
+  {"ignore-case", no_argument, nullptr, 'i'},
+  {"check-order", no_argument, nullptr, CHECK_ORDER_OPTION},
+  {"nocheck-order", no_argument, nullptr, NOCHECK_ORDER_OPTION},
+  {"zero-terminated", no_argument, nullptr, 'z'},
+  {"header", no_argument, nullptr, HEADER_LINE_OPTION},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Used to print non-joining lines */
@@ -246,7 +250,7 @@ line of each file determines the number of fields output for each line.\n\
 Important: FILE1 and FILE2 must be sorted on the join fields.\n\
 E.g., use \"sort -k 1b,1\" if 'join' has no options,\n\
 or use \"join -t ''\" if 'sort' has no options.\n\
-Note, comparisons honor the rules specified by 'LC_COLLATE'.\n\
+Comparisons honor the rules specified by 'LC_COLLATE'.\n\
 If the input is not sorted and some lines cannot be joined, a\n\
 warning message will be given.\n\
 "), stdout);
@@ -258,15 +262,26 @@ warning message will be given.\n\
 /* Record a field in LINE, with location FIELD and size LEN.  */
 
 static void
-extract_field (struct line *line, char *field, size_t len)
+extract_field (struct line *line, char *field, idx_t len)
 {
   if (line->nfields >= line->nfields_allocated)
-    {
-      line->fields = X2NREALLOC (line->fields, &line->nfields_allocated);
-    }
+    line->fields = xpalloc (line->fields, &line->nfields_allocated, 1,
+                            -1, sizeof *line->fields);
   line->fields[line->nfields].beg = field;
   line->fields[line->nfields].len = len;
   ++(line->nfields);
+}
+
+static bool
+eq_tab (mcel_t g)
+{
+  return mcel_cmp (g, tab) == 0;
+}
+
+static bool
+newline_or_blank (mcel_t g)
+{
+  return g.ch == '\n' || c32isblank (g.ch);
 }
 
 /* Fill in the 'fields' structure in LINE.  */
@@ -280,45 +295,34 @@ xfields (struct line *line)
   if (ptr == lim)
     return;
 
-  if (0 <= tab && tab != '\n')
-    {
-      char *sep;
-      for (; (sep = memchr (ptr, tab, lim - ptr)) != NULL; ptr = sep + 1)
+  if (!tab.len)
+    while ((ptr = skip_buf_matching (ptr, lim, newline_or_blank, true)) < lim)
+      {
+        char *sep = skip_buf_matching (ptr, lim, newline_or_blank, false);
         extract_field (line, ptr, sep - ptr);
-    }
-  else if (tab < 0)
+        ptr = sep;
+      }
+  else
     {
-      /* Skip leading blanks before the first field.  */
-      while (field_sep (*ptr))
-        if (++ptr == lim)
-          return;
-
-      do
-        {
-          char *sep;
-          for (sep = ptr + 1; sep != lim && ! field_sep (*sep); sep++)
-            continue;
+      if (tab.ch != '\n')
+        for (char *sep;
+             (sep = skip_buf_matching (ptr, lim, eq_tab, false)) < lim;
+             ptr = sep + mcel_scan (sep, lim).len)
           extract_field (line, ptr, sep - ptr);
-          if (sep == lim)
-            return;
-          for (ptr = sep + 1; ptr != lim && field_sep (*ptr); ptr++)
-            continue;
-        }
-      while (ptr != lim);
-    }
 
-  extract_field (line, ptr, lim - ptr);
+      extract_field (line, ptr, lim - ptr);
+    }
 }
 
 static void
 freeline (struct line *line)
 {
-  if (line == NULL)
+  if (line == nullptr)
     return;
   free (line->fields);
-  line->fields = NULL;
+  line->fields = nullptr;
   free (line->buf.buffer);
-  line->buf.buffer = NULL;
+  line->buf.buffer = nullptr;
 }
 
 /* Return <0 if the join field in LINE1 compares less than the one in LINE2;
@@ -328,14 +332,14 @@ freeline (struct line *line)
 
 static int
 keycmp (struct line const *line1, struct line const *line2,
-        size_t jf_1, size_t jf_2)
+        idx_t jf_1, idx_t jf_2)
 {
   /* Start of field to compare in each file.  */
   char *beg1;
   char *beg2;
 
-  size_t len1;
-  size_t len2;		/* Length of fields to compare.  */
+  idx_t len1;
+  idx_t len2;		/* Length of fields to compare.  */
   int diff;
 
   if (jf_1 < line1->nfields)
@@ -345,7 +349,7 @@ keycmp (struct line const *line1, struct line const *line2,
     }
   else
     {
-      beg1 = NULL;
+      beg1 = nullptr;
       len1 = 0;
     }
 
@@ -356,7 +360,7 @@ keycmp (struct line const *line1, struct line const *line2,
     }
   else
     {
-      beg2 = NULL;
+      beg2 = nullptr;
       len2 = 0;
     }
 
@@ -380,7 +384,7 @@ keycmp (struct line const *line1, struct line const *line2,
 
   if (diff)
     return diff;
-  return len1 < len2 ? -1 : len1 != len2;
+  return (len1 > len2) - (len1 < len2);
 }
 
 /* Check that successive input lines PREV and CURRENT from input file
@@ -404,11 +408,11 @@ check_order (const struct line *prev,
     {
       if (!issued_disorder_warning[whatfile - 1])
         {
-          size_t join_field = whatfile == 1 ? join_field_1 : join_field_2;
+          idx_t join_field = whatfile == 1 ? join_field_1 : join_field_2;
           if (keycmp (prev, current, join_field, join_field) > 0)
             {
               /* Exclude any trailing newline. */
-              size_t len = current->buf.length;
+              idx_t len = current->buf.length;
               if (0 < len && current->buf.buffer[len - 1] == '\n')
                 --len;
 
@@ -418,7 +422,7 @@ check_order (const struct line *prev,
 
               error ((check_input_order == CHECK_ORDER_ENABLED
                       ? EXIT_FAILURE : 0),
-                     0, _("%s:%"PRIuMAX": is not sorted: %.*s"),
+                     0, _("%s:%ju: is not sorted: %.*s"),
                      g_names[whatfile - 1], line_no[whatfile - 1],
                      (int) len, current->buf.buffer);
 
@@ -439,7 +443,7 @@ reset_line (struct line *line)
 static struct line *
 init_linep (struct line **linep)
 {
-  struct line *line = xcalloc (1, sizeof *line);
+  struct line *line = xzalloc (sizeof *line);
   *linep = line;
   return line;
 }
@@ -466,7 +470,7 @@ get_line (FILE *fp, struct line **linep, int which)
   if (! readlinebuffer_delim (&line->buf, fp, eolchar))
     {
       if (ferror (fp))
-        die (EXIT_FAILURE, errno, _("read error"));
+        error (EXIT_FAILURE, errno, _("read error"));
       freeline (line);
       return false;
     }
@@ -484,7 +488,7 @@ get_line (FILE *fp, struct line **linep, int which)
 static void
 free_spareline (void)
 {
-  for (size_t i = 0; i < ARRAY_CARDINALITY (spareline); i++)
+  for (idx_t i = 0; i < ARRAY_CARDINALITY (spareline); i++)
     {
       if (spareline[i])
         {
@@ -499,7 +503,7 @@ initseq (struct seq *seq)
 {
   seq->count = 0;
   seq->alloc = 0;
-  seq->lines = NULL;
+  seq->lines = nullptr;
 }
 
 /* Read a line from FP and add it to SEQ.  Return true if successful.  */
@@ -509,9 +513,9 @@ getseq (FILE *fp, struct seq *seq, int whichfile)
 {
   if (seq->count == seq->alloc)
     {
-      seq->lines = X2NREALLOC (seq->lines, &seq->alloc);
-      for (size_t i = seq->count; i < seq->alloc; i++)
-        seq->lines[i] = NULL;
+      seq->lines = xpalloc (seq->lines, &seq->alloc, 1, -1, sizeof *seq->lines);
+      for (idx_t i = seq->count; i < seq->alloc; i++)
+        seq->lines[i] = nullptr;
     }
 
   if (get_line (fp, &seq->lines[seq->count], whichfile))
@@ -536,7 +540,7 @@ advance_seq (FILE *fp, struct seq *seq, bool first, int whichfile)
 static void
 delseq (struct seq *seq)
 {
-  for (size_t i = 0; i < seq->alloc; i++)
+  for (idx_t i = 0; i < seq->alloc; i++)
     {
       freeline (seq->lines[i]);
       free (seq->lines[i]);
@@ -549,13 +553,11 @@ delseq (struct seq *seq)
    'empty_filler' if it is nonempty.  */
 
 static void
-prfield (size_t n, struct line const *line)
+prfield (idx_t n, struct line const *line)
 {
-  size_t len;
-
   if (n < line->nfields)
     {
-      len = line->fields[n].len;
+      idx_t len = line->fields[n].len;
       if (len)
         fwrite (line->fields[n].beg, 1, len, stdout);
       else if (empty_filler)
@@ -568,20 +570,19 @@ prfield (size_t n, struct line const *line)
 /* Output all the fields in line, other than the join field.  */
 
 static void
-prfields (struct line const *line, size_t join_field, size_t autocount)
+prfields (struct line const *line, idx_t join_field, idx_t autocount)
 {
-  size_t i;
-  size_t nfields = autoformat ? autocount : line->nfields;
-  char output_separator = tab < 0 ? ' ' : tab;
+  idx_t i;
+  idx_t nfields = autoformat ? autocount : line->nfields;
 
   for (i = 0; i < join_field && i < nfields; ++i)
     {
-      putchar (output_separator);
+      fwrite (output_separator, 1, output_seplen, stdout);
       prfield (i, line);
     }
   for (i = join_field + 1; i < nfields; ++i)
     {
-      putchar (output_separator);
+      fwrite (output_separator, 1, output_seplen, stdout);
       prfield (i, line);
     }
 }
@@ -592,8 +593,7 @@ static void
 prjoin (struct line const *line1, struct line const *line2)
 {
   const struct outlist *outlist;
-  char output_separator = tab < 0 ? ' ' : tab;
-  size_t field;
+  idx_t field;
   struct line const *line;
 
   outlist = outlist_head.next;
@@ -624,9 +624,9 @@ prjoin (struct line const *line1, struct line const *line2)
             }
           prfield (field, line);
           o = o->next;
-          if (o == NULL)
+          if (o == nullptr)
             break;
-          putchar (output_separator);
+          fwrite (output_separator, 1, output_seplen, stdout);
         }
       putchar (eolchar);
     }
@@ -652,6 +652,9 @@ prjoin (struct line const *line1, struct line const *line2)
 
       putchar (eolchar);
     }
+
+  if (ferror (stdout))
+    write_error ();
 }
 
 /* Print the join of the files in FP1 and FP2.  */
@@ -683,8 +686,8 @@ join (FILE *fp1, FILE *fp2)
       struct line const *hline1 = seq1.count ? seq1.lines[0] : &uni_blank;
       struct line const *hline2 = seq2.count ? seq2.lines[0] : &uni_blank;
       prjoin (hline1, hline2);
-      prevline[0] = NULL;
-      prevline[1] = NULL;
+      prevline[0] = nullptr;
+      prevline[1] = nullptr;
       if (seq1.count)
         advance_seq (fp1, &seq1, true, 1);
       if (seq2.count)
@@ -740,9 +743,9 @@ join (FILE *fp1, FILE *fp2)
 
       if (print_pairables)
         {
-          for (size_t i = 0; i < seq1.count - 1; ++i)
+          for (idx_t i = 0; i < seq1.count - 1; ++i)
             {
-              size_t j;
+              idx_t j;
               for (j = 0; j < seq2.count - 1; ++j)
                 prjoin (seq1.lines[i], seq2.lines[j]);
             }
@@ -769,7 +772,7 @@ join (FILE *fp1, FILE *fp2)
      tail ends of both inputs to verify that they are in order.  We
      skip the rest of the tail once we have issued a warning for that
      file, unless we actually need to print the unpairable lines.  */
-  struct line *line = NULL;
+  struct line *line = nullptr;
   bool checktail = false;
 
   if (check_input_order != CHECK_ORDER_DISABLED
@@ -816,17 +819,17 @@ join (FILE *fp1, FILE *fp2)
 /* Add a field spec for field FIELD of file FILE to 'outlist'.  */
 
 static void
-add_field (int file, size_t field)
+add_field (int file, idx_t field)
 {
   struct outlist *o;
 
-  assert (file == 0 || file == 1 || file == 2);
-  assert (file != 0 || field == 0);
+  affirm (file == 0 || file == 1 || file == 2);
+  affirm (file != 0 || field == 0);
 
   o = xmalloc (sizeof *o);
   o->file = file;
   o->field = field;
-  o->next = NULL;
+  o->next = nullptr;
 
   /* Add to the end of the list so the fields are in the right order.  */
   outlist_end->next = o;
@@ -836,24 +839,21 @@ add_field (int file, size_t field)
 /* Convert a string of decimal digits, STR (the 1-based join field number),
    to an integral value.  Upon successful conversion, return one less
    (the zero-based field number).  Silently convert too-large values
-   to SIZE_MAX - 1.  Otherwise, if a value cannot be converted, give a
+   to PTRDIFF_MAX.  Otherwise, if a value cannot be converted, give a
    diagnostic and exit.  */
 
-static size_t
+static idx_t
 string_to_join_field (char const *str)
 {
-  size_t result;
-  uintmax_t val;
+  intmax_t val;
 
-  strtol_error s_err = xstrtoumax (str, NULL, 10, &val, "");
-  if (s_err == LONGINT_OVERFLOW || (s_err == LONGINT_OK && SIZE_MAX < val))
-    val = SIZE_MAX;
-  else if (s_err != LONGINT_OK || val == 0)
-    die (EXIT_FAILURE, 0, _("invalid field number: %s"), quote (str));
+  strtol_error s_err = xstrtoimax (str, nullptr, 10, &val, "");
+  if (s_err == LONGINT_OVERFLOW || (s_err == LONGINT_OK && PTRDIFF_MAX < val))
+    val = PTRDIFF_MAX;
+  else if (s_err != LONGINT_OK || val <= 0)
+    error (EXIT_FAILURE, 0, _("invalid field number: %s"), quote (str));
 
-  result = val - 1;
-
-  return result;
+  return val - 1;
 }
 
 /* Convert a single field specifier string, S, to a *FILE_INDEX, *FIELD_INDEX
@@ -861,7 +861,7 @@ string_to_join_field (char const *str)
    If S is valid, return true.  Otherwise, give a diagnostic and exit.  */
 
 static void
-decode_field_spec (char const *s, int *file_index, size_t *field_index)
+decode_field_spec (char const *s, int *file_index, idx_t *field_index)
 {
   /* The first character must be 0, 1, or 2.  */
   switch (s[0])
@@ -870,7 +870,7 @@ decode_field_spec (char const *s, int *file_index, size_t *field_index)
       if (s[1])
         {
           /* '0' must be all alone -- no '.FIELD'.  */
-          die (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
+          error (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
         }
       *file_index = 0;
       *field_index = 0;
@@ -879,22 +879,21 @@ decode_field_spec (char const *s, int *file_index, size_t *field_index)
     case '1':
     case '2':
       if (s[1] != '.')
-        die (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
+        error (EXIT_FAILURE, 0, _("invalid field specifier: %s"), quote (s));
       *file_index = s[0] - '0';
       *field_index = string_to_join_field (s + 2);
       break;
 
     default:
-      die (EXIT_FAILURE, 0,
-           _("invalid file number in field spec: %s"), quote (s));
-
-      /* Tell gcc -W -Wall that we can't get beyond this point.
-         This avoids a warning (otherwise legit) that the caller's copies
-         of *file_index and *field_index might be used uninitialized.  */
-      abort ();
-
-      break;
+      error (EXIT_FAILURE, 0,
+             _("invalid file number in field spec: %s"), quote (s));
     }
+}
+
+static bool
+comma_or_blank (mcel_t g)
+{
+  return g.ch == ',' || c32isblank (g.ch);
 }
 
 /* Add the comma or blank separated field spec(s) in STR to 'outlist'.  */
@@ -907,31 +906,30 @@ add_field_list (char *str)
   do
     {
       int file_index;
-      size_t field_index;
+      idx_t field_index;
       char const *spec_item = p;
-
-      p = strpbrk (p, ", \t");
-      if (p)
-        *p++ = '\0';
+      p = skip_str_matching (spec_item, comma_or_blank, false);
+      if (*p)
+        {
+          mcel_t g = mcel_scanz (p);
+          *p = '\0';
+          p += g.len;
+        }
       decode_field_spec (spec_item, &file_index, &field_index);
       add_field (file_index, field_index);
     }
-  while (p);
+  while (*p);
 }
 
 /* Set the join field *VAR to VAL, but report an error if *VAR is set
    more than once to incompatible values.  */
 
 static void
-set_join_field (size_t *var, size_t val)
+set_join_field (ptrdiff_t *var, idx_t val)
 {
-  if (*var != SIZE_MAX && *var != val)
-    {
-      unsigned long int var1 = *var + 1;
-      unsigned long int val1 = val + 1;
-      die (EXIT_FAILURE, 0,
-           _("incompatible join fields %lu, %lu"), var1, val1);
-    }
+  if (0 <= *var && *var != val)
+    error (EXIT_FAILURE, 0,
+           _("incompatible join fields %td, %td"), *var, val);
   *var = val;
 }
 
@@ -1030,7 +1028,7 @@ main (int argc, char **argv)
   check_input_order = CHECK_ORDER_DEFAULT;
 
   while ((optc = getopt_long (argc, argv, "-a:e:i1:2:j:o:t:v:z",
-                              longopts, NULL))
+                              longopts, nullptr))
          != -1)
     {
       optc_status = MUST_BE_OPERAND;
@@ -1043,11 +1041,11 @@ main (int argc, char **argv)
 
         case 'a':
           {
-            unsigned long int val;
-            if (xstrtoul (optarg, NULL, 10, &val, "") != LONGINT_OK
+            long int val;
+            if (xstrtol (optarg, nullptr, 10, &val, "") != LONGINT_OK
                 || (val != 1 && val != 2))
-              die (EXIT_FAILURE, 0,
-                   _("invalid field number: %s"), quote (optarg));
+              error (EXIT_FAILURE, 0,
+                     _("invalid file number: %s"), quote (optarg));
             if (val == 1)
               print_unpairables_1 = true;
             else
@@ -1057,8 +1055,8 @@ main (int argc, char **argv)
 
         case 'e':
           if (empty_filler && ! STREQ (empty_filler, optarg))
-            die (EXIT_FAILURE, 0,
-                 _("conflicting empty-field replacement strings"));
+            error (EXIT_FAILURE, 0,
+                   _("conflicting empty-field replacement strings"));
           empty_filler = optarg;
           break;
 
@@ -1102,20 +1100,30 @@ main (int argc, char **argv)
 
         case 't':
           {
-            unsigned char newtab = optarg[0];
-            if (! newtab)
-              newtab = '\n'; /* '' => process the whole line.  */
-            else if (optarg[1])
+            mcel_t newtab;
+            if (!*optarg)
               {
-                if (STREQ (optarg, "\\0"))
-                  newtab = '\0';
-                else
-                  die (EXIT_FAILURE, 0, _("multi-character tab %s"),
-                       quote (optarg));
+                /* '' => process the whole line.  */
+                newtab = mcel_ch ('\n', 1);
+                /* output_separator does not matter.  */
               }
-            if (0 <= tab && tab != newtab)
-              die (EXIT_FAILURE, 0, _("incompatible tabs"));
+            else if (STREQ (optarg, "\\0"))
+              {
+                newtab = mcel_ch ('\0', 1);
+                output_separator = "";
+              }
+            else
+              {
+                newtab = mcel_scanz (optarg);
+                if (optarg[newtab.len])
+                  error (EXIT_FAILURE, 0, _("multi-character tab %s"),
+                         quote (optarg));
+                output_separator = optarg;
+              }
+            if (tab.len && mcel_cmp (tab, newtab) != 0)
+              error (EXIT_FAILURE, 0, _("incompatible tabs"));
             tab = newtab;
+            output_seplen = newtab.len;
           }
           break;
 
@@ -1175,28 +1183,28 @@ main (int argc, char **argv)
         set_join_field (&join_field_2, i);
       }
 
-  if (join_field_1 == SIZE_MAX)
+  if (join_field_1 < 0)
     join_field_1 = 0;
-  if (join_field_2 == SIZE_MAX)
+  if (join_field_2 < 0)
     join_field_2 = 0;
 
   fp1 = STREQ (g_names[0], "-") ? stdin : fopen (g_names[0], "r");
   if (!fp1)
-    die (EXIT_FAILURE, errno, "%s", quotef (g_names[0]));
+    error (EXIT_FAILURE, errno, "%s", quotef (g_names[0]));
   fp2 = STREQ (g_names[1], "-") ? stdin : fopen (g_names[1], "r");
   if (!fp2)
-    die (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
+    error (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
   if (fp1 == fp2)
-    die (EXIT_FAILURE, errno, _("both files cannot be standard input"));
+    error (EXIT_FAILURE, errno, _("both files cannot be standard input"));
   join (fp1, fp2);
 
   if (fclose (fp1) != 0)
-    die (EXIT_FAILURE, errno, "%s", quotef (g_names[0]));
+    error (EXIT_FAILURE, errno, "%s", quotef (g_names[0]));
   if (fclose (fp2) != 0)
-    die (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
+    error (EXIT_FAILURE, errno, "%s", quotef (g_names[1]));
 
   if (issued_disorder_warning[0] || issued_disorder_warning[1])
-    die (EXIT_FAILURE, 0, _("input is not in sorted order"));
+    error (EXIT_FAILURE, 0, _("input is not in sorted order"));
   else
     return EXIT_SUCCESS;
 }

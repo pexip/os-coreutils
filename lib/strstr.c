@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-1994, 1996-1998, 2000, 2004, 2007-2022 Free Software
+/* Copyright (C) 1991-1994, 1996-1998, 2000, 2004, 2007-2025 Free Software
    Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -23,8 +23,6 @@
 
 /* Specification of strstr.  */
 #include <string.h>
-
-#include <stdbool.h>
 
 #define RETURN_TYPE char *
 #define AVAILABLE(h, h_l, j, n_l)                       \

@@ -1,5 +1,5 @@
 /* Test of pipe2.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 SIGNATURE_CHECK (pipe2, int, (int[2], int));
 
 #include <fcntl.h>
-#include <stdbool.h>
 
 #if defined _WIN32 && ! defined __CYGWIN__
 /* Get declarations of the native Windows API functions.  */
@@ -143,5 +142,5 @@ main ()
         ASSERT (close (fd[1]) == 0);
       }
 
-  return 0;
+  return test_exit_status;
 }

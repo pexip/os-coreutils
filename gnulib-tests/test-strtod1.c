@@ -1,5 +1,5 @@
 /* Test of strtod() in a French locale.
-   Copyright (C) 2019-2022 Free Software Foundation, Inc.
+   Copyright (C) 2019-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 
 #include <config.h>
 
+/* Specification.  */
 #include <stdlib.h>
 
 #include <errno.h>
@@ -97,5 +98,5 @@ main (int argc, char *argv[])
     ASSERT (errno == 0);
   }
 
-  return 0;
+  return test_exit_status;
 }

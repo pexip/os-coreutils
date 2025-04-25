@@ -1,5 +1,5 @@
 /* Create a temporary file or directory, safely.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@
 #include "system.h"
 
 #include "close-stream.h"
-#include "die.h"
-#include "error.h"
 #include "filenamecat.h"
 #include "quote.h"
 #include "tempname.h"
@@ -47,14 +45,14 @@ enum
 
 static struct option const longopts[] =
 {
-  {"directory", no_argument, NULL, 'd'},
-  {"quiet", no_argument, NULL, 'q'},
-  {"dry-run", no_argument, NULL, 'u'},
-  {"suffix", required_argument, NULL, SUFFIX_OPTION},
-  {"tmpdir", optional_argument, NULL, 'p'},
+  {"directory", no_argument, nullptr, 'd'},
+  {"quiet", no_argument, nullptr, 'q'},
+  {"dry-run", no_argument, nullptr, 'u'},
+  {"suffix", required_argument, nullptr, SUFFIX_OPTION},
+  {"tmpdir", optional_argument, nullptr, 'p'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -146,12 +144,11 @@ int
 main (int argc, char **argv)
 {
   char const *dest_dir;
-  char const *dest_dir_arg = NULL;
+  char const *dest_dir_arg = nullptr;
   bool suppress_file_err = false;
   int c;
-  unsigned int n_args;
   char *template;
-  char *suffix = NULL;
+  char *suffix = nullptr;
   bool use_dest_dir = false;
   bool deprecated_t_option = false;
   bool create_directory = false;
@@ -159,7 +156,7 @@ main (int argc, char **argv)
   int status = EXIT_SUCCESS;
   size_t x_count;
   size_t suffix_len;
-  char *dest_name;
+  char *dest_name = nullptr;
 
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -169,7 +166,7 @@ main (int argc, char **argv)
 
   atexit (maybe_close_stdout);
 
-  while ((c = getopt_long (argc, argv, "dp:qtuV", longopts, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, "dp:qtuV", longopts, nullptr)) != -1)
     {
       switch (c)
         {
@@ -205,7 +202,7 @@ main (int argc, char **argv)
         }
     }
 
-  n_args = argc - optind;
+  int n_args = argc - optind;
   if (2 <= n_args)
     {
       error (0, 0, _("too many templates"));
@@ -227,9 +224,9 @@ main (int argc, char **argv)
       size_t len = strlen (template);
       if (!len || template[len - 1] != 'X')
         {
-          die (EXIT_FAILURE, 0,
-               _("with --suffix, template %s must end in X"),
-               quote (template));
+          error (EXIT_FAILURE, 0,
+                 _("with --suffix, template %s must end in X"),
+                 quote (template));
         }
       suffix_len = strlen (suffix);
       dest_name = xcharalloc (len + suffix_len + 1);
@@ -252,13 +249,19 @@ main (int argc, char **argv)
   /* At this point, template is malloc'd, and suffix points into template.  */
   if (suffix_len && last_component (suffix) != suffix)
     {
-      die (EXIT_FAILURE, 0,
-           _("invalid suffix %s, contains directory separator"),
-           quote (suffix));
+      error (EXIT_FAILURE, 0,
+             _("invalid suffix %s, contains directory separator"),
+             quote (suffix));
     }
   x_count = count_consecutive_X_s (template, suffix - template);
   if (x_count < 3)
-    die (EXIT_FAILURE, 0, _("too few X's in template %s"), quote (template));
+    {
+      /* when suffix was appended to template only diagnose the template.  */
+      if (template == dest_name)
+        template[suffix - template] = '\0';
+      error (EXIT_FAILURE, 0, _("too few X's in template %s"),
+             quote (template));
+    }
 
   if (use_dest_dir)
     {
@@ -273,9 +276,9 @@ main (int argc, char **argv)
             dest_dir = "/tmp";
 
           if (last_component (template) != template)
-            die (EXIT_FAILURE, 0,
-                 _("invalid template, %s, contains directory separator"),
-                 quote (template));
+            error (EXIT_FAILURE, 0,
+                   _("invalid template, %s, contains directory separator"),
+                   quote (template));
         }
       else
         {
@@ -287,13 +290,13 @@ main (int argc, char **argv)
               dest_dir = (env && *env ? env : "/tmp");
             }
           if (IS_ABSOLUTE_FILE_NAME (template))
-            die (EXIT_FAILURE, 0,
-                 _("invalid template, %s; with --tmpdir,"
-                   " it may not be absolute"),
-                 quote (template));
+            error (EXIT_FAILURE, 0,
+                   _("invalid template, %s; with --tmpdir,"
+                     " it may not be absolute"),
+                   quote (template));
         }
 
-      dest_name = file_name_concat (dest_dir, template, NULL);
+      dest_name = file_name_concat (dest_dir, template, nullptr);
       free (template);
       template = dest_name;
       /* Note that suffix is now invalid.  */

@@ -1,6 +1,6 @@
 /* Sort a vector of pointers to data.
 
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
@@ -17,4 +17,14 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 void mpsort (void const **, size_t, int (*) (void const *, void const *));
+
+
+#ifdef __cplusplus
+}
+#endif

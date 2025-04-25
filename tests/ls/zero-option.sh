@@ -1,7 +1,7 @@
 #!/bin/sh
 # Verify behavior of ls --zero.
 
-# Copyright 2021-2022 Free Software Foundation, Inc.
+# Copyright 2021-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ print_ver_ ls
 
 mkdir dir && touch dir/a dir/b dir/cc || framework_failure_
 
-allowed_options='-l'  # explict -l with --zero is allowed
+allowed_options='-l'  # explicit -l with --zero is allowed
 LC_ALL=C ls $allowed_options --zero dir >out || fail=1
 grep '^total' out || fail=1  # Ensure -l honored
 

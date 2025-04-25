@@ -1,6 +1,6 @@
 /* set-fields.h -- parse field list argument
 
-   Copyright (C) 2015-2022 Free Software Foundation, Inc.
+   Copyright (C) 2015-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ struct field_range_pair
 extern struct field_range_pair *frp;
 
 /* Number of finite ranges specified by the user. */
-extern size_t n_frp;
+extern idx_t n_frp;
 
 /* field list parsing options */
 enum

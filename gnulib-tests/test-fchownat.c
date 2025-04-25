@@ -1,5 +1,5 @@
 /* Tests of fchownat.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ SIGNATURE_CHECK (fchownat, int, (int, char const *, uid_t, gid_t, int));
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -101,5 +100,6 @@ main (_GL_UNUSED int argc, char *argv[])
   ASSERT (close (dfd) == 0);
 
   /* FIXME - add additional tests of dfd not at current directory.  */
-  return result1 | result2;
+  int result = result1 | result2;
+  return (result ? result : test_exit_status);
 }

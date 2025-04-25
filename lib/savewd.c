@@ -1,6 +1,6 @@
 /* Save and restore the working directory, possibly using a child process.
 
-   Copyright (C) 2006-2007, 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2006-2007, 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -34,8 +33,15 @@
 
 #include "assure.h"
 #include "attribute.h"
-#include "fcntl-safer.h"
 #include "filename.h"
+
+#if GNULIB_FCNTL_SAFER
+# include "fcntl--.h"
+#endif
+
+#if defined _WIN32 && !defined __CYGWIN__
+# define fork() (assure (false), -1)
+#endif
 
 /* Save the working directory into *WD, if it hasn't been saved
    already.  Return true if a child has been forked to do the real
@@ -48,14 +54,24 @@ savewd_save (struct savewd *wd)
     case INITIAL_STATE:
       /* Save the working directory, or prepare to fall back if possible.  */
       {
-        int fd = open_safer (".", O_SEARCH);
+        int fd = open (".", O_SEARCH);
         if (0 <= fd)
           {
             wd->state = FD_STATE;
             wd->val.fd = fd;
             break;
           }
-        if (errno != EACCES && errno != ESTALE)
+
+        /* There is no point to forking on native MS-Windows which lacks 'fork'.
+           Although there is also no point on systems that support O_SEARCH,
+           macOS 12.6 APFS open (".", O_SEARCH) incorrectly fails if "." is
+           mode 311, so do not attempt to optimize for O_SEARCH != O_RDONLY.  */
+# if defined _WIN32 && !defined __CYGWIN__
+        bool try_fork = false;
+# else
+        bool try_fork = errno == EACCES || errno == ESTALE;
+# endif
+        if (!try_fork)
           {
             wd->state = ERROR_STATE;
             wd->val.errnum = errno;
@@ -148,7 +164,7 @@ savewd_chdir (struct savewd *wd, char const *dir, int options,
                 assure (wd->val.child == 0);
                 break;
 
-              default:
+              case INITIAL_STATE: default:
                 assure (false);
               }
         }
@@ -215,7 +231,7 @@ savewd_restore (struct savewd *wd, int status)
       }
       break;
 
-    default:
+    case FINAL_STATE: default:
       assure (false);
     }
 
@@ -227,20 +243,23 @@ savewd_finish (struct savewd *wd)
 {
   switch (wd->state)
     {
-    case INITIAL_STATE:
     case ERROR_STATE:
       break;
 
     case FD_STATE:
     case FD_POST_CHDIR_STATE:
       close (wd->val.fd);
+      FALLTHROUGH;
+    case INITIAL_STATE:
+      wd->val.errnum = 0;
       break;
 
     case FORKING_STATE:
       assure (wd->val.child < 0);
+      wd->val.errnum = 0;
       break;
 
-    default:
+    case FINAL_STATE: default:
       assure (false);
     }
 

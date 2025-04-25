@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Basic tests for "numfmt".
 
-# Copyright (C) 2012-2022 Free Software Foundation, Inc.
+# Copyright (C) 2012-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ my @Tests =
      ['4', '--from=auto 1K',   {OUT => "1000"}],
      ['5', '--from=auto 1Ki',  {OUT => "1024"}],
      ['5.1', '--from=iec-i 1Ki',  {OUT => "1024"}],
+     ['5.2', '--from=iec-i 1',  {OUT => "1"}],
 
      ['6', {IN_PIPE => "1234\n"},            {OUT => "1234"}],
      ['7', '--from=si', {IN_PIPE => "2K\n"}, {OUT => "2000"}],
@@ -48,16 +49,16 @@ my @Tests =
               {ERR => "$prog: invalid number: 'no_NL'\n"},
               {EXIT => '2'}],
 
-     ['8',  '--to=si 2000',                   {OUT => "2.0K"}],
-     ['9',  '--to=si 2001',                   {OUT => "2.1K"}],
-     ['10', '--to=si 1999',                   {OUT => "2.0K"}],
-     ['11', '--to=si --round=down   2001',   {OUT => "2.0K"}],
-     ['12', '--to=si --round=down   1999',   {OUT => "1.9K"}],
-     ['13', '--to=si --round=up 1901',   {OUT => "2.0K"}],
-     ['14', '--to=si --round=down   1901',   {OUT => "1.9K"}],
-     ['15', '--to=si --round=nearest 1901',   {OUT => "1.9K"}],
-     ['16', '--to=si --round=nearest 1945',   {OUT => "1.9K"}],
-     ['17', '--to=si --round=nearest 1955',   {OUT => "2.0K"}],
+     ['8',  '--to=si 2000',                   {OUT => "2.0k"}],
+     ['9',  '--to=si 2001',                   {OUT => "2.1k"}],
+     ['10', '--to=si 1999',                   {OUT => "2.0k"}],
+     ['11', '--to=si --round=down   2001',   {OUT => "2.0k"}],
+     ['12', '--to=si --round=down   1999',   {OUT => "1.9k"}],
+     ['13', '--to=si --round=up 1901',   {OUT => "2.0k"}],
+     ['14', '--to=si --round=down   1901',   {OUT => "1.9k"}],
+     ['15', '--to=si --round=nearest 1901',   {OUT => "1.9k"}],
+     ['16', '--to=si --round=nearest 1945',   {OUT => "1.9k"}],
+     ['17', '--to=si --round=nearest 1955',   {OUT => "2.0k"}],
 
      ['18',  '--to=iec 2048',                  {OUT => "2.0K"}],
      ['19',  '--to=iec 2049',                  {OUT => "2.1K"}],
@@ -116,29 +117,29 @@ my @Tests =
 
      # Test Suffix logic
      ['suf-1', '4000',    {OUT=>'4000'}],
-     ['suf-2', '4Q',
-             {ERR => "$prog: invalid suffix in input: '4Q'\n"},
+     ['suf-2', '4J',
+             {ERR => "$prog: invalid suffix in input: '4J'\n"},
              {EXIT => '2'}],
      ['suf-2.1', '4M',
              {ERR => "$prog: rejecting suffix " .
              "in input: '4M' (consider using --from)\n"},
              {EXIT => '2'}],
      ['suf-3', '--from=si 4M',  {OUT=>'4000000'}],
-     ['suf-4', '--from=si 4Q',
-             {ERR => "$prog: invalid suffix in input: '4Q'\n"},
+     ['suf-4', '--from=si 4J',
+             {ERR => "$prog: invalid suffix in input: '4J'\n"},
              {EXIT => '2'}],
-     ['suf-5', '--from=si 4MQ',
-             {ERR => "$prog: invalid suffix in input '4MQ': 'Q'\n"},
+     ['suf-5', '--from=si 4MJ',
+             {ERR => "$prog: invalid suffix in input '4MJ': 'J'\n"},
              {EXIT => '2'}],
 
      ['suf-6', '--from=iec 4M',  {OUT=>'4194304'}],
      ['suf-7', '--from=auto 4M',  {OUT=>'4000000'}],
      ['suf-8', '--from=auto 4Mi',  {OUT=>'4194304'}],
-     ['suf-9', '--from=auto 4MiQ',
-             {ERR => "$prog: invalid suffix in input '4MiQ': 'Q'\n"},
+     ['suf-9', '--from=auto 4MiJ',
+             {ERR => "$prog: invalid suffix in input '4MiJ': 'J'\n"},
              {EXIT => '2'}],
-     ['suf-10', '--from=auto 4QiQ',
-             {ERR => "$prog: invalid suffix in input: '4QiQ'\n"},
+     ['suf-10', '--from=auto 4JiJ',
+             {ERR => "$prog: invalid suffix in input: '4JiJ'\n"},
              {EXIT => '2'}],
 
      # characters after a white space are OK - printed as-is
@@ -149,7 +150,7 @@ my @Tests =
      ['suf-13', '--suffix=Foo 70',                  {OUT=>'70Foo'}],
      ['suf-14', '--suffix=Foo --from=si 70K',       {OUT=>'70000Foo'}],
      ['suf-15', '--suffix=Foo --from=si 70KFoo',    {OUT=>'70000Foo'}],
-     ['suf-16', '--suffix=Foo --to=si   7000Foo',    {OUT=>'7.0KFoo'}],
+     ['suf-16', '--suffix=Foo --to=si   7000Foo',    {OUT=>'7.0kFoo'}],
      ['suf-17', '--suffix=Foo --to=si   7000Bar',
               {ERR => "$prog: invalid suffix in input: '7000Bar'\n"},
               {EXIT => '2'}],
@@ -159,6 +160,9 @@ my @Tests =
      # space(s) between number and suffix.  Note only field 1 is used
      # by default so specify the NUL delimiter to consider the whole "line".
      ['suf-19', "-d '' --from=si '4.0 K'",         {OUT => "4000"}],
+     ['suf-20',
+      '--suffix=Foo' . 'x' x 122 . 'y 0',
+      {OUT => '0Foo' . 'x' x 122 . 'y'}],
 
      ## GROUPING
 
@@ -178,21 +182,18 @@ my @Tests =
      ['pad-3.1', '--padding=0 5',
              {ERR => "$prog: invalid padding value '0'\n"},
              {EXIT => '1'}],
-     ['pad-3.2', "--padding=$limits->{LONG_MIN} 0",
-             {ERR => "$prog: invalid padding value '$limits->{LONG_MIN}'\n"},
-             {EXIT => '1'}],
-     ['pad-4', '--padding=10 --to=si 50000',             {OUT=>'       50K'}],
-     ['pad-5', '--padding=-10 --to=si 50000',            {OUT=>'50K       '}],
+     ['pad-4', '--padding=10 --to=si 50000',             {OUT=>'       50k'}],
+     ['pad-5', '--padding=-10 --to=si 50000',            {OUT=>'50k       '}],
 
      # padding too narrow
-     ['pad-6', '--padding=2 --to=si 1000', {OUT=>'1.0K'}],
+     ['pad-6', '--padding=2 --to=si 1000', {OUT=>'1.0k'}],
 
 
      # Padding + suffix
      ['pad-7', '--padding=10 --suffix=foo --to=si 50000',
-             {OUT=>'    50Kfoo'}],
+             {OUT=>'    50kfoo'}],
      ['pad-8', '--padding=-10 --suffix=foo --to=si 50000',
-             {OUT=>'50Kfoo    '}],
+             {OUT=>'50kfoo    '}],
 
 
      # Delimiters
@@ -231,63 +232,63 @@ my @Tests =
 
      # Multiple fields
      ['field-range-1', '--field 2,4 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1000 2.0K 3000 4.0K 5000"}],
+             {OUT=>"1000 2.0k 3000 4.0k 5000"}],
 
      ['field-range-2', '--field 2-4 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1000 2.0K 3.0K 4.0K 5000"}],
+             {OUT=>"1000 2.0k 3.0k 4.0k 5000"}],
 
      ['field-range-3', '--field 1,2,3-5 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5.0k"}],
 
      ['field-range-4', '--field 1-5 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5.0k"}],
 
      ['field-range-5', '--field 1-3,5 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4000 5.0K"}],
+             {OUT=>"1.0k 2.0k 3.0k 4000 5.0k"}],
 
      ['field-range-6', '--field 3- --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1000 2000 3.0K 4.0K 5.0K"}],
+             {OUT=>"1000 2000 3.0k 4.0k 5.0k"}],
 
      ['field-range-7', '--field -3 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4000 5000"}],
+             {OUT=>"1.0k 2.0k 3.0k 4000 5000"}],
 
      ['field-range-8', '--field 1-2,4-5 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3000 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3000 4.0k 5.0k"}],
      ['field-range-9', '--field 4-5,1-2 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3000 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3000 4.0k 5.0k"}],
 
      ['field-range-10','--field 1-3,2-4 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5000"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5000"}],
      ['field-range-11','--field 2-4,1-3 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5000"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5000"}],
 
      ['field-range-12','--field 1-1,3-3 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2000 3.0K 4000 5000"}],
+             {OUT=>"1.0k 2000 3.0k 4000 5000"}],
 
      ['field-range-13', '--field 1,-2 --to=si "1000 2000 3000"',
-             {OUT=>"1.0K 2.0K 3000"}],
+             {OUT=>"1.0k 2.0k 3000"}],
 
      ['field-range-14', '--field -2,4- --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3000 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3000 4.0k 5.0k"}],
      ['field-range-15', '--field -2,-4 --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5000"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5000"}],
      ['field-range-16', '--field 2-,4- --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1000 2.0K 3.0K 4.0K 5.0K"}],
+             {OUT=>"1000 2.0k 3.0k 4.0k 5.0k"}],
      ['field-range-17', '--field 4-,2- --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1000 2.0K 3.0K 4.0K 5.0K"}],
+             {OUT=>"1000 2.0k 3.0k 4.0k 5.0k"}],
 
      # white space are valid field separators
      # (undocumented? but works in cut as well).
      ['field-range-18', '--field "1,2 4" --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3000 4.0K 5000"}],
+             {OUT=>"1.0k 2.0k 3000 4.0k 5000"}],
 
      # Unlike 'cut', a lone '-' means 'all fields', even as part of a list
      # of fields.
      ['field-range-19','--field 3,- --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5.0k"}],
 
      ['all-fields-1', '--field=- --to=si "1000 2000 3000 4000 5000"',
-             {OUT=>"1.0K 2.0K 3.0K 4.0K 5.0K"}],
+             {OUT=>"1.0k 2.0k 3.0k 4.0k 5.0k"}],
 
      ['field-range-err-1', '--field -foo --to=si 10',
              {EXIT=>1}, {ERR=>"$prog: invalid field value 'foo'\n$try"}],
@@ -317,9 +318,9 @@ my @Tests =
 
      # Auto-consume white-space, setup auto-padding
      ['whitespace-1', '--to=si --field 2 "A    500 B"', {OUT=>"A    500 B"}],
-     ['whitespace-2', '--to=si --field 2 "A   5000 B"', {OUT=>"A   5.0K B"}],
+     ['whitespace-2', '--to=si --field 2 "A   5000 B"', {OUT=>"A   5.0k B"}],
      ['whitespace-3', '--to=si "  500"', {OUT=>"  500"}],
-     ['whitespace-4', '--to=si " 6500"', {OUT=>" 6.5K"}],
+     ['whitespace-4', '--to=si " 6500"', {OUT=>" 6.5k"}],
      # NOTE: auto-padding is not enabled if the value is on the first
      #       field and there's no white-space before it.
      ['whitespace-5', '--to=si "6000000"', {OUT=>"6.0M"}],
@@ -331,14 +332,14 @@ my @Tests =
      ['whitespace-7', '--to=si --field 2',
              {IN_PIPE=>"rootfs    100000\n" .
                        "udevxx   2000000\n"},
-             {OUT    =>"rootfs      100K\n" .
+             {OUT    =>"rootfs      100k\n" .
                        "udevxx      2.0M"}],
      # auto-padding - second line requires a
      # larger padding (padding-buffer needs to be realloc'd)
      ['whitespace-8', '--to=si --field 2',
              {IN_PIPE=>"rootfs    100000\n" .
                        "udev         20000000\n"},
-             {OUT    =>"rootfs      100K\n" .
+             {OUT    =>"rootfs      100k\n" .
                        "udev              20M"}],
 
 
@@ -378,10 +379,10 @@ my @Tests =
 
      # The 'M' is treated as a delimiter, and so the input value is '4000'
      ['mix-13', '--delimiter=M --to=si --from=auto 4000M5000M9000',
-             {OUT=>"4.0KM5000M9000"}],
+             {OUT=>"4.0kM5000M9000"}],
      # 'M' is the delimiter, so the second input field is '5000'
      ['mix-14', '--delimiter=M --field 2 --from=auto --to=si 4000M5000M9000',
-             {OUT=>"4000M5.0KM9000"}],
+             {OUT=>"4000M5.0kM9000"}],
 
 
 
@@ -443,8 +444,8 @@ my @Tests =
              {EXIT=>2}],
 
      # INVALID_SUFFIX
-     ['strtod-9', '--from=si 12.2Q',
-             {ERR=>"$prog: invalid suffix in input: '12.2Q'\n"},
+     ['strtod-9', '--from=si 12.2J',
+             {ERR=>"$prog: invalid suffix in input: '12.2J'\n"},
              {EXIT=>2}],
 
      # VALID_BUT_FORBIDDEN_SUFFIX
@@ -467,7 +468,7 @@ my @Tests =
      ['dbl-to-human-1','--to=si 800',  {OUT=>"800"}],
      ['dbl-to-human-2','--to=si 0',  {OUT=>"0"}],
      ['dbl-to-human-2.1','--to=si 999',  {OUT=>"999"}],
-     ['dbl-to-human-2.2','--to=si 1000',  {OUT=>"1.0K"}],
+     ['dbl-to-human-2.2','--to=si 1000',  {OUT=>"1.0k"}],
      #NOTE: the following are consistent with "ls -lh" output
      ['dbl-to-human-2.3','--to=iec 999',  {OUT=>"999"}],
      ['dbl-to-human-2.4','--to=iec 1023',  {OUT=>"1023"}],
@@ -478,28 +479,28 @@ my @Tests =
      ['dbl-to-human-2.8','--to=iec-i 0',  {OUT=>"0"}],
 
      # values resulting in "N.Nx" output
-     ['dbl-to-human-3','--to=si 8000', {OUT=>"8.0K"}],
-     ['dbl-to-human-3.1','--to=si 8001', {OUT=>"8.1K"}],
-     ['dbl-to-human-4','--to=si --round=down 8001', {OUT=>"8.0K"}],
+     ['dbl-to-human-3','--to=si 8000', {OUT=>"8.0k"}],
+     ['dbl-to-human-3.1','--to=si 8001', {OUT=>"8.1k"}],
+     ['dbl-to-human-4','--to=si --round=down 8001', {OUT=>"8.0k"}],
 
-     ['dbl-to-human-5','--to=si --round=down 3500', {OUT=>"3.5K"}],
-     ['dbl-to-human-6','--to=si --round=nearest 3500', {OUT=>"3.5K"}],
-     ['dbl-to-human-7','--to=si --round=up 3500', {OUT=>"3.5K"}],
+     ['dbl-to-human-5','--to=si --round=down 3500', {OUT=>"3.5k"}],
+     ['dbl-to-human-6','--to=si --round=nearest 3500', {OUT=>"3.5k"}],
+     ['dbl-to-human-7','--to=si --round=up 3500', {OUT=>"3.5k"}],
 
-     ['dbl-to-human-8','--to=si --round=down    3501', {OUT=>"3.5K"}],
-     ['dbl-to-human-9','--to=si --round=nearest  3501', {OUT=>"3.5K"}],
-     ['dbl-to-human-10','--to=si --round=up 3501', {OUT=>"3.6K"}],
+     ['dbl-to-human-8','--to=si --round=down    3501', {OUT=>"3.5k"}],
+     ['dbl-to-human-9','--to=si --round=nearest  3501', {OUT=>"3.5k"}],
+     ['dbl-to-human-10','--to=si --round=up 3501', {OUT=>"3.6k"}],
 
-     ['dbl-to-human-11','--to=si --round=nearest  3550', {OUT=>"3.6K"}],
+     ['dbl-to-human-11','--to=si --round=nearest  3550', {OUT=>"3.6k"}],
      ['dbl-to-human-12','--to=si --from=si 999.89K', {OUT=>"1.0M"}],
-     ['dbl-to-human-13','--to=si --from=si 9.9K', {OUT=>"9.9K"}],
-     ['dbl-to-human-14','--to=si 9900', {OUT=>"9.9K"}],
+     ['dbl-to-human-13','--to=si --from=si 9.9K', {OUT=>"9.9k"}],
+     ['dbl-to-human-14','--to=si 9900', {OUT=>"9.9k"}],
      ['dbl-to-human-15','--to=iec --from=si 3.3K', {OUT=>"3.3K"}],
      ['dbl-to-human-16','--to=iec --round=down --from=si 3.3K', {OUT=>"3.2K"}],
 
      # values resulting in 'NNx' output
-     ['dbl-to-human-17','--to=si 9999', {OUT=>"10K"}],
-     ['dbl-to-human-18','--to=si --round=down 35000', {OUT=>"35K"}],
+     ['dbl-to-human-17','--to=si 9999', {OUT=>"10k"}],
+     ['dbl-to-human-18','--to=si --round=down 35000', {OUT=>"35k"}],
      ['dbl-to-human-19','--to=iec 35000', {OUT=>"35K"}],
      ['dbl-to-human-20','--to=iec --round=down 35000', {OUT=>"34K"}],
      ['dbl-to-human-21','--to=iec 35000000', {OUT=>"34M"}],
@@ -513,9 +514,9 @@ my @Tests =
      ['dbl-to-human-26','--to=si 999000000000', {OUT=>"999G"}],
      ['dbl-to-human-27','--to=iec 999000000000', {OUT=>"931G"}],
      ['dbl-to-human-28','--to=si 123600000000000', {OUT=>"124T"}],
-     ['dbl-to-human-29','--to=si 998123', {OUT=>"999K"}],
-     ['dbl-to-human-30','--to=si --round=nearest 998123', {OUT=>"998K"}],
-     ['dbl-to-human-31','--to=si 99999', {OUT=>"100K"}],
+     ['dbl-to-human-29','--to=si 998123', {OUT=>"999k"}],
+     ['dbl-to-human-30','--to=si --round=nearest 998123', {OUT=>"998k"}],
+     ['dbl-to-human-31','--to=si 99999', {OUT=>"100k"}],
      ['dbl-to-human-32','--to=iec 102399', {OUT=>"100K"}],
      ['dbl-to-human-33','--to=iec-i 102399', {OUT=>"100Ki"}],
 
@@ -675,10 +676,6 @@ my @Tests =
      ['fmt-err-6', '--format "%f %f"',
              {ERR=>"$prog: format '%f %f' has too many % directives\n"},
              {EXIT=>1}],
-     ['fmt-err-7', '--format "%'.$limits->{LONG_OFLOW}.'f"',
-             {ERR=>"$prog: invalid format '%$limits->{LONG_OFLOW}f'".
-                   " (width overflow)\n"},
-             {EXIT=>1}],
      ['fmt-err-9', '--format "%f" --grouping',
              {ERR=>"$prog: --grouping cannot be combined with --format\n"},
              {EXIT=>1}],
@@ -714,7 +711,7 @@ my @Tests =
 
      # Very large format strings
      ['fmt-15', '--format "--%100000f--" --to=si 4200',
-                  {OUT=>"--" . " " x 99996 . "4.2K--" }],
+                  {OUT=>"--" . " " x 99996 . "4.2k--" }],
 
      # --format padding overrides --padding
      ['fmt-16', '--format="%6f" --padding=66 1234',{OUT=>"  1234"}],
@@ -731,18 +728,18 @@ my @Tests =
      ## Check all errors again, this time with --invalid=fail
      ##  Input will be printed without conversion,
      ##  and exit code will be 2
-     ['ign-err-1', '--invalid=fail 4Q',
-             {ERR => "$prog: invalid suffix in input: '4Q'\n"},
-             {OUT => "4Q\n"},
+     ['ign-err-1', '--invalid=fail 4J',
+             {ERR => "$prog: invalid suffix in input: '4J'\n"},
+             {OUT => "4J\n"},
              {EXIT => 2}],
      ['ign-err-2', '--invalid=fail 4M',
              {ERR => "$prog: rejecting suffix " .
              "in input: '4M' (consider using --from)\n"},
              {OUT => "4M\n"},
              {EXIT => 2}],
-     ['ign-err-3', '--invalid=fail --from=si 4MQ',
-             {ERR => "$prog: invalid suffix in input '4MQ': 'Q'\n"},
-             {OUT => "4MQ\n"},
+     ['ign-err-3', '--invalid=fail --from=si 4MJ',
+             {ERR => "$prog: invalid suffix in input '4MJ': 'J'\n"},
+             {OUT => "4MJ\n"},
              {EXIT => 2}],
      ['ign-err-4', '--invalid=fail --suffix=Foo --to=si   7000FooF',
               {ERR => "$prog: invalid suffix in input: '7000FooF'\n"},
@@ -769,28 +766,28 @@ my @Tests =
 
      ## Ignore Errors with multiple conversions
      ['ign-err-m1', '--invalid=ignore --to=si 1000 2000 bad 3000',
-             {OUT => "1.0K\n2.0K\nbad\n3.0K"},
+             {OUT => "1.0k\n2.0k\nbad\n3.0k"},
              {EXIT => 0}],
      ['ign-err-m1.1', '--invalid=ignore --to=si',
              {IN_PIPE => "1000\n2000\nbad\n3000\n"},
-             {OUT => "1.0K\n2.0K\nbad\n3.0K"},
+             {OUT => "1.0k\n2.0k\nbad\n3.0k"},
              {EXIT => 0}],
      ['ign-err-m1.3', '--invalid=fail --debug --to=si 1000 2000 3000',
-             {OUT => "1.0K\n2.0K\n3.0K"},
+             {OUT => "1.0k\n2.0k\n3.0k"},
              {EXIT => 0}],
      ['ign-err-m2', '--invalid=fail --to=si 1000 Foo 3000',
-             {OUT => "1.0K\nFoo\n3.0K\n"},
+             {OUT => "1.0k\nFoo\n3.0k\n"},
              {ERR => "$prog: invalid number: 'Foo'\n"},
              {EXIT => 2}],
      ['ign-err-m2.1', '--invalid=warn --to=si',
              {IN_PIPE => "1000\nFoo\n3000\n"},
-             {OUT => "1.0K\nFoo\n3.0K"},
+             {OUT => "1.0k\nFoo\n3.0k"},
              {ERR => "$prog: invalid number: 'Foo'\n"},
              {EXIT => 0}],
 
      # --debug will trigger a final warning at EOF
      ['ign-err-m2.2', '--invalid=fail --debug --to=si 1000 Foo 3000',
-             {OUT => "1.0K\nFoo\n3.0K\n"},
+             {OUT => "1.0k\nFoo\n3.0k\n"},
              {ERR => "$prog: invalid number: 'Foo'\n" .
                      "$prog: failed to convert some of the input numbers\n"},
              {EXIT => 2}],
@@ -822,15 +819,15 @@ my @NullDelim_Tests =
      ['z4', '-z --field=3 --to=si',
              {IN_PIPE => "A B 1001 C\x00" .
                          "D E 2002 F\x00"},
-             {OUT => "A B 1.1K C\x00" .
-                     "D E 2.1K F\x00"}],
+             {OUT => "A B 1.1k C\x00" .
+                     "D E 2.1k F\x00"}],
 
      # Input from STDIN, with fields and embedded NL
      ['z5', '-z --field=3 --to=si',
              {IN_PIPE => "A\nB 1001 C\x00" .
                          "D E\n2002 F\x00"},
-             {OUT => "A B 1.1K C\x00" .
-                     "D E 2.1K F\x00"}],
+             {OUT => "A B 1.1k C\x00" .
+                     "D E 2.1k F\x00"}],
   );
 
 my @Limit_Tests =
@@ -851,13 +848,13 @@ my @Limit_Tests =
 
 
      # Test input:
-     # Up to 27 digits is OK.
+     # Up to 33 digits is OK.
      ['large-3.1', '--to=si                           1', {OUT=>   "1"}],
      ['large-3.2', '--to=si                          10', {OUT=>  "10"}],
      ['large-3.3', '--to=si                         100', {OUT=> "100"}],
-     ['large-3.4', '--to=si                        1000', {OUT=>"1.0K"}],
-     ['large-3.5', '--to=si                       10000', {OUT=> "10K"}],
-     ['large-3.6', '--to=si                      100000', {OUT=>"100K"}],
+     ['large-3.4', '--to=si                        1000', {OUT=>"1.0k"}],
+     ['large-3.5', '--to=si                       10000', {OUT=> "10k"}],
+     ['large-3.6', '--to=si                      100000', {OUT=>"100k"}],
      ['large-3.7', '--to=si                     1000000', {OUT=>"1.0M"}],
      ['large-3.8', '--to=si                    10000000', {OUT=> "10M"}],
      ['large-3.9', '--to=si                   100000000', {OUT=>"100M"}],
@@ -879,11 +876,17 @@ my @Limit_Tests =
      ['large-3.25','--to=si   6543210000000000000000000', {OUT=>"6.6Y"}],
      ['large-3.26','--to=si  76543210000000000000000000', {OUT=> "77Y"}],
      ['large-3.27','--to=si 876543210000000000000000000', {OUT=>"877Y"}],
+     ['large-3.28','--to=si      9876543210000000000000000000', {OUT=>"9.9R"}],
+     ['large-3.29','--to=si     19876543210000000000000000000', {OUT=> "20R"}],
+     ['large-3.30','--to=si    219876543210000000000000000000', {OUT=>"220R"}],
+     ['large-3.31','--to=si   3219876543210000000000000000000', {OUT=>"3.3Q"}],
+     ['large-3.32','--to=si  43219876543210000000000000000000', {OUT=> "44Q"}],
+     ['large-3.33','--to=si 543219876543210000000000000000000', {OUT=>"544Q"}],
 
-     # More than 27 digits is not OK
-     ['large-3.28','--to=si 9876543210000000000000000000',
+     # More than 33 digits is not OK
+     ['large-3.34','--to=si 6543219876543210000000000000000000',
              {ERR => "$prog: value too large to be converted: " .
-                     "'9876543210000000000000000000'\n"},
+                     "'6543219876543210000000000000000000'\n"},
              {EXIT => 2}],
 
      # Test Output
@@ -941,9 +944,9 @@ my @Limit_Tests =
      ['large-7','--from=si --to=si 80Y', {OUT=>"80Y"}],
      ['large-8','--from=si --to=si 9000Z', {OUT=>"9.0Y"}],
 
-     ['large-10','--from=si --to=si 999Y', {OUT=>"999Y"}],
-     ['large-11','--from=si --to=iec 999Y', {OUT=>"827Y"}],
-     ['large-12','--from=si --round=down --to=iec 999Y', {OUT=>"826Y"}],
+     ['large-10','--from=si --to=si 999Q', {OUT=>"999Q"}],
+     ['large-11','--from=si --to=iec 999Q', {OUT=>"789Q"}],
+     ['large-12','--from=si --round=down --to=iec 999Q', {OUT=>"788Q"}],
 
      # units can also affect the output
      ['large-13','--from=si --from-unit=1000000 9P',
@@ -952,15 +955,15 @@ my @Limit_Tests =
              {EXIT => 2}],
      ['large-13.1','--from=si --from-unit=1000000 --to=si 9P', {OUT=>"9.0Z"}],
 
-     # Numbers>999Y are never acceptable, regardless of scaling
-     ['large-14','--from=si --to=si 999Y', {OUT=>"999Y"}],
-     ['large-14.1','--from=si --to=si 1000Y',
-             {ERR => "$prog: value too large to be printed: '1e+27' " .
-                     "(cannot handle values > 999Y)\n"},
+     # Numbers>999Q are never acceptable, regardless of scaling
+     ['large-14','--from=si --to=si 999Q', {OUT=>"999Q"}],
+     ['large-14.1','--from=si --to=si 1000Q',
+             {ERR => "$prog: value too large to be printed: '1e+33' " .
+                     "(cannot handle values > 999Q)\n"},
              {EXIT => 2}],
-     ['large-14.2','--from=si --to=si --from-unit=10000 1Y',
-             {ERR => "$prog: value too large to be printed: '1e+28' " .
-                     "(cannot handle values > 999Y)\n"},
+     ['large-14.2','--from=si --to=si --from-unit=10000 1Q',
+             {ERR => "$prog: value too large to be printed: '1e+34' " .
+                     "(cannot handle values > 999Q)\n"},
              {EXIT => 2}],
 
      # intmax_t overflow when rounding caused this to fail before 8.24
@@ -999,15 +1002,29 @@ my @Limit_Tests =
                      "(consider using --to)\n"},
              {OUT => "10000000000000000000\n"},
              {EXIT=>2}],
-     ['ign-err-11','--invalid=fail --to=si 9876543210000000000000000000',
+     ['ign-err-11','--invalid=fail --to=si 6543219876543210000000000000000000',
              {ERR => "$prog: value too large to be converted: " .
-                     "'9876543210000000000000000000'\n"},
-             {OUT => "9876543210000000000000000000\n"},
+                     "'6543219876543210000000000000000000'\n"},
+             {OUT => "6543219876543210000000000000000000\n"},
              {EXIT => 2}],
   );
 # Restrict these tests to systems with LDBL_DIG == 18
 (system "$prog ---debug 1 2>&1|grep 'MAX_UNSCALED_DIGITS: 18' > /dev/null") == 0
   and push @Tests, @Limit_Tests;
+
+my $lg = ' ';
+if ($locale ne 'C')
+  {
+    open(LOC_GRP, "env LC_ALL=$locale printf \"%'d\" 1111|tr -d 1|")
+      or die "Can't fork command: $!";
+    $lg = <LOC_GRP>;
+    close(LOC_GRP) || die "Failed to read locale grouping from printf";
+    if (! defined $lg || $lg eq '')
+      {
+        warn "skipping locale grouping tests as no grouping character\n";
+        $locale = 'C';
+      }
+  }
 
 my @Locale_Tests =
   (
@@ -1016,36 +1033,37 @@ my @Locale_Tests =
              {ENV=>"LC_ALL=$locale"}],
 
      # Locale with grouping
-     ['lcl-grp-2', '--from=si --grouping 7M',   {OUT=>"7 000 000"},
+     ['lcl-grp-2', '--from=si --grouping 7M',   {OUT=>"7${lg}000${lg}000"},
              {ENV=>"LC_ALL=$locale"}],
 
      # Locale with grouping and debug - no debug warning message
-     ['lcl-grp-3', '--from=si --debug --grouping 7M',   {OUT=>"7 000 000"},
+     ['lcl-grp-3', '--from=si --debug --grouping 7M',
+             {OUT=>"7${lg}000${lg}000"},
              {ENV=>"LC_ALL=$locale"}],
 
      # Input with locale'd decimal-point
      ['lcl-stdtod-1', '--from=si 12,2K', {OUT=>"12200"},
              {ENV=>"LC_ALL=$locale"}],
 
-     ['lcl-dbl-to-human-1', '--to=si 1100', {OUT=>"1,1K"},
+     ['lcl-dbl-to-human-1', '--to=si 1100', {OUT=>"1,1k"},
              {ENV=>"LC_ALL=$locale"}],
 
      # Format + Grouping
-     ['lcl-fmt-1', '--format "%\'f" 50000',{OUT=>"50 000"},
+     ['lcl-fmt-1', '--format "%\'f" 50000',{OUT=>"50${lg}000"},
              {ENV=>"LC_ALL=$locale"}],
-     ['lcl-fmt-2', '--format "--%\'10f--" 50000', {OUT=>"--    50 000--"},
+     ['lcl-fmt-2', '--format "--%\'10f--" 50000', {OUT=>"--    50${lg}000--"},
              {ENV=>"LC_ALL=$locale"}],
-     ['lcl-fmt-3', '--format "--%\'-10f--" 50000',{OUT=>"--50 000    --"},
+     ['lcl-fmt-3', '--format "--%\'-10f--" 50000',{OUT=>"--50${lg}000    --"},
              {ENV=>"LC_ALL=$locale"}],
      ['lcl-fmt-4', '--format "--%-10f--" --to=si 5000000',
              {OUT=>"--5,0M      --"},
              {ENV=>"LC_ALL=$locale"}],
      # handle zero/grouping in combination
-     ['lcl-fmt-5', '--format="%\'06f" 1234',{OUT=>"01 234"},
+     ['lcl-fmt-5', '--format="%\'06f" 1234',{OUT=>"01${lg}234"},
              {ENV=>"LC_ALL=$locale"}],
-     ['lcl-fmt-6', '--format="%0\'6f" 1234',{OUT=>"01 234"},
+     ['lcl-fmt-6', '--format="%0\'6f" 1234',{OUT=>"01${lg}234"},
              {ENV=>"LC_ALL=$locale"}],
-     ['lcl-fmt-7', '--format="%0\'\'6f" 1234',{OUT=>"01 234"},
+     ['lcl-fmt-7', '--format="%0\'\'6f" 1234',{OUT=>"01${lg}234"},
              {ENV=>"LC_ALL=$locale"}],
 
   );
@@ -1053,13 +1071,15 @@ if ($locale ne 'C')
   {
     # Reset locale to 'C' if LOCALE_FR_UTF8 doesn't output as expected
     # as determined by the separate printf program.
-    open(LOC_NUM, "env LC_ALL=$locale printf \"%'d\" 1234|")
-      or die "Can't fork command: $!";
+    my $printf_cmd = "env LC_ALL=$locale printf \"%'06.f\" 1234;" .
+                     "env LC_ALL=$locale printf \"%'6.f\"  1234;";
+    open(LOC_NUM, "$printf_cmd|") or die "Can't fork command: $!";
     my $loc_num = <LOC_NUM>;
     close(LOC_NUM) || die "Failed to read grouped number from printf";
-    if ($loc_num ne '1 234')
+    my $loc_match = "01${lg}234 1${lg}234";
+    if ($loc_num ne $loc_match)
       {
-        warn "skipping locale grouping tests as 1234 groups like $loc_num\n";
+        warn "skipping locale grouping tests as $loc_num != $loc_match\n";
         $locale = 'C';
       }
   }
@@ -1067,18 +1087,28 @@ push @Tests, @Locale_Tests if $locale ne 'C';
 
 ## Check all valid/invalid suffixes
 foreach my $suf ( 'A' .. 'Z', 'a' .. 'z' ) {
-  if ( $suf =~ /^[KMGTPEZY]$/ )
+  if ( $suf =~ /^[KkMGTPEZYRQ]$/ )
     {
+      my $si_suf = $suf;
+      my $iec_suf = $suf;
+      if ( $suf eq "k" )
+        {
+          $iec_suf = "K";
+        }
+      if ( $suf eq "K" )
+        {
+          $si_suf = "k";
+        }
       push @Tests, ["auto-suf-si-$suf","--from=si --to=si 1$suf",
-              {OUT=>"1.0$suf"}];
+              {OUT=>"1.0$si_suf"}];
       push @Tests, ["auto-suf-iec-$suf","--from=iec --to=iec 1$suf",
-              {OUT=>"1.0$suf"}];
+              {OUT=>"1.0$iec_suf"}];
       push @Tests, ["auto-suf-auto-$suf","--from=auto --to=iec 1${suf}i",
-              {OUT=>"1.0$suf"}];
+              {OUT=>"1.0$iec_suf"}];
       push @Tests, ["auto-suf-iec-to-ieci-$suf","--from=iec --to=iec-i 1${suf}",
-              {OUT=>"1.0${suf}i"}];
+              {OUT=>"1.0${iec_suf}i"}];
       push @Tests, ["auto-suf-ieci-to-iec-$suf",
-              "--from=iec-i --to=iec 1${suf}i",{OUT=>"1.0${suf}"}];
+              "--from=iec-i --to=iec 1${suf}i",{OUT=>"1.0${iec_suf}"}];
     }
   else
     {

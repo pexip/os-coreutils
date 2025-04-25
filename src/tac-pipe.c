@@ -1,6 +1,6 @@
 /* tac from a pipe.
 
-   Copyright (C) 1997-2022 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,9 +16,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* FIXME */
-#include <assert.h>
-
-#include "die.h"
+#include "assure.h"
 
 /* FIXME: this is small for testing */
 #define BUFFER_SIZE (8)
@@ -60,10 +58,9 @@ buf_init_from_stdin (Buf *x, char eol_byte)
 
   while (true)
     {
-      char *buf = (char *) malloc (BUFFER_SIZE);
-      size_t bytes_read;
+      char *buf = malloc (BUFFER_SIZE);
 
-      if (buf == NULL)
+      if (buf == nullptr)
         {
           /* Fall back on the code that relies on a temporary file.
              Write all buffers to that file and free them.  */
@@ -71,9 +68,9 @@ buf_init_from_stdin (Buf *x, char eol_byte)
           ok = false;
           break;
         }
-      bytes_read = full_read (STDIN_FILENO, buf, BUFFER_SIZE);
-      if (bytes_read != buffer_size && errno != 0)
-        die (EXIT_FAILURE, errno, _("read error"));
+      idx_t bytes_read = full_read (STDIN_FILENO, buf, BUFFER_SIZE);
+      if (bytes_read != BUFFER_SIZE && errno != 0)
+        error (EXIT_FAILURE, errno, _("read error"));
 
       {
         struct B_pair bp;
@@ -96,7 +93,7 @@ buf_init_from_stdin (Buf *x, char eol_byte)
       if (!last_byte_is_eol_byte)
         {
           char *buf = malloc (1);
-          if (buf == NULL)
+          if (buf == nullptr)
             {
               /* FIXME: just like above */
               ok = false;
@@ -129,7 +126,7 @@ buf_free (Buf *x)
 {
   for (size_t i = 0; i < x->n_bufs; i++)
     free (x->p[i].start);
-  obstack_free (OBS, NULL);
+  obstack_free (OBS, nullptr);
 }
 
 Line_ptr
@@ -144,7 +141,7 @@ line_ptr_decrement (const Buf *x, const Line_ptr *lp)
     }
   else
     {
-      assert (lp->i > 0);
+      affirm (lp->i > 0);
       lp_new.i = lp->i - 1;
       lp_new.ptr = ONE_PAST_END (x, lp->i - 1) - 1;
     }
@@ -156,7 +153,7 @@ line_ptr_increment (const Buf *x, const Line_ptr *lp)
 {
   Line_ptr lp_new;
 
-  assert (lp->ptr <= ONE_PAST_END (x, lp->i) - 1);
+  affirm (lp->ptr <= ONE_PAST_END (x, lp->i) - 1);
   if (lp->ptr < ONE_PAST_END (x, lp->i) - 1)
     {
       lp_new.i = lp->i;
@@ -164,7 +161,7 @@ line_ptr_increment (const Buf *x, const Line_ptr *lp)
     }
   else
     {
-      assert (lp->i < x->n_bufs - 1);
+      affirm (lp->i < x->n_bufs - 1);
       lp_new.i = lp->i + 1;
       lp_new.ptr = x->p[lp->i + 1].start;
     }

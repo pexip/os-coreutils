@@ -1,11 +1,12 @@
+# string_h.m4
+# serial 44
+dnl Copyright (C) 2007-2025 Free Software Foundation, Inc.
+dnl This file is free software; the Free Software Foundation
+dnl gives unlimited permission to copy and/or distribute it,
+dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
+
 # Configure a GNU-like replacement for <string.h>.
-
-# Copyright (C) 2007-2022 Free Software Foundation, Inc.
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
-
-# serial 34
 
 # Written by Paul Eggert.
 
@@ -21,9 +22,11 @@ AC_DEFUN_ONCE([gl_STRING_H],
   dnl guaranteed by C89.
   gl_WARN_ON_USE_PREPARE([[#include <string.h>
     ]],
-    [ffsl ffsll memmem mempcpy memrchr rawmemchr stpcpy stpncpy strchrnul
+    [explicit_bzero ffsl ffsll memmem mempcpy memrchr memset_explicit
+     rawmemchr stpcpy stpncpy strchrnul
      strdup strncat strndup strnlen strpbrk strsep strcasestr strtok_r
-     strerror_r strerrorname_np sigabbrev_np sigdescr_np strsignal strverscmp])
+     strerror_l strerror_r strerrorname_np
+     sigabbrev_np sigdescr_np strsignal strverscmp])
 
   AC_REQUIRE([AC_C_RESTRICT])
 ])
@@ -54,6 +57,7 @@ AC_DEFUN([gl_STRING_H_REQUIRE_DEFAULTS],
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MEMMEM])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MEMPCPY])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MEMRCHR])
+    gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MEMSET_EXPLICIT])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_RAWMEMCHR])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STPCPY])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STPNCPY])
@@ -67,6 +71,8 @@ AC_DEFUN([gl_STRING_H_REQUIRE_DEFAULTS],
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRSTR])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRCASESTR])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRTOK_R])
+    gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STR_STARTSWITH])
+    gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STR_ENDSWITH])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBSLEN])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBSNLEN])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBSCHR])
@@ -81,8 +87,11 @@ AC_DEFUN([gl_STRING_H_REQUIRE_DEFAULTS],
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBSSPN])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBSSEP])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBSTOK_R])
+    gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBS_STARTSWITH])
+    gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_MBS_ENDSWITH])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRERROR])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRERROR_R])
+    gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRERROR_L])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_STRERRORNAME_NP])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_SIGABBREV_NP])
     gl_MODULE_INDICATOR_INIT_VARIABLE([GNULIB_SIGDESCR_NP])
@@ -107,6 +116,7 @@ AC_DEFUN([gl_STRING_H_DEFAULTS],
   HAVE_FFSLL=1;                 AC_SUBST([HAVE_FFSLL])
   HAVE_DECL_MEMMEM=1;           AC_SUBST([HAVE_DECL_MEMMEM])
   HAVE_MEMPCPY=1;               AC_SUBST([HAVE_MEMPCPY])
+  HAVE_MEMSET_EXPLICIT=1;       AC_SUBST([HAVE_MEMSET_EXPLICIT])
   HAVE_DECL_MEMRCHR=1;          AC_SUBST([HAVE_DECL_MEMRCHR])
   HAVE_RAWMEMCHR=1;             AC_SUBST([HAVE_RAWMEMCHR])
   HAVE_STPCPY=1;                AC_SUBST([HAVE_STPCPY])
@@ -120,6 +130,7 @@ AC_DEFUN([gl_STRING_H_DEFAULTS],
   HAVE_STRCASESTR=1;            AC_SUBST([HAVE_STRCASESTR])
   HAVE_DECL_STRTOK_R=1;         AC_SUBST([HAVE_DECL_STRTOK_R])
   HAVE_DECL_STRERROR_R=1;       AC_SUBST([HAVE_DECL_STRERROR_R])
+  HAVE_STRERROR_L=1;            AC_SUBST([HAVE_STRERROR_L])
   HAVE_STRERRORNAME_NP=1;       AC_SUBST([HAVE_STRERRORNAME_NP])
   HAVE_SIGABBREV_NP=1;          AC_SUBST([HAVE_SIGABBREV_NP])
   HAVE_SIGDESCR_NP=1;           AC_SUBST([HAVE_SIGDESCR_NP])
@@ -128,6 +139,9 @@ AC_DEFUN([gl_STRING_H_DEFAULTS],
   REPLACE_FFSLL=0;              AC_SUBST([REPLACE_FFSLL])
   REPLACE_MEMCHR=0;             AC_SUBST([REPLACE_MEMCHR])
   REPLACE_MEMMEM=0;             AC_SUBST([REPLACE_MEMMEM])
+  REPLACE_MEMPCPY=0;            AC_SUBST([REPLACE_MEMPCPY])
+  REPLACE_MEMSET_EXPLICIT=0;    AC_SUBST([REPLACE_MEMSET_EXPLICIT])
+  REPLACE_STPCPY=0;             AC_SUBST([REPLACE_STPCPY])
   REPLACE_STPNCPY=0;            AC_SUBST([REPLACE_STPNCPY])
   REPLACE_STRCHRNUL=0;          AC_SUBST([REPLACE_STRCHRNUL])
   REPLACE_STRDUP=0;             AC_SUBST([REPLACE_STRDUP])
@@ -139,7 +153,9 @@ AC_DEFUN([gl_STRING_H_DEFAULTS],
   REPLACE_STRTOK_R=0;           AC_SUBST([REPLACE_STRTOK_R])
   REPLACE_STRERROR=0;           AC_SUBST([REPLACE_STRERROR])
   REPLACE_STRERROR_R=0;         AC_SUBST([REPLACE_STRERROR_R])
+  REPLACE_STRERROR_L=0;         AC_SUBST([REPLACE_STRERROR_L])
   REPLACE_STRERRORNAME_NP=0;    AC_SUBST([REPLACE_STRERRORNAME_NP])
   REPLACE_STRSIGNAL=0;          AC_SUBST([REPLACE_STRSIGNAL])
+  REPLACE_STRVERSCMP=0;         AC_SUBST([REPLACE_STRVERSCMP])
   UNDEFINE_STRTOK_R=0;          AC_SUBST([UNDEFINE_STRTOK_R])
 ])

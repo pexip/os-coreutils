@@ -1,5 +1,5 @@
 /* POSIX condition variables.
-   Copyright (C) 2010-2022 Free Software Foundation, Inc.
+   Copyright (C) 2010-2025 Free Software Foundation, Inc.
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
@@ -22,7 +22,7 @@
 #include <pthread.h>
 
 #if (defined _WIN32 && ! defined __CYGWIN__) && USE_WINDOWS_THREADS
-# include "windows-thread.h"
+# include "windows-cond.h"
 #else
 # include <errno.h>
 # include <limits.h>
@@ -115,10 +115,11 @@ pthread_cond_wait (_GL_UNUSED pthread_cond_t *cond,
      Wait endlessly.  */
   for (;;)
     {
-      struct timespec duration;
-
-      duration.tv_sec = 86400;
-      duration.tv_nsec = 0;
+      struct timespec duration =
+        {
+          .tv_sec = 86400,
+          .tv_nsec = 0
+        };
       nanosleep (&duration, NULL);
     }
 }
@@ -134,7 +135,6 @@ pthread_cond_timedwait (_GL_UNUSED pthread_cond_t *cond,
     {
       struct timeval currtime;
       unsigned long remaining;
-      struct timespec duration;
 
       gettimeofday (&currtime, NULL);
 
@@ -169,8 +169,8 @@ pthread_cond_timedwait (_GL_UNUSED pthread_cond_t *cond,
         return ETIMEDOUT;
 
       /* Sleep up to REMAINING ns.  */
-      duration.tv_sec = remaining / 1000000000;
-      duration.tv_nsec = remaining % 1000000000;
+      struct timespec duration = { .tv_sec  = remaining / 1000000000,
+                                   .tv_nsec = remaining % 1000000000 };
       nanosleep (&duration, NULL);
     }
 }

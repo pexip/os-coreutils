@@ -1,5 +1,5 @@
 /* Test of file timestamp modification functions.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ enum {
    properly tracked change time.  See
    <https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions>.  */
 #  define check_ctime 0
-# elif defined __APPLE__ && defined __MACH__
+# elif (defined __APPLE__ && defined __MACH__) || defined __NetBSD__
 /* On macOS, the ctime is not updated when only the st_atime changes.  */
 #  define check_ctime -1
 # else
@@ -77,6 +77,34 @@ ctime_compare (struct stat const *a, struct stat const *b)
     return 1;
   else
     return 0;
+}
+
+/* Test whether FD's file access times are updated by the file system.
+   FD must be readable.  Set *ST to the file's status, after any
+   change to its access time due to the test.  */
+static bool
+checkable_atime (int fd, struct stat *st)
+{
+  char buf[1];
+  struct stat st1, st2;
+
+  ASSERT (fstat (fd, &st1) == 0);
+  nap ();
+  ASSERT (read (fd, buf, sizeof buf) == 0);
+  ASSERT (fstat (fd, &st2) == 0);
+  bool check_atime
+#if defined __HAIKU__
+  /* On Haiku, the st_atime field is always the current time.  It is as if there
+     was a daemon running (as root) that constantly reads from all files on all
+     disks at the same time.  See <https://dev.haiku-os.org/ticket/19038>.  */
+    = false;
+#else
+    = (st1.st_atime != st2.st_atime
+       || get_stat_atime_ns (&st1) != get_stat_atime_ns (&st2));
+#endif
+  if (st)
+    *st = st2;
+  return check_atime;
 }
 
 #endif /* GL_TEST_UTIMENS_COMMON */

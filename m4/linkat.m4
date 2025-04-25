@@ -1,10 +1,12 @@
-# serial 14
-# See if we need to provide linkat replacement.
-
-dnl Copyright (C) 2009-2022 Free Software Foundation, Inc.
+# linkat.m4
+# serial 17
+dnl Copyright (C) 2009-2025 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
+
+# See if we need to provide linkat replacement.
 
 # Written by Eric Blake.
 
@@ -15,9 +17,13 @@ AC_DEFUN([gl_FUNC_LINKAT],
   AC_REQUIRE([gl_UNISTD_H_DEFAULTS])
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
   AC_REQUIRE([AC_CANONICAL_HOST]) dnl for cross-compiles
-  AC_CHECK_FUNCS_ONCE([linkat symlink])
+  AC_CHECK_FUNCS_ONCE([symlink])
+  gl_CHECK_FUNCS_ANDROID([linkat], [[#include <unistd.h>]])
   if test $ac_cv_func_linkat = no; then
     HAVE_LINKAT=0
+    case "$gl_cv_onwards_func_linkat" in
+      future*) REPLACE_LINKAT=1 ;;
+    esac
   else
     dnl OS X Yosemite has linkat() but it's not sufficient
     dnl to our needs since it doesn't support creating
@@ -99,6 +105,8 @@ AC_DEFUN([gl_FUNC_LINKAT],
           case "$host_os" in
                              # Guess yes on Linux systems.
             linux-* | linux) gl_cv_func_linkat_slash="guessing yes";;
+                             # Guess yes on systems that emulate the Linux system calls.
+            midipix*)        gl_cv_func_linkat_slash="guessing yes";;
                              # Guess yes on glibc systems.
             *-gnu* | gnu*)   gl_cv_func_linkat_slash="guessing yes";;
                              # If we don't know, obey --enable-cross-guesses.

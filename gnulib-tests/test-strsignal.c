@@ -1,5 +1,5 @@
 /* Test of strsignal() function.
-   Copyright (C) 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2008-2025 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ SIGNATURE_CHECK (strsignal, char *, (int));
 /* In this case, we can guarantee some signal descriptions.
    But allow the actual result to be longer than the expected result.  */
 # define ASSERT_DESCRIPTION(actual, expected) \
-   ASSERT (strncmp (actual, expected, strlen (expected)) == 0)
+   ASSERT (str_startswith (actual, expected))
 #endif
 
 int
@@ -75,5 +75,5 @@ main (void)
   ASSERT (str != (char *) -1);
   ASSERT (strlen (str));
 
-  return 0;
+  return test_exit_status;
 }

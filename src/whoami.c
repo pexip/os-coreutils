@@ -1,6 +1,6 @@
 /* whoami -- print effective userid
 
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@
 #include <pwd.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
 #include "long-options.h"
 #include "quote.h"
 
@@ -71,7 +69,7 @@ main (int argc, char **argv)
 
   parse_gnu_standard_options_only (argc, argv, PROGRAM_NAME, PACKAGE_NAME,
                                    Version, true, usage, AUTHORS,
-                                   (char const *) NULL);
+                                   (char const *) nullptr);
 
   if (optind != argc)
     {
@@ -81,10 +79,10 @@ main (int argc, char **argv)
 
   errno = 0;
   uid = geteuid ();
-  pw = (uid == NO_UID && errno ? NULL : getpwuid (uid));
+  pw = uid == NO_UID && errno ? nullptr : getpwuid (uid);
   if (!pw)
-    die (EXIT_FAILURE, errno, _("cannot find name for user ID %lu"),
-         (unsigned long int) uid);
+    error (EXIT_FAILURE, errno, _("cannot find name for user ID %ju"),
+           (uintmax_t) uid);
   puts (pw->pw_name);
   return EXIT_SUCCESS;
 }

@@ -1,18 +1,18 @@
 /* aligned memory allocation
 
-   Copyright 2022 Free Software Foundation, Inc.
+   Copyright 2022-2025 Free Software Foundation, Inc.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+   This file is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   This file is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GNU Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
+   You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Paul Eggert.  */
@@ -23,10 +23,8 @@
 #include "alignalloc.h"
 
 #include <limits.h>
-#include <stdalign.h>
+#include <stdckdint.h>
 #include <stdint.h>
-#include "intprops.h"
-#include "verify.h"
 
 #if !ALIGNALLOC_VIA_ALIGNED_ALLOC
 # if HAVE_POSIX_MEMALIGN
@@ -37,7 +35,7 @@
    sizeof (void *) is a power of two, which is true on all known platforms.
    This check is here rather than in alignalloc.h to save the compiler
    the trouble of checking it each time alignalloc.h is included.  */
-verify (! (sizeof (void *) & (sizeof (void *) - 1)));
+static_assert (! (sizeof (void *) & (sizeof (void *) - 1)));
 
 # else /* !HAVE_POSIX_MEMALIGN */
 
@@ -62,7 +60,7 @@ address_of_pointer_to_malloced (unsigned char *r)
      for a 0 byte at R - 1.  This approach assumes UCHAR_MAX is large
      enough so that there is room for P; although true on all
      plausible platforms, check the assumption to be safe.  */
-  verify (sizeof (void *) + alignof (void *) - 1 <= UCHAR_MAX);
+  static_assert (sizeof (void *) + alignof (void *) - 1 <= UCHAR_MAX);
 
   return align_down (r - 1 - sizeof (void *), alignof (void *));
 }
@@ -82,7 +80,7 @@ alignalloc (idx_t alignment, idx_t size)
 
   size_t malloc_size;
   unsigned char *q;
-  if (INT_ADD_WRAPV (size, alignment, &malloc_size)
+  if (ckd_add (&malloc_size, size, alignment)
       || ! (q = malloc (malloc_size)))
     {
       errno = ENOMEM;

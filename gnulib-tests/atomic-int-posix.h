@@ -1,5 +1,5 @@
 /* Atomic integers.  Useful for testing multithreaded locking primitives.
-   Copyright (C) 2005, 2008-2022 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2008-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,6 +107,7 @@ init_atomic_int (struct atomic_int *ai)
           else
             {
               perror ("sem_open failed");
+              fflush (stderr);
               abort ();
             }
         }

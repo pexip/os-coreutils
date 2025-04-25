@@ -1,6 +1,6 @@
 /* Set operations for device-inode pairs stored in a space-efficient manner.
 
-   Copyright 2009-2022 Free Software Foundation, Inc.
+   Copyright 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,13 +24,14 @@
 #include "ino-map.h"
 
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 /* The hash package hashes "void *", but this package wants to hash
    integers.  Use integers that are as large as possible, but no
    larger than void *, so that they can be cast to void * and back
    without losing information.  */
-typedef size_t hashint;
+typedef uintptr_t hashint;
 #define HASHINT_MAX ((hashint) -1)
 
 /* Integers represent inode numbers.  Integers in the range

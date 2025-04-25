@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2022 Free Software Foundation, Inc.
+ * Copyright (C) 2008-2025 Free Software Foundation, Inc.
  * Written by Eric Blake and Bruno Haible
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,9 +27,16 @@ SIGNATURE_CHECK (memchr, void *, (void const *, int, size_t));
 #include "zerosize-ptr.h"
 #include "macros.h"
 
-/* Calculating void * + int is not portable, so this wrapper converts
-   to char * to make the tests easier to write.  */
-#define MEMCHR (char *) memchr
+/* Test the library, not the compiler+library.  */
+static void *
+lib_memchr (void const *s, int c, size_t n)
+{
+  return memchr (s, c, n);
+}
+static void *(*volatile volatile_memchr) (void const *, int, size_t)
+  = lib_memchr;
+#undef memchr
+#define memchr volatile_memchr
 
 int
 main (void)
@@ -46,26 +53,26 @@ main (void)
   input[n - 1] = 'a';
 
   /* Basic behavior tests.  */
-  ASSERT (MEMCHR (input, 'a', n) == input);
+  ASSERT (memchr (input, 'a', n) == input);
 
-  ASSERT (MEMCHR (input, 'a', 0) == NULL);
+  ASSERT (memchr (input, 'a', 0) == NULL);
 
   {
     void *page_boundary = zerosize_ptr ();
     if (page_boundary)
-      ASSERT (MEMCHR (page_boundary, 'a', 0) == NULL);
+      ASSERT (memchr (page_boundary, 'a', 0) == NULL);
   }
 
-  ASSERT (MEMCHR (input, 'b', n) == input + 1);
-  ASSERT (MEMCHR (input, 'c', n) == input + 2);
-  ASSERT (MEMCHR (input, 'd', n) == input + 1026);
+  ASSERT (memchr (input, 'b', n) == input + 1);
+  ASSERT (memchr (input, 'c', n) == input + 2);
+  ASSERT (memchr (input, 'd', n) == input + 1026);
 
-  ASSERT (MEMCHR (input + 1, 'a', n - 1) == input + n - 1);
-  ASSERT (MEMCHR (input + 1, 'e', n - 1) == input + n - 2);
-  ASSERT (MEMCHR (input + 1, 0x789abc00 | 'e', n - 1) == input + n - 2);
+  ASSERT (memchr (input + 1, 'a', n - 1) == input + n - 1);
+  ASSERT (memchr (input + 1, 'e', n - 1) == input + n - 2);
+  ASSERT (memchr (input + 1, 0x789abc00 | 'e', n - 1) == input + n - 2);
 
-  ASSERT (MEMCHR (input, 'f', n) == NULL);
-  ASSERT (MEMCHR (input, '\0', n) == NULL);
+  ASSERT (memchr (input, 'f', n) == NULL);
+  ASSERT (memchr (input, '\0', n) == NULL);
 
   /* Check that a very long haystack is handled quickly if the byte is
      found near the beginning.  */
@@ -73,7 +80,7 @@ main (void)
     size_t repeat = 10000;
     for (; repeat > 0; repeat--)
       {
-        ASSERT (MEMCHR (input, 'c', n) == input + 2);
+        ASSERT (memchr (input, 'c', n) == input + 2);
       }
   }
 
@@ -86,7 +93,7 @@ main (void)
           input[i + j] = j;
         for (j = 0; j < 256; j++)
           {
-            ASSERT (MEMCHR (input + i, j, 256) == input + i + j);
+            ASSERT (memchr (input + i, j, 256) == input + i + j);
           }
       }
   }
@@ -109,8 +116,8 @@ main (void)
           {
             char *mem = page_boundary - n;
             memset (mem, 'X', n);
-            ASSERT (MEMCHR (mem, 'U', n) == NULL);
-            ASSERT (MEMCHR (mem, 0, n) == NULL);
+            ASSERT (memchr (mem, 'U', n) == NULL);
+            ASSERT (memchr (mem, 0, n) == NULL);
 
             {
               size_t i;
@@ -120,10 +127,10 @@ main (void)
                 {
                   mem[i] = 'U';
                   for (k = i + 1; k < n + limit; k++)
-                    ASSERT (MEMCHR (mem, 'U', k) == mem + i);
+                    ASSERT (memchr (mem, 'U', k) == mem + i);
                   mem[i] = 0;
                   for (k = i + 1; k < n + limit; k++)
-                    ASSERT (MEMCHR (mem, 0, k) == mem + i);
+                    ASSERT (memchr (mem, 0, k) == mem + i);
                   mem[i] = 'X';
                 }
             }
@@ -133,5 +140,9 @@ main (void)
 
   free (input);
 
-  return 0;
+  /* Test zero-length operations on NULL pointers, allowed by
+     <https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3322.pdf>.  */
+  ASSERT (memchr (NULL, '?', 0) == NULL);
+
+  return test_exit_status;
 }

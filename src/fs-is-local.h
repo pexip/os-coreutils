@@ -15,6 +15,7 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_AUFS: return 0;
       case S_MAGIC_AUTOFS: return 1;
       case S_MAGIC_BALLOON_KVM: return 1;
+      case S_MAGIC_BCACHEFS: return 1;
       case S_MAGIC_BEFS: return 1;
       case S_MAGIC_BDEVFS: return 1;
       case S_MAGIC_BFS: return 1;
@@ -51,7 +52,7 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_F2FS: return 1;
       case S_MAGIC_FAT: return 1;
       case S_MAGIC_FHGFS: return 0;
-      case S_MAGIC_FUSEBLK: return 0;
+      case S_MAGIC_FUSE: return 0;
       case S_MAGIC_FUSECTL: return 0;
       case S_MAGIC_FUTEXFS: return 1;
       case S_MAGIC_GFS: return 0;
@@ -92,6 +93,7 @@ is_local_fs_type (unsigned long int magic)
       case S_MAGIC_OCFS2: return 0;
       case S_MAGIC_OVERLAYFS: return 0;
       case S_MAGIC_PANFS: return 0;
+      case S_MAGIC_PID_FS: return 1;
       case S_MAGIC_PIPEFS: return 0;
       case S_MAGIC_PPC_CMM: return 1;
       case S_MAGIC_PRL_FS: return 0;

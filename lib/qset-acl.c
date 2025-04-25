@@ -1,6 +1,6 @@
 /* qset-acl.c - set access control list equivalent to a mode
 
-   Copyright (C) 2002-2003, 2005-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002-2003, 2005-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,20 +19,20 @@
 
 #include <config.h>
 
-#define ACL_INTERNAL_INLINE _GL_EXTERN_INLINE
+/* Specification. */
+#include "acl.h"
 
 #include <string.h>
-#include "acl.h"
 
 #include "acl-internal.h"
 
-
-/* Set the access control lists of a file. If DESC is a valid file
-   descriptor, use file descriptor operations where available, else use
-   filename based operations on NAME.  If access control lists are not
-   available, fchmod the target file to MODE.  Also sets the
-   non-permission bits of the destination file (S_ISUID, S_ISGID, S_ISVTX)
-   to those from MODE if any are set.
+/* Set the access control lists of a file to match *exactly* MODE (this might
+   remove inherited ACLs). Note chmod() tends to honor inherited/default
+   ACLs. If DESC is a valid file descriptor, use file descriptor operations
+   where available, else use filename based operations on NAME.  If access
+   control lists are not available, fchmod the target file to MODE.  Also
+   sets the non-permission bits of the destination file
+   (S_ISUID, S_ISGID, S_ISVTX) to those from MODE if any are set.
    Return 0 if successful.  Return -1 and set errno upon failure.  */
 
 int

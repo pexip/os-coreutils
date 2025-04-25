@@ -1,5 +1,5 @@
 /* stdbuf -- setup the standard streams for a command
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,11 +20,9 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/types.h>
-#include <assert.h>
 
 #include "system.h"
-#include "die.h"
-#include "error.h"
+#include "assure.h"
 #include "filenamecat.h"
 #include "quote.h"
 #include "xreadlink.h"
@@ -35,7 +33,7 @@
 #define PROGRAM_NAME "stdbuf"
 #define LIB_NAME "libstdbuf.so" /* FIXME: don't hardcode  */
 
-#define AUTHORS proper_name ("Padraig Brady")
+#define AUTHORS proper_name_lite ("Padraig Brady", "P\303\241draig Brady")
 
 static char *program_path;
 
@@ -48,12 +46,12 @@ static struct
 
 static struct option const longopts[] =
 {
-  {"input", required_argument, NULL, 'i'},
-  {"output", required_argument, NULL, 'o'},
-  {"error", required_argument, NULL, 'e'},
+  {"input", required_argument, nullptr, 'i'},
+  {"output", required_argument, nullptr, 'o'},
+  {"error", required_argument, nullptr, 'e'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 /* Set size to the value of STR, interpreted as a decimal integer,
@@ -66,7 +64,8 @@ static int
 parse_size (char const *str, size_t *size)
 {
   uintmax_t tmp_size;
-  enum strtol_error e = xstrtoumax (str, NULL, 10, &tmp_size, "EGkKMPTYZ0");
+  enum strtol_error e = xstrtoumax (str, nullptr, 10,
+                                    &tmp_size, "EGkKMPQRTYZ0");
   if (e == LONGINT_OK && SIZE_MAX < tmp_size)
     e = LONGINT_OVERFLOW;
 
@@ -110,7 +109,7 @@ If MODE is '0' the corresponding stream will be unbuffered.\n\
 "), stdout);
       fputs (_("\n\
 Otherwise MODE is a number which may be followed by one of the following:\n\
-KB 1000, K 1024, MB 1000*1000, M 1024*1024, and so on for G, T, P, E, Z, Y.\n\
+KB 1000, K 1024, MB 1000*1000, M 1024*1024, and so on for G,T,P,E,Z,Y,R,Q.\n\
 Binary prefixes can be used, too: KiB=K, MiB=M, and so on.\n\
 In this case the corresponding stream will be fully buffered with the buffer\n\
 size set to MODE bytes.\n\
@@ -121,6 +120,7 @@ for example) then that will override corresponding changes by 'stdbuf'.\n\
 Also some filters (like 'dd' and 'cat' etc.) don't use streams for I/O,\n\
 and are thus unaffected by 'stdbuf' settings.\n\
 "), stdout);
+      emit_exec_status (PROGRAM_NAME);
       emit_ancillary_info (PROGRAM_NAME);
     }
   exit (status);
@@ -148,9 +148,10 @@ set_program_path (char const *arg)
         {
           char *dir;
           path = xstrdup (path);
-          for (dir = strtok (path, ":"); dir != NULL; dir = strtok (NULL, ":"))
+          for (dir = strtok (path, ":"); dir != nullptr;
+               dir = strtok (nullptr, ":"))
             {
-              char *candidate = file_name_concat (dir, arg, NULL);
+              char *candidate = file_name_concat (dir, arg, nullptr);
               if (access (candidate, X_OK) == 0)
                 {
                   program_path = dir_name (candidate);
@@ -216,7 +217,7 @@ set_LD_PRELOAD (void)
   char const *const search_path[] = {
     program_path,
     PKGLIBEXECDIR,
-    NULL
+    nullptr
   };
 
   char const *const *path = search_path;
@@ -240,7 +241,7 @@ set_LD_PRELOAD (void)
 
       ++path;
       if ( ! *path)
-        die (EXIT_CANCELED, 0, _("failed to find %s"), quote (LIB_NAME));
+        error (EXIT_CANCELED, 0, _("failed to find %s"), quote (LIB_NAME));
     }
 
   /* FIXME: Do we need to support libstdbuf.dll, c:, '\' separators etc?  */
@@ -262,11 +263,9 @@ set_LD_PRELOAD (void)
 #endif
 
   if (ret != 0)
-    {
-      die (EXIT_CANCELED, errno,
+    error (EXIT_CANCELED, errno,
            _("failed to update the environment with %s"),
            quote (LD_PRELOAD));
-    }
 }
 
 /* Populate environ with _STDBUF_I=$MODE _STDBUF_O=$MODE _STDBUF_E=$MODE.
@@ -286,20 +285,18 @@ set_libstdbuf_options (void)
 
           if (*stdbuf[i].optarg == 'L')
             ret = asprintf (&var, "%s%c=L", "_STDBUF_",
-                            toupper (stdbuf[i].optc));
+                            c_toupper (stdbuf[i].optc));
           else
-            ret = asprintf (&var, "%s%c=%" PRIuMAX, "_STDBUF_",
-                            toupper (stdbuf[i].optc),
-                            (uintmax_t) stdbuf[i].size);
+            ret = asprintf (&var, "%s%c=%zu", "_STDBUF_",
+                            c_toupper (stdbuf[i].optc),
+                            stdbuf[i].size);
           if (ret < 0)
             xalloc_die ();
 
           if (putenv (var) != 0)
-            {
-              die (EXIT_CANCELED, errno,
+            error (EXIT_CANCELED, errno,
                    _("failed to update the environment with %s"),
                    quote (var));
-            }
 
           env_set = true;
         }
@@ -322,7 +319,7 @@ main (int argc, char **argv)
   initialize_exit_failure (EXIT_CANCELED);
   atexit (close_stdout);
 
-  while ((c = getopt_long (argc, argv, "+i:o:e:", longopts, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, "+i:o:e:", longopts, nullptr)) != -1)
     {
       int opt_fileno;
 
@@ -333,7 +330,7 @@ main (int argc, char **argv)
         case 'i':
         case 'o':
           opt_fileno = optc_to_fileno (c);
-          assert (0 <= opt_fileno && opt_fileno < ARRAY_CARDINALITY (stdbuf));
+          affirm (0 <= opt_fileno && opt_fileno < ARRAY_CARDINALITY (stdbuf));
           stdbuf[opt_fileno].optc = c;
           while (c_isspace (*optarg))
             optarg++;
@@ -349,7 +346,7 @@ main (int argc, char **argv)
 
           if (!STREQ (optarg, "L")
               && parse_size (optarg, &stdbuf[opt_fileno].size) == -1)
-            die (EXIT_CANCELED, errno, _("invalid mode %s"), quote (optarg));
+            error (EXIT_CANCELED, errno, _("invalid mode %s"), quote (optarg));
 
           break;
 
@@ -382,7 +379,7 @@ main (int argc, char **argv)
      stdbuf is running from.  */
   set_program_path (program_name);
   if (!program_path)
-    program_path = xstrdup (PKGLIBDIR);  /* Need to init to non-NULL.  */
+    program_path = xstrdup (PKGLIBDIR);  /* Need to init to non-null.  */
   set_LD_PRELOAD ();
   free (program_path);
 

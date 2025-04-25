@@ -1,7 +1,7 @@
 #!/bin/sh
 # exercise cp's short-read failure when operating on >4KB files in /proc
 
-# Copyright (C) 2009-2022 Free Software Foundation, Inc.
+# Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,12 +24,19 @@ proc_large=/proc/cpuinfo  # usually > 4KiB
 test -r $proc_large || skip_ "your system lacks $proc_large"
 
 # Before coreutils-7.3, cp would copy less than 4KiB of this file.
-cp $proc_large 1    || fail=1
+# Skip this test when run under QEmu emulation where emulated /proc files
+# have unstable inode numbers.
+cp $proc_large 1 2>err \
+  || { fail=1
+       grep 'replaced while being copied' err \
+         && skip_ "File $proc_large is being replaced while being copied"; }
+
 cat $proc_large > 2 || fail=1
 
 # adjust varying parts
-sed '/MHz/d; /bogomips/d;' 1 > proc.cp || framework_failure_
-sed '/MHz/d; /bogomips/d;' 2 > proc.cat || framework_failure_
+del_varying='/MHz/d; /[Bb][Oo][Gg][Oo][Mm][Ii][Pp][Ss]/d;'
+sed "$del_varying" 1 > proc.cp || framework_failure_
+sed "$del_varying" 2 > proc.cat || framework_failure_
 
 compare proc.cp proc.cat || fail=1
 

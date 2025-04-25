@@ -1,6 +1,6 @@
 /* Tailor mini-gmp.c for Gnulib-using applications.
 
-   Copyright 2018-2022 Free Software Foundation, Inc.
+   Copyright 2018-2025 Free Software Foundation, Inc.
 
    This file is free software.
    It is dual-licensed under "the GNU LGPLv3+ or the GNU GPLv2+".
@@ -31,16 +31,17 @@
 #include "mini-gmp.h"
 
 /* Pacify GCC -Wsuggest-attribute=const, pure, malloc.  */
-#if 4 < __GNUC__ + (6 <= __GNUC_MINOR__)
+#if _GL_GNUC_PREREQ (4, 6)
 # pragma GCC diagnostic ignored "-Wsuggest-attribute=const"
 # pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 #endif
-#if 8 <= __GNUC__
+#if _GL_GNUC_PREREQ (8, 0)
 # pragma GCC diagnostic ignored "-Wsuggest-attribute=malloc"
 #endif
 
 /* Pacify GCC -Wunused-variable for variables used only in 'assert' calls.  */
-#if defined NDEBUG && 4 < __GNUC__ + (6 <= __GNUC_MINOR__)
+#if (defined NDEBUG \
+     && (4 < __GNUC__ + (6 <= __GNUC_MINOR__) || defined __clang__))
 # pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 

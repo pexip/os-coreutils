@@ -1,6 +1,6 @@
 /* mountlist.h -- declarations for list of mounted file systems
 
-   Copyright (C) 1991-1992, 1998, 2000-2005, 2009-2022 Free Software
+   Copyright (C) 1991-1992, 1998, 2000-2005, 2009-2025 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -17,10 +17,19 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #ifndef MOUNTLIST_H_
-# define MOUNTLIST_H_
+#define MOUNTLIST_H_
 
-# include <stdbool.h>
-# include <sys/types.h>
+/* This file uses _GL_ATTRIBUTE_MALLOC.  */
+#if !_GL_CONFIG_H_INCLUDED
+# error "Please include config.h first."
+#endif
+
+#include <sys/types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* A mount table entry. */
 struct mount_entry
@@ -37,8 +46,18 @@ struct mount_entry
   struct mount_entry *me_next;
 };
 
+/* Return a list of the currently mounted file systems, or NULL on error.
+   Add each entry to the tail of the list so that they stay in order.
+   If NEED_FS_TYPE is true, ensure that the file system type fields in
+   the returned list are valid.  Otherwise, they might not be.  */
 struct mount_entry *read_file_system_list (bool need_fs_type)
   _GL_ATTRIBUTE_MALLOC;
+
 void free_mount_entry (struct mount_entry *entry);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

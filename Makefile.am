@@ -1,6 +1,6 @@
 # Make coreutils.					-*-Makefile-*-
 
-# Copyright (C) 1990-2022 Free Software Foundation, Inc.
+# Copyright (C) 1990-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ EXTRA_DIST =				\
   .prev-version				\
   .version				\
   .vg-suppressions			\
+  README-install			\
   THANKS.in				\
   THANKS-to-translators			\
   THANKStt.in				\
@@ -81,19 +82,17 @@ BUILT_SOURCES = .version
 
 # Have no read-only files in the tarball to allow easy removal.
 # Have .tarball-version based versions only in tarball builds.
-# Have .timestamp based dates only in tarball builds.
 # The perl substitution is to change some key uses of "rm" to "/bin/rm".
 # See the rm_subst comment for details.
 # The touch avoids a subtle, spurious "make distcheck" failure.
 dist-hook: gen-ChangeLog
 	$(AM_V_GEN)chmod -R +rw $(distdir)
 	$(AM_V_GEN)echo $(VERSION) > $(distdir)/.tarball-version
-	$(AM_V_GEN)date +%s > $(distdir)/.timestamp
 	$(AM_V_at)perl -pi -e '$(rm_subst)' $(distdir)/Makefile.in
 	$(AM_V_at)touch $(distdir)/doc/constants.texi \
 	  $(distdir)/doc/coreutils.info
 
-gen_start_ver = 8.27
+gen_start_ver = 8.31
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d .git; then				\
@@ -134,7 +133,8 @@ check-ls-dircolors:
 	  |sed -n 's/^"\(..\)"/\1/p'|sort -u);			\
 	ls=$$(sed -n '/static.*indicator_name\[/,/};'/\p	\
 	    $(srcdir)/src/ls.c					\
-	  |sed -n '/^  *"/p'|tr , '\n'|sed 's/^  *//'		\
+	  |sed -n '/^  *{/ { s/{.\([a-z]\).,.\([a-z]\).}/"\1\2"/g; p; }' \
+	  |tr , '\n'|sed 's/^  *//'		\
 	  |sed -n 's/^"\(..\)"/\1/p'|sort -u);			\
 	test "$$dc" = "$$ls"
 
@@ -208,6 +208,7 @@ MOSTLYCLEANDIRS =
 
 AM_CPPFLAGS = -Ilib -I$(top_srcdir)/lib -Isrc -I$(top_srcdir)/src
 
+include $(top_srcdir)/gl/local.mk
 include $(top_srcdir)/lib/local.mk
 include $(top_srcdir)/src/local.mk
 include $(top_srcdir)/doc/local.mk

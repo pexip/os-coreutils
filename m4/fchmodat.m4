@@ -1,8 +1,10 @@
-# fchmodat.m4 serial 6
-dnl Copyright (C) 2004-2022 Free Software Foundation, Inc.
+# fchmodat.m4
+# serial 9
+dnl Copyright (C) 2004-2025 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
+dnl This file is offered as-is, without any warranty.
 
 # Written by Jim Meyering.
 
@@ -69,12 +71,12 @@ AC_DEFUN([gl_FUNC_FCHMODAT],
           esac
          ],
          [case "$host_os" in
-                                  # Guess no on Linux with glibc and Cygwin.
-            linux-gnu* | cygwin*) gl_cv_func_fchmodat_works="guessing no" ;;
-                                  # Guess 'nearly' on AIX.
-            aix*)                 gl_cv_func_fchmodat_works="guessing nearly" ;;
-                                  # If we don't know, obey --enable-cross-guesses.
-            *)                    gl_cv_func_fchmodat_works="$gl_cross_guess_normal" ;;
+                                   # Guess no on Linux with glibc and Cygwin.
+            linux*-gnu* | cygwin*) gl_cv_func_fchmodat_works="guessing no" ;;
+                                   # Guess 'nearly' on AIX.
+            aix*)                  gl_cv_func_fchmodat_works="guessing nearly" ;;
+                                   # If we don't know, obey --enable-cross-guesses.
+            *)                     gl_cv_func_fchmodat_works="$gl_cross_guess_normal" ;;
           esac
          ])
        rm -f conftest.fchmodat])
@@ -97,6 +99,6 @@ AC_DEFUN([gl_FUNC_FCHMODAT],
 # Prerequisites of lib/fchmodat.c.
 AC_DEFUN([gl_PREREQ_FCHMODAT],
 [
-  AC_CHECK_FUNCS_ONCE([lchmod])
+  gl_CHECK_FUNCS_ANDROID([readlinkat], [[#include <unistd.h>]])
   :
 ])

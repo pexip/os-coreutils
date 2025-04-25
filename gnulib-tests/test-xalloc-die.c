@@ -1,5 +1,5 @@
 /* Test of xalloc_die() function.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #include "xalloc.h"
 
 int
-main (_GL_UNUSED int argc, char **argv)
+main ()
 {
   xalloc_die ();
   return 0;

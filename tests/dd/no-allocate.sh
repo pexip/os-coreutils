@@ -1,7 +1,7 @@
 #!/bin/sh
 # make sure that dd doesn't allocate memory unnecessarily
 
-# Copyright (C) 2013-2022 Free Software Foundation, Inc.
+# Copyright (C) 2013-2025 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ print_ver_ dd
 # Determine basic amount of memory needed.
 echo . > f || framework_failure_
 vm=$(get_min_ulimit_v_ timeout 10 dd if=f of=f2 status=none) \
-  || skip_ "this shell lacks ulimit support"
+  || skip_ 'shell lacks ulimit, or ASAN enabled'
 rm f f2 || framework_failure_
 
 # count and skip are zero, we don't need to allocate memory

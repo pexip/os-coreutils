@@ -1,5 +1,5 @@
 /* tty -- print the name of the terminal connected to standard input
-   Copyright (C) 1990-2022 Free Software Foundation, Inc.
+   Copyright (C) 1990-2025 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 #include <sys/types.h>
 
 #include "system.h"
-#include "error.h"
 #include "quote.h"
 
 /* Exit statuses.  */
@@ -48,11 +47,11 @@ static bool silent;
 
 static struct option const longopts[] =
 {
-  {"silent", no_argument, NULL, 's'},
-  {"quiet", no_argument, NULL, 's'},
+  {"silent", no_argument, nullptr, 's'},
+  {"quiet", no_argument, nullptr, 's'},
   {GETOPT_HELP_OPTION_DECL},
   {GETOPT_VERSION_OPTION_DECL},
-  {NULL, 0, NULL, 0}
+  {nullptr, 0, nullptr, 0}
 };
 
 void
@@ -91,7 +90,7 @@ main (int argc, char **argv)
 
   silent = false;
 
-  while ((optc = getopt_long (argc, argv, "s", longopts, NULL)) != -1)
+  while ((optc = getopt_long (argc, argv, "s", longopts, nullptr)) != -1)
     {
       switch (optc)
         {
