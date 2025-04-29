@@ -1,6 +1,8 @@
 coreutils (9.7-1+pexip25u1) pexip-trixie; urgency=medium
 
   * Initial trixie build
+  * Disable use of openssl for hashing algorithms as the implementations
+    use deprecated symbols.
 
  -- Mark Hymers <mark.hymers@pexip.com>  Tue, 29 Apr 2025 22:29:20 +0100
 
