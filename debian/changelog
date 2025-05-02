@@ -1,3 +1,16 @@
+coreutils (9.7-2) unstable; urgency=low
+
+  * Build without y2038 support on hurd-i386 (Closes: #1078000)
+  * Hardening build flags (Closes: #1023556)
+  * Update URLs and metadata (Closes: #1057101)
+  * Support nodoc build profile (Closes: #1057136)
+  * Remove md5sum.textutils link (Closes: #1061302)
+  * Use DEB_VENDOR for packager name
+  * Lintian overrides
+  * Update standards version (no changes)
+
+ -- Michael Stone <mstone@debian.org>  Sun, 20 Apr 2025 13:39:09 -0400
+
 coreutils (9.7-1+pexip25u1) pexip-trixie; urgency=medium
 
   * Initial trixie build
