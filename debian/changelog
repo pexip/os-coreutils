@@ -1,3 +1,9 @@
+coreutils (9.7-2+pexip25u1) pexip-trixie; urgency=medium
+
+  * New upstream release.
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Fri, 02 May 2025 08:00:49 +0000
+
 coreutils (9.7-2) unstable; urgency=low
 
   * Build without y2038 support on hurd-i386 (Closes: #1078000)
