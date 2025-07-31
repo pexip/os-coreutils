@@ -1,3 +1,14 @@
+coreutils (9.7-3) unstable; urgency=high
+
+  * Correct spurious permission denied errors messages when copying from a file
+    with NFS ACLs to a filesystem which supports different ACLs.
+    (Backport of upstream fix.) (Closes: #1107169)
+  * Additional lintian overrides (for "mono", which is not defined for
+    terminals but is for other output formats) to address remaining lintian
+    warnings.
+
+ -- Michael Stone <mstone@debian.org>  Wed, 04 Jun 2025 11:14:05 -0400
+
 coreutils (9.7-2+pexip25u1) pexip-trixie; urgency=medium
 
   * New upstream release.
