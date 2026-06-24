@@ -6,6 +6,9 @@ Priority: required
 Standards-Version: 4.7.2
 Build-Depends: gettext (>= 0.10.37), debhelper-compat (= 13), texinfo (>= 4.2) <!nodoc>, libattr1-dev [linux-any], libacl1-dev [linux-any], libselinux1-dev (>= 1.32) [linux-any], gperf, bison, libgmp3-dev, libsystemd-dev
 XS-Pexip-Upstream: http://deb.debian.org/debian/ trixie
+X-Pexip-Note: coreutils in PexOS is built without linking to libssl.  This
+ is to avoid the use of deprecated symbols in OpenSSL which are not provided
+ by the PexOS OpenSSL build.
 
 Package: coreutils
 Architecture: any
